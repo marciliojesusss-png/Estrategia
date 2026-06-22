@@ -1,0 +1,26 @@
+[
+  {
+    "id": "dicot",
+    "sigla": "DICOT",
+    "nome": "DICOT",
+    "ativo": true
+  },
+  {
+    "id": "dicri",
+    "sigla": "DICRI",
+    "nome": "DICRI",
+    "ativo": true
+  },
+  {
+    "id": "difir",
+    "sigla": "DIFIR",
+    "nome": "DIFIR",
+    "ativo": true
+  },
+  {
+    "id": "dilot",
+    "sigla": "DILOT",
+    "nome": "DILOT",
+    "ativo": true
+  }
+]

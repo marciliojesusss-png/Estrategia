@@ -1,0 +1,32 @@
+[
+  {
+    "id": 1,
+    "nome": "Cliente no Centro",
+    "ativo": true
+  },
+  {
+    "id": 2,
+    "nome": "Efici?ncia e Rentabilidade",
+    "ativo": true
+  },
+  {
+    "id": 3,
+    "nome": "Tecnologia e Inova??o",
+    "ativo": true
+  },
+  {
+    "id": 4,
+    "nome": "Pessoas, Cultura e Agilidade",
+    "ativo": true
+  },
+  {
+    "id": 5,
+    "nome": "Sustentabilidade e Cidadania",
+    "ativo": true
+  },
+  {
+    "id": 6,
+    "nome": "Atua??o em Ecossistema",
+    "ativo": true
+  }
+]

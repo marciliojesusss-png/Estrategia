@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CAIXA Loterias | Homologação</title>
+  <link rel="stylesheet" href="assets/css/styles.css">
+  <script src="assets/js/dataStore.js?v=ECOSSISTEMA-2025-001" defer></script>
+  <script src="assets/js/auth.js?v=ECOSSISTEMA-2025-001" defer></script>
+  <script src="assets/js/calculations.js?v=ECOSSISTEMA-2025-001" defer></script>
+  <script src="assets/js/formulas.js?v=ECOSSISTEMA-2025-001" defer></script>
+  <script src="assets/js/approvals.js?v=ECOSSISTEMA-2025-001" defer></script>
+  <script src="assets/js/app.js?v=ECOSSISTEMA-2025-001" defer></script>
+</head>
+<body data-page="homologacao">
+  <div class="app-shell">
+    <header id="appHeader" class="topbar"></header>
+    <nav id="appNav" class="sidebar"></nav>
+    <main class="content">
+      <section class="page-heading">
+        <p class="eyebrow">Validação da diretoria</p>
+        <h1>Homologação</h1>
+      </section>
+
+      <section class="filters" aria-label="Filtros da homologação">
+        <label>Mês <select data-filter="mes"></select></label>
+        <label>Status <select data-filter="status"></select></label>
+      </section>
+
+      <section class="panel">
+        <div id="approvalMessage" class="notice" hidden></div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Indicador</th>
+                <th>Unidade</th>
+                <th>Diretoria</th>
+                <th>Mês</th>
+                <th>Realizado</th>
+                <th>% atingido</th>
+                <th>Status</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="homologacaoTable"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="approvalPanel" class="panel detail-panel" hidden>
+        <div class="detail-header">
+          <div>
+            <p class="eyebrow">Análise da diretoria</p>
+            <h2 id="approvalTitle">Selecione um lançamento</h2>
+          </div>
+          <span id="approvalStatusBadge" class="badge info"></span>
+        </div>
+
+        <div id="approvalReference" class="detail-grid"></div>
+
+        <form id="approvalForm" class="editor-form">
+          <input type="hidden" id="approvalLaunchId">
+
+          <label class="full-span">Justificativa da unidade
+            <textarea id="approvalJustificativa" rows="3" readonly></textarea>
+          </label>
+
+          <label class="full-span">Observação da área
+            <textarea id="approvalObservacaoArea" rows="3" readonly></textarea>
+          </label>
+
+          <label class="full-span">Evidência
+            <textarea id="approvalEvidencia" rows="3" readonly></textarea>
+          </label>
+
+          <label class="full-span">Observação da diretoria
+            <textarea id="approvalObservacaoDiretoria" rows="4"></textarea>
+          </label>
+
+          <div class="form-actions full-span">
+            <button id="approveButton" class="primary-action" type="button">Homologar</button>
+            <button id="returnButton" class="secondary-action" type="button">Devolver para ajuste</button>
+            <button id="closeApprovalButton" class="secondary-action" type="button">Voltar</button>
+          </div>
+        </form>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

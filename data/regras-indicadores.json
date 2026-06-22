@@ -1,0 +1,824 @@
+[
+  {
+    "indicadorId": 1,
+    "nome": "Índice de Ofertas Personalizadas aos Clientes Ativos",
+    "tipoCalculo": "percentual_direto",
+    "tipoConsolidacao": "ultima_posicao",
+    "metaRecorrente": true,
+    "unidadeMedida": "percentual",
+    "metaAnualValor": 0.1,
+    "parametrosCalculo": {
+      "numeradorCampo": "clientesComOfertaPersonalizada",
+      "denominadorCampo": "baseClientesAtivos",
+      "metaReferencia": 0.1
+    },
+    "camposEntrada": [
+      {
+        "nome": "baseClientesAtivos",
+        "rotulo": "Base de clientes ativos no m?s",
+        "tipo": "numero",
+        "obrigatorio": true
+      },
+      {
+        "nome": "clientesComOfertaPersonalizada",
+        "rotulo": "Clientes com oferta personalizada no m?s",
+        "tipo": "numero",
+        "obrigatorio": true
+      }
+    ],
+    "campoResultadoPrincipal": "resultadoMensal",
+    "campoPercentualAtingido": "percentualAtingidoMensal",
+    "exigeJustificativa": false,
+    "exigeEvidencia": true,
+    "resultadoOficial": "ultima_posicao_homologada"
+  },
+  {
+    "indicadorId": 2,
+    "nome": "Índice de Satisfação de Clientes -NPS",
+    "tipoCalculo": "reducao_de_gap",
+    "tipoConsolidacao": "ultima_posicao",
+    "metaRecorrente": false,
+    "unidadeMedida": "pontos",
+    "metaAnualValor": 62,
+    "parametrosCalculo": {
+      "campoResultado": "npsRealizado",
+      "notaBase": 60,
+      "notaReferencia": 70,
+      "percentualReducaoGap": 0.2,
+      "metaFinalCalculada": 62
+    },
+    "camposEntrada": [
+      {
+        "nome": "npsRealizado",
+        "rotulo": "NPS realizado no per?odo",
+        "tipo": "numero",
+        "obrigatorio": true
+      }
+    ],
+    "campoResultadoPrincipal": "npsRealizado",
+    "campoPercentualAtingido": "percentualAtingidoMensal",
+    "exigeJustificativa": false,
+    "exigeEvidencia": true,
+    "resultadoOficial": "ultima_posicao_homologada"
+  },
+  {
+    "indicadorId": 3,
+    "nome": "Índice de Clientes Ativos em Canais Digitais",
+    "tipoCalculo": "crescimento_media_mensal",
+    "tipoConsolidacao": "media_mensal_acumulada",
+    "metaRecorrente": false,
+    "unidadeMedida": "percentual",
+    "metaAnualValor": 0.28,
+    "parametrosCalculo": {
+      "campoValor": "clientesAtivosDigitaisMes",
+      "qmaant": 100000,
+      "metaCrescimento": 0.28
+    },
+    "camposEntrada": [
+      {
+        "nome": "clientesAtivosDigitaisMes",
+        "rotulo": "Clientes ativos digitais no m?s",
+        "tipo": "numero",
+        "obrigatorio": true
+      }
+    ],
+    "campoResultadoPrincipal": "clientesAtivosDigitaisMes",
+    "campoPercentualAtingido": "percentualAtingidoMensal",
+    "exigeJustificativa": false,
+    "exigeEvidencia": true,
+    "resultadoOficial": "media_mensal_acumulada_dezembro"
+  },
+  {
+    "indicadorId": 4,
+    "nome": "Aprimoramento da Experiência do Cliente",
+    "tipoCalculo": "percentual_acumulado",
+    "tipoConsolidacao": "soma_acumulada_no_ano",
+    "metaRecorrente": false,
+    "unidadeMedida": "percentual",
+    "metaAnualValor": 0.25,
+    "parametrosCalculo": {
+      "campoValor": "melhoriasImplementadasMes",
+      "baseline": 200,
+      "totalMelhoriasIdentificadasBaseline": 200,
+      "metaExecucao": 0.25
+    },
+    "camposEntrada": [
+      {
+        "nome": "melhoriasImplementadasMes",
+        "rotulo": "Melhorias implementadas no m?s",
+        "tipo": "numero",
+        "obrigatorio": true
+      }
+    ],
+    "campoResultadoPrincipal": "melhoriasImplementadasMes",
+    "campoPercentualAtingido": "percentualAtingidoMensal",
+    "exigeJustificativa": false,
+    "exigeEvidencia": true,
+    "resultadoOficial": "acumulado_ate_dezembro"
+  },
+  {
+    "indicadorId": 5,
+    "nome": "Gross Gaming Revenue (GGR)",
+    "tipoCalculo": "valor_financeiro_acumulado",
+    "tipoConsolidacao": "soma_acumulada_no_ano",
+    "metaRecorrente": false,
+    "unidadeMedida": "moeda",
+    "metaAnualValor": 15600000000,
+    "parametrosCalculo": {
+      "formula": "diferenca",
+      "campoReceita": "arrecadacaoTotalMes",
+      "campoDeducao": "premiosAPagarMes"
+    },
+    "camposEntrada": [
+      {
+        "nome": "arrecadacaoTotalMes",
+        "rotulo": "Arrecada?o total no m?s",
+        "tipo": "numero",
+        "obrigatorio": true
+      },
+      {
+        "nome": "premiosAPagarMes",
+        "rotulo": "Pr?mios a pagar no m?s",
+        "tipo": "numero",
+        "obrigatorio": true
+      }
+    ],
+    "campoResultadoPrincipal": "resultadoMensal",
+    "campoPercentualAtingido": "percentualAtingidoMensal",
+    "exigeJustificativa": false,
+    "exigeEvidencia": true,
+    "resultadoOficial": "ggr_acumulado_ate_dezembro"
+  },
+  {
+    "indicadorId": 6,
+    "nome": "IEO Recorrente (Índice de Eficiência Operacional Recorrente)",
+    "tipoCalculo": "indice_inverso_ajustado",
+    "tipoConsolidacao": "razao_acumulada_no_ano",
+    "metaRecorrente": false,
+    "unidadeMedida": "percentual",
+    "metaAnualValor": 0.1403,
+    "parametrosCalculo": {
+      "camposNumerador": [
+        "despesaPessoalMes",
+        "despesasAdministrativasMes"
+      ],
+      "campoDenominador": "receitasLiquidasMes"
+    },
+    "camposEntrada": [
+      {
+        "nome": "despesaPessoalMes",
+        "rotulo": "Despesa de pessoal no m?s",
+        "tipo": "numero",
+        "obrigatorio": true
+      },
+      {
+        "nome": "despesasAdministrativasMes",
+        "rotulo": "Despesas administrativas no m?s",
+        "tipo": "numero",
+        "obrigatorio": true
+      },
+      {
+        "nome": "receitasLiquidasMes",
+        "rotulo": "Receitas l?quidas no m?s",
+        "tipo": "numero",
+        "obrigatorio": true
+      }
+    ],
+    "campoResultadoPrincipal": "resultadoMensal",
+    "campoPercentualAtingido": "percentualAtingidoMensal",
+    "exigeJustificativa": false,
+    "exigeEvidencia": true,
+    "resultadoOficial": "ieo_acumulado_ate_dezembro"
+  },
+  {
+    "indicadorId": 7,
+    "nome": "Lucro Líquido Recorrente",
+    "tipoCalculo": "valor_financeiro_acumulado",
+    "tipoConsolidacao": "ultima_posicao_acumulada",
+    "metaRecorrente": false,
+    "unidadeMedida": "moeda",
+    "metaAnualValor": 1209000000,
+    "parametrosCalculo": {
+      "valorAcumuladoCampo": "lucroLiquidoRecorrenteAcumulado"
+    },
+    "camposEntrada": [
+      {
+        "nome": "lucroLiquidoRecorrenteAcumulado",
+        "rotulo": "Lucro l?quido recorrente acumulado",
+        "tipo": "numero",
+        "obrigatorio": true
+      }
+    ],
+    "campoResultadoPrincipal": "resultadoMensal",
+    "campoPercentualAtingido": "percentualAtingidoMensal",
+    "exigeJustificativa": false,
+    "exigeEvidencia": true,
+    "resultadoOficial": "lucro_acumulado_ate_dezembro"
+  },
+  {
+    "indicadorId": 8,
+    "nome": "Vendas Provenientes de Canais Digitais",
+    "tipoCalculo": "incremento_pontos_percentuais",
+    "tipoConsolidacao": "razao_acumulada_no_ano",
+    "metaRecorrente": false,
+    "unidadeMedida": "pontos_percentuais",
+    "metaAnualValor": 0.05,
+    "parametrosCalculo": {
+      "campoNumerador": "arrecadacaoCanaisEletronicosMes",
+      "campoDenominador": "arrecadacaoTotalProdutosLoteriasMes",
+      "participacaoBase": 0.1,
+      "metaIncremento": 0.05
+    },
+    "camposEntrada": [
+      {
+        "nome": "arrecadacaoCanaisEletronicosMes",
+        "rotulo": "Arrecada?o de canais eletr?nicos no m?s",
+        "tipo": "numero",
+        "obrigatorio": true
+      },
+      {
+        "nome": "arrecadacaoTotalProdutosLoteriasMes",
+        "rotulo": "Arrecada?o total de produtos lot?ricos no m?s",
+        "tipo": "numero",
+        "obrigatorio": true
+      }
+    ],
+    "campoResultadoPrincipal": "arrecadacaoCanaisEletronicosMes",
+    "campoPercentualAtingido": "percentualAtingidoMensal",
+    "exigeJustificativa": false,
+    "exigeEvidencia": true,
+    "resultadoOficial": "participacao_acumulada_dezembro"
+  },
+  {
+    "indicadorId": 9,
+    "nome": "Vendas com Meio de Pagamento PIX",
+    "tipoCalculo": "incremento_pontos_percentuais",
+    "tipoConsolidacao": "razao_acumulada_no_ano",
+    "metaRecorrente": false,
+    "unidadeMedida": "pontos_percentuais",
+    "metaAnualValor": 0.05,
+    "parametrosCalculo": {
+      "campoNumerador": "arrecadacaoPixMes",
+      "campoDenominador": "arrecadacaoTotalCanaisEletronicosMes",
+      "participacaoBase": 0.2,
+      "metaIncremento": 0.05
+    },
+    "camposEntrada": [
+      {
+        "nome": "arrecadacaoPixMes",
+        "rotulo": "Arrecada?o com PIX no m?s",
+        "tipo": "numero",
+        "obrigatorio": true
+      },
+      {
+        "nome": "arrecadacaoTotalCanaisEletronicosMes",
+        "rotulo": "Arrecada?o total dos canais eletr?nicos no m?s",
+        "tipo": "numero",
+        "obrigatorio": true
+      }
+    ],
+    "campoResultadoPrincipal": "arrecadacaoPixMes",
+    "campoPercentualAtingido": "percentualAtingidoMensal",
+    "exigeJustificativa": false,
+    "exigeEvidencia": true,
+    "resultadoOficial": "participacao_pix_acumulada_dezembro"
+  },
+  {
+    "indicadorId": 10,
+    "nome": "Share da Plataforma de Jogos",
+    "tipoCalculo": "projeto_marco_entrega",
+    "tipoConsolidacao": "ultima_posicao",
+    "metaRecorrente": false,
+    "unidadeMedida": "percentual",
+    "metaAnualValor": 1,
+    "parametrosCalculo": {
+      "campoPercentual": "percentualExecucao",
+      "campoStatus": "etapaAtualProjeto"
+    },
+    "camposEntrada": [
+      {
+        "nome": "etapaAtualProjeto",
+        "rotulo": "Etapa atual do projeto",
+        "tipo": "texto",
+        "obrigatorio": true
+      },
+      {
+        "nome": "percentualExecucao",
+        "rotulo": "Percentual de execu?o",
+        "tipo": "numero",
+        "obrigatorio": true
+      },
+      {
+        "nome": "evidenciaEntrega",
+        "rotulo": "Evid?ncia da entrega",
+        "tipo": "texto",
+        "obrigatorio": false
+      }
+    ],
+    "campoResultadoPrincipal": "resultadoMensal",
+    "campoPercentualAtingido": "percentualAtingidoMensal",
+    "exigeJustificativa": false,
+    "exigeEvidencia": true,
+    "resultadoOficial": "ultima_posicao_homologada"
+  },
+  {
+    "indicadorId": 11,
+    "nome": "Ampliar Capacidade de Desenvolvimento de Soluções de TIC",
+    "tipoCalculo": "projeto_marco_entrega",
+    "tipoConsolidacao": "ultima_posicao",
+    "metaRecorrente": false,
+    "unidadeMedida": "percentual",
+    "metaAnualValor": 1,
+    "parametrosCalculo": {
+      "campoPercentual": "percentualExecucao",
+      "campoStatus": "etapaAtual"
+    },
+    "camposEntrada": [
+      {
+        "nome": "etapaAtual",
+        "rotulo": "Etapa atual",
+        "tipo": "texto",
+        "obrigatorio": true
+      },
+      {
+        "nome": "percentualExecucao",
+        "rotulo": "Percentual de execu?o",
+        "tipo": "numero",
+        "obrigatorio": true
+      },
+      {
+        "nome": "modalidade",
+        "rotulo": "Modalidade",
+        "tipo": "texto",
+        "obrigatorio": false
+      },
+      {
+        "nome": "numeroProcesso",
+        "rotulo": "N?mero do processo",
+        "tipo": "texto",
+        "obrigatorio": false
+      }
+    ],
+    "campoResultadoPrincipal": "resultadoMensal",
+    "campoPercentualAtingido": "percentualAtingidoMensal",
+    "exigeJustificativa": false,
+    "exigeEvidencia": true,
+    "resultadoOficial": "contratacao_ou_parceria_celebrada"
+  },
+  {
+    "indicadorId": 12,
+    "nome": "Clima Organizacional(Pesquisa GPTW)",
+    "tipoCalculo": "pontuacao_minima",
+    "tipoConsolidacao": "resultado_pesquisa_oficial",
+    "metaRecorrente": false,
+    "unidadeMedida": "pontos",
+    "metaAnualValor": 60,
+    "parametrosCalculo": {
+      "campoValor": "mediaGeralGPTW"
+    },
+    "camposEntrada": [
+      {
+        "nome": "mediaGeralGPTW",
+        "rotulo": "M?dia geral GPTW",
+        "tipo": "numero",
+        "obrigatorio": true
+      },
+      {
+        "nome": "dataPesquisa",
+        "rotulo": "Data da pesquisa",
+        "tipo": "data",
+        "obrigatorio": false
+      },
+      {
+        "nome": "relatorioGPTW",
+        "rotulo": "Refer?ncia do relat?rio GPTW",
+        "tipo": "texto",
+        "obrigatorio": false
+      }
+    ],
+    "campoResultadoPrincipal": "mediaGeralGPTW",
+    "campoPercentualAtingido": "percentualAtingidoMensal",
+    "exigeJustificativa": false,
+    "exigeEvidencia": true,
+    "resultadoOficial": "media_geral_gptw_homologada"
+  },
+  {
+    "indicadorId": 13,
+    "nome": "Mulheres Chefes de Unidade e Gestoras",
+    "tipoCalculo": "percentual_direto",
+    "tipoConsolidacao": "ultima_posicao",
+    "metaRecorrente": true,
+    "unidadeMedida": "percentual",
+    "metaAnualValor": 0.425,
+    "parametrosCalculo": {
+      "numeradorCampo": "mulheresGestorasMes",
+      "denominadorCampo": "totalGestoresMes",
+      "metaReferencia": 0.425
+    },
+    "camposEntrada": [
+      {
+        "nome": "mulheresGestorasMes",
+        "rotulo": "Mulheres gestoras no mês",
+        "tipo": "numero",
+        "obrigatorio": true
+      },
+      {
+        "nome": "totalGestoresMes",
+        "rotulo": "Total de gestores no mês",
+        "tipo": "numero",
+        "obrigatorio": true
+      },
+      {
+        "nome": "dataBaseApuracao",
+        "rotulo": "Data-base da apuração",
+        "tipo": "data",
+        "obrigatorio": true
+      }
+    ],
+    "campoResultadoPrincipal": "resultadoMensal",
+    "campoPercentualAtingido": "percentualAtingidoMensal",
+    "exigeJustificativa": false,
+    "exigeEvidencia": true,
+    "resultadoOficial": "ultima_posicao_homologada"
+  },
+  {
+    "indicadorId": 14,
+    "nome": "Gestores Negros, Amarelos, Pardos ou Indígenas e/ou PcD",
+    "tipoCalculo": "percentual_direto",
+    "tipoConsolidacao": "ultima_posicao",
+    "metaRecorrente": true,
+    "unidadeMedida": "percentual",
+    "metaAnualValor": 0.35,
+    "parametrosCalculo": {
+      "numeradorCampo": "gestoresEnquadradosMes",
+      "denominadorCampo": "totalGestoresMes",
+      "metaReferencia": 0.35
+    },
+    "camposEntrada": [
+      {
+        "nome": "gestoresEnquadradosMes",
+        "rotulo": "Gestores enquadrados no mês",
+        "tipo": "numero",
+        "obrigatorio": true
+      },
+      {
+        "nome": "totalGestoresMes",
+        "rotulo": "Total de gestores no mês",
+        "tipo": "numero",
+        "obrigatorio": true
+      },
+      {
+        "nome": "dataBaseApuracao",
+        "rotulo": "Data-base da apuração",
+        "tipo": "data",
+        "obrigatorio": false
+      }
+    ],
+    "campoResultadoPrincipal": "resultadoMensal",
+    "campoPercentualAtingido": "percentualAtingidoMensal",
+    "exigeJustificativa": false,
+    "exigeEvidencia": true,
+    "resultadoOficial": "ultima_posicao_homologada"
+  },
+  {
+    "indicadorId": 15,
+    "nome": "Capacitação dos Empregados da CAIXA Loterias",
+    "tipoCalculo": "percentual_direto",
+    "tipoConsolidacao": "ultima_posicao",
+    "metaRecorrente": false,
+    "unidadeMedida": "percentual",
+    "metaAnualValor": 0.9,
+    "parametrosCalculo": {
+      "numeradorCampo": "empregadosCapacitadosMes",
+      "denominadorCampo": "empregadosElegiveisMes",
+      "metaReferencia": 0.9
+    },
+    "camposEntrada": [
+      {
+        "nome": "empregadosElegiveisMes",
+        "rotulo": "Empregados elegíveis no mês",
+        "tipo": "numero",
+        "obrigatorio": true
+      },
+      {
+        "nome": "empregadosCapacitadosMes",
+        "rotulo": "Empregados capacitados no mês",
+        "tipo": "numero",
+        "obrigatorio": true
+      }
+    ],
+    "campoResultadoPrincipal": "resultadoMensal",
+    "campoPercentualAtingido": "percentualAtingidoMensal",
+    "exigeJustificativa": false,
+    "exigeEvidencia": true,
+    "resultadoOficial": "ultima_posicao_homologada"
+  },
+  {
+    "indicadorId": 16,
+    "nome": "Apoio ao Desenvolvimento Socioambiental",
+    "tipoCalculo": "quantidade_acumulada",
+    "tipoConsolidacao": "soma_acumulada_no_ano",
+    "metaRecorrente": false,
+    "unidadeMedida": "quantidade",
+    "metaAnualValor": 2,
+    "parametrosCalculo": {
+      "campoValor": "quantidadeIniciativasApoiadasMes"
+    },
+    "camposEntrada": [
+      {
+        "nome": "quantidadeIniciativasApoiadasMes",
+        "rotulo": "Quantidade de iniciativas apoiadas no mês",
+        "tipo": "numero",
+        "obrigatorio": true
+      },
+      {
+        "nome": "nomeIniciativa",
+        "rotulo": "Nome da iniciativa",
+        "tipo": "texto",
+        "obrigatorio": false
+      },
+      {
+        "nome": "dataApoio",
+        "rotulo": "Data do apoio",
+        "tipo": "data",
+        "obrigatorio": false
+      }
+    ],
+    "campoResultadoPrincipal": "quantidadeIniciativasApoiadasMes",
+    "campoPercentualAtingido": "percentualAtingidoMensal",
+    "exigeJustificativa": false,
+    "exigeEvidencia": true,
+    "resultadoOficial": "total_acumulado_dezembro"
+  },
+  {
+    "indicadorId": 17,
+    "nome": "Repasse Social",
+    "tipoCalculo": "valor_financeiro_acumulado",
+    "tipoConsolidacao": "ultima_posicao_acumulada",
+    "metaRecorrente": false,
+    "unidadeMedida": "moeda",
+    "metaAnualValor": 10400000000,
+    "parametrosCalculo": {
+      "valorAcumuladoCampo": "repasseSocialAcumulado"
+    },
+    "camposEntrada": [
+      {
+        "nome": "repasseSocialAcumulado",
+        "rotulo": "Repasse social acumulado",
+        "tipo": "numero",
+        "obrigatorio": true
+      },
+      {
+        "nome": "dataBaseApuracao",
+        "rotulo": "Data-base da apuração",
+        "tipo": "data",
+        "obrigatorio": false
+      }
+    ],
+    "campoResultadoPrincipal": "resultadoMensal",
+    "campoPercentualAtingido": "percentualAtingidoMensal",
+    "exigeJustificativa": false,
+    "exigeEvidencia": true,
+    "resultadoOficial": "repasse_acumulado_ate_dezembro"
+  },
+  {
+    "indicadorId": 18,
+    "nome": "Princípios de Jogo Responsável (WLA)",
+    "tipoCalculo": "plano_acao_por_elementos",
+    "tipoConsolidacao": "acumulado_por_marcos",
+    "metaRecorrente": false,
+    "unidadeMedida": "quantidade",
+    "metaAnualValor": 10,
+    "parametrosCalculo": {
+      "campoValor": "elementosExecutadosAcumulado"
+    },
+    "camposEntrada": [
+      {
+        "nome": "elementosExecutadosAcumulado",
+        "rotulo": "Elementos com ações executadas acumulados",
+        "tipo": "numero",
+        "obrigatorio": true
+      },
+      {
+        "nome": "elementoRGF",
+        "rotulo": "Elemento RGF/WLA",
+        "tipo": "texto",
+        "obrigatorio": false
+      },
+      {
+        "nome": "acaoMelhoria",
+        "rotulo": "Ação de melhoria",
+        "tipo": "texto",
+        "obrigatorio": false
+      },
+      {
+        "nome": "statusAcao",
+        "rotulo": "Status da ação",
+        "tipo": "texto",
+        "obrigatorio": false
+      },
+      {
+        "nome": "dataExecucao",
+        "rotulo": "Data de execução",
+        "tipo": "data",
+        "obrigatorio": false
+      }
+    ],
+    "campoResultadoPrincipal": "elementosExecutadosAcumulado",
+    "campoPercentualAtingido": "percentualAtingidoMensal",
+    "exigeJustificativa": false,
+    "exigeEvidencia": true,
+    "resultadoOficial": "elementos_executados_dezembro"
+  },
+  {
+    "indicadorId": 19,
+    "nome": "Incentivo Socioambiental",
+    "tipoCalculo": "investimento_percentual_lucro",
+    "tipoConsolidacao": "valor_acumulado_com_meta_dinamica",
+    "metaRecorrente": false,
+    "unidadeMedida": "moeda",
+    "metaAnualValor": null,
+    "parametrosCalculo": {
+      "campoInvestimento": "valorInvestidoAcumulado",
+      "campoLucro": "lucroLiquidoBase",
+      "percentualLucro": 0.0033
+    },
+    "camposEntrada": [
+      {
+        "nome": "valorInvestidoAcumulado",
+        "rotulo": "Valor investido acumulado",
+        "tipo": "numero",
+        "obrigatorio": true
+      },
+      {
+        "nome": "lucroLiquidoBase",
+        "rotulo": "Lucro l?quido base",
+        "tipo": "numero",
+        "obrigatorio": true
+      }
+    ],
+    "campoResultadoPrincipal": "resultadoMensal",
+    "campoPercentualAtingido": "percentualAtingidoMensal",
+    "exigeJustificativa": false,
+    "exigeEvidencia": true,
+    "resultadoOficial": "investimento_acumulado_sobre_lucro"
+  },
+  {
+    "indicadorId": 20,
+    "nome": "Visibilidadedos Repasses Sociais das Loterias CAIXA",
+    "tipoCalculo": "percentual_execucao_plano_acao",
+    "tipoConsolidacao": "acumulado_por_acoes_concluidas",
+    "metaRecorrente": false,
+    "unidadeMedida": "percentual",
+    "metaAnualValor": 1,
+    "parametrosCalculo": {
+      "campoPropostas": "totalAcoesPropostas",
+      "campoRealizadas": "totalAcoesRealizadas"
+    },
+    "camposEntrada": [
+      {
+        "nome": "totalAcoesPropostas",
+        "rotulo": "Total de ações propostas",
+        "tipo": "numero",
+        "obrigatorio": true
+      },
+      {
+        "nome": "totalAcoesRealizadas",
+        "rotulo": "Total de ações realizadas",
+        "tipo": "numero",
+        "obrigatorio": true
+      },
+      {
+        "nome": "statusAcao",
+        "rotulo": "Status da ação",
+        "tipo": "texto",
+        "obrigatorio": false
+      }
+    ],
+    "campoResultadoPrincipal": "resultadoMensal",
+    "campoPercentualAtingido": "percentualAtingidoMensal",
+    "exigeJustificativa": false,
+    "exigeEvidencia": true,
+    "resultadoOficial": "ultima_posicao_plano_homologada"
+  },
+  {
+    "indicadorId": 21,
+    "nome": "Jogo Responsável 2026 (Capacitação e Disseminação)",
+    "tipoCalculo": "cobertura_capacitacao_minima",
+    "tipoConsolidacao": "ultima_posicao",
+    "metaRecorrente": false,
+    "unidadeMedida": "percentual",
+    "metaAnualValor": 0.9,
+    "parametrosCalculo": {
+      "numeradorCampo": "empregadosComDuasIniciativasConcluidas",
+      "denominadorCampo": "empregadosElegiveisMes",
+      "metaReferencia": 0.9
+    },
+    "camposEntrada": [
+      {
+        "nome": "empregadosElegiveisMes",
+        "rotulo": "Empregados elegíveis no mês",
+        "tipo": "numero",
+        "obrigatorio": true
+      },
+      {
+        "nome": "empregadosComDuasIniciativasConcluidas",
+        "rotulo": "Empregados com duas iniciativas conclu?das",
+        "tipo": "numero",
+        "obrigatorio": true
+      }
+    ],
+    "campoResultadoPrincipal": "resultadoMensal",
+    "campoPercentualAtingido": "percentualAtingidoMensal",
+    "exigeJustificativa": false,
+    "exigeEvidencia": true,
+    "resultadoOficial": "ultima_posicao_homologada"
+  },
+  {
+    "indicadorId": 22,
+    "nome": "Arrecadação Gerada com o Ecossistema",
+    "tipoCalculo": "crescimento_relativo_participacao",
+    "tipoConsolidacao": "razao_acumulada_no_ano",
+    "metaRecorrente": false,
+    "unidadeMedida": "percentual",
+    "metaAnualValor": null,
+    "parametrosCalculo": {
+      "campoNumerador": "arrecadacaoEcossistemaMes",
+      "campoDenominador": "arrecadacaoTotalMes",
+      "campoReferencia2025": "participacaoEcossistema2025",
+      "campoNumerador2025": "arrecadacaoEcossistema2025",
+      "campoDenominador2025": "arrecadacaoTotal2025",
+      "metaCrescimento": 0.1
+    },
+    "camposEntrada": [
+      {
+        "nome": "arrecadacaoEcossistemaMes",
+        "rotulo": "Arrecadação via ecossistema no mês",
+        "tipo": "numero",
+        "obrigatorio": true
+      },
+      {
+        "nome": "arrecadacaoTotalMes",
+        "rotulo": "Arrecadação total no mês",
+        "tipo": "numero",
+        "obrigatorio": true
+      },
+      {
+        "nome": "participacaoEcossistema2025",
+        "rotulo": "Resultado referência 2025",
+        "tipo": "numero",
+        "obrigatorio": false
+      },
+      {
+        "nome": "arrecadacaoEcossistema2025",
+        "rotulo": "Arrecadação via ecossistema em 2025",
+        "tipo": "numero",
+        "obrigatorio": false
+      },
+      {
+        "nome": "arrecadacaoTotal2025",
+        "rotulo": "Arrecadação total em 2025",
+        "tipo": "numero",
+        "obrigatorio": false
+      }
+    ],
+    "campoResultadoPrincipal": "arrecadacaoEcossistemaMes",
+    "campoPercentualAtingido": "percentualAtingidoMensal",
+    "exigeJustificativa": false,
+    "exigeEvidencia": true,
+    "resultadoOficial": "participacao_acumulada_dezembro"
+  },
+  {
+    "indicadorId": 23,
+    "nome": "Participação da Rede Lotérica nos Negócios",
+    "tipoCalculo": "crescimento_relativo_valor",
+    "tipoConsolidacao": "comparacao_acumulada_ano_anterior",
+    "metaRecorrente": false,
+    "unidadeMedida": "percentual",
+    "metaAnualValor": 0.02,
+    "parametrosCalculo": {
+      "campoAtual": "arrecadacaoRedeLotericaMes2026",
+      "campoAnterior": "arrecadacaoRedeLotericaMes2025",
+      "metaCrescimento": 0.02
+    },
+    "camposEntrada": [
+      {
+        "nome": "arrecadacaoRedeLotericaMes2026",
+        "rotulo": "Arrecadação Rede Lotérica mês 2026",
+        "tipo": "numero",
+        "obrigatorio": true
+      },
+      {
+        "nome": "arrecadacaoRedeLotericaMes2025",
+        "rotulo": "Arrecadação Rede Lotérica mês 2025",
+        "tipo": "numero",
+        "obrigatorio": true
+      }
+    ],
+    "campoResultadoPrincipal": "resultadoMensal",
+    "campoPercentualAtingido": "percentualAtingidoMensal",
+    "exigeJustificativa": false,
+    "exigeEvidencia": true,
+    "resultadoOficial": "comparacao_periodo_equivalente_2025"
+  }
+]

@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CAIXA Loterias | Relatórios</title>
+  <link rel="stylesheet" href="assets/css/styles.css">
+  <script src="assets/js/dataStore.js?v=ECOSSISTEMA-2025-001" defer></script>
+  <script src="assets/js/auth.js?v=ECOSSISTEMA-2025-001" defer></script>
+  <script src="assets/js/calculations.js?v=ECOSSISTEMA-2025-001" defer></script>
+  <script src="assets/js/reports.js?v=ECOSSISTEMA-2025-001" defer></script>
+  <script src="assets/js/app.js?v=ECOSSISTEMA-2025-001" defer></script>
+</head>
+<body data-page="relatorios">
+  <div class="app-shell">
+    <header id="appHeader" class="topbar"></header>
+    <nav id="appNav" class="sidebar"></nav>
+    <main class="content">
+      <section class="page-heading">
+        <p class="eyebrow">Exportação e análise</p>
+        <h1>Relatórios</h1>
+      </section>
+
+      <section class="filters" aria-label="Filtros dos relatórios">
+        <label>Relatório <select id="reportType"></select></label>
+        <label>Ano <select data-filter="ano"></select></label>
+        <label>Mês <select data-filter="mes"></select></label>
+        <label>Plano <select data-filter="plano"></select></label>
+        <label>Pilar <select data-filter="pilar"></select></label>
+        <label>Unidade <select data-filter="unidade"></select></label>
+        <label>Diretoria <select data-filter="diretoria"></select></label>
+        <label>Status <select data-filter="status"></select></label>
+        <label>Indicador <select data-filter="indicador"></select></label>
+      </section>
+
+      <section class="panel">
+        <div class="panel-actions">
+          <span id="reportCount" class="result-count"></span>
+          <button id="exportCsvButton" class="secondary-action" type="button">Exportar CSV</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead id="relatoriosHead"></thead>
+            <tbody id="relatoriosTable"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

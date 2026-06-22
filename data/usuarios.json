@@ -1,0 +1,106 @@
+[
+  {
+    "id": "admin",
+    "nome": "Administrador Simulado",
+    "email": "admin@caixaloterias.local",
+    "perfil": "Administrador",
+    "unidadeApuradora": "",
+    "diretoriaResponsavel": ""
+  },
+  {
+    "id": "consulta",
+    "nome": "Consulta Gest?o",
+    "email": "consulta@caixaloterias.local",
+    "perfil": "Consulta/Gest?o",
+    "unidadeApuradora": "",
+    "diretoriaResponsavel": ""
+  },
+  {
+    "id": "usuario-companhia",
+    "nome": "Usuário da Companhia",
+    "email": "usuario.companhia@caixaloterias.local",
+    "perfil": "Usuário Companhia",
+    "unidadeApuradora": "",
+    "diretoriaResponsavel": ""
+  },
+  {
+    "id": "unidade-genol",
+    "nome": "Unidade GENOL",
+    "email": "genol@caixaloterias.local",
+    "perfil": "Unidade Apuradora",
+    "unidadeApuradora": "GENOL",
+    "diretoriaResponsavel": ""
+  },
+  {
+    "id": "unidade-gerin",
+    "nome": "Unidade GERIN",
+    "email": "gerin@caixaloterias.local",
+    "perfil": "Unidade Apuradora",
+    "unidadeApuradora": "GERIN",
+    "diretoriaResponsavel": ""
+  },
+  {
+    "id": "unidade-sucol",
+    "nome": "Unidade SUCOL",
+    "email": "sucol@caixaloterias.local",
+    "perfil": "Unidade Apuradora",
+    "unidadeApuradora": "SUCOL",
+    "diretoriaResponsavel": ""
+  },
+  {
+    "id": "unidade-suctf",
+    "nome": "Unidade SUCTF",
+    "email": "suctf@caixaloterias.local",
+    "perfil": "Unidade Apuradora",
+    "unidadeApuradora": "SUCTF",
+    "diretoriaResponsavel": ""
+  },
+  {
+    "id": "unidade-sulot",
+    "nome": "Unidade SULOT",
+    "email": "sulot@caixaloterias.local",
+    "perfil": "Unidade Apuradora",
+    "unidadeApuradora": "SULOT",
+    "diretoriaResponsavel": ""
+  },
+  {
+    "id": "unidade-surci",
+    "nome": "Unidade SURCI",
+    "email": "surci@caixaloterias.local",
+    "perfil": "Unidade Apuradora",
+    "unidadeApuradora": "SURCI",
+    "diretoriaResponsavel": ""
+  },
+  {
+    "id": "diretoria-dicot",
+    "nome": "Diretoria DICOT",
+    "email": "dicot@caixaloterias.local",
+    "perfil": "Diretoria Homologadora",
+    "unidadeApuradora": "",
+    "diretoriaResponsavel": "DICOT"
+  },
+  {
+    "id": "diretoria-dicri",
+    "nome": "Diretoria DICRI",
+    "email": "dicri@caixaloterias.local",
+    "perfil": "Diretoria Homologadora",
+    "unidadeApuradora": "",
+    "diretoriaResponsavel": "DICRI"
+  },
+  {
+    "id": "diretoria-difir",
+    "nome": "Diretoria DIFIR",
+    "email": "difir@caixaloterias.local",
+    "perfil": "Diretoria Homologadora",
+    "unidadeApuradora": "",
+    "diretoriaResponsavel": "DIFIR"
+  },
+  {
+    "id": "diretoria-dilot",
+    "nome": "Diretoria DILOT",
+    "email": "dilot@caixaloterias.local",
+    "perfil": "Diretoria Homologadora",
+    "unidadeApuradora": "",
+    "diretoriaResponsavel": "DILOT"
+  }
+]

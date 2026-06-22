@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CAIXA Loterias | Dashboard</title>
+  <link rel="stylesheet" href="assets/css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+  <script src="assets/js/dataStore.js?v=ECOSSISTEMA-2025-001" defer></script>
+  <script src="assets/js/auth.js?v=ECOSSISTEMA-2025-001" defer></script>
+  <script src="assets/js/calculations.js?v=ECOSSISTEMA-2025-001" defer></script>
+  <script src="assets/js/formulas.js?v=ECOSSISTEMA-2025-001" defer></script>
+  <script src="assets/js/dashboard.js?v=ECOSSISTEMA-2025-001" defer></script>
+  <script src="assets/js/app.js?v=ECOSSISTEMA-2025-001" defer></script>
+</head>
+<body data-page="dashboard">
+  <div class="app-shell">
+    <header id="appHeader" class="topbar"></header>
+    <nav id="appNav" class="sidebar"></nav>
+    <main class="content">
+      <section class="page-heading">
+        <p class="eyebrow">Visão geral</p>
+        <h1>Dashboard</h1>
+      </section>
+
+      <section class="filters" aria-label="Filtros do dashboard">
+        <label>Ano <select data-filter="ano"></select></label>
+        <label>Mês <select data-filter="mes"></select></label>
+        <label>Plano <select data-filter="plano"></select></label>
+        <label>Pilar <select data-filter="pilar"></select></label>
+        <label>Unidade <select data-filter="unidade"></select></label>
+        <label>Diretoria <select data-filter="diretoria"></select></label>
+        <label>Status <select data-filter="status"></select></label>
+      </section>
+
+      <section id="summaryCards" class="summary-grid" aria-label="Resumo dos indicadores"></section>
+
+      <section class="chart-grid">
+        <article class="panel">
+          <h2>Indicadores por plano</h2>
+          <canvas id="chartPlano" height="220"></canvas>
+        </article>
+        <article class="panel">
+          <h2>Indicadores por pilar</h2>
+          <canvas id="chartPilar" height="220"></canvas>
+        </article>
+        <article class="panel">
+          <h2>Atingimento oficial por pilar</h2>
+          <canvas id="chartDesempenhoPilar" height="220"></canvas>
+        </article>
+        <article class="panel">
+          <h2>Evolução do atingimento oficial</h2>
+          <canvas id="chartEvolucao" height="220"></canvas>
+        </article>
+        <article class="panel">
+          <h2>Status dos lançamentos</h2>
+          <canvas id="chartStatus" height="220"></canvas>
+        </article>
+        <article class="panel">
+          <h2>Situação de desempenho</h2>
+          <canvas id="chartDesempenhoStatus" height="220"></canvas>
+        </article>
+      </section>
+
+      <section class="official-position-section">
+        <article class="panel">
+          <h2>Última posição oficial dos indicadores</h2>
+          <div class="table-wrap official-position-table">
+            <table id="officialPositionTableElement">
+              <tbody id="officialPositionTable"></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
