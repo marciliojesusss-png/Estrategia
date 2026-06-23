@@ -10,18 +10,19 @@
     "parametrosCalculo": {
       "numeradorCampo": "clientesComOfertaPersonalizada",
       "denominadorCampo": "baseClientesAtivos",
-      "metaReferencia": 0.1
+      "metaReferencia": 0.1,
+      "validarNumeradorAteDenominador": false
     },
     "camposEntrada": [
       {
         "nome": "baseClientesAtivos",
-        "rotulo": "Base de clientes ativos no m?s",
+        "rotulo": "Base de clientes ativos no mês",
         "tipo": "numero",
         "obrigatorio": true
       },
       {
         "nome": "clientesComOfertaPersonalizada",
-        "rotulo": "Clientes com oferta personalizada no m?s",
+        "rotulo": "Clientes com oferta personalizada no mês",
         "tipo": "numero",
         "obrigatorio": true
       }
@@ -35,17 +36,13 @@
   {
     "indicadorId": 2,
     "nome": "Índice de Satisfação de Clientes -NPS",
-    "tipoCalculo": "reducao_de_gap",
+    "tipoCalculo": "pontuacao_minima",
     "tipoConsolidacao": "ultima_posicao",
     "metaRecorrente": false,
     "unidadeMedida": "pontos",
     "metaAnualValor": 62,
     "parametrosCalculo": {
-      "campoResultado": "npsRealizado",
-      "notaBase": 60,
-      "notaReferencia": 70,
-      "percentualReducaoGap": 0.2,
-      "metaFinalCalculada": 62
+      "campoValor": "npsRealizado"
     },
     "camposEntrada": [
       {
@@ -65,52 +62,70 @@
     "indicadorId": 3,
     "nome": "Índice de Clientes Ativos em Canais Digitais",
     "tipoCalculo": "crescimento_media_mensal",
-    "tipoConsolidacao": "media_mensal_acumulada",
+    "tipoConsolidacao": "ultima_posicao",
     "metaRecorrente": false,
     "unidadeMedida": "percentual",
     "metaAnualValor": 0.28,
     "parametrosCalculo": {
-      "campoValor": "clientesAtivosDigitaisMes",
-      "qmaant": 100000,
+      "qmaatuCampo": "qmaatu",
+      "qmaantCampo": "qmaant",
       "metaCrescimento": 0.28
     },
     "camposEntrada": [
       {
-        "nome": "clientesAtivosDigitaisMes",
-        "rotulo": "Clientes ativos digitais no m?s",
+        "nome": "qmaatu",
+        "rotulo": "QMAATU - Quantidade Média Mensal de Clientes Ativos no Ano nos canais digitais",
         "tipo": "numero",
         "obrigatorio": true
+      },
+      {
+        "nome": "qmaant",
+        "rotulo": "QMAANT - Quantidade Média Mensal de Clientes Ativos do Ano anterior nos canais digitais",
+        "tipo": "numero",
+        "obrigatorio": true
+      },
+      {
+        "nome": "dataBaseApuracao",
+        "rotulo": "Data-base da apuração",
+        "tipo": "data",
+        "obrigatorio": false
       }
     ],
-    "campoResultadoPrincipal": "clientesAtivosDigitaisMes",
+    "campoResultadoPrincipal": "resultadoMensal",
     "campoPercentualAtingido": "percentualAtingidoMensal",
     "exigeJustificativa": false,
     "exigeEvidencia": true,
-    "resultadoOficial": "media_mensal_acumulada_dezembro"
+    "resultadoOficial": "ultima_posicao_homologada"
   },
   {
     "indicadorId": 4,
     "nome": "Aprimoramento da Experiência do Cliente",
-    "tipoCalculo": "percentual_acumulado",
+    "tipoCalculo": "quantidade_acumulada",
     "tipoConsolidacao": "soma_acumulada_no_ano",
     "metaRecorrente": false,
-    "unidadeMedida": "percentual",
-    "metaAnualValor": 0.25,
+    "unidadeMedida": "melhorias",
+    "metaAnualValor": 6,
     "parametrosCalculo": {
-      "campoValor": "melhoriasImplementadasMes",
-      "baseline": 200,
-      "totalMelhoriasIdentificadasBaseline": 200,
-      "metaExecucao": 0.25
+      "campoValor": "melhoriasEntreguesMes",
+      "totalMelhoriasPlano2026": 22,
+      "metaMinimaMelhoriasAno": 6,
+      "metaPercentualReferencia": 0.25
     },
     "camposEntrada": [
       {
-        "nome": "melhoriasImplementadasMes",
-        "rotulo": "Melhorias implementadas no m?s",
+        "nome": "melhoriasEntreguesMes",
+        "rotulo": "Melhorias entregues no mês",
         "tipo": "numero",
         "obrigatorio": true
+      },
+      {
+        "nome": "dataBaseApuracao",
+        "rotulo": "Data-base da apuração",
+        "tipo": "data",
+        "obrigatorio": false
       }
     ],
-    "campoResultadoPrincipal": "melhoriasImplementadasMes",
+    "campoResultadoPrincipal": "resultadoMensal",
     "campoPercentualAtingido": "percentualAtingidoMensal",
     "exigeJustificativa": false,
     "exigeEvidencia": true,
@@ -125,20 +140,13 @@
     "unidadeMedida": "moeda",
     "metaAnualValor": 15600000000,
     "parametrosCalculo": {
-      "formula": "diferenca",
-      "campoReceita": "arrecadacaoTotalMes",
-      "campoDeducao": "premiosAPagarMes"
+      "campoValor": "ggrRealizadoMes",
+      "usarMetaMensalNoResultado": true
     },
     "camposEntrada": [
       {
-        "nome": "arrecadacaoTotalMes",
-        "rotulo": "Arrecada?o total no m?s",
-        "tipo": "numero",
-        "obrigatorio": true
-      },
-      {
-        "nome": "premiosAPagarMes",
-        "rotulo": "Pr?mios a pagar no m?s",
+        "nome": "ggrRealizadoMes",
+        "rotulo": "GGR realizado no mês",
         "tipo": "numero",
         "obrigatorio": true
       }
@@ -153,34 +161,21 @@
     "indicadorId": 6,
     "nome": "IEO Recorrente (Índice de Eficiência Operacional Recorrente)",
     "tipoCalculo": "indice_inverso_ajustado",
-    "tipoConsolidacao": "razao_acumulada_no_ano",
+    "tipoConsolidacao": "ultima_posicao",
     "metaRecorrente": false,
     "unidadeMedida": "percentual",
     "metaAnualValor": 0.1403,
     "parametrosCalculo": {
-      "camposNumerador": [
-        "despesaPessoalMes",
-        "despesasAdministrativasMes"
-      ],
-      "campoDenominador": "receitasLiquidasMes"
+      "campoValor": "ieoRealizadoMes",
+      "campoPercentual": true,
+      "metaReferencia": 0.1403,
+      "quantoMenorMelhor": true
     },
     "camposEntrada": [
       {
-        "nome": "despesaPessoalMes",
-        "rotulo": "Despesa de pessoal no m?s",
-        "tipo": "numero",
-        "obrigatorio": true
-      },
-      {
-        "nome": "despesasAdministrativasMes",
-        "rotulo": "Despesas administrativas no m?s",
-        "tipo": "numero",
-        "obrigatorio": true
-      },
-      {
-        "nome": "receitasLiquidasMes",
-        "rotulo": "Receitas l?quidas no m?s",
-        "tipo": "numero",
+        "nome": "ieoRealizadoMes",
+        "rotulo": "IEO realizado no mês",
+        "tipo": "percentual",
         "obrigatorio": true
       }
     ],
@@ -188,7 +183,7 @@
     "campoPercentualAtingido": "percentualAtingidoMensal",
     "exigeJustificativa": false,
     "exigeEvidencia": true,
-    "resultadoOficial": "ieo_acumulado_ate_dezembro"
+    "resultadoOficial": "ultima_posicao_homologada"
   },
   {
     "indicadorId": 7,
@@ -252,36 +247,28 @@
   {
     "indicadorId": 9,
     "nome": "Vendas com Meio de Pagamento PIX",
-    "tipoCalculo": "incremento_pontos_percentuais",
-    "tipoConsolidacao": "razao_acumulada_no_ano",
+    "tipoCalculo": "valor_financeiro_acumulado",
+    "tipoConsolidacao": "soma_acumulada_no_ano",
     "metaRecorrente": false,
-    "unidadeMedida": "pontos_percentuais",
-    "metaAnualValor": 0.05,
+    "unidadeMedida": "moeda",
+    "metaAnualValor": 3740068903.08,
     "parametrosCalculo": {
-      "campoNumerador": "arrecadacaoPixMes",
-      "campoDenominador": "arrecadacaoTotalCanaisEletronicosMes",
-      "participacaoBase": 0.2,
-      "metaIncremento": 0.05
+      "campoValor": "arrecadacaoPixMes",
+      "metaMensalPix": 311672408.59
     },
     "camposEntrada": [
       {
         "nome": "arrecadacaoPixMes",
-        "rotulo": "Arrecada?o com PIX no m?s",
-        "tipo": "numero",
-        "obrigatorio": true
-      },
-      {
-        "nome": "arrecadacaoTotalCanaisEletronicosMes",
-        "rotulo": "Arrecada?o total dos canais eletr?nicos no m?s",
+        "rotulo": "Arrecadação com PIX no mês",
         "tipo": "numero",
         "obrigatorio": true
       }
     ],
-    "campoResultadoPrincipal": "arrecadacaoPixMes",
+    "campoResultadoPrincipal": "resultadoMensal",
     "campoPercentualAtingido": "percentualAtingidoMensal",
     "exigeJustificativa": false,
     "exigeEvidencia": true,
-    "resultadoOficial": "participacao_pix_acumulada_dezembro"
+    "resultadoOficial": "soma_pix_acumulada_ate_dezembro"
   },
   {
     "indicadorId": 10,
@@ -305,7 +292,7 @@
       {
         "nome": "percentualExecucao",
         "rotulo": "Percentual de execu?o",
-        "tipo": "numero",
+        "tipo": "percentual",
         "obrigatorio": true
       },
       {
@@ -343,7 +330,7 @@
       {
         "nome": "percentualExecucao",
         "rotulo": "Percentual de execu?o",
-        "tipo": "numero",
+        "tipo": "percentual",
         "obrigatorio": true
       },
       {
@@ -766,7 +753,7 @@
       {
         "nome": "participacaoEcossistema2025",
         "rotulo": "Resultado referência 2025",
-        "tipo": "numero",
+        "tipo": "percentual",
         "obrigatorio": false
       },
       {

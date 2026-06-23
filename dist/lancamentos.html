@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>CAIXA Loterias | Lançamento Mensal</title>
-  <link rel="stylesheet" href="assets/css/styles.css">
-  <script src="assets/js/dataStore.js?v=ECOSSISTEMA-2025-001" defer></script>
-  <script src="assets/js/auth.js?v=ECOSSISTEMA-2025-001" defer></script>
-  <script src="assets/js/calculations.js?v=ECOSSISTEMA-2025-001" defer></script>
-  <script src="assets/js/formulas.js?v=ECOSSISTEMA-2025-001" defer></script>
-  <script src="assets/js/launches.js?v=ECOSSISTEMA-2025-001" defer></script>
-  <script src="assets/js/app.js?v=ECOSSISTEMA-2025-001" defer></script>
+  <title>CAIXA Loterias | LanÃ§amento Mensal</title>
+  <link rel="stylesheet" href="assets/css/styles.css?v=REABRIR-HOMOLOGADO-001">
+  <script src="assets/js/dataStore.js?v=REABRIR-HOMOLOGADO-001" defer></script>
+  <script src="assets/js/auth.js?v=REABRIR-HOMOLOGADO-001" defer></script>
+  <script src="assets/js/calculations.js?v=REABRIR-HOMOLOGADO-001" defer></script>
+  <script src="assets/js/formulas.js?v=REABRIR-HOMOLOGADO-001" defer></script>
+  <script src="assets/js/launches.js?v=REABRIR-HOMOLOGADO-001" defer></script>
+  <script src="assets/js/app.js?v=REABRIR-HOMOLOGADO-001" defer></script>
 </head>
 <body data-page="lancamentos">
   <div class="app-shell">
@@ -19,11 +19,11 @@
     <main class="content">
       <section class="page-heading">
         <p class="eyebrow">Preenchimento</p>
-        <h1>Lançamento Mensal</h1>
+        <h1>LanÃ§amento Mensal</h1>
       </section>
 
-      <section class="filters" aria-label="Filtros dos lançamentos">
-        <label>Mês <select data-filter="mes"></select></label>
+      <section class="filters" aria-label="Filtros dos lanÃ§amentos">
+        <label>MÃªs <select data-filter="mes"></select></label>
         <label>Status <select data-filter="status"></select></label>
       </section>
 
@@ -35,12 +35,12 @@
             <thead>
               <tr>
                 <th>Indicador</th>
-                <th>Mês</th>
+                <th>MÃªs</th>
                 <th>Meta</th>
-                <th>Realizado</th>
-                <th>% atingido</th>
+                <th>Resultado mensal</th>
+                <th>SituaÃƒÂ§ÃƒÂ£o</th>
                 <th>Status</th>
-                <th>Ações</th>
+                <th>AÃ§Ãµes</th>
               </tr>
             </thead>
             <tbody id="lancamentosTable"></tbody>
@@ -51,8 +51,8 @@
       <section id="launchEditorPanel" class="panel detail-panel" hidden>
         <div class="detail-header">
           <div>
-            <p class="eyebrow">Lançamento selecionado</p>
-            <h2 id="launchEditorTitle">Selecione um lançamento</h2>
+            <p class="eyebrow">LanÃ§amento selecionado</p>
+            <h2 id="launchEditorTitle">Selecione um lanÃ§amento</h2>
           </div>
           <span id="launchStatusBadge" class="badge info"></span>
         </div>
@@ -62,7 +62,7 @@
         <form id="launchForm" class="editor-form">
           <input type="hidden" id="launchId">
 
-          <label><span id="launchMetaLabel">Meta de referência mensal</span>
+          <label><span id="launchMetaLabel">Meta de referÃªncia mensal</span>
             <input id="launchMeta" type="text" readonly>
           </label>
 
@@ -83,7 +83,7 @@
             <input id="launchResultadoMensal" type="text" readonly>
           </label>
 
-          <label>Percentual atingido mensal
+          <label id="percentualMensalWrapper" hidden>% da meta atingida mensal
             <input id="launchPercentualCalculado" type="text" readonly>
           </label>
 
@@ -91,8 +91,12 @@
             <input id="launchResultadoAcumulado" type="text" readonly>
           </label>
 
-          <label>Percentual atingido anual
+          <label id="percentualAnualWrapper" hidden>% da meta atingida anual
             <input id="launchPercentualAcumulado" type="text" readonly>
+          </label>
+
+          <label id="situacaoCalculadaWrapper">SituaÃƒÂ§ÃƒÂ£o
+            <input id="launchSituacaoCalculada" type="text" readonly>
           </label>
 
           <div id="formulaDetailsWrapper" class="full-span" hidden>
@@ -104,21 +108,21 @@
             <textarea id="launchJustificativa" rows="3"></textarea>
           </label>
 
-          <label class="full-span">Observação da área
+          <label class="full-span">ObservaÃ§Ã£o da Ã¡rea
             <textarea id="launchObservacaoArea" rows="3"></textarea>
           </label>
 
-          <label id="evidenceWrapper" class="full-span" hidden>Evidência
-            <textarea id="launchEvidencia" rows="3" placeholder="Informe referência, link, documento ou evidência do resultado"></textarea>
+          <label id="evidenceWrapper" class="full-span" hidden>EvidÃªncia
+            <textarea id="launchEvidencia" rows="3" placeholder="Informe referÃªncia, link, documento ou evidÃªncia do resultado"></textarea>
           </label>
 
-          <label class="full-span">Métrica/Fórmula de referência
+          <label class="full-span">MÃ©trica/FÃ³rmula de referÃªncia
             <textarea id="launchMetrica" rows="4" readonly></textarea>
           </label>
 
           <div class="form-actions full-span">
             <button id="saveDraftButton" class="primary-action" type="button">Salvar rascunho</button>
-            <button id="sendApprovalButton" class="secondary-action" type="button">Enviar para homologação</button>
+            <button id="sendApprovalButton" class="secondary-action" type="button">Enviar para homologaÃ§Ã£o</button>
             <button id="clearLaunchButton" class="secondary-action" type="button">Limpar</button>
             <button id="closeLaunchButton" class="secondary-action" type="button">Voltar</button>
           </div>

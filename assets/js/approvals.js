@@ -53,11 +53,14 @@
     return lancamento && lancamento.status === ACTIONABLE_STATUS;
   }
 
+  function canReopen(lancamento) {
+    return lancamento && lancamento.status === "Homologado";
+  }
+
   function fillFilters(lancamentos) {
-    const actionable = lancamentos.filter((item) => item.status === ACTIONABLE_STATUS);
     const values = {
-      mes: ["Todos", ...unique(actionable.map((item) => item.nomeMes))],
-      status: [ACTIONABLE_STATUS]
+      mes: ["Todos", ...unique(lancamentos.map((item) => item.nomeMes))],
+      status: ["Todos", ...unique(lancamentos.map((item) => item.status))]
     };
 
     document.querySelectorAll("[data-filter]").forEach((select) => {
@@ -65,9 +68,6 @@
       select.innerHTML = values[select.dataset.filter].map((value) => `<option>${escapeHtml(value)}</option>`).join("");
       if (values[select.dataset.filter].includes(currentValue)) {
         select.value = currentValue;
-      }
-      if (select.dataset.filter === "status") {
-        select.value = ACTIONABLE_STATUS;
       }
     });
   }
@@ -77,9 +77,8 @@
       [...document.querySelectorAll("[data-filter]")].map((select) => [select.dataset.filter, select.value])
     );
     return state.lancamentos.filter((item) => (
-      item.status === ACTIONABLE_STATUS &&
       (values.mes === "Todos" || item.nomeMes === values.mes) &&
-      (values.status === ACTIONABLE_STATUS || item.status === values.status)
+      (values.status === "Todos" || item.status === values.status)
     ));
   }
 
@@ -104,7 +103,7 @@
           <td>${Calculations.formatarValor(item.resultadoMensal ?? item.realizadoMensal, regra && regra.unidadeMedida)}</td>
           <td>${Calculations.formatarPercentual(item.percentualAtingido)}</td>
           <td><span class="badge ${badgeClass(item.status)}">${escapeHtml(item.status)}</span></td>
-          <td><button class="secondary-action table-action" type="button" data-id="${item.id}">Analisar</button></td>
+          <td><button class="secondary-action table-action" type="button" data-id="${item.id}">${canAct(item) ? "Analisar" : "Consultar"}</button></td>
         </tr>
       `;
     }).join("");
@@ -133,10 +132,13 @@
     `).join("");
   }
 
-  function setActionDisabled(disabled) {
-    document.getElementById("approvalObservacaoDiretoria").disabled = disabled;
-    document.getElementById("approveButton").disabled = disabled;
-    document.getElementById("returnButton").disabled = disabled;
+  function setActionState(lancamento) {
+    const actionable = canAct(lancamento);
+    const reopenable = canReopen(lancamento);
+    document.getElementById("approvalObservacaoDiretoria").disabled = !(actionable || reopenable);
+    document.getElementById("approveButton").disabled = !actionable;
+    document.getElementById("returnButton").disabled = !actionable;
+    document.getElementById("reopenButton").disabled = !reopenable;
   }
 
   function renderPanel() {
@@ -160,9 +162,11 @@
     document.getElementById("approvalEvidencia").value = lancamento.evidencia || "";
     document.getElementById("approvalObservacaoDiretoria").value = lancamento.observacaoDiretoria || "";
     renderReference(indicador, lancamento);
-    setActionDisabled(!canAct(lancamento));
+    setActionState(lancamento);
 
-    if (!canAct(lancamento)) {
+    if (canReopen(lancamento)) {
+      showMessage("Lançamento homologado. Use Reabrir para edição caso a unidade precise ajustar os dados.", "info");
+    } else if (!canAct(lancamento)) {
       showMessage(`Lançamento com status "${lancamento.status}" está disponível apenas para consulta.`, "warning");
     }
   }
@@ -251,6 +255,51 @@
     renderPanel();
   }
 
+  async function reopenLaunch() {
+    const lancamento = getSelectedLaunch();
+    if (!lancamento || !canReopen(lancamento)) return;
+
+    const observacaoDiretoria = document.getElementById("approvalObservacaoDiretoria").value.trim();
+    if (!observacaoDiretoria) {
+      showMessage("A reabertura exige observação da diretoria.", "warning");
+      return;
+    }
+
+    const original = { ...lancamento };
+    const today = new Date().toISOString().slice(0, 10);
+    const updated = {
+      ...lancamento,
+      status: "Reaberto",
+      observacaoDiretoria,
+      homologadoPor: "",
+      dataHomologacao: "",
+      reabertoPor: state.user.email || state.user.nome,
+      dataReabertura: today
+    };
+
+    state.lancamentos = state.lancamentos.map((item) => item.id === updated.id ? updated : item);
+    upsertHomologacao(updated, "Reaberto", observacaoDiretoria);
+
+    const mergedLaunches = mergeScopedLaunches();
+    state.data.lancamentos = mergedLaunches;
+    state.data.homologacoes = state.homologacoes;
+    DataStore.salvarLancamentos(mergedLaunches);
+    DataStore.saveLocal("homologacoes", state.homologacoes);
+    await DataStore.appendHistory({
+      usuario: state.user.email || state.user.nome,
+      acao: "reabertura_lancamento",
+      entidade: "lancamentos",
+      registroId: updated.id,
+      valorAnterior: original,
+      valorNovo: updated
+    });
+
+    showMessage("Lançamento reaberto para edição pela unidade apuradora.", "info");
+    refresh();
+    state.selectedId = updated.id;
+    renderPanel();
+  }
+
   function refresh() {
     fillFilters(state.lancamentos);
     renderTable(getFilteredLaunches());
@@ -271,6 +320,7 @@
 
     document.getElementById("approveButton").addEventListener("click", () => persistDecision("approve"));
     document.getElementById("returnButton").addEventListener("click", () => persistDecision("return"));
+    document.getElementById("reopenButton").addEventListener("click", reopenLaunch);
     document.getElementById("closeApprovalButton").addEventListener("click", () => {
       state.selectedId = null;
       document.getElementById("approvalPanel").hidden = true;

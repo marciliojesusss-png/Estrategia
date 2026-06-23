@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>CAIXA Loterias | Homologação</title>
-  <link rel="stylesheet" href="assets/css/styles.css">
-  <script src="assets/js/dataStore.js?v=ECOSSISTEMA-2025-001" defer></script>
-  <script src="assets/js/auth.js?v=ECOSSISTEMA-2025-001" defer></script>
-  <script src="assets/js/calculations.js?v=ECOSSISTEMA-2025-001" defer></script>
-  <script src="assets/js/formulas.js?v=ECOSSISTEMA-2025-001" defer></script>
-  <script src="assets/js/approvals.js?v=ECOSSISTEMA-2025-001" defer></script>
-  <script src="assets/js/app.js?v=ECOSSISTEMA-2025-001" defer></script>
+  <title>CAIXA Loterias | HomologaÃ§Ã£o</title>
+  <link rel="stylesheet" href="assets/css/styles.css?v=REABRIR-HOMOLOGADO-001">
+  <script src="assets/js/dataStore.js?v=REABRIR-HOMOLOGADO-001" defer></script>
+  <script src="assets/js/auth.js?v=REABRIR-HOMOLOGADO-001" defer></script>
+  <script src="assets/js/calculations.js?v=REABRIR-HOMOLOGADO-001" defer></script>
+  <script src="assets/js/formulas.js?v=REABRIR-HOMOLOGADO-001" defer></script>
+  <script src="assets/js/approvals.js?v=REABRIR-HOMOLOGADO-001" defer></script>
+  <script src="assets/js/app.js?v=REABRIR-HOMOLOGADO-001" defer></script>
 </head>
 <body data-page="homologacao">
   <div class="app-shell">
@@ -18,12 +18,12 @@
     <nav id="appNav" class="sidebar"></nav>
     <main class="content">
       <section class="page-heading">
-        <p class="eyebrow">Validação da diretoria</p>
-        <h1>Homologação</h1>
+        <p class="eyebrow">ValidaÃ§Ã£o da diretoria</p>
+        <h1>HomologaÃ§Ã£o</h1>
       </section>
 
-      <section class="filters" aria-label="Filtros da homologação">
-        <label>Mês <select data-filter="mes"></select></label>
+      <section class="filters" aria-label="Filtros da homologaÃ§Ã£o">
+        <label>MÃªs <select data-filter="mes"></select></label>
         <label>Status <select data-filter="status"></select></label>
       </section>
 
@@ -36,11 +36,11 @@
                 <th>Indicador</th>
                 <th>Unidade</th>
                 <th>Diretoria</th>
-                <th>Mês</th>
+                <th>MÃªs</th>
                 <th>Realizado</th>
                 <th>% atingido</th>
                 <th>Status</th>
-                <th>Ações</th>
+                <th>AÃ§Ãµes</th>
               </tr>
             </thead>
             <tbody id="homologacaoTable"></tbody>
@@ -51,8 +51,8 @@
       <section id="approvalPanel" class="panel detail-panel" hidden>
         <div class="detail-header">
           <div>
-            <p class="eyebrow">Análise da diretoria</p>
-            <h2 id="approvalTitle">Selecione um lançamento</h2>
+            <p class="eyebrow">AnÃ¡lise da diretoria</p>
+            <h2 id="approvalTitle">Selecione um lanÃ§amento</h2>
           </div>
           <span id="approvalStatusBadge" class="badge info"></span>
         </div>
@@ -66,21 +66,22 @@
             <textarea id="approvalJustificativa" rows="3" readonly></textarea>
           </label>
 
-          <label class="full-span">Observação da área
+          <label class="full-span">ObservaÃ§Ã£o da Ã¡rea
             <textarea id="approvalObservacaoArea" rows="3" readonly></textarea>
           </label>
 
-          <label class="full-span">Evidência
+          <label class="full-span">EvidÃªncia
             <textarea id="approvalEvidencia" rows="3" readonly></textarea>
           </label>
 
-          <label class="full-span">Observação da diretoria
+          <label class="full-span">ObservaÃ§Ã£o da diretoria
             <textarea id="approvalObservacaoDiretoria" rows="4"></textarea>
           </label>
 
           <div class="form-actions full-span">
             <button id="approveButton" class="primary-action" type="button">Homologar</button>
             <button id="returnButton" class="secondary-action" type="button">Devolver para ajuste</button>
+            <button id="reopenButton" class="secondary-action" type="button">Reabrir para edição</button>
             <button id="closeApprovalButton" class="secondary-action" type="button">Voltar</button>
           </div>
         </form>

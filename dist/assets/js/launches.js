@@ -30,6 +30,15 @@
     return Number.isFinite(number) ? number : null;
   }
 
+  function normalizarPercentual(value) {
+    if (value === "" || value === null || value === undefined) return null;
+    if (typeof IndicatorFormulas !== "undefined" && IndicatorFormulas.normalizarPercentual) {
+      return IndicatorFormulas.normalizarPercentual(value);
+    }
+    const number = toNumberOrNull(value);
+    return number === null ? null : number > 1 ? number / 100 : number;
+  }
+
   function badgeClass(status) {
     if (status === "Homologado") return "ok";
     if (status === "Devolvido para ajuste") return "danger";
@@ -70,6 +79,9 @@
   }
 
   function getMetaLabel(regra) {
+    if (regra?.parametrosCalculo?.metaMensalFixa || regra?.parametrosCalculo?.metaMensalPix) {
+      return "Meta mensal de referencia";
+    }
     return regra && regra.tipoConsolidacao === "ultima_posicao"
       ? "Meta de referência mensal"
       : "Meta de referência";
@@ -77,6 +89,15 @@
 
   function getRule(indicador) {
     return IndicatorFormulas.obterRegra(indicador, state.regras);
+  }
+
+  function getDisplayMeta(regra, lancamento) {
+    return regra?.parametrosCalculo?.metaMensalFixa ??
+      regra?.parametrosCalculo?.metaMensalPix ??
+      regra?.parametrosCalculo?.metaMinimaMelhoriasAno ??
+      regra?.parametrosCalculo?.metaReferencia ??
+      lancamento.metaMensal ??
+      regra?.metaAnualValor;
   }
 
   function getEntryValuesFromLaunch(lancamento, regra) {
@@ -90,6 +111,15 @@
 
   function isOfertasPersonalizadasRule(regra) {
     return Boolean(regra && (regra.camposEntrada || []).some((field) => field.nome === "baseClientesAtivos") && (regra.camposEntrada || []).some((field) => field.nome === "clientesComOfertaPersonalizada"));
+  }
+
+  function isOfertasPersonalizadasIndicator(indicador, regra) {
+    return Boolean(indicador && indicador.id === 1) || isOfertasPersonalizadasRule(regra);
+  }
+
+  function shouldHideGoalAchievementFields(indicador, regra) {
+    if (isOfertasPersonalizadasIndicator(indicador, regra)) return true;
+    return usesAutomaticCalculation(indicador, regra) && regra && (regra.unidadeMedida === "percentual" || regra.parametrosCalculo?.quantoMenorMelhor);
   }
 
   function fillFilters(lancamentos) {
@@ -129,13 +159,15 @@
       const indicador = porId[item.indicadorId];
       const regra = indicador ? getRule(indicador) : null;
       const actionLabel = isEditable(item) ? "Preencher" : "Consultar";
+      const resultadoMensal = item.resultadoMensal ?? item.realizadoMensal;
+      const situacao = item.situacaoCalculada || getCalculatedSituation(item.percentualAtingido ?? item.percentualAtingidoMensal);
       return `
         <tr>
           <td>${escapeHtml(indicador ? indicador.indicador : item.indicadorId)}</td>
           <td>${escapeHtml(item.nomeMes)}/${escapeHtml(item.ano)}</td>
-          <td>${Calculations.formatarValor(regra && regra.metaAnualValor !== null ? regra.metaAnualValor : item.metaMensal, regra && regra.unidadeMedida)}</td>
-          <td>${Calculations.formatarValor(item.resultadoMensal ?? item.realizadoMensal, regra && regra.unidadeMedida)}</td>
-          <td>${Calculations.formatarPercentual(item.percentualAtingido)}</td>
+          <td>${Calculations.formatarValor(getDisplayMeta(regra, item), regra && regra.unidadeMedida)}</td>
+          <td>${Calculations.formatarValor(resultadoMensal, regra && regra.unidadeMedida)}</td>
+          <td>${escapeHtml(situacao)}</td>
           <td><span class="badge ${badgeClass(item.status)}">${escapeHtml(item.status)}</span></td>
           <td><button class="secondary-action table-action" type="button" data-id="${item.id}">${actionLabel}</button></td>
         </tr>
@@ -185,16 +217,21 @@
   function enforceRuleFieldState(indicador, regra, disabled) {
     const automatic = usesAutomaticCalculation(indicador, regra);
     const manual = isManual(indicador);
+    const hideAtingimentoFields = shouldHideGoalAchievementFields(indicador, regra);
     const calculatedFields = [
       "launchMeta",
       "launchResultadoMensal",
       "launchPercentualCalculado",
       "launchResultadoAcumulado",
-      "launchPercentualAcumulado"
+      "launchPercentualAcumulado",
+      "launchSituacaoCalculada"
     ];
 
     document.getElementById("realizadoWrapper").hidden = automatic;
     document.getElementById("manualPercentWrapper").hidden = !manual;
+    document.getElementById("percentualMensalWrapper").hidden = hideAtingimentoFields;
+    document.getElementById("percentualAnualWrapper").hidden = hideAtingimentoFields;
+    document.getElementById("situacaoCalculadaWrapper").hidden = !automatic;
 
     const realizedInput = document.getElementById("launchRealizado");
     realizedInput.readOnly = automatic;
@@ -209,6 +246,14 @@
       input.readOnly = true;
       input.disabled = false;
     });
+  }
+
+  function getCalculatedSituation(percentualAtingido) {
+    const percentual = toNumberOrNull(percentualAtingido);
+    if (percentual === null) return "Sem dados";
+    if (percentual >= 1) return "Atingido";
+    if (percentual >= 0.8) return "Abaixo da meta";
+    return "Critico";
   }
 
   function renderDynamicFields(lancamento, regra) {
@@ -244,6 +289,37 @@
       details.push(["Crescimento em relação a 2025", Calculations.formatarPercentual(resultado.crescimentoVs2025)]);
     }
 
+    if (resultado.totalMelhoriasPlano2026 !== undefined) {
+      details.push(["Total de melhorias previstas no plano", resultado.totalMelhoriasPlano2026]);
+    }
+    if (resultado.metaMinimaMelhoriasAno !== undefined) {
+      details.push(["Meta anual de melhorias", resultado.metaMinimaMelhoriasAno]);
+    }
+    if (resultado.melhoriasEntreguesAcumuladas !== undefined) {
+      details.push(["Melhorias acumuladas no ano", resultado.melhoriasEntreguesAcumuladas]);
+    }
+    if (resultado.percentualMetaAnualAtingida !== undefined) {
+      details.push(["% da meta anual atingida", Calculations.formatarPercentual(resultado.percentualMetaAnualAtingida)]);
+    }
+    if (resultado.metaReferenciaMensal !== undefined) {
+      details.push(["Meta mensal de referencia", Calculations.formatarValor(resultado.metaReferenciaMensal, resultado.unidadeMedida)]);
+    }
+    if (resultado.percentualMetaMensal !== undefined) {
+      details.push(["% da meta mensal", Calculations.formatarPercentual(resultado.percentualMetaMensal)]);
+    }
+    if (resultado.metaAcumulada !== undefined) {
+      details.push(["Meta acumulada", Calculations.formatarValor(resultado.metaAcumulada, resultado.unidadeMedida)]);
+    }
+    if (resultado.realizadoAcumulado !== undefined) {
+      details.push(["Realizado acumulado", Calculations.formatarValor(resultado.realizadoAcumulado, resultado.unidadeMedida)]);
+    }
+    if (resultado.percentualMetaAcumulada !== undefined) {
+      details.push(["% atingido acumulado", Calculations.formatarPercentual(resultado.percentualMetaAcumulada)]);
+    }
+    if (resultado.percentualMetaAnual !== undefined) {
+      details.push(["AvanÃ§o sobre a meta anual", Calculations.formatarPercentual(resultado.percentualMetaAnual)]);
+    }
+
     wrapper.hidden = !details.length;
     target.innerHTML = details.map(([label, value]) => `
       <article class="detail-item">
@@ -272,7 +348,7 @@
 
     document.getElementById("launchId").value = lancamento.id;
     document.getElementById("launchMetaLabel").textContent = getMetaLabel(regra);
-    document.getElementById("launchMeta").value = Calculations.formatarValor(regra.metaAnualValor ?? lancamento.metaMensal, regra.unidadeMedida);
+    document.getElementById("launchMeta").value = Calculations.formatarValor(getDisplayMeta(regra, lancamento), regra.unidadeMedida);
     document.getElementById("launchRealizado").value = lancamento.realizadoMensal ?? "";
     document.getElementById("launchPercentualManual").value = lancamento.percentualManual ?? lancamento.percentualAtingido ?? "";
     document.getElementById("launchJustificativa").value = lancamento.justificativa || "";
@@ -296,9 +372,15 @@
     const values = {};
     document.querySelectorAll(".dynamic-entry-field").forEach((input) => {
       const type = input.dataset.entryType || "numero";
-      values[input.dataset.entryField] = type === "numero"
-        ? (input.value === "" ? "" : toNumberOrNull(input.value))
-        : input.value.trim();
+      if (type === "numero") {
+        values[input.dataset.entryField] = input.value === "" ? "" : toNumberOrNull(input.value);
+        return;
+      }
+      if (type === "percentual") {
+        values[input.dataset.entryField] = input.value === "" ? "" : normalizarPercentual(input.value);
+        return;
+      }
+      values[input.dataset.entryField] = input.value.trim();
     });
     return values;
   }
@@ -345,15 +427,23 @@
     if (!lancamento || !indicador) return null;
 
     const result = calculateLaunchValues(lancamento, indicador);
+    const hideAtingimentoFields = shouldHideGoalAchievementFields(indicador, result.regra);
+    document.getElementById("percentualMensalWrapper").hidden = hideAtingimentoFields;
+    document.getElementById("percentualAnualWrapper").hidden = hideAtingimentoFields;
+    document.getElementById("realizadoWrapper").hidden = usesAutomaticCalculation(indicador, result.regra);
+    document.getElementById("manualPercentWrapper").hidden = !isManual(indicador);
+    document.getElementById("situacaoCalculadaWrapper").hidden = !usesAutomaticCalculation(indicador, result.regra);
     document.getElementById("launchResultadoMensal").value = result.resultado.resultadoMensalFormatado || Calculations.formatarValor(result.resultado.resultadoMensal, result.resultado.unidadeMedida);
     document.getElementById("launchPercentualCalculado").value = result.resultado.percentualAtingidoMensalFormatado || Calculations.formatarPercentual(result.resultado.percentualAtingidoMensal);
     document.getElementById("launchResultadoAcumulado").value = result.resultado.resultadoOficialAnualFormatado || Calculations.formatarValor(result.resultado.resultadoOficialAnual, result.resultado.unidadeMedida);
     document.getElementById("launchPercentualAcumulado").value = result.resultado.percentualAtingidoAnualFormatado || Calculations.formatarPercentual(result.resultado.percentualAtingidoAnual);
+    document.getElementById("launchSituacaoCalculada").value = result.resultado.situacao || getCalculatedSituation(result.resultado.percentualAtingidoAnual ?? result.resultado.percentualAtingidoMensal);
     if (result.resultado.erro) {
       document.getElementById("launchResultadoMensal").value = "-";
       document.getElementById("launchPercentualCalculado").value = "-";
       document.getElementById("launchResultadoAcumulado").value = "-";
       document.getElementById("launchPercentualAcumulado").value = "-";
+      document.getElementById("launchSituacaoCalculada").value = "Sem cÃ¡lculo";
     }
     renderFormulaDetails(result.resultado);
     return result;
@@ -417,6 +507,7 @@
       percentualAtingidoAcumulado: calculation.resultado.percentualAtingidoAcumulado,
       percentualAtingidoAnual: calculation.resultado.percentualAtingidoAnual,
       resultadoOficialAnual: calculation.resultado.resultadoOficialAnual,
+      situacaoCalculada: calculation.resultado.situacao || getCalculatedSituation(calculation.resultado.percentualAtingidoAnual ?? calculation.resultado.percentualAtingidoMensal),
       status: action === "send" ? "Enviado para homologação" : "Em preenchimento",
       justificativa: document.getElementById("launchJustificativa").value.trim(),
       observacaoArea: document.getElementById("launchObservacaoArea").value.trim(),
@@ -465,6 +556,7 @@
         lancamento.percentualAtingidoAcumulado = resultado.percentualAtingidoAcumulado;
         lancamento.percentualAtingidoAnual = resultado.percentualAtingidoAnual;
         lancamento.resultadoOficialAnual = resultado.resultadoOficialAnual;
+        lancamento.situacaoCalculada = resultado.situacao || getCalculatedSituation(resultado.percentualAtingidoAnual ?? resultado.percentualAtingidoMensal);
       }
     });
   }
