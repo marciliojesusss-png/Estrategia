@@ -95,7 +95,7 @@
     const valor = toNumber(percentual);
     if (valor === null) return "Sem cálculo";
     if (valor >= 1) return "Atingido";
-    if (valor >= 0.8) return "Atenção";
+    if (valor >= 0.8) return "Abaixo da meta";
     return "Crítico";
   }
 
@@ -106,11 +106,11 @@
   }
 
   function formatarValor(valor, unidadeMedida) {
+    if (unidadeMedida === "moeda") {
+      return CurrencyBR.formatarMoedaBR(valor);
+    }
     const numero = toNumber(valor);
     if (numero === null) return "-";
-    if (unidadeMedida === "moeda") {
-      return numero.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-    }
     if (unidadeMedida === "percentual") {
       return formatarPercentual(numero);
     }
@@ -122,6 +122,8 @@
     calcularAcumulado,
     calcularStatusDesempenho,
     formatarPercentual,
-    formatarValor
+    formatarValor,
+    parseMoedaBR: CurrencyBR.parseMoedaBR,
+    formatarMoedaBR: CurrencyBR.formatarMoedaBR
   };
 })();

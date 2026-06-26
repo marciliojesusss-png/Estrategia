@@ -61,8 +61,8 @@
   },
   {
     "indicadorId": 8,
-    "tipoCalculo": "incremento_pontos_percentuais",
-    "tipoConsolidacao": "razao_acumulada_no_ano",
+    "tipoCalculo": "razao_canais_digitais",
+    "tipoConsolidacao": "razao_acumulada_no_periodo",
     "entradaExemplo": {
       "arrecadacaoCanaisEletronicosMes": 15,
       "arrecadacaoTotalProdutosLoteriasMes": 100
@@ -70,11 +70,11 @@
   },
   {
     "indicadorId": 9,
-    "tipoCalculo": "incremento_pontos_percentuais",
+    "tipoCalculo": "razao_pix",
     "tipoConsolidacao": "razao_acumulada_no_ano",
     "entradaExemplo": {
       "arrecadacaoPixMes": 25,
-      "arrecadacaoTotalCanaisEletronicosMes": 100
+      "arrecadacaoTotalCanaisEletronicosMes": 40
     }
   },
   {
@@ -105,7 +105,7 @@
     "entradaExemplo": {
       "mediaGeralGPTW": 60,
       "dataPesquisa": "2026-12-01",
-      "relatorioGPTW": "Relat?rio oficial"
+      "relatorioGPTW": "Relatório oficial"
     }
   },
   {
@@ -163,7 +163,7 @@
     "entradaExemplo": {
       "elementosExecutadosAcumulado": 10,
       "elementoRGF": "1",
-      "acaoMelhoria": "A?o",
+      "acaoMelhoria": "Ação",
       "statusAcao": "Executada",
       "dataExecucao": "2026-12-01"
     }
@@ -184,7 +184,7 @@
     "entradaExemplo": {
       "totalAcoesPropostas": 10,
       "totalAcoesRealizadas": 10,
-      "statusAcao": "Conclu?da"
+      "statusAcao": "Concluída"
     }
   },
   {

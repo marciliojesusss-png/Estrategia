@@ -39,7 +39,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-01",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 2,
@@ -81,14 +83,16 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-02",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 3,
     "indicadorId": 1,
     "ano": 2026,
     "mes": 3,
-    "nomeMes": "Mar?o",
+    "nomeMes": "Março",
     "plano": "PEI",
     "pilar": "Cliente no Centro",
     "unidadeApuradora": "SUCOL",
@@ -123,7 +127,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-03",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 4,
@@ -165,7 +171,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-04",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 5,
@@ -207,7 +215,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-05",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 6,
@@ -249,7 +259,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-06",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 7,
@@ -291,7 +303,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-07",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 8,
@@ -333,7 +347,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-08",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 9,
@@ -375,7 +391,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-09",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 10,
@@ -417,7 +435,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-10",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 11,
@@ -459,7 +479,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-11",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 12,
@@ -501,7 +523,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-12",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 13,
@@ -513,7 +537,7 @@
     "pilar": "Cliente no Centro",
     "unidadeApuradora": "SUCOL",
     "diretoriaResponsavel": "DICOT",
-    "metaMensal": 58.0,
+    "metaMensal": 58,
     "metaAnualDescricao": "reduzir 20% do gap em relação à nota de 70. (Nota = 60)",
     "status": "Não iniciado",
     "camposEntrada": {},
@@ -543,7 +567,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-01",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 14,
@@ -555,7 +581,7 @@
     "pilar": "Cliente no Centro",
     "unidadeApuradora": "SUCOL",
     "diretoriaResponsavel": "DICOT",
-    "metaMensal": 58.0,
+    "metaMensal": 58,
     "metaAnualDescricao": "reduzir 20% do gap em relação à nota de 70. (Nota = 60)",
     "status": "Não iniciado",
     "camposEntrada": {},
@@ -585,19 +611,21 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-02",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 15,
     "indicadorId": 2,
     "ano": 2026,
     "mes": 3,
-    "nomeMes": "Mar?o",
+    "nomeMes": "Março",
     "plano": "PEI",
     "pilar": "Cliente no Centro",
     "unidadeApuradora": "SUCOL",
     "diretoriaResponsavel": "DICOT",
-    "metaMensal": 58.0,
+    "metaMensal": 58,
     "metaAnualDescricao": "reduzir 20% do gap em relação à nota de 70. (Nota = 60)",
     "status": "Não iniciado",
     "camposEntrada": {},
@@ -627,7 +655,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-03",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 16,
@@ -669,7 +699,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-04",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 17,
@@ -711,7 +743,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-05",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 18,
@@ -753,7 +787,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-06",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 19,
@@ -795,7 +831,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-07",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 20,
@@ -837,7 +875,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-08",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 21,
@@ -879,7 +919,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-09",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 22,
@@ -921,7 +963,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-10",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 23,
@@ -963,7 +1007,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-11",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 24,
@@ -1005,7 +1051,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-12",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 25,
@@ -1047,7 +1095,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-01",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 26,
@@ -1089,14 +1139,16 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-02",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 27,
     "indicadorId": 3,
     "ano": 2026,
     "mes": 3,
-    "nomeMes": "Mar?o",
+    "nomeMes": "Março",
     "plano": "PN",
     "pilar": "Cliente no Centro",
     "unidadeApuradora": "SUCOL",
@@ -1131,7 +1183,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-03",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 28,
@@ -1173,7 +1227,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-04",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 29,
@@ -1215,7 +1271,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-05",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 30,
@@ -1257,7 +1315,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-06",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 31,
@@ -1299,7 +1359,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-07",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 32,
@@ -1341,7 +1403,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-08",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 33,
@@ -1383,7 +1447,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-09",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 34,
@@ -1425,7 +1491,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-10",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 35,
@@ -1467,7 +1535,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-11",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 36,
@@ -1509,7 +1579,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-12",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 37,
@@ -1551,7 +1623,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-01",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 38,
@@ -1593,14 +1667,16 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-02",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 39,
     "indicadorId": 4,
     "ano": 2026,
     "mes": 3,
-    "nomeMes": "Mar?o",
+    "nomeMes": "Março",
     "plano": "PN",
     "pilar": "Cliente no Centro",
     "unidadeApuradora": "SUCOL",
@@ -1635,7 +1711,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-03",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 40,
@@ -1677,7 +1755,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-04",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 41,
@@ -1719,7 +1799,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-05",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 42,
@@ -1761,7 +1843,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-06",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 43,
@@ -1803,7 +1887,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-07",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 44,
@@ -1845,7 +1931,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-08",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 45,
@@ -1887,7 +1975,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-09",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 46,
@@ -1929,7 +2019,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-10",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 47,
@@ -1971,7 +2063,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-11",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 48,
@@ -2013,7 +2107,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-12",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 49,
@@ -2055,7 +2151,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-01",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 50,
@@ -2097,14 +2195,16 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-02",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 51,
     "indicadorId": 5,
     "ano": 2026,
     "mes": 3,
-    "nomeMes": "Mar?o",
+    "nomeMes": "Março",
     "plano": "PEI",
     "pilar": "Eficiência e Rentabilidade",
     "unidadeApuradora": "SUCOL",
@@ -2139,7 +2239,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-03",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 52,
@@ -2181,7 +2283,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-04",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 53,
@@ -2223,7 +2327,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-05",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 54,
@@ -2265,7 +2371,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-06",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 55,
@@ -2307,7 +2415,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-07",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 56,
@@ -2349,7 +2459,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-08",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 57,
@@ -2391,7 +2503,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-09",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 58,
@@ -2433,7 +2547,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-10",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 59,
@@ -2475,7 +2591,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-11",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 60,
@@ -2517,7 +2635,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-12",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 61,
@@ -2559,7 +2679,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-01",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 62,
@@ -2601,14 +2723,16 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-02",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 63,
     "indicadorId": 6,
     "ano": 2026,
     "mes": 3,
-    "nomeMes": "Mar?o",
+    "nomeMes": "Março",
     "plano": "PEI",
     "pilar": "Eficiência e Rentabilidade",
     "unidadeApuradora": "SUCTF",
@@ -2643,7 +2767,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-03",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 64,
@@ -2685,7 +2811,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-04",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 65,
@@ -2727,7 +2855,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-05",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 66,
@@ -2769,7 +2899,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-06",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 67,
@@ -2811,7 +2943,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-07",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 68,
@@ -2853,7 +2987,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-08",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 69,
@@ -2895,7 +3031,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-09",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 70,
@@ -2937,7 +3075,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-10",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 71,
@@ -2979,7 +3119,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-11",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 72,
@@ -3021,7 +3163,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-12",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 73,
@@ -3063,7 +3207,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-01",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 74,
@@ -3105,14 +3251,16 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-02",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 75,
     "indicadorId": 7,
     "ano": 2026,
     "mes": 3,
-    "nomeMes": "Mar?o",
+    "nomeMes": "Março",
     "plano": "PEI",
     "pilar": "Eficiência e Rentabilidade",
     "unidadeApuradora": "SUCTF",
@@ -3147,7 +3295,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-03",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 76,
@@ -3189,7 +3339,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-04",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 77,
@@ -3231,7 +3383,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-05",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 78,
@@ -3273,7 +3427,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-06",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 79,
@@ -3315,7 +3471,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-07",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 80,
@@ -3357,7 +3515,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-08",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 81,
@@ -3399,7 +3559,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-09",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 82,
@@ -3441,7 +3603,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-10",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 83,
@@ -3483,7 +3647,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-11",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 84,
@@ -3525,7 +3691,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-12",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 85,
@@ -3535,9 +3703,9 @@
     "nomeMes": "Janeiro",
     "plano": "PN",
     "pilar": "Eficiência e Rentabilidade",
-    "unidadeApuradora": "",
-    "diretoriaResponsavel": "",
-    "metaMensal": 0.05,
+    "unidadeApuradora": "SUCOL",
+    "diretoriaResponsavel": "DICOT",
+    "metaMensal": 0.2805,
     "metaAnualDescricao": "Aumentar em 05 p.p. as vendas provenientes de canais digitais.",
     "status": "Não iniciado",
     "camposEntrada": {},
@@ -3567,7 +3735,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-01",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 86,
@@ -3577,9 +3747,9 @@
     "nomeMes": "Fevereiro",
     "plano": "PN",
     "pilar": "Eficiência e Rentabilidade",
-    "unidadeApuradora": "",
-    "diretoriaResponsavel": "",
-    "metaMensal": 0.05,
+    "unidadeApuradora": "SUCOL",
+    "diretoriaResponsavel": "DICOT",
+    "metaMensal": 0.2805,
     "metaAnualDescricao": "Aumentar em 05 p.p. as vendas provenientes de canais digitais.",
     "status": "Não iniciado",
     "camposEntrada": {},
@@ -3609,19 +3779,21 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-02",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 87,
     "indicadorId": 8,
     "ano": 2026,
     "mes": 3,
-    "nomeMes": "Mar?o",
+    "nomeMes": "Março",
     "plano": "PN",
     "pilar": "Eficiência e Rentabilidade",
-    "unidadeApuradora": "",
-    "diretoriaResponsavel": "",
-    "metaMensal": 0.05,
+    "unidadeApuradora": "SUCOL",
+    "diretoriaResponsavel": "DICOT",
+    "metaMensal": 0.2805,
     "metaAnualDescricao": "Aumentar em 05 p.p. as vendas provenientes de canais digitais.",
     "status": "Não iniciado",
     "camposEntrada": {},
@@ -3651,7 +3823,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-03",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 88,
@@ -3661,9 +3835,9 @@
     "nomeMes": "Abril",
     "plano": "PN",
     "pilar": "Eficiência e Rentabilidade",
-    "unidadeApuradora": "",
-    "diretoriaResponsavel": "",
-    "metaMensal": null,
+    "unidadeApuradora": "SUCOL",
+    "diretoriaResponsavel": "DICOT",
+    "metaMensal": 0.2805,
     "metaAnualDescricao": "Aumentar em 05 p.p. as vendas provenientes de canais digitais.",
     "status": "Não iniciado",
     "camposEntrada": {},
@@ -3693,7 +3867,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-04",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 89,
@@ -3703,9 +3879,9 @@
     "nomeMes": "Maio",
     "plano": "PN",
     "pilar": "Eficiência e Rentabilidade",
-    "unidadeApuradora": "",
-    "diretoriaResponsavel": "",
-    "metaMensal": null,
+    "unidadeApuradora": "SUCOL",
+    "diretoriaResponsavel": "DICOT",
+    "metaMensal": 0.2805,
     "metaAnualDescricao": "Aumentar em 05 p.p. as vendas provenientes de canais digitais.",
     "status": "Não iniciado",
     "camposEntrada": {},
@@ -3735,7 +3911,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-05",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 90,
@@ -3745,9 +3923,9 @@
     "nomeMes": "Junho",
     "plano": "PN",
     "pilar": "Eficiência e Rentabilidade",
-    "unidadeApuradora": "",
-    "diretoriaResponsavel": "",
-    "metaMensal": null,
+    "unidadeApuradora": "SUCOL",
+    "diretoriaResponsavel": "DICOT",
+    "metaMensal": 0.2805,
     "metaAnualDescricao": "Aumentar em 05 p.p. as vendas provenientes de canais digitais.",
     "status": "Não iniciado",
     "camposEntrada": {},
@@ -3777,7 +3955,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-06",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 91,
@@ -3787,9 +3967,9 @@
     "nomeMes": "Julho",
     "plano": "PN",
     "pilar": "Eficiência e Rentabilidade",
-    "unidadeApuradora": "",
-    "diretoriaResponsavel": "",
-    "metaMensal": null,
+    "unidadeApuradora": "SUCOL",
+    "diretoriaResponsavel": "DICOT",
+    "metaMensal": 0.2805,
     "metaAnualDescricao": "Aumentar em 05 p.p. as vendas provenientes de canais digitais.",
     "status": "Não iniciado",
     "camposEntrada": {},
@@ -3819,7 +3999,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-07",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 92,
@@ -3829,9 +4011,9 @@
     "nomeMes": "Agosto",
     "plano": "PN",
     "pilar": "Eficiência e Rentabilidade",
-    "unidadeApuradora": "",
-    "diretoriaResponsavel": "",
-    "metaMensal": null,
+    "unidadeApuradora": "SUCOL",
+    "diretoriaResponsavel": "DICOT",
+    "metaMensal": 0.2805,
     "metaAnualDescricao": "Aumentar em 05 p.p. as vendas provenientes de canais digitais.",
     "status": "Não iniciado",
     "camposEntrada": {},
@@ -3861,7 +4043,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-08",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 93,
@@ -3871,9 +4055,9 @@
     "nomeMes": "Setembro",
     "plano": "PN",
     "pilar": "Eficiência e Rentabilidade",
-    "unidadeApuradora": "",
-    "diretoriaResponsavel": "",
-    "metaMensal": null,
+    "unidadeApuradora": "SUCOL",
+    "diretoriaResponsavel": "DICOT",
+    "metaMensal": 0.2805,
     "metaAnualDescricao": "Aumentar em 05 p.p. as vendas provenientes de canais digitais.",
     "status": "Não iniciado",
     "camposEntrada": {},
@@ -3903,7 +4087,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-09",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 94,
@@ -3913,9 +4099,9 @@
     "nomeMes": "Outubro",
     "plano": "PN",
     "pilar": "Eficiência e Rentabilidade",
-    "unidadeApuradora": "",
-    "diretoriaResponsavel": "",
-    "metaMensal": null,
+    "unidadeApuradora": "SUCOL",
+    "diretoriaResponsavel": "DICOT",
+    "metaMensal": 0.2805,
     "metaAnualDescricao": "Aumentar em 05 p.p. as vendas provenientes de canais digitais.",
     "status": "Não iniciado",
     "camposEntrada": {},
@@ -3945,7 +4131,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-10",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 95,
@@ -3955,9 +4143,9 @@
     "nomeMes": "Novembro",
     "plano": "PN",
     "pilar": "Eficiência e Rentabilidade",
-    "unidadeApuradora": "",
-    "diretoriaResponsavel": "",
-    "metaMensal": null,
+    "unidadeApuradora": "SUCOL",
+    "diretoriaResponsavel": "DICOT",
+    "metaMensal": 0.2805,
     "metaAnualDescricao": "Aumentar em 05 p.p. as vendas provenientes de canais digitais.",
     "status": "Não iniciado",
     "camposEntrada": {},
@@ -3987,7 +4175,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-11",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 96,
@@ -3997,9 +4187,9 @@
     "nomeMes": "Dezembro",
     "plano": "PN",
     "pilar": "Eficiência e Rentabilidade",
-    "unidadeApuradora": "",
-    "diretoriaResponsavel": "",
-    "metaMensal": null,
+    "unidadeApuradora": "SUCOL",
+    "diretoriaResponsavel": "DICOT",
+    "metaMensal": 0.2805,
     "metaAnualDescricao": "Aumentar em 05 p.p. as vendas provenientes de canais digitais.",
     "status": "Não iniciado",
     "camposEntrada": {},
@@ -4029,7 +4219,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-12",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 97,
@@ -4041,8 +4233,8 @@
     "pilar": "Eficiência e Rentabilidade",
     "unidadeApuradora": "SULOT",
     "diretoriaResponsavel": "DICOT",
-    "metaMensal": 311672408.59,
-    "metaAnualDescricao": "Aumentar em 05 p.p. as vendas com o meio de pagamento Pix no canal eletrônico.",
+    "metaMensal": 0.61,
+    "metaAnualDescricao": "Aumentar em 05 p.p. as vendas com o meio de pagamento PIX no canal eletrônico.",
     "status": "Não iniciado",
     "camposEntrada": {},
     "realizado": null,
@@ -4071,7 +4263,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-01",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 98,
@@ -4083,8 +4277,8 @@
     "pilar": "Eficiência e Rentabilidade",
     "unidadeApuradora": "SULOT",
     "diretoriaResponsavel": "DICOT",
-    "metaMensal": 623344817.18,
-    "metaAnualDescricao": "Aumentar em 05 p.p. as vendas com o meio de pagamento Pix no canal eletrônico.",
+    "metaMensal": 0.61,
+    "metaAnualDescricao": "Aumentar em 05 p.p. as vendas com o meio de pagamento PIX no canal eletrônico.",
     "status": "Não iniciado",
     "camposEntrada": {},
     "realizado": null,
@@ -4113,20 +4307,22 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-02",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 99,
     "indicadorId": 9,
     "ano": 2026,
     "mes": 3,
-    "nomeMes": "Mar?o",
+    "nomeMes": "Março",
     "plano": "PN",
     "pilar": "Eficiência e Rentabilidade",
     "unidadeApuradora": "SULOT",
     "diretoriaResponsavel": "DICOT",
-    "metaMensal": 935017225.76,
-    "metaAnualDescricao": "Aumentar em 05 p.p. as vendas com o meio de pagamento Pix no canal eletrônico.",
+    "metaMensal": 0.61,
+    "metaAnualDescricao": "Aumentar em 05 p.p. as vendas com o meio de pagamento PIX no canal eletrônico.",
     "status": "Não iniciado",
     "camposEntrada": {},
     "realizado": null,
@@ -4155,7 +4351,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-03",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 100,
@@ -4167,8 +4365,8 @@
     "pilar": "Eficiência e Rentabilidade",
     "unidadeApuradora": "SULOT",
     "diretoriaResponsavel": "DICOT",
-    "metaMensal": null,
-    "metaAnualDescricao": "Aumentar em 05 p.p. as vendas com o meio de pagamento Pix no canal eletrônico.",
+    "metaMensal": 0.62,
+    "metaAnualDescricao": "Aumentar em 05 p.p. as vendas com o meio de pagamento PIX no canal eletrônico.",
     "status": "Não iniciado",
     "camposEntrada": {},
     "realizado": null,
@@ -4197,7 +4395,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-04",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 101,
@@ -4209,8 +4409,8 @@
     "pilar": "Eficiência e Rentabilidade",
     "unidadeApuradora": "SULOT",
     "diretoriaResponsavel": "DICOT",
-    "metaMensal": null,
-    "metaAnualDescricao": "Aumentar em 05 p.p. as vendas com o meio de pagamento Pix no canal eletrônico.",
+    "metaMensal": 0.62,
+    "metaAnualDescricao": "Aumentar em 05 p.p. as vendas com o meio de pagamento PIX no canal eletrônico.",
     "status": "Não iniciado",
     "camposEntrada": {},
     "realizado": null,
@@ -4239,7 +4439,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-05",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 102,
@@ -4251,8 +4453,8 @@
     "pilar": "Eficiência e Rentabilidade",
     "unidadeApuradora": "SULOT",
     "diretoriaResponsavel": "DICOT",
-    "metaMensal": null,
-    "metaAnualDescricao": "Aumentar em 05 p.p. as vendas com o meio de pagamento Pix no canal eletrônico.",
+    "metaMensal": 0.62,
+    "metaAnualDescricao": "Aumentar em 05 p.p. as vendas com o meio de pagamento PIX no canal eletrônico.",
     "status": "Não iniciado",
     "camposEntrada": {},
     "realizado": null,
@@ -4281,7 +4483,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-06",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 103,
@@ -4293,8 +4497,8 @@
     "pilar": "Eficiência e Rentabilidade",
     "unidadeApuradora": "SULOT",
     "diretoriaResponsavel": "DICOT",
-    "metaMensal": null,
-    "metaAnualDescricao": "Aumentar em 05 p.p. as vendas com o meio de pagamento Pix no canal eletrônico.",
+    "metaMensal": 0.63,
+    "metaAnualDescricao": "Aumentar em 05 p.p. as vendas com o meio de pagamento PIX no canal eletrônico.",
     "status": "Não iniciado",
     "camposEntrada": {},
     "realizado": null,
@@ -4323,7 +4527,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-07",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 104,
@@ -4335,8 +4541,8 @@
     "pilar": "Eficiência e Rentabilidade",
     "unidadeApuradora": "SULOT",
     "diretoriaResponsavel": "DICOT",
-    "metaMensal": null,
-    "metaAnualDescricao": "Aumentar em 05 p.p. as vendas com o meio de pagamento Pix no canal eletrônico.",
+    "metaMensal": 0.63,
+    "metaAnualDescricao": "Aumentar em 05 p.p. as vendas com o meio de pagamento PIX no canal eletrônico.",
     "status": "Não iniciado",
     "camposEntrada": {},
     "realizado": null,
@@ -4365,7 +4571,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-08",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 105,
@@ -4377,8 +4585,8 @@
     "pilar": "Eficiência e Rentabilidade",
     "unidadeApuradora": "SULOT",
     "diretoriaResponsavel": "DICOT",
-    "metaMensal": null,
-    "metaAnualDescricao": "Aumentar em 05 p.p. as vendas com o meio de pagamento Pix no canal eletrônico.",
+    "metaMensal": 0.63,
+    "metaAnualDescricao": "Aumentar em 05 p.p. as vendas com o meio de pagamento PIX no canal eletrônico.",
     "status": "Não iniciado",
     "camposEntrada": {},
     "realizado": null,
@@ -4407,7 +4615,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-09",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 106,
@@ -4419,8 +4629,8 @@
     "pilar": "Eficiência e Rentabilidade",
     "unidadeApuradora": "SULOT",
     "diretoriaResponsavel": "DICOT",
-    "metaMensal": null,
-    "metaAnualDescricao": "Aumentar em 05 p.p. as vendas com o meio de pagamento Pix no canal eletrônico.",
+    "metaMensal": 0.65,
+    "metaAnualDescricao": "Aumentar em 05 p.p. as vendas com o meio de pagamento PIX no canal eletrônico.",
     "status": "Não iniciado",
     "camposEntrada": {},
     "realizado": null,
@@ -4449,7 +4659,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-10",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 107,
@@ -4461,8 +4673,8 @@
     "pilar": "Eficiência e Rentabilidade",
     "unidadeApuradora": "SULOT",
     "diretoriaResponsavel": "DICOT",
-    "metaMensal": null,
-    "metaAnualDescricao": "Aumentar em 05 p.p. as vendas com o meio de pagamento Pix no canal eletrônico.",
+    "metaMensal": 0.65,
+    "metaAnualDescricao": "Aumentar em 05 p.p. as vendas com o meio de pagamento PIX no canal eletrônico.",
     "status": "Não iniciado",
     "camposEntrada": {},
     "realizado": null,
@@ -4491,7 +4703,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-11",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 108,
@@ -4503,8 +4717,8 @@
     "pilar": "Eficiência e Rentabilidade",
     "unidadeApuradora": "SULOT",
     "diretoriaResponsavel": "DICOT",
-    "metaMensal": null,
-    "metaAnualDescricao": "Aumentar em 05 p.p. as vendas com o meio de pagamento Pix no canal eletrônico.",
+    "metaMensal": 0.65,
+    "metaAnualDescricao": "Aumentar em 05 p.p. as vendas com o meio de pagamento PIX no canal eletrônico.",
     "status": "Não iniciado",
     "camposEntrada": {},
     "realizado": null,
@@ -4533,7 +4747,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-12",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 109,
@@ -4545,7 +4761,7 @@
     "pilar": "Tecnologia e Inovação",
     "unidadeApuradora": "SUCOL",
     "diretoriaResponsavel": "DICOT",
-    "metaMensal": 0.0,
+    "metaMensal": 0,
     "metaAnualDescricao": "Piloto ou MVP (Mínimo Produto Viável) da Plataforma de Jogos",
     "status": "Não iniciado",
     "camposEntrada": {},
@@ -4575,7 +4791,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-01",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 110,
@@ -4587,7 +4805,7 @@
     "pilar": "Tecnologia e Inovação",
     "unidadeApuradora": "SUCOL",
     "diretoriaResponsavel": "DICOT",
-    "metaMensal": 0.0,
+    "metaMensal": 0,
     "metaAnualDescricao": "Piloto ou MVP (Mínimo Produto Viável) da Plataforma de Jogos",
     "status": "Não iniciado",
     "camposEntrada": {},
@@ -4617,19 +4835,21 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-02",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 111,
     "indicadorId": 10,
     "ano": 2026,
     "mes": 3,
-    "nomeMes": "Mar?o",
+    "nomeMes": "Março",
     "plano": "PEI",
     "pilar": "Tecnologia e Inovação",
     "unidadeApuradora": "SUCOL",
     "diretoriaResponsavel": "DICOT",
-    "metaMensal": 0.0,
+    "metaMensal": 0,
     "metaAnualDescricao": "Piloto ou MVP (Mínimo Produto Viável) da Plataforma de Jogos",
     "status": "Não iniciado",
     "camposEntrada": {},
@@ -4659,7 +4879,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-03",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 112,
@@ -4701,7 +4923,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-04",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 113,
@@ -4743,7 +4967,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-05",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 114,
@@ -4785,7 +5011,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-06",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 115,
@@ -4827,7 +5055,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-07",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 116,
@@ -4869,7 +5099,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-08",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 117,
@@ -4911,7 +5143,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-09",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 118,
@@ -4953,7 +5187,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-10",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 119,
@@ -4995,7 +5231,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-11",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 120,
@@ -5037,7 +5275,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-12",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 121,
@@ -5049,7 +5289,7 @@
     "pilar": "Tecnologia e Inovação",
     "unidadeApuradora": "SUCOL",
     "diretoriaResponsavel": "DICOT",
-    "metaMensal": 0.0,
+    "metaMensal": 0,
     "metaAnualDescricao": "Contratação e/ou celebração de parceria para o desenvolvimento soluções de TIC até o final do exercício de 2026",
     "status": "Não iniciado",
     "camposEntrada": {},
@@ -5079,7 +5319,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-01",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 122,
@@ -5091,7 +5333,7 @@
     "pilar": "Tecnologia e Inovação",
     "unidadeApuradora": "SUCOL",
     "diretoriaResponsavel": "DICOT",
-    "metaMensal": 0.0,
+    "metaMensal": 0,
     "metaAnualDescricao": "Contratação e/ou celebração de parceria para o desenvolvimento soluções de TIC até o final do exercício de 2026",
     "status": "Não iniciado",
     "camposEntrada": {},
@@ -5121,19 +5363,21 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-02",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 123,
     "indicadorId": 11,
     "ano": 2026,
     "mes": 3,
-    "nomeMes": "Mar?o",
+    "nomeMes": "Março",
     "plano": "PN",
     "pilar": "Tecnologia e Inovação",
     "unidadeApuradora": "SUCOL",
     "diretoriaResponsavel": "DICOT",
-    "metaMensal": 0.0,
+    "metaMensal": 0,
     "metaAnualDescricao": "Contratação e/ou celebração de parceria para o desenvolvimento soluções de TIC até o final do exercício de 2026",
     "status": "Não iniciado",
     "camposEntrada": {},
@@ -5163,7 +5407,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-03",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 124,
@@ -5205,7 +5451,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-04",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 125,
@@ -5247,7 +5495,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-05",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 126,
@@ -5289,7 +5539,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-06",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 127,
@@ -5331,7 +5583,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-07",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 128,
@@ -5373,7 +5627,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-08",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 129,
@@ -5415,7 +5671,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-09",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 130,
@@ -5457,7 +5715,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-10",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 131,
@@ -5499,7 +5759,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-11",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 132,
@@ -5541,7 +5803,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-12",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 133,
@@ -5553,7 +5817,7 @@
     "pilar": "Pessoas, Cultura e Agilidade",
     "unidadeApuradora": "",
     "diretoriaResponsavel": "",
-    "metaMensal": 0.0,
+    "metaMensal": 0,
     "metaAnualDescricao": "Média Geral => 60",
     "status": "Não iniciado",
     "camposEntrada": {},
@@ -5583,7 +5847,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-01",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 134,
@@ -5595,7 +5861,7 @@
     "pilar": "Pessoas, Cultura e Agilidade",
     "unidadeApuradora": "",
     "diretoriaResponsavel": "",
-    "metaMensal": 0.0,
+    "metaMensal": 0,
     "metaAnualDescricao": "Média Geral => 60",
     "status": "Não iniciado",
     "camposEntrada": {},
@@ -5625,19 +5891,21 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-02",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 135,
     "indicadorId": 12,
     "ano": 2026,
     "mes": 3,
-    "nomeMes": "Mar?o",
+    "nomeMes": "Março",
     "plano": "PEI",
     "pilar": "Pessoas, Cultura e Agilidade",
     "unidadeApuradora": "",
     "diretoriaResponsavel": "",
-    "metaMensal": 0.0,
+    "metaMensal": 0,
     "metaAnualDescricao": "Média Geral => 60",
     "status": "Não iniciado",
     "camposEntrada": {},
@@ -5667,7 +5935,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-03",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 136,
@@ -5709,7 +5979,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-04",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 137,
@@ -5751,7 +6023,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-05",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 138,
@@ -5793,7 +6067,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-06",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 139,
@@ -5835,7 +6111,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-07",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 140,
@@ -5877,7 +6155,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-08",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 141,
@@ -5919,7 +6199,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-09",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 142,
@@ -5961,7 +6243,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-10",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 143,
@@ -6003,7 +6287,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-11",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 144,
@@ -6045,7 +6331,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-12",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 145,
@@ -6087,7 +6375,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-01",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 146,
@@ -6129,14 +6419,16 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-02",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 147,
     "indicadorId": 13,
     "ano": 2026,
     "mes": 3,
-    "nomeMes": "Mar?o",
+    "nomeMes": "Março",
     "plano": "PN",
     "pilar": "Pessoas, Cultura e Agilidade",
     "unidadeApuradora": "SUCTF",
@@ -6171,7 +6463,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-03",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 148,
@@ -6213,7 +6507,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-04",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 149,
@@ -6255,7 +6551,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-05",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 150,
@@ -6297,7 +6595,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-06",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 151,
@@ -6339,7 +6639,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-07",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 152,
@@ -6381,7 +6683,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-08",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 153,
@@ -6423,7 +6727,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-09",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 154,
@@ -6465,7 +6771,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-10",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 155,
@@ -6507,7 +6815,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-11",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 156,
@@ -6549,7 +6859,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-12",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 157,
@@ -6591,7 +6903,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-01",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 158,
@@ -6633,14 +6947,16 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-02",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 159,
     "indicadorId": 14,
     "ano": 2026,
     "mes": 3,
-    "nomeMes": "Mar?o",
+    "nomeMes": "Março",
     "plano": "PN",
     "pilar": "Pessoas, Cultura e Agilidade",
     "unidadeApuradora": "SUCTF",
@@ -6675,7 +6991,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-03",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 160,
@@ -6717,7 +7035,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-04",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 161,
@@ -6759,7 +7079,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-05",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 162,
@@ -6801,7 +7123,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-06",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 163,
@@ -6843,7 +7167,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-07",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 164,
@@ -6885,7 +7211,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-08",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 165,
@@ -6927,7 +7255,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-09",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 166,
@@ -6969,7 +7299,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-10",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 167,
@@ -7011,7 +7343,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-11",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 168,
@@ -7053,7 +7387,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-12",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 169,
@@ -7065,7 +7401,7 @@
     "pilar": "Pessoas, Cultura e Agilidade",
     "unidadeApuradora": "GERIN",
     "diretoriaResponsavel": "DILOT",
-    "metaMensal": 0.0,
+    "metaMensal": 0,
     "metaAnualDescricao": "90% dos Dirigentes e empregados ativos com função, lotados na Companhia há mais de 60 dias, capacitados na Trilha de Desenvolvimento.",
     "status": "Não iniciado",
     "camposEntrada": {},
@@ -7095,7 +7431,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-01",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 170,
@@ -7107,7 +7445,7 @@
     "pilar": "Pessoas, Cultura e Agilidade",
     "unidadeApuradora": "GERIN",
     "diretoriaResponsavel": "DILOT",
-    "metaMensal": 0.0,
+    "metaMensal": 0,
     "metaAnualDescricao": "90% dos Dirigentes e empregados ativos com função, lotados na Companhia há mais de 60 dias, capacitados na Trilha de Desenvolvimento.",
     "status": "Não iniciado",
     "camposEntrada": {},
@@ -7137,19 +7475,21 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-02",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 171,
     "indicadorId": 15,
     "ano": 2026,
     "mes": 3,
-    "nomeMes": "Mar?o",
+    "nomeMes": "Março",
     "plano": "PN",
     "pilar": "Pessoas, Cultura e Agilidade",
     "unidadeApuradora": "GERIN",
     "diretoriaResponsavel": "DILOT",
-    "metaMensal": 0.0,
+    "metaMensal": 0,
     "metaAnualDescricao": "90% dos Dirigentes e empregados ativos com função, lotados na Companhia há mais de 60 dias, capacitados na Trilha de Desenvolvimento.",
     "status": "Não iniciado",
     "camposEntrada": {},
@@ -7179,7 +7519,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-03",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 172,
@@ -7221,7 +7563,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-04",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 173,
@@ -7263,7 +7607,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-05",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 174,
@@ -7305,7 +7651,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-06",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 175,
@@ -7347,7 +7695,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-07",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 176,
@@ -7389,7 +7739,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-08",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 177,
@@ -7431,7 +7783,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-09",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 178,
@@ -7473,7 +7827,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-10",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 179,
@@ -7515,7 +7871,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-11",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 180,
@@ -7557,7 +7915,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-12",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 181,
@@ -7569,7 +7929,7 @@
     "pilar": "Sustentabilidade e Cidadania",
     "unidadeApuradora": "SULOT",
     "diretoriaResponsavel": "DICOT",
-    "metaMensal": 0.0,
+    "metaMensal": 0,
     "metaAnualDescricao": "02 (duas) iniciativas apoiadas",
     "status": "Não iniciado",
     "camposEntrada": {},
@@ -7599,7 +7959,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-01",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 182,
@@ -7611,7 +7973,7 @@
     "pilar": "Sustentabilidade e Cidadania",
     "unidadeApuradora": "SULOT",
     "diretoriaResponsavel": "DICOT",
-    "metaMensal": 0.0,
+    "metaMensal": 0,
     "metaAnualDescricao": "02 (duas) iniciativas apoiadas",
     "status": "Não iniciado",
     "camposEntrada": {},
@@ -7641,19 +8003,21 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-02",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 183,
     "indicadorId": 16,
     "ano": 2026,
     "mes": 3,
-    "nomeMes": "Mar?o",
+    "nomeMes": "Março",
     "plano": "PEI",
     "pilar": "Sustentabilidade e Cidadania",
     "unidadeApuradora": "SULOT",
     "diretoriaResponsavel": "DICOT",
-    "metaMensal": 0.0,
+    "metaMensal": 0,
     "metaAnualDescricao": "02 (duas) iniciativas apoiadas",
     "status": "Não iniciado",
     "camposEntrada": {},
@@ -7683,7 +8047,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-03",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 184,
@@ -7725,7 +8091,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-04",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 185,
@@ -7767,7 +8135,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-05",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 186,
@@ -7809,7 +8179,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-06",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 187,
@@ -7851,7 +8223,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-07",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 188,
@@ -7893,7 +8267,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-08",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 189,
@@ -7935,7 +8311,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-09",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 190,
@@ -7977,7 +8355,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-10",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 191,
@@ -8019,7 +8399,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-11",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 192,
@@ -8061,7 +8443,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-12",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 193,
@@ -8103,7 +8487,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-01",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 194,
@@ -8145,14 +8531,16 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-02",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 195,
     "indicadorId": 17,
     "ano": 2026,
     "mes": 3,
-    "nomeMes": "Mar?o",
+    "nomeMes": "Março",
     "plano": "PEI",
     "pilar": "Sustentabilidade e Cidadania",
     "unidadeApuradora": "GENOL",
@@ -8187,7 +8575,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-03",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 196,
@@ -8229,7 +8619,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-04",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 197,
@@ -8271,7 +8663,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-05",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 198,
@@ -8313,7 +8707,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-06",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 199,
@@ -8355,7 +8751,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-07",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 200,
@@ -8397,7 +8795,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-08",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 201,
@@ -8439,7 +8839,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-09",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 202,
@@ -8481,7 +8883,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-10",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 203,
@@ -8523,7 +8927,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-11",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 204,
@@ -8565,7 +8971,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-12",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 205,
@@ -8577,7 +8985,7 @@
     "pilar": "Sustentabilidade e Cidadania",
     "unidadeApuradora": "SURCI",
     "diretoriaResponsavel": "DICRI",
-    "metaMensal": 0.0,
+    "metaMensal": 0,
     "metaAnualDescricao": "Nível 3 RGF-WLA – Executar ações de melhoria para os 10 elementos",
     "status": "Não iniciado",
     "camposEntrada": {},
@@ -8607,7 +9015,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-01",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 206,
@@ -8619,7 +9029,7 @@
     "pilar": "Sustentabilidade e Cidadania",
     "unidadeApuradora": "SURCI",
     "diretoriaResponsavel": "DICRI",
-    "metaMensal": 0.0,
+    "metaMensal": 0,
     "metaAnualDescricao": "Nível 3 RGF-WLA – Executar ações de melhoria para os 10 elementos",
     "status": "Não iniciado",
     "camposEntrada": {},
@@ -8649,19 +9059,21 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-02",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 207,
     "indicadorId": 18,
     "ano": 2026,
     "mes": 3,
-    "nomeMes": "Mar?o",
+    "nomeMes": "Março",
     "plano": "PEI",
     "pilar": "Sustentabilidade e Cidadania",
     "unidadeApuradora": "SURCI",
     "diretoriaResponsavel": "DICRI",
-    "metaMensal": 0.0,
+    "metaMensal": 0,
     "metaAnualDescricao": "Nível 3 RGF-WLA – Executar ações de melhoria para os 10 elementos",
     "status": "Não iniciado",
     "camposEntrada": {},
@@ -8691,7 +9103,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-03",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 208,
@@ -8733,7 +9147,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-04",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 209,
@@ -8775,7 +9191,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-05",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 210,
@@ -8817,7 +9235,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-06",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 211,
@@ -8859,7 +9279,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-07",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 212,
@@ -8901,7 +9323,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-08",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 213,
@@ -8943,7 +9367,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-09",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 214,
@@ -8985,7 +9411,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-10",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 215,
@@ -9027,7 +9455,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-11",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 216,
@@ -9069,7 +9499,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-12",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 217,
@@ -9081,7 +9513,7 @@
     "pilar": "Sustentabilidade e Cidadania",
     "unidadeApuradora": "GENOL",
     "diretoriaResponsavel": "DICOT",
-    "metaMensal": 0.0,
+    "metaMensal": 0,
     "metaAnualDescricao": "Investir 0,33% do Lucro Líquido do ano em projetos de impacto socioambiental",
     "status": "Não iniciado",
     "camposEntrada": {},
@@ -9111,7 +9543,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-01",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 218,
@@ -9123,7 +9557,7 @@
     "pilar": "Sustentabilidade e Cidadania",
     "unidadeApuradora": "GENOL",
     "diretoriaResponsavel": "DICOT",
-    "metaMensal": 0.0,
+    "metaMensal": 0,
     "metaAnualDescricao": "Investir 0,33% do Lucro Líquido do ano em projetos de impacto socioambiental",
     "status": "Não iniciado",
     "camposEntrada": {},
@@ -9153,19 +9587,21 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-02",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 219,
     "indicadorId": 19,
     "ano": 2026,
     "mes": 3,
-    "nomeMes": "Mar?o",
+    "nomeMes": "Março",
     "plano": "PN",
     "pilar": "Sustentabilidade e Cidadania",
     "unidadeApuradora": "GENOL",
     "diretoriaResponsavel": "DICOT",
-    "metaMensal": 0.0,
+    "metaMensal": 0,
     "metaAnualDescricao": "Investir 0,33% do Lucro Líquido do ano em projetos de impacto socioambiental",
     "status": "Não iniciado",
     "camposEntrada": {},
@@ -9195,7 +9631,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-03",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 220,
@@ -9237,7 +9675,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-04",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 221,
@@ -9279,7 +9719,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-05",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 222,
@@ -9321,7 +9763,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-06",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 223,
@@ -9363,7 +9807,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-07",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 224,
@@ -9405,7 +9851,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-08",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 225,
@@ -9447,7 +9895,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-09",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 226,
@@ -9489,7 +9939,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-10",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 227,
@@ -9531,7 +9983,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-11",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 228,
@@ -9573,7 +10027,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-12",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 229,
@@ -9585,7 +10041,7 @@
     "pilar": "Sustentabilidade e Cidadania",
     "unidadeApuradora": "SUCOL",
     "diretoriaResponsavel": "DICOT",
-    "metaMensal": 0.0,
+    "metaMensal": 0,
     "metaAnualDescricao": "Implantar 100% das ações propostas 1 SEM – Publicar relatório institucional “A Sorte em Números – 2025”, consolidando dados de repasse social com linguagem acessível e foco em transparência pública. 2 SEM – Realizar campanha publicitária exclusiva com foco no repasse social das Loterias CAIXA, a ser veiculada nos canais oficiais da Companhia e demais meios estratégicos.",
     "status": "Não iniciado",
     "camposEntrada": {},
@@ -9615,7 +10071,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-01",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 230,
@@ -9627,7 +10085,7 @@
     "pilar": "Sustentabilidade e Cidadania",
     "unidadeApuradora": "SUCOL",
     "diretoriaResponsavel": "DICOT",
-    "metaMensal": 0.0,
+    "metaMensal": 0,
     "metaAnualDescricao": "Implantar 100% das ações propostas 1 SEM – Publicar relatório institucional “A Sorte em Números – 2025”, consolidando dados de repasse social com linguagem acessível e foco em transparência pública. 2 SEM – Realizar campanha publicitária exclusiva com foco no repasse social das Loterias CAIXA, a ser veiculada nos canais oficiais da Companhia e demais meios estratégicos.",
     "status": "Não iniciado",
     "camposEntrada": {},
@@ -9657,19 +10115,21 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-02",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 231,
     "indicadorId": 20,
     "ano": 2026,
     "mes": 3,
-    "nomeMes": "Mar?o",
+    "nomeMes": "Março",
     "plano": "PN",
     "pilar": "Sustentabilidade e Cidadania",
     "unidadeApuradora": "SUCOL",
     "diretoriaResponsavel": "DICOT",
-    "metaMensal": 0.0,
+    "metaMensal": 0,
     "metaAnualDescricao": "Implantar 100% das ações propostas 1 SEM – Publicar relatório institucional “A Sorte em Números – 2025”, consolidando dados de repasse social com linguagem acessível e foco em transparência pública. 2 SEM – Realizar campanha publicitária exclusiva com foco no repasse social das Loterias CAIXA, a ser veiculada nos canais oficiais da Companhia e demais meios estratégicos.",
     "status": "Não iniciado",
     "camposEntrada": {},
@@ -9699,7 +10159,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-03",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 232,
@@ -9741,7 +10203,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-04",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 233,
@@ -9783,7 +10247,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-05",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 234,
@@ -9825,7 +10291,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-06",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 235,
@@ -9867,7 +10335,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-07",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 236,
@@ -9909,7 +10379,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-08",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 237,
@@ -9951,7 +10423,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-09",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 238,
@@ -9993,7 +10467,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-10",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 239,
@@ -10035,7 +10511,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-11",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 240,
@@ -10077,7 +10555,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-12",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 241,
@@ -10089,7 +10569,7 @@
     "pilar": "Sustentabilidade e Cidadania",
     "unidadeApuradora": "SURCI",
     "diretoriaResponsavel": "DICRI",
-    "metaMensal": 0.0,
+    "metaMensal": 0,
     "metaAnualDescricao": "Atingir 90% dos Dirigentes e empregados ativos com função, lotados na Companhia há mais de 60 dias, capacitados em pelo menos 02 (duas) iniciativas de disseminação da cultura do Jogo Responsável.",
     "status": "Não iniciado",
     "camposEntrada": {},
@@ -10119,7 +10599,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-01",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 242,
@@ -10131,7 +10613,7 @@
     "pilar": "Sustentabilidade e Cidadania",
     "unidadeApuradora": "SURCI",
     "diretoriaResponsavel": "DICRI",
-    "metaMensal": 0.0,
+    "metaMensal": 0,
     "metaAnualDescricao": "Atingir 90% dos Dirigentes e empregados ativos com função, lotados na Companhia há mais de 60 dias, capacitados em pelo menos 02 (duas) iniciativas de disseminação da cultura do Jogo Responsável.",
     "status": "Não iniciado",
     "camposEntrada": {},
@@ -10161,19 +10643,21 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-02",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 243,
     "indicadorId": 21,
     "ano": 2026,
     "mes": 3,
-    "nomeMes": "Mar?o",
+    "nomeMes": "Março",
     "plano": "PN",
     "pilar": "Sustentabilidade e Cidadania",
     "unidadeApuradora": "SURCI",
     "diretoriaResponsavel": "DICRI",
-    "metaMensal": 0.0,
+    "metaMensal": 0,
     "metaAnualDescricao": "Atingir 90% dos Dirigentes e empregados ativos com função, lotados na Companhia há mais de 60 dias, capacitados em pelo menos 02 (duas) iniciativas de disseminação da cultura do Jogo Responsável.",
     "status": "Não iniciado",
     "camposEntrada": {},
@@ -10203,7 +10687,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-03",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 244,
@@ -10245,7 +10731,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-04",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 245,
@@ -10287,7 +10775,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-05",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 246,
@@ -10329,7 +10819,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-06",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 247,
@@ -10371,7 +10863,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-07",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 248,
@@ -10413,7 +10907,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-08",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 249,
@@ -10455,7 +10951,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-09",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 250,
@@ -10497,7 +10995,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-10",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 251,
@@ -10539,7 +11039,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-11",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 252,
@@ -10581,7 +11083,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-12",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 253,
@@ -10623,7 +11127,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-01",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 254,
@@ -10665,14 +11171,16 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-02",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 255,
     "indicadorId": 22,
     "ano": 2026,
     "mes": 3,
-    "nomeMes": "Mar?o",
+    "nomeMes": "Março",
     "plano": "PEI",
     "pilar": "Atuação em Ecossistema",
     "unidadeApuradora": "SUCOL",
@@ -10707,7 +11215,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-03",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 256,
@@ -10749,7 +11259,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-04",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 257,
@@ -10791,7 +11303,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-05",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 258,
@@ -10833,7 +11347,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-06",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 259,
@@ -10875,7 +11391,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-07",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 260,
@@ -10917,7 +11435,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-08",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 261,
@@ -10959,7 +11479,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-09",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 262,
@@ -11001,7 +11523,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-10",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 263,
@@ -11043,7 +11567,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-11",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 264,
@@ -11085,7 +11611,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-12",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 265,
@@ -11127,7 +11655,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-01",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 266,
@@ -11169,14 +11699,16 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-02",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 267,
     "indicadorId": 23,
     "ano": 2026,
     "mes": 3,
-    "nomeMes": "Mar?o",
+    "nomeMes": "Março",
     "plano": "PN",
     "pilar": "Atuação em Ecossistema",
     "unidadeApuradora": "SUCOL",
@@ -11211,7 +11743,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-03",
+    "trimestre": "1TRI/2026"
   },
   {
     "id": 268,
@@ -11253,7 +11787,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-04",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 269,
@@ -11295,7 +11831,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-05",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 270,
@@ -11337,7 +11875,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-06",
+    "trimestre": "2TRI/2026"
   },
   {
     "id": 271,
@@ -11379,7 +11919,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-07",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 272,
@@ -11421,7 +11963,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-08",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 273,
@@ -11463,7 +12007,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-09",
+    "trimestre": "3TRI/2026"
   },
   {
     "id": 274,
@@ -11505,7 +12051,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-10",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 275,
@@ -11547,7 +12095,9 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-11",
+    "trimestre": "4TRI/2026"
   },
   {
     "id": 276,
@@ -11589,6 +12139,8 @@
     "homologadoPor": null,
     "dataHomologacao": null,
     "devolvidoPor": null,
-    "dataDevolucao": null
+    "dataDevolucao": null,
+    "competencia": "2026-12",
+    "trimestre": "4TRI/2026"
   }
 ]

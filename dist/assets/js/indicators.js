@@ -2,6 +2,8 @@
   const TIPOS_CALCULO = [
     "percentual_direto",
     "percentual_inverso",
+    "razao_canais_digitais",
+    "razao_pix",
     "valor_acumulado",
     "media_percentual",
     "projeto_percentual",
@@ -140,6 +142,7 @@
     document.getElementById("detailBadge").textContent = indicador.ativo ? "Ativo" : "Inativo";
 
     readOnly.hidden = state.editMode;
+    document.getElementById("indicatorTracking").hidden = state.editMode;
     form.hidden = !state.editMode;
 
     if (state.editMode) {
@@ -157,12 +160,121 @@
       ["Tipo de cálculo", indicador.tipoCalculo],
       ["Unidade de medida", indicador.unidadeMedida],
       ["Meta anual", indicador.metaAnualDescricao, true],
-      ["Métrica/Fórmula de referência", indicador.metrica, true]
+      ["Métrica/Fórmula de referência", indicador.metrica, true],
+      ...(Number(indicador.id) === 8 ? [[
+        "Observação de acompanhamento",
+        "A meta de 28,05% corresponde ao percentual de referência de 2025, de 23,05%, acrescido de 5 pontos percentuais, conforme informe de acompanhamento. O resultado mensal, trimestral e anual é calculado pela razão entre a arrecadação dos canais eletrônicos e a arrecadação total dos produtos de loterias no período.",
+        true
+      ]] : [])
     ].map(([label, value, full]) => `
       <article class="detail-item ${full ? "full-span" : ""}">
         <span>${escapeHtml(label)}</span>
         <p>${escapeHtml(value)}</p>
       </article>
+    `).join("");
+    renderIndicatorTracking(indicador);
+  }
+
+  function getRule(indicador) {
+    return IndicatorFormulas.obterRegra(indicador, state.data.regrasIndicadores || []);
+  }
+
+  function formatPerformance(value, rule) {
+    if (rule?.tipoCalculo !== "razao_canais_digitais") return Calculations.formatarPercentual(value);
+    if (value === null || value === undefined || !Number.isFinite(Number(value))) return "-";
+    return `${(Number(value) * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
+  }
+
+  function monthlyAction(lancamento) {
+    if (!lancamento) return "-";
+    const page = ["Enviado para homologação", "Homologado"].includes(lancamento.status) &&
+      ["Administrador", "Diretoria Homologadora"].includes(state.user.perfil)
+      ? "homologacao.html"
+      : "lancamentos.html";
+    return `<a class="secondary-action table-action dashboard-action" href="${page}?lancamentoId=${lancamento.id}">Visualizar</a>`;
+  }
+
+  function renderIndicatorTracking(indicador) {
+    const regra = getRule(indicador);
+    const isPix = Number(indicador.id) === 9;
+    const isDigitalChannels = Number(indicador.id) === 8;
+    const launches = state.data.lancamentos
+      .filter((item) => item.indicadorId === indicador.id && Number(item.ano) === 2026)
+      .sort((a, b) => Number(a.mes) - Number(b.mes));
+    const byMonth = Object.fromEntries(launches.map((item) => [Number(item.mes), item]));
+
+    document.getElementById("indicatorMonthlyHeader").innerHTML = isPix ? `
+      <th>Mês</th>
+      <th>Arrecadação com PIX no mês</th>
+      <th>Arrecadação total nos canais eletrônicos</th>
+      <th>Resultado mensal</th>
+      <th>Status mensal</th>
+      <th>Ação</th>
+    ` : isDigitalChannels ? `
+      <th>Mês</th>
+      <th>Arrecadação total nos canais eletrônicos</th>
+      <th>Arrecadação total dos produtos de loterias</th>
+      <th>Resultado mensal</th>
+      <th>Status mensal</th>
+      <th>Ação</th>
+    ` : `
+      <th>Mês</th>
+      <th>Meta mensal/referência</th>
+      <th>Realizado mensal</th>
+      <th>Resultado mensal</th>
+      <th>Status mensal</th>
+      <th>Ação</th>
+    `;
+
+    document.getElementById("indicatorMonthlyComposition").innerHTML = QuarterlyConsolidation.MONTHS.map(([month, name]) => {
+      const launch = byMonth[month];
+      const digitalNumerator = Calculations.parseMoedaBR(launch?.camposEntrada?.arrecadacaoCanaisEletronicosMes);
+      const digitalDenominator = Calculations.parseMoedaBR(launch?.camposEntrada?.arrecadacaoTotalProdutosLoteriasMes);
+      const result = isDigitalChannels
+        ? digitalDenominator > 0 && digitalNumerator !== null ? digitalNumerator / digitalDenominator : null
+        : launch?.resultadoMensal ?? launch?.realizadoMensal;
+      return `
+        <tr>
+          <td>${name}/2026</td>
+          <td>${isPix
+            ? Calculations.formatarValor(launch?.camposEntrada?.arrecadacaoPixMes, "moeda")
+            : isDigitalChannels
+              ? Calculations.formatarValor(launch?.camposEntrada?.arrecadacaoCanaisEletronicosMes, "moeda")
+              : Calculations.formatarValor(launch?.metaMensal ?? regra.metaAnualValor, regra.unidadeMedida)}</td>
+          <td>${isPix
+            ? Calculations.formatarValor(launch?.camposEntrada?.arrecadacaoTotalCanaisEletronicosMes, "moeda")
+            : isDigitalChannels
+              ? Calculations.formatarValor(launch?.camposEntrada?.arrecadacaoTotalProdutosLoteriasMes, "moeda")
+              : Calculations.formatarValor(launch?.realizadoMensal, regra.unidadeMedida)}</td>
+          <td>${Calculations.formatarValor(result, regra.unidadeMedida)}</td>
+          <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologação" ? "warn" : "info"}">${escapeHtml(launch?.status || "Não iniciado")}</span></td>
+          <td>${monthlyAction(launch)}</td>
+        </tr>
+      `;
+    }).join("");
+
+    const quarters = QuarterlyConsolidation.consolidarAno(indicador, regra, launches, 2026);
+    document.getElementById("indicatorQuarterlyComposition").innerHTML = quarters.map((quarter) => `
+      <tr>
+        <td>
+          <strong>${quarter.trimestre}</strong>
+          <small class="quarter-message">${escapeHtml(quarter.mensagem)}</small>
+        </td>
+        <td>${quarter.mesesHomologados} de ${quarter.mesesEsperados}</td>
+        <td>${Calculations.formatarValor(quarter.metaTrimestral, regra.unidadeMedida)}</td>
+        <td>
+          ${Calculations.formatarValor(quarter.resultadoCalculadoTrimestral, regra.unidadeMedida)}
+          ${isPix && quarter.pixAcumuladoTrimestre != null
+            ? `<small class="quarter-message">PIX: ${Calculations.formatarMoedaBR(quarter.pixAcumuladoTrimestre)}<br>Canais: ${Calculations.formatarMoedaBR(quarter.canaisAcumuladoTrimestre)}</small>`
+            : isDigitalChannels && quarter.canaisDigitaisAcumuladoTrimestre != null
+              ? `<small class="quarter-message">Canais eletrônicos: ${Calculations.formatarMoedaBR(quarter.canaisDigitaisAcumuladoTrimestre)}<br>Produtos de loterias: ${Calculations.formatarMoedaBR(quarter.produtosLoteriasAcumuladoTrimestre)}</small>`
+            : ""}
+        </td>
+        <td>${Calculations.formatarValor(quarter.resultadoOficialApresentado, regra.unidadeMedida)}</td>
+        <td>${formatPerformance(quarter.desempenhoTrimestral, regra)}</td>
+        <td>${escapeHtml(quarter.situacaoTrimestral)}</td>
+        <td><span class="badge ${quarter.statusTrimestre === "Fechado" ? "ok" : quarter.statusTrimestre === "Parcial" ? "warn" : "info"}">${quarter.statusTrimestre}</span></td>
+      </tr>
     `).join("");
   }
 
@@ -234,7 +346,7 @@
     };
 
     state.indicadores = state.indicadores.map((item) => item.id === id ? updated : item);
-    DataStore.saveLocal("indicadores", state.indicadores);
+    await DataStore.saveLocal("indicadores", state.indicadores);
     await DataStore.appendHistory({
       usuario: state.user.email || state.user.nome,
       acao: "alteracao_indicador",
@@ -293,6 +405,13 @@
 
     bindEvents();
     refresh();
+
+    const requestedId = Number(new URLSearchParams(window.location.search).get("indicadorId"));
+    if (requestedId && state.indicadores.some((item) => item.id === requestedId)) {
+      state.selectedId = requestedId;
+      renderDetail(getSelectedIndicator());
+      document.getElementById("indicatorDetailPanel").scrollIntoView({ block: "start" });
+    }
   }
 
   window.PageModules = window.PageModules || {};

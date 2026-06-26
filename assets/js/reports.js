@@ -236,7 +236,7 @@
       return {
         columns: [
           ["numero", "Nº"], ["indicador", "Indicador"], ["plano", "Plano"], ["pilar", "Pilar"],
-          ["periodicidade", "Periodicidade"], ["unidadeApuradora", "Unidade"], ["diretoriaResponsavel", "Diretoria"],
+          ["periodicidade", "Periodicidade"], ["unidadeApuradora", "Unidade apuradora"], ["diretoriaResponsavel", "Diretoria responsável"],
           ["tipoCalculo", "Tipo"], ["ativo", "Status"]
         ],
         rows: indicadores.map(baseIndicatorRow)
@@ -306,8 +306,8 @@
     const labels = {
       plano: "Plano",
       pilar: "Pilar",
-      unidadeApuradora: "Unidade",
-      diretoriaResponsavel: "Diretoria"
+      unidadeApuradora: "Unidade apuradora",
+      diretoriaResponsavel: "Diretoria responsável"
     };
     return [
       [firstKey, labels[firstKey]],
@@ -323,12 +323,12 @@
   function launchColumns() {
     return [
       ["numero", "Nº"], ["indicador", "Indicador"], ["plano", "Plano"], ["pilar", "Pilar"],
-      ["unidadeApuradora", "Unidade"], ["diretoriaResponsavel", "Diretoria"],
+      ["unidadeApuradora", "Unidade apuradora"], ["diretoriaResponsavel", "Diretoria responsável"],
       ["ano", "Ano"], ["mes", "Mês"], ["metaMensal", "Meta", "number"],
       ["realizadoMensal", "Realizado", "number"], ["percentualAtingido", "% atingido", "percent"],
       ["resultadoAcumulado", "Resultado acumulado", "number"], ["percentualAtingidoAcumulado", "% acumulado", "percent"],
-      ["status", "Status"], ["justificativa", "Justificativa"], ["observacaoArea", "Observação área"],
-      ["evidencia", "Evidência"], ["observacaoDiretoria", "Observação diretoria"]
+      ["status", "Status"], ["justificativa", "Justificativa"], ["observacaoArea", "Observação da área"],
+      ["evidencia", "Evidência"], ["observacaoDiretoria", "Observação da diretoria"]
     ];
   }
 

@@ -18,7 +18,84 @@
   const OPERATIONAL_DATA_VERSION_KEY = "caixaLoterias:operationalDataVersion";
   const OPERATIONAL_DATA_SIGNATURE = "PERSISTENCIA-LOCAL-001:safe-migration";
   const OPERATIONAL_DATA_SIGNATURE_KEY = "caixaLoterias:operationalDataSignature";
+  const JSON_DB_MIGRATION_PREFIX = "caixaLoterias:jsonDbMigrated:";
+  const TEXT_ENCODING_MIGRATION_KEY = "caixaLoterias:textEncodingMigration";
+  const TEXT_ENCODING_MIGRATION_VERSION = "UTF8-PTBR-001";
+  const CURRENCY_MIGRATION_KEY = "caixaLoterias:currencyMigration";
+  const CURRENCY_MIGRATION_VERSION = "MOEDA-BR-001";
   const LEGACY_VERSION_KEY = "storageVersion";
+  const INDICATOR_NAMES = [
+    "Índice de Ofertas Personalizadas aos Clientes Ativos",
+    "Índice de Satisfação de Clientes — NPS",
+    "Índice de Clientes Ativos em Canais Digitais",
+    "Aprimoramento da Experiência do Cliente",
+    "Gross Gaming Revenue (GGR)",
+    "IEO Recorrente (Índice de Eficiência Operacional Recorrente)",
+    "Lucro Líquido Recorrente",
+    "Vendas Provenientes de Canais Digitais",
+    "Vendas com Meio de Pagamento PIX",
+    "Share da Plataforma de Jogos",
+    "Ampliar Capacidade de Desenvolvimento de Soluções de TIC",
+    "Clima Organizacional (Pesquisa GPTW)",
+    "Mulheres Chefes de Unidade e Gestoras",
+    "Gestores Negros, Amarelos, Pardos ou Indígenas e/ou PcD",
+    "Capacitação dos Empregados da CAIXA Loterias",
+    "Apoio ao Desenvolvimento Socioambiental",
+    "Repasse Social",
+    "Princípios de Jogo Responsável (WLA)",
+    "Incentivo Socioambiental",
+    "Visibilidade dos Repasses Sociais das Loterias CAIXA",
+    "Jogo Responsável 2026 (Capacitação e Disseminação)",
+    "Arrecadação Gerada com o Ecossistema",
+    "Participação da Rede Lotérica nos Negócios"
+  ];
+  const PILLAR_NAMES = [
+    "Cliente no Centro",
+    "Eficiência e Rentabilidade",
+    "Tecnologia e Inovação",
+    "Pessoas, Cultura e Agilidade",
+    "Sustentabilidade e Cidadania",
+    "Atuação em Ecossistema"
+  ];
+  const PIX_QUARTER_TARGETS = [0.61, 0.62, 0.63, 0.65];
+  const CURRENCY_FIELD_NAMES = new Set([
+    "ggrRealizadoMes",
+    "lucroLiquidoRecorrenteAcumulado",
+    "arrecadacaoCanaisEletronicosMes",
+    "arrecadacaoTotalProdutosLoteriasMes",
+    "arrecadacaoPixMes",
+    "arrecadacaoTotalCanaisEletronicosMes",
+    "pixAcumuladoTrimestre",
+    "canaisAcumuladoTrimestre",
+    "repasseSocialAcumulado",
+    "valorInvestidoAcumulado",
+    "lucroLiquidoBase",
+    "arrecadacaoEcossistemaMes",
+    "arrecadacaoTotalMes",
+    "arrecadacaoEcossistema2025",
+    "arrecadacaoTotal2025",
+    "arrecadacaoRedeLotericaMes2026",
+    "arrecadacaoRedeLotericaMes2025"
+  ]);
+  const CP1252_BYTES = {
+    "€": 0x80, "‚": 0x82, "ƒ": 0x83, "„": 0x84, "…": 0x85,
+    "†": 0x86, "‡": 0x87, "ˆ": 0x88, "‰": 0x89, "Š": 0x8a,
+    "‹": 0x8b, "Œ": 0x8c, "Ž": 0x8e, "‘": 0x91, "’": 0x92,
+    "“": 0x93, "”": 0x94, "•": 0x95, "–": 0x96, "—": 0x97,
+    "˜": 0x98, "™": 0x99, "š": 0x9a, "›": 0x9b, "œ": 0x9c,
+    "ž": 0x9e, "Ÿ": 0x9f
+  };
+  const TEXT_REPLACEMENTS = [
+    ["Efici\u003fncia", "Eficiência"], ["Inova\u003fo", "Inovação"], ["Atua\u003fo", "Atuação"],
+    ["Mar\u003fo", "Março"], ["Estrat\u003fgico", "Estratégico"], ["Neg\u003fcios", "Negócios"],
+    ["Relat\u003frio", "Relatório"], ["relat\u003frio", "relatório"], ["A\u003fo", "Ação"],
+    ["a\u003fo", "ação"], ["Conclu\u003fda", "Concluída"], ["conclu\u003fdas", "concluídas"],
+    ["l\u003fquido", "líquido"], ["Arrecada\u003fo", "Arrecadação"],
+    ["eletr\u003fnicos", "eletrônicos"], ["lot\u003fricos", "lotéricos"],
+    ["execu\u003fo", "execução"], ["Evid\u003fncia", "Evidência"], ["N\u003fmero", "Número"],
+    ["M\u003fdia", "Média"], ["Refer\u003fncia", "Referência"], ["Gest\u003fo", "Gestão"],
+    ["N\u003fo", "Não"], ["n\u003fo", "não"], ["m\u003fs", "mês"], ["M\u003fs", "Mês"]
+  ];
   const OPERATIONAL_NULL_FIELDS = [
     "realizado",
     "realizadoMensal",
@@ -53,6 +130,8 @@
     "dataDevolucao"
   ];
   const cache = {};
+  const writeQueues = {};
+  let jsonDbAvailable = null;
   const MESES = [
     [1, "Janeiro"],
     [2, "Fevereiro"],
@@ -88,6 +167,188 @@
     assinatura: OPERATIONAL_DATA_SIGNATURE_KEY
   };
 
+  function jsonDbMigrationKey(key) {
+    return `${JSON_DB_MIGRATION_PREFIX}${key}`;
+  }
+
+  function mojibakeScore(value) {
+    return (String(value).match(/[ÃÂâ�]/g) || []).length;
+  }
+
+  function decodeCp1252Token(value) {
+    const bytes = [];
+    for (const character of value) {
+      const code = character.codePointAt(0);
+      if (CP1252_BYTES[character] !== undefined) {
+        bytes.push(CP1252_BYTES[character]);
+      } else if (code <= 0xff) {
+        bytes.push(code);
+      } else {
+        return null;
+      }
+    }
+    try {
+      return new TextDecoder("utf-8", { fatal: true }).decode(Uint8Array.from(bytes));
+    } catch {
+      return null;
+    }
+  }
+
+  function corrigirTextoEncoding(value) {
+    let corrected = String(value).replace(/[^ \t\r\n]+/gu, (token) => {
+      let current = token;
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        const decoded = decodeCp1252Token(current);
+        if (!decoded || mojibakeScore(decoded) >= mojibakeScore(current)) break;
+        current = decoded;
+      }
+      return current;
+    });
+    TEXT_REPLACEMENTS.forEach(([broken, replacement]) => {
+      corrected = corrected.replaceAll(broken, replacement);
+    });
+    return corrected;
+  }
+
+  function corrigirValorSalvo(value) {
+    if (typeof value === "string") return corrigirTextoEncoding(value);
+    if (Array.isArray(value)) return value.map(corrigirValorSalvo);
+    if (value && typeof value === "object") {
+      return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, corrigirValorSalvo(item)]));
+    }
+    return value;
+  }
+
+  function corrigirEncodingTextosSalvos() {
+    if (localStorage.getItem(TEXT_ENCODING_MIGRATION_KEY) === TEXT_ENCODING_MIGRATION_VERSION) return;
+    Object.keys(localStorage).forEach((key) => {
+      const raw = localStorage.getItem(key);
+      if (!raw || (!key.startsWith("caixaLoterias:") && !DATA_FILES[key])) return;
+      try {
+        const parsed = JSON.parse(raw);
+        const corrected = corrigirValorSalvo(parsed);
+        const serialized = JSON.stringify(corrected);
+        if (serialized !== raw) localStorage.setItem(key, serialized);
+      } catch {
+        const corrected = corrigirTextoEncoding(raw);
+        if (corrected !== raw) localStorage.setItem(key, corrected);
+      }
+    });
+    localStorage.setItem(TEXT_ENCODING_MIGRATION_KEY, TEXT_ENCODING_MIGRATION_VERSION);
+  }
+
+  function normalizarCamposMoeda(launch) {
+    if (!launch) return launch;
+    const camposEntrada = { ...(launch.camposEntrada || {}) };
+    let revisaoMoedaPendente = launch.revisaoMoedaPendente === true;
+
+    CURRENCY_FIELD_NAMES.forEach((field) => {
+      const current = camposEntrada[field] ?? launch[field];
+      if (current === null || current === undefined || current === "") return;
+
+      const parsed = CurrencyBR.parseMoedaBR(current);
+      if (parsed === null) {
+        revisaoMoedaPendente = true;
+        return;
+      }
+
+      camposEntrada[field] = parsed;
+      if (Number(launch.indicadorId) === 9 && typeof current === "number" && current > 0 && current < 1000000) {
+        revisaoMoedaPendente = true;
+      }
+    });
+
+    return {
+      ...launch,
+      camposEntrada,
+      ...(revisaoMoedaPendente ? { revisaoMoedaPendente: true } : {})
+    };
+  }
+
+  function corrigirMoedasSalvas() {
+    if (localStorage.getItem(CURRENCY_MIGRATION_KEY) === CURRENCY_MIGRATION_VERSION) return;
+    [storageKey("lancamentos"), "lancamentos"].forEach((key) => {
+      const raw = localStorage.getItem(key);
+      if (!raw) return;
+      try {
+        const launches = JSON.parse(raw);
+        if (Array.isArray(launches)) {
+          localStorage.setItem(key, JSON.stringify(launches.map(normalizarCamposMoeda)));
+        }
+      } catch {
+        console.warn("Não foi possível migrar os campos monetários locais; os dados foram preservados.");
+      }
+    });
+    localStorage.setItem(CURRENCY_MIGRATION_KEY, CURRENCY_MIGRATION_VERSION);
+  }
+
+  function getCanonicalPillar(indicatorId) {
+    if (indicatorId <= 4) return PILLAR_NAMES[0];
+    if (indicatorId <= 9) return PILLAR_NAMES[1];
+    if (indicatorId <= 11) return PILLAR_NAMES[2];
+    if (indicatorId <= 15) return PILLAR_NAMES[3];
+    if (indicatorId <= 21) return PILLAR_NAMES[4];
+    return PILLAR_NAMES[5];
+  }
+
+  async function checkJsonDb() {
+    if (jsonDbAvailable !== null) return jsonDbAvailable;
+    if (window.location.protocol === "file:") {
+      jsonDbAvailable = false;
+      return false;
+    }
+    try {
+      const response = await fetch("api/health", { cache: "no-store" });
+      jsonDbAvailable = response.ok;
+    } catch {
+      jsonDbAvailable = false;
+    }
+    return jsonDbAvailable;
+  }
+
+  async function loadFromJsonDb(key) {
+    if (!(await checkJsonDb())) return null;
+    try {
+      const response = await fetch(`api/data/${encodeURIComponent(key)}`, { cache: "no-store" });
+      if (!response.ok) return null;
+      return response.json();
+    } catch (error) {
+      console.warn(`Banco JSON indisponível para leitura de ${key}; usando fallback.`, error);
+      jsonDbAvailable = false;
+      return null;
+    }
+  }
+
+  async function saveToJsonDb(key, value) {
+    if (!DATA_FILES[key] || !(await checkJsonDb())) return false;
+
+    try {
+      const response = await fetch(`api/data/${encodeURIComponent(key)}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(value)
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      return true;
+    } catch (error) {
+      console.warn(`Não foi possível salvar ${key} no banco JSON. Dados preservados no localStorage.`, error);
+      jsonDbAvailable = false;
+      return false;
+    }
+  }
+
+  function enqueueJsonDbWrite(key, value) {
+    const snapshot = JSON.parse(JSON.stringify(value));
+    const previousWrite = writeQueues[key] || Promise.resolve();
+    const nextWrite = previousWrite
+      .catch(() => false)
+      .then(() => saveToJsonDb(key, snapshot));
+    writeQueues[key] = nextWrite;
+    return nextWrite;
+  }
+
   function readLocal(key) {
     const raw = localStorage.getItem(storageKey(key));
     if (raw === null) return null;
@@ -121,6 +382,7 @@
     OPERATIONAL_KEYS.forEach((key) => {
       localStorage.removeItem(storageKey(key));
       localStorage.removeItem(key);
+      localStorage.removeItem(jsonDbMigrationKey(key));
       delete cache[key];
     });
     localStorage.removeItem("dashboardData");
@@ -180,6 +442,8 @@
         indicadorId: indicador.id,
         ano,
         mes,
+        competencia: `${ano}-${String(mes).padStart(2, "0")}`,
+        trimestre: `${Math.ceil(mes / 3)}TRI/${ano}`,
         nomeMes: meta.nomeMes || nomeMes,
         plano: indicador.plano || "",
         pilar: indicador.pilar || "",
@@ -196,13 +460,142 @@
     const indicadores = await loadJson("indicadores");
     const metas = await loadJson("metas");
     const lancamentos = gerarLancamentosLimpos(indicadores, metas);
-    saveLocal("lancamentos", lancamentos);
-    saveLocal("homologacoes", []);
-    saveLocal("historico", []);
+    await Promise.all([
+      saveLocal("lancamentos", lancamentos),
+      saveLocal("homologacoes", []),
+      saveLocal("historico", [])
+    ]);
     return lancamentos;
   }
 
   function normalizeData(key, value) {
+    value = corrigirValorSalvo(value);
+
+    if (key === "indicadores" && Array.isArray(value)) {
+      return value.map((indicator) => {
+        const normalized = {
+          ...indicator,
+          indicador: INDICATOR_NAMES[Number(indicator.id) - 1] || indicator.indicador,
+          pilar: getCanonicalPillar(Number(indicator.id)),
+          periodicidade: indicator.periodicidade === "Não especificado" ? "Não especificada" : indicator.periodicidade
+        };
+        if (Number(indicator.id) === 8) {
+          return {
+            ...normalized,
+            unidadeApuradora: "SUCOL",
+            diretoriaResponsavel: "DICOT",
+            metaAnualDescricao: "Aumentar em 05 p.p. as vendas provenientes de canais digitais.",
+            metrica: "(Arrecadação total nos canais eletrônicos) / (Arrecadação total dos produtos de loterias)",
+            tipoCalculo: "razao_canais_digitais",
+            unidadeMedida: "percentual"
+          };
+        }
+        return Number(indicator.id) === 9 ? {
+          ...normalized,
+          metaAnualDescricao: "Aumentar em 05 p.p. as vendas com o meio de pagamento PIX no canal eletrônico.",
+          metrica: "(Arrecadação com o meio de pagamento PIX no ano corrente) / (Arrecadação total nos canais eletrônicos no ano corrente)",
+          tipoCalculo: "razao_pix",
+          unidadeMedida: "percentual"
+        } : normalized;
+      });
+    }
+
+    if (key === "regrasIndicadores" && Array.isArray(value)) {
+      return value.map((rule) => {
+        const normalizedFields = (rule.camposEntrada || []).map((field) => (
+          CURRENCY_FIELD_NAMES.has(field.nome) ? { ...field, tipo: "moeda" } : field
+        ));
+        if (Number(rule.indicadorId) === 8) {
+          return {
+            ...rule,
+            nome: INDICATOR_NAMES[7],
+            tipoCalculo: "razao_canais_digitais",
+            tipoConsolidacao: "razao_acumulada_no_periodo",
+            unidadeMedida: "percentual",
+            metaAnualValor: 0.2805,
+            parametrosCalculo: {
+              campoNumerador: "arrecadacaoCanaisEletronicosMes",
+              campoDenominador: "arrecadacaoTotalProdutosLoteriasMes",
+              percentualReferencia2025: 0.2305,
+              acrescimoMetaPontosPercentuais: 0.05,
+              metaReferencia: 0.2805,
+              metaTipo: "fixa_anual"
+            },
+            camposEntrada: [
+              { nome: "arrecadacaoCanaisEletronicosMes", rotulo: "Arrecadação total nos canais eletrônicos no mês", tipo: "moeda", obrigatorio: true },
+              { nome: "arrecadacaoTotalProdutosLoteriasMes", rotulo: "Arrecadação total dos produtos de loterias no mês", tipo: "moeda", obrigatorio: true }
+            ],
+            resultadoOficial: "razao_acumulada_homologada_no_periodo"
+          };
+        }
+        return Number(rule.indicadorId) === 9 ? {
+        ...rule,
+        nome: INDICATOR_NAMES[8],
+        tipoCalculo: "razao_pix",
+        tipoConsolidacao: "razao_acumulada_no_ano",
+        unidadeMedida: "percentual",
+        metaAnualValor: 0.65,
+        parametrosCalculo: {
+          campoNumerador: "arrecadacaoPixMes",
+          campoDenominador: "arrecadacaoTotalCanaisEletronicosMes",
+          metasTrimestrais: {
+            "1TRI/2026": 0.61,
+            "2TRI/2026": 0.62,
+            "3TRI/2026": 0.63,
+            "4TRI/2026": 0.65
+          },
+          arredondamentoOficialCasasPercentuais: 0
+        },
+        camposEntrada: [
+          { nome: "arrecadacaoPixMes", rotulo: "Arrecadação com PIX no mês", tipo: "moeda", obrigatorio: true },
+          { nome: "arrecadacaoTotalCanaisEletronicosMes", rotulo: "Arrecadação total nos canais eletrônicos no mês", tipo: "moeda", obrigatorio: false }
+        ],
+        resultadoOficial: "razao_trimestral_arredondada_informe"
+      } : {
+        ...rule,
+        nome: INDICATOR_NAMES[Number(rule.indicadorId) - 1] || rule.nome,
+        camposEntrada: normalizedFields
+      };
+      });
+    }
+
+    if (key === "metas" && Array.isArray(value)) {
+      return value.map((meta) => Number(meta.indicadorId) === 8 ? {
+        ...meta,
+        metaMensal: 0.2805,
+        fonte: "meta_fixa_canais_digitais_2026"
+      } : Number(meta.indicadorId) === 9 ? {
+        ...meta,
+        metaMensal: PIX_QUARTER_TARGETS[Math.ceil(Number(meta.mes) / 3) - 1]
+      } : meta);
+    }
+
+    if (key === "pilares" && Array.isArray(value)) {
+      return value.map((pillar) => ({
+        ...pillar,
+        nome: PILLAR_NAMES[Number(pillar.id) - 1] || pillar.nome
+      }));
+    }
+
+    if (key === "lancamentos" && Array.isArray(value)) {
+      return value.map((launch) => normalizarCamposMoeda({
+        ...launch,
+        pilar: getCanonicalPillar(Number(launch.indicadorId)),
+        competencia: launch.competencia || `${launch.ano}-${String(launch.mes).padStart(2, "0")}`,
+        trimestre: launch.trimestre || `${Math.ceil(Number(launch.mes) / 3)}TRI/${launch.ano}`,
+        ...(Number(launch.indicadorId) === 9 ? {
+          metaMensal: PIX_QUARTER_TARGETS[Math.ceil(Number(launch.mes) / 3) - 1],
+          metaAnualDescricao: "Aumentar em 05 p.p. as vendas com o meio de pagamento PIX no canal eletrônico."
+        } : {}),
+        ...(Number(launch.indicadorId) === 8 ? {
+          unidadeApuradora: "SUCOL",
+          diretoriaResponsavel: "DICOT",
+          metaMensal: 0.2805,
+          metaAnualDescricao: "Aumentar em 05 p.p. as vendas provenientes de canais digitais."
+        } : {})
+      }));
+    }
+
     if ((key === "homologacoes" || key === "historico") && Array.isArray(value)) {
       return value;
     }
@@ -229,9 +622,37 @@
   }
 
   async function loadJson(key) {
+    corrigirEncodingTextosSalvos();
+    corrigirMoedasSalvas();
     ensureOperationalDataVersion();
 
     if (cache[key]) {
+      return cache[key];
+    }
+
+    const jsonDbValue = await loadFromJsonDb(key);
+    if (jsonDbValue !== null) {
+      const localValue = hasLocalData(key) ? readLocal(key) : null;
+      const shouldMigrateLocalOperationalData =
+        OPERATIONAL_KEYS.includes(key) &&
+        localValue !== null &&
+        localStorage.getItem(jsonDbMigrationKey(key)) !== "true";
+
+      if (shouldMigrateLocalOperationalData) {
+        cache[key] = normalizeData(key, localValue);
+        const migrated = await enqueueJsonDbWrite(key, cache[key]);
+        if (migrated) {
+          localStorage.setItem(jsonDbMigrationKey(key), "true");
+          console.info(`Dados locais de ${key} migrados para o banco JSON.`);
+        }
+        return cache[key];
+      }
+
+      cache[key] = normalizeData(key, jsonDbValue);
+      localStorage.setItem(storageKey(key), JSON.stringify(cache[key]));
+      if (key === "lancamentos") {
+        console.log("Lançamentos carregados do banco JSON:", cache[key]);
+      }
       return cache[key];
     }
 
@@ -256,12 +677,12 @@
 
     cache[key] = normalizeData(key, await response.json());
     if (key === "lancamentos" && Array.isArray(cache[key]) && cache[key].length > 0) {
-      saveLocal("lancamentos", cache[key]);
+      await saveLocal("lancamentos", cache[key]);
       console.log("Lançamentos iniciais carregados e salvos no localStorage:", cache[key]);
       return cache[key];
     }
     if ((key === "homologacoes" || key === "historico") && !hasLocalData(key)) {
-      saveLocal(key, cache[key]);
+      await saveLocal(key, cache[key]);
       return cache[key];
     }
     if (key === "usuarios") {
@@ -282,7 +703,7 @@
   }
 
   function salvarLancamentos(lancamentos) {
-    saveLocal("lancamentos", lancamentos);
+    return saveLocal("lancamentos", lancamentos);
   }
 
   function carregarLancamentos() {
@@ -296,6 +717,7 @@
     if (key === "lancamentos") {
       console.log("Lançamentos salvos:", value);
     }
+    return enqueueJsonDbWrite(key, value);
   }
 
   async function appendHistory(entry) {
@@ -306,7 +728,7 @@
       ...entry
     };
     const updated = [...historico, nextEntry];
-    saveLocal("historico", updated);
+    await saveLocal("historico", updated);
     return nextEntry;
   }
 
@@ -318,7 +740,13 @@
     localStorage.removeItem(OPERATIONAL_DATA_VERSION_KEY);
     localStorage.removeItem(OPERATIONAL_DATA_SIGNATURE_KEY);
     localStorage.removeItem(LEGACY_VERSION_KEY);
+    localStorage.removeItem(TEXT_ENCODING_MIGRATION_KEY);
+    localStorage.removeItem(CURRENCY_MIGRATION_KEY);
+    OPERATIONAL_KEYS.forEach((key) => localStorage.removeItem(jsonDbMigrationKey(key)));
   }
+
+  corrigirEncodingTextosSalvos();
+  corrigirMoedasSalvas();
 
   window.DataStore = {
     STORAGE_KEYS,
@@ -333,6 +761,8 @@
     gerarLancamentosLimpos,
     resetarBaseOperacionalGlobal,
     resetarDadosOperacionais,
-    resetarLancamentosIniciais
+    resetarLancamentosIniciais,
+    corrigirEncodingTextosSalvos,
+    corrigirMoedasSalvas
   };
 })();

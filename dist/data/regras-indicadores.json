@@ -35,7 +35,7 @@
   },
   {
     "indicadorId": 2,
-    "nome": "Índice de Satisfação de Clientes -NPS",
+    "nome": "Índice de Satisfação de Clientes — NPS",
     "tipoCalculo": "pontuacao_minima",
     "tipoConsolidacao": "ultima_posicao",
     "metaRecorrente": false,
@@ -47,7 +47,7 @@
     "camposEntrada": [
       {
         "nome": "npsRealizado",
-        "rotulo": "NPS realizado no per?odo",
+        "rotulo": "NPS realizado no período",
         "tipo": "numero",
         "obrigatorio": true
       }
@@ -147,7 +147,7 @@
       {
         "nome": "ggrRealizadoMes",
         "rotulo": "GGR realizado no mês",
-        "tipo": "numero",
+        "tipo": "moeda",
         "obrigatorio": true
       }
     ],
@@ -199,8 +199,8 @@
     "camposEntrada": [
       {
         "nome": "lucroLiquidoRecorrenteAcumulado",
-        "rotulo": "Lucro l?quido recorrente acumulado",
-        "tipo": "numero",
+        "rotulo": "Lucro líquido recorrente acumulado",
+        "tipo": "moeda",
         "obrigatorio": true
       }
     ],
@@ -213,54 +213,30 @@
   {
     "indicadorId": 8,
     "nome": "Vendas Provenientes de Canais Digitais",
-    "tipoCalculo": "incremento_pontos_percentuais",
-    "tipoConsolidacao": "razao_acumulada_no_ano",
+    "tipoCalculo": "razao_canais_digitais",
+    "tipoConsolidacao": "razao_acumulada_no_periodo",
     "metaRecorrente": false,
-    "unidadeMedida": "pontos_percentuais",
-    "metaAnualValor": 0.05,
+    "unidadeMedida": "percentual",
+    "metaAnualValor": 0.2805,
     "parametrosCalculo": {
       "campoNumerador": "arrecadacaoCanaisEletronicosMes",
       "campoDenominador": "arrecadacaoTotalProdutosLoteriasMes",
-      "participacaoBase": 0.1,
-      "metaIncremento": 0.05
+      "percentualReferencia2025": 0.2305,
+      "acrescimoMetaPontosPercentuais": 0.05,
+      "metaReferencia": 0.2805,
+      "metaTipo": "fixa_anual"
     },
     "camposEntrada": [
       {
         "nome": "arrecadacaoCanaisEletronicosMes",
-        "rotulo": "Arrecada?o de canais eletr?nicos no m?s",
-        "tipo": "numero",
+        "rotulo": "Arrecadação total nos canais eletrônicos no mês",
+        "tipo": "moeda",
         "obrigatorio": true
       },
       {
         "nome": "arrecadacaoTotalProdutosLoteriasMes",
-        "rotulo": "Arrecada?o total de produtos lot?ricos no m?s",
-        "tipo": "numero",
-        "obrigatorio": true
-      }
-    ],
-    "campoResultadoPrincipal": "arrecadacaoCanaisEletronicosMes",
-    "campoPercentualAtingido": "percentualAtingidoMensal",
-    "exigeJustificativa": false,
-    "exigeEvidencia": true,
-    "resultadoOficial": "participacao_acumulada_dezembro"
-  },
-  {
-    "indicadorId": 9,
-    "nome": "Vendas com Meio de Pagamento PIX",
-    "tipoCalculo": "valor_financeiro_acumulado",
-    "tipoConsolidacao": "soma_acumulada_no_ano",
-    "metaRecorrente": false,
-    "unidadeMedida": "moeda",
-    "metaAnualValor": 3740068903.08,
-    "parametrosCalculo": {
-      "campoValor": "arrecadacaoPixMes",
-      "metaMensalPix": 311672408.59
-    },
-    "camposEntrada": [
-      {
-        "nome": "arrecadacaoPixMes",
-        "rotulo": "Arrecadação com PIX no mês",
-        "tipo": "numero",
+        "rotulo": "Arrecadação total dos produtos de loterias no mês",
+        "tipo": "moeda",
         "obrigatorio": true
       }
     ],
@@ -268,7 +244,46 @@
     "campoPercentualAtingido": "percentualAtingidoMensal",
     "exigeJustificativa": false,
     "exigeEvidencia": true,
-    "resultadoOficial": "soma_pix_acumulada_ate_dezembro"
+    "resultadoOficial": "razao_acumulada_homologada_no_periodo"
+  },
+  {
+    "indicadorId": 9,
+    "nome": "Vendas com Meio de Pagamento PIX",
+    "tipoCalculo": "razao_pix",
+    "tipoConsolidacao": "razao_acumulada_no_ano",
+    "metaRecorrente": false,
+    "unidadeMedida": "percentual",
+    "metaAnualValor": 0.65,
+    "parametrosCalculo": {
+      "campoNumerador": "arrecadacaoPixMes",
+      "campoDenominador": "arrecadacaoTotalCanaisEletronicosMes",
+      "metasTrimestrais": {
+        "1TRI/2026": 0.61,
+        "2TRI/2026": 0.62,
+        "3TRI/2026": 0.63,
+        "4TRI/2026": 0.65
+      },
+      "arredondamentoOficialCasasPercentuais": 0
+    },
+    "camposEntrada": [
+      {
+        "nome": "arrecadacaoPixMes",
+        "rotulo": "Arrecadação com PIX no mês",
+        "tipo": "moeda",
+        "obrigatorio": true
+      },
+      {
+        "nome": "arrecadacaoTotalCanaisEletronicosMes",
+        "rotulo": "Arrecadação total nos canais eletrônicos no mês",
+        "tipo": "moeda",
+        "obrigatorio": false
+      }
+    ],
+    "campoResultadoPrincipal": "resultadoMensal",
+    "campoPercentualAtingido": "percentualAtingidoMensal",
+    "exigeJustificativa": false,
+    "exigeEvidencia": true,
+    "resultadoOficial": "razao_trimestral_arredondada_informe"
   },
   {
     "indicadorId": 10,
@@ -291,13 +306,13 @@
       },
       {
         "nome": "percentualExecucao",
-        "rotulo": "Percentual de execu?o",
+        "rotulo": "Percentual de execução",
         "tipo": "percentual",
         "obrigatorio": true
       },
       {
         "nome": "evidenciaEntrega",
-        "rotulo": "Evid?ncia da entrega",
+        "rotulo": "Evidência da entrega",
         "tipo": "texto",
         "obrigatorio": false
       }
@@ -329,7 +344,7 @@
       },
       {
         "nome": "percentualExecucao",
-        "rotulo": "Percentual de execu?o",
+        "rotulo": "Percentual de execução",
         "tipo": "percentual",
         "obrigatorio": true
       },
@@ -341,7 +356,7 @@
       },
       {
         "nome": "numeroProcesso",
-        "rotulo": "N?mero do processo",
+        "rotulo": "Número do processo",
         "tipo": "texto",
         "obrigatorio": false
       }
@@ -354,7 +369,7 @@
   },
   {
     "indicadorId": 12,
-    "nome": "Clima Organizacional(Pesquisa GPTW)",
+    "nome": "Clima Organizacional (Pesquisa GPTW)",
     "tipoCalculo": "pontuacao_minima",
     "tipoConsolidacao": "resultado_pesquisa_oficial",
     "metaRecorrente": false,
@@ -366,7 +381,7 @@
     "camposEntrada": [
       {
         "nome": "mediaGeralGPTW",
-        "rotulo": "M?dia geral GPTW",
+        "rotulo": "Média geral GPTW",
         "tipo": "numero",
         "obrigatorio": true
       },
@@ -378,7 +393,7 @@
       },
       {
         "nome": "relatorioGPTW",
-        "rotulo": "Refer?ncia do relat?rio GPTW",
+        "rotulo": "Referência do relatório GPTW",
         "tipo": "texto",
         "obrigatorio": false
       }
@@ -552,7 +567,7 @@
       {
         "nome": "repasseSocialAcumulado",
         "rotulo": "Repasse social acumulado",
-        "tipo": "numero",
+        "tipo": "moeda",
         "obrigatorio": true
       },
       {
@@ -634,13 +649,13 @@
       {
         "nome": "valorInvestidoAcumulado",
         "rotulo": "Valor investido acumulado",
-        "tipo": "numero",
+        "tipo": "moeda",
         "obrigatorio": true
       },
       {
         "nome": "lucroLiquidoBase",
-        "rotulo": "Lucro l?quido base",
-        "tipo": "numero",
+        "rotulo": "Lucro líquido base",
+        "tipo": "moeda",
         "obrigatorio": true
       }
     ],
@@ -652,7 +667,7 @@
   },
   {
     "indicadorId": 20,
-    "nome": "Visibilidadedos Repasses Sociais das Loterias CAIXA",
+    "nome": "Visibilidade dos Repasses Sociais das Loterias CAIXA",
     "tipoCalculo": "percentual_execucao_plano_acao",
     "tipoConsolidacao": "acumulado_por_acoes_concluidas",
     "metaRecorrente": false,
@@ -710,7 +725,7 @@
       },
       {
         "nome": "empregadosComDuasIniciativasConcluidas",
-        "rotulo": "Empregados com duas iniciativas conclu?das",
+        "rotulo": "Empregados com duas iniciativas concluídas",
         "tipo": "numero",
         "obrigatorio": true
       }
@@ -741,13 +756,13 @@
       {
         "nome": "arrecadacaoEcossistemaMes",
         "rotulo": "Arrecadação via ecossistema no mês",
-        "tipo": "numero",
+        "tipo": "moeda",
         "obrigatorio": true
       },
       {
         "nome": "arrecadacaoTotalMes",
         "rotulo": "Arrecadação total no mês",
-        "tipo": "numero",
+        "tipo": "moeda",
         "obrigatorio": true
       },
       {
@@ -759,13 +774,13 @@
       {
         "nome": "arrecadacaoEcossistema2025",
         "rotulo": "Arrecadação via ecossistema em 2025",
-        "tipo": "numero",
+        "tipo": "moeda",
         "obrigatorio": false
       },
       {
         "nome": "arrecadacaoTotal2025",
         "rotulo": "Arrecadação total em 2025",
-        "tipo": "numero",
+        "tipo": "moeda",
         "obrigatorio": false
       }
     ],
@@ -792,13 +807,13 @@
       {
         "nome": "arrecadacaoRedeLotericaMes2026",
         "rotulo": "Arrecadação Rede Lotérica mês 2026",
-        "tipo": "numero",
+        "tipo": "moeda",
         "obrigatorio": true
       },
       {
         "nome": "arrecadacaoRedeLotericaMes2025",
         "rotulo": "Arrecadação Rede Lotérica mês 2025",
-        "tipo": "numero",
+        "tipo": "moeda",
         "obrigatorio": true
       }
     ],

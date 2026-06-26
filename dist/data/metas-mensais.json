@@ -22,7 +22,7 @@
     "indicadorId": 1,
     "ano": 2026,
     "mes": 3,
-    "nomeMes": "Mar?o",
+    "nomeMes": "Março",
     "metaMensal": 0.1,
     "fonte": "PEI_PN"
   },
@@ -32,7 +32,7 @@
     "ano": 2026,
     "mes": 1,
     "nomeMes": "Janeiro",
-    "metaMensal": 58.0,
+    "metaMensal": 58,
     "fonte": "PEI_PN"
   },
   {
@@ -41,7 +41,7 @@
     "ano": 2026,
     "mes": 2,
     "nomeMes": "Fevereiro",
-    "metaMensal": 58.0,
+    "metaMensal": 58,
     "fonte": "PEI_PN"
   },
   {
@@ -49,8 +49,8 @@
     "indicadorId": 2,
     "ano": 2026,
     "mes": 3,
-    "nomeMes": "Mar?o",
-    "metaMensal": 58.0,
+    "nomeMes": "Março",
+    "metaMensal": 58,
     "fonte": "PEI_PN"
   },
   {
@@ -76,7 +76,7 @@
     "indicadorId": 3,
     "ano": 2026,
     "mes": 3,
-    "nomeMes": "Mar?o",
+    "nomeMes": "Março",
     "metaMensal": 0.28,
     "fonte": "PEI_PN"
   },
@@ -103,7 +103,7 @@
     "indicadorId": 4,
     "ano": 2026,
     "mes": 3,
-    "nomeMes": "Mar?o",
+    "nomeMes": "Março",
     "metaMensal": 0.0625,
     "fonte": "PEI_PN"
   },
@@ -130,7 +130,7 @@
     "indicadorId": 5,
     "ano": 2026,
     "mes": 3,
-    "nomeMes": "Mar?o",
+    "nomeMes": "Março",
     "metaMensal": 3070246140.78,
     "fonte": "PEI_PN"
   },
@@ -157,7 +157,7 @@
     "indicadorId": 6,
     "ano": 2026,
     "mes": 3,
-    "nomeMes": "Mar?o",
+    "nomeMes": "Março",
     "metaMensal": 0.1441,
     "fonte": "PEI_PN"
   },
@@ -184,7 +184,7 @@
     "indicadorId": 7,
     "ano": 2026,
     "mes": 3,
-    "nomeMes": "Mar?o",
+    "nomeMes": "Março",
     "metaMensal": 268666666.67,
     "fonte": "PEI_PN"
   },
@@ -194,8 +194,8 @@
     "ano": 2026,
     "mes": 1,
     "nomeMes": "Janeiro",
-    "metaMensal": 0.05,
-    "fonte": "PEI_PN"
+    "metaMensal": 0.2805,
+    "fonte": "meta_fixa_canais_digitais_2026"
   },
   {
     "id": 23,
@@ -203,17 +203,17 @@
     "ano": 2026,
     "mes": 2,
     "nomeMes": "Fevereiro",
-    "metaMensal": 0.05,
-    "fonte": "PEI_PN"
+    "metaMensal": 0.2805,
+    "fonte": "meta_fixa_canais_digitais_2026"
   },
   {
     "id": 24,
     "indicadorId": 8,
     "ano": 2026,
     "mes": 3,
-    "nomeMes": "Mar?o",
-    "metaMensal": 0.05,
-    "fonte": "PEI_PN"
+    "nomeMes": "Março",
+    "metaMensal": 0.2805,
+    "fonte": "meta_fixa_canais_digitais_2026"
   },
   {
     "id": 25,
@@ -221,8 +221,8 @@
     "ano": 2026,
     "mes": 1,
     "nomeMes": "Janeiro",
-    "metaMensal": 311672408.59,
-    "fonte": "PEI_PN"
+    "metaMensal": 0.61,
+    "fonte": "curva_oficial_pix_2026"
   },
   {
     "id": 26,
@@ -230,17 +230,17 @@
     "ano": 2026,
     "mes": 2,
     "nomeMes": "Fevereiro",
-    "metaMensal": 623344817.18,
-    "fonte": "PEI_PN"
+    "metaMensal": 0.61,
+    "fonte": "curva_oficial_pix_2026"
   },
   {
     "id": 27,
     "indicadorId": 9,
     "ano": 2026,
     "mes": 3,
-    "nomeMes": "Mar?o",
-    "metaMensal": 935017225.76,
-    "fonte": "PEI_PN"
+    "nomeMes": "Março",
+    "metaMensal": 0.61,
+    "fonte": "curva_oficial_pix_2026"
   },
   {
     "id": 28,
@@ -248,7 +248,7 @@
     "ano": 2026,
     "mes": 1,
     "nomeMes": "Janeiro",
-    "metaMensal": 0.0,
+    "metaMensal": 0,
     "fonte": "PEI_PN"
   },
   {
@@ -257,7 +257,7 @@
     "ano": 2026,
     "mes": 2,
     "nomeMes": "Fevereiro",
-    "metaMensal": 0.0,
+    "metaMensal": 0,
     "fonte": "PEI_PN"
   },
   {
@@ -265,8 +265,8 @@
     "indicadorId": 10,
     "ano": 2026,
     "mes": 3,
-    "nomeMes": "Mar?o",
-    "metaMensal": 0.0,
+    "nomeMes": "Março",
+    "metaMensal": 0,
     "fonte": "PEI_PN"
   },
   {
@@ -275,7 +275,7 @@
     "ano": 2026,
     "mes": 1,
     "nomeMes": "Janeiro",
-    "metaMensal": 0.0,
+    "metaMensal": 0,
     "fonte": "PEI_PN"
   },
   {
@@ -284,7 +284,7 @@
     "ano": 2026,
     "mes": 2,
     "nomeMes": "Fevereiro",
-    "metaMensal": 0.0,
+    "metaMensal": 0,
     "fonte": "PEI_PN"
   },
   {
@@ -292,8 +292,8 @@
     "indicadorId": 11,
     "ano": 2026,
     "mes": 3,
-    "nomeMes": "Mar?o",
-    "metaMensal": 0.0,
+    "nomeMes": "Março",
+    "metaMensal": 0,
     "fonte": "PEI_PN"
   },
   {
@@ -302,7 +302,7 @@
     "ano": 2026,
     "mes": 1,
     "nomeMes": "Janeiro",
-    "metaMensal": 0.0,
+    "metaMensal": 0,
     "fonte": "PEI_PN"
   },
   {
@@ -311,7 +311,7 @@
     "ano": 2026,
     "mes": 2,
     "nomeMes": "Fevereiro",
-    "metaMensal": 0.0,
+    "metaMensal": 0,
     "fonte": "PEI_PN"
   },
   {
@@ -319,8 +319,8 @@
     "indicadorId": 12,
     "ano": 2026,
     "mes": 3,
-    "nomeMes": "Mar?o",
-    "metaMensal": 0.0,
+    "nomeMes": "Março",
+    "metaMensal": 0,
     "fonte": "PEI_PN"
   },
   {
@@ -346,7 +346,7 @@
     "indicadorId": 13,
     "ano": 2026,
     "mes": 3,
-    "nomeMes": "Mar?o",
+    "nomeMes": "Março",
     "metaMensal": 0.425,
     "fonte": "PEI_PN"
   },
@@ -373,7 +373,7 @@
     "indicadorId": 14,
     "ano": 2026,
     "mes": 3,
-    "nomeMes": "Mar?o",
+    "nomeMes": "Março",
     "metaMensal": 0.35,
     "fonte": "PEI_PN"
   },
@@ -383,7 +383,7 @@
     "ano": 2026,
     "mes": 1,
     "nomeMes": "Janeiro",
-    "metaMensal": 0.0,
+    "metaMensal": 0,
     "fonte": "PEI_PN"
   },
   {
@@ -392,7 +392,7 @@
     "ano": 2026,
     "mes": 2,
     "nomeMes": "Fevereiro",
-    "metaMensal": 0.0,
+    "metaMensal": 0,
     "fonte": "PEI_PN"
   },
   {
@@ -400,8 +400,8 @@
     "indicadorId": 15,
     "ano": 2026,
     "mes": 3,
-    "nomeMes": "Mar?o",
-    "metaMensal": 0.0,
+    "nomeMes": "Março",
+    "metaMensal": 0,
     "fonte": "PEI_PN"
   },
   {
@@ -410,7 +410,7 @@
     "ano": 2026,
     "mes": 1,
     "nomeMes": "Janeiro",
-    "metaMensal": 0.0,
+    "metaMensal": 0,
     "fonte": "PEI_PN"
   },
   {
@@ -419,7 +419,7 @@
     "ano": 2026,
     "mes": 2,
     "nomeMes": "Fevereiro",
-    "metaMensal": 0.0,
+    "metaMensal": 0,
     "fonte": "PEI_PN"
   },
   {
@@ -427,8 +427,8 @@
     "indicadorId": 16,
     "ano": 2026,
     "mes": 3,
-    "nomeMes": "Mar?o",
-    "metaMensal": 0.0,
+    "nomeMes": "Março",
+    "metaMensal": 0,
     "fonte": "PEI_PN"
   },
   {
@@ -454,7 +454,7 @@
     "indicadorId": 17,
     "ano": 2026,
     "mes": 3,
-    "nomeMes": "Mar?o",
+    "nomeMes": "Março",
     "metaMensal": 2142991571.51,
     "fonte": "PEI_PN"
   },
@@ -464,7 +464,7 @@
     "ano": 2026,
     "mes": 1,
     "nomeMes": "Janeiro",
-    "metaMensal": 0.0,
+    "metaMensal": 0,
     "fonte": "PEI_PN"
   },
   {
@@ -473,7 +473,7 @@
     "ano": 2026,
     "mes": 2,
     "nomeMes": "Fevereiro",
-    "metaMensal": 0.0,
+    "metaMensal": 0,
     "fonte": "PEI_PN"
   },
   {
@@ -481,8 +481,8 @@
     "indicadorId": 18,
     "ano": 2026,
     "mes": 3,
-    "nomeMes": "Mar?o",
-    "metaMensal": 0.0,
+    "nomeMes": "Março",
+    "metaMensal": 0,
     "fonte": "PEI_PN"
   },
   {
@@ -491,7 +491,7 @@
     "ano": 2026,
     "mes": 1,
     "nomeMes": "Janeiro",
-    "metaMensal": 0.0,
+    "metaMensal": 0,
     "fonte": "PEI_PN"
   },
   {
@@ -500,7 +500,7 @@
     "ano": 2026,
     "mes": 2,
     "nomeMes": "Fevereiro",
-    "metaMensal": 0.0,
+    "metaMensal": 0,
     "fonte": "PEI_PN"
   },
   {
@@ -508,8 +508,8 @@
     "indicadorId": 19,
     "ano": 2026,
     "mes": 3,
-    "nomeMes": "Mar?o",
-    "metaMensal": 0.0,
+    "nomeMes": "Março",
+    "metaMensal": 0,
     "fonte": "PEI_PN"
   },
   {
@@ -518,7 +518,7 @@
     "ano": 2026,
     "mes": 1,
     "nomeMes": "Janeiro",
-    "metaMensal": 0.0,
+    "metaMensal": 0,
     "fonte": "PEI_PN"
   },
   {
@@ -527,7 +527,7 @@
     "ano": 2026,
     "mes": 2,
     "nomeMes": "Fevereiro",
-    "metaMensal": 0.0,
+    "metaMensal": 0,
     "fonte": "PEI_PN"
   },
   {
@@ -535,8 +535,8 @@
     "indicadorId": 20,
     "ano": 2026,
     "mes": 3,
-    "nomeMes": "Mar?o",
-    "metaMensal": 0.0,
+    "nomeMes": "Março",
+    "metaMensal": 0,
     "fonte": "PEI_PN"
   },
   {
@@ -545,7 +545,7 @@
     "ano": 2026,
     "mes": 1,
     "nomeMes": "Janeiro",
-    "metaMensal": 0.0,
+    "metaMensal": 0,
     "fonte": "PEI_PN"
   },
   {
@@ -554,7 +554,7 @@
     "ano": 2026,
     "mes": 2,
     "nomeMes": "Fevereiro",
-    "metaMensal": 0.0,
+    "metaMensal": 0,
     "fonte": "PEI_PN"
   },
   {
@@ -562,8 +562,8 @@
     "indicadorId": 21,
     "ano": 2026,
     "mes": 3,
-    "nomeMes": "Mar?o",
-    "metaMensal": 0.0,
+    "nomeMes": "Março",
+    "metaMensal": 0,
     "fonte": "PEI_PN"
   },
   {
@@ -589,7 +589,7 @@
     "indicadorId": 22,
     "ano": 2026,
     "mes": 3,
-    "nomeMes": "Mar?o",
+    "nomeMes": "Março",
     "metaMensal": 0.1,
     "fonte": "PEI_PN"
   },
@@ -616,7 +616,7 @@
     "indicadorId": 23,
     "ano": 2026,
     "mes": 3,
-    "nomeMes": "Mar?o",
+    "nomeMes": "Março",
     "metaMensal": 0.005,
     "fonte": "PEI_PN"
   }

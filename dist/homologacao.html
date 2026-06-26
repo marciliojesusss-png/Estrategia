@@ -1,16 +1,17 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8">
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>CAIXA Loterias | HomologaÃ§Ã£o</title>
-  <link rel="stylesheet" href="assets/css/styles.css?v=REABRIR-HOMOLOGADO-001">
-  <script src="assets/js/dataStore.js?v=REABRIR-HOMOLOGADO-001" defer></script>
-  <script src="assets/js/auth.js?v=REABRIR-HOMOLOGADO-001" defer></script>
-  <script src="assets/js/calculations.js?v=REABRIR-HOMOLOGADO-001" defer></script>
-  <script src="assets/js/formulas.js?v=REABRIR-HOMOLOGADO-001" defer></script>
-  <script src="assets/js/approvals.js?v=REABRIR-HOMOLOGADO-001" defer></script>
-  <script src="assets/js/app.js?v=REABRIR-HOMOLOGADO-001" defer></script>
+  <title>CAIXA Loterias | Homologação</title>
+  <link rel="stylesheet" href="assets/css/styles.css?v=RESPONSAVEIS-001">
+  <script src="assets/js/currency.js?v=RESPONSAVEIS-001" defer></script>
+  <script src="assets/js/dataStore.js?v=RESPONSAVEIS-001" defer></script>
+  <script src="assets/js/auth.js?v=RESPONSAVEIS-001" defer></script>
+  <script src="assets/js/calculations.js?v=RESPONSAVEIS-001" defer></script>
+  <script src="assets/js/formulas.js?v=RESPONSAVEIS-001" defer></script>
+  <script src="assets/js/approvals.js?v=RESPONSAVEIS-001" defer></script>
+  <script src="assets/js/app.js?v=RESPONSAVEIS-001" defer></script>
 </head>
 <body data-page="homologacao">
   <div class="app-shell">
@@ -18,12 +19,12 @@
     <nav id="appNav" class="sidebar"></nav>
     <main class="content">
       <section class="page-heading">
-        <p class="eyebrow">ValidaÃ§Ã£o da diretoria</p>
-        <h1>HomologaÃ§Ã£o</h1>
+        <p class="eyebrow">Validação da diretoria</p>
+        <h1>Homologação</h1>
       </section>
 
-      <section class="filters" aria-label="Filtros da homologaÃ§Ã£o">
-        <label>MÃªs <select data-filter="mes"></select></label>
+      <section class="filters" aria-label="Filtros da homologação">
+        <label>Mês <select data-filter="mes"></select></label>
         <label>Status <select data-filter="status"></select></label>
       </section>
 
@@ -34,13 +35,13 @@
             <thead>
               <tr>
                 <th>Indicador</th>
-                <th>Unidade</th>
-                <th>Diretoria</th>
-                <th>MÃªs</th>
+                <th>Unidade apuradora</th>
+                <th>Diretoria responsável</th>
+                <th>Mês</th>
                 <th>Realizado</th>
                 <th>% atingido</th>
                 <th>Status</th>
-                <th>AÃ§Ãµes</th>
+                <th>Ações</th>
               </tr>
             </thead>
             <tbody id="homologacaoTable"></tbody>
@@ -51,8 +52,8 @@
       <section id="approvalPanel" class="panel detail-panel" hidden>
         <div class="detail-header">
           <div>
-            <p class="eyebrow">AnÃ¡lise da diretoria</p>
-            <h2 id="approvalTitle">Selecione um lanÃ§amento</h2>
+            <p class="eyebrow">Análise da diretoria</p>
+            <h2 id="approvalTitle">Selecione um lançamento</h2>
           </div>
           <span id="approvalStatusBadge" class="badge info"></span>
         </div>
@@ -66,15 +67,15 @@
             <textarea id="approvalJustificativa" rows="3" readonly></textarea>
           </label>
 
-          <label class="full-span">ObservaÃ§Ã£o da Ã¡rea
+          <label class="full-span">Observação da área
             <textarea id="approvalObservacaoArea" rows="3" readonly></textarea>
           </label>
 
-          <label class="full-span">EvidÃªncia
+          <label class="full-span">Evidência
             <textarea id="approvalEvidencia" rows="3" readonly></textarea>
           </label>
 
-          <label class="full-span">ObservaÃ§Ã£o da diretoria
+          <label class="full-span">Observação da diretoria
             <textarea id="approvalObservacaoDiretoria" rows="4"></textarea>
           </label>
 

@@ -173,7 +173,7 @@ const digitaisSemBase = formulas.calcularIndicador(
   [{ mes: 1, camposEntrada: { qmaatu: 2480052, qmaant: 0 } }]
 );
 assert.equal(digitaisSemBase.erro, true);
-assert.equal(digitaisSemBase.mensagem, "QMAANT deve ser maior que zero para calculo do indicador.");
+assert.equal(digitaisSemBase.mensagem, "QMAANT deve ser maior que zero para cálculo do indicador.");
 
 const regraAprimoramento = {
   indicadorId: 4,
@@ -222,7 +222,7 @@ const melhoriasAcimaDoPlano = formulas.calcularIndicador(
   ]
 );
 assert.equal(melhoriasAcimaDoPlano.erro, true);
-assert.equal(melhoriasAcimaDoPlano.mensagem, "O total de melhorias entregues nao pode ser maior que o total de melhorias previstas no plano.");
+assert.equal(melhoriasAcimaDoPlano.mensagem, "O total de melhorias entregues não pode ser maior que o total de melhorias previstas no plano.");
 
 const regraGgr = {
   indicadorId: 5,
@@ -250,36 +250,90 @@ assert.equal(ggr.percentualAtingidoAnualFormatado, "7,25%");
 
 const regraPix = {
   indicadorId: 9,
-  tipoCalculo: "valor_financeiro_acumulado",
-  tipoConsolidacao: "soma_acumulada_no_ano",
-  unidadeMedida: "moeda",
-  metaAnualValor: 3740068903.08,
-  parametrosCalculo: { campoValor: "arrecadacaoPixMes", metaMensalPix: 311672408.59 },
-  camposEntrada: [{ nome: "arrecadacaoPixMes", obrigatorio: true }]
+  tipoCalculo: "razao_pix",
+  tipoConsolidacao: "razao_acumulada_no_ano",
+  unidadeMedida: "percentual",
+  metaAnualValor: 0.65,
+  parametrosCalculo: {
+    campoNumerador: "arrecadacaoPixMes",
+    campoDenominador: "arrecadacaoTotalCanaisEletronicosMes"
+  },
+  camposEntrada: [
+    { nome: "arrecadacaoPixMes", obrigatorio: true },
+    { nome: "arrecadacaoTotalCanaisEletronicosMes", obrigatorio: false }
+  ]
 };
 
+const regraCanaisDigitais = {
+  indicadorId: 8,
+  tipoCalculo: "razao_canais_digitais",
+  tipoConsolidacao: "razao_acumulada_no_periodo",
+  unidadeMedida: "percentual",
+  metaAnualValor: 0.2805,
+  parametrosCalculo: {
+    campoNumerador: "arrecadacaoCanaisEletronicosMes",
+    campoDenominador: "arrecadacaoTotalProdutosLoteriasMes",
+    metaReferencia: 0.2805
+  },
+  camposEntrada: [
+    { nome: "arrecadacaoCanaisEletronicosMes", obrigatorio: true },
+    { nome: "arrecadacaoTotalProdutosLoteriasMes", obrigatorio: true }
+  ]
+};
+const canaisDigitaisLancamentos = [
+  { mes: 1, camposEntrada: { arrecadacaoCanaisEletronicosMes: "R$ 590.000.000,00", arrecadacaoTotalProdutosLoteriasMes: "1.990.000.000,00" } },
+  { mes: 2, camposEntrada: { arrecadacaoCanaisEletronicosMes: "590.000.000,00", arrecadacaoTotalProdutosLoteriasMes: "1.990.000.000,00" } },
+  { mes: 3, camposEntrada: { arrecadacaoCanaisEletronicosMes: "590.200.000,00", arrecadacaoTotalProdutosLoteriasMes: "1.986.900.000,00" } }
+];
+const canaisDigitaisTri = formulas.calcularIndicador(
+  indicador(8, "Vendas Provenientes de Canais Digitais"),
+  regraCanaisDigitais,
+  canaisDigitaisLancamentos[2],
+  canaisDigitaisLancamentos
+);
+closeTo(canaisDigitaisTri.resultadoAcumulado, 1770200000 / 5966900000);
+closeTo(canaisDigitaisTri.percentualAtingidoAcumulado, (1770200000 / 5966900000) / 0.2805);
+assert.equal(canaisDigitaisTri.resultadoAcumuladoFormatado, "29,67%");
+assert.equal(canaisDigitaisTri.situacao, "Atingido");
+assert.equal(canaisDigitaisTri.canaisEletronicosAcumulado, 1770200000);
+assert.equal(canaisDigitaisTri.produtosLoteriasAcumulado, 5966900000);
+
+const canaisDigitaisSemDenominador = formulas.calcularIndicador(
+  indicador(8, "Vendas Provenientes de Canais Digitais"),
+  regraCanaisDigitais,
+  { mes: 1, camposEntrada: { arrecadacaoCanaisEletronicosMes: 590000000 } },
+  [{ mes: 1, camposEntrada: { arrecadacaoCanaisEletronicosMes: 590000000 } }]
+);
+assert.equal(canaisDigitaisSemDenominador.statusCalculo, "aguardando_dados");
+assert.match(canaisDigitaisSemDenominador.mensagem, /produtos de loterias/);
+
 const pixLancamentos = [
-  { mes: 1, camposEntrada: { arrecadacaoPixMes: 411428638.26 } },
-  { mes: 2, camposEntrada: { arrecadacaoPixMes: 356327813.95 } },
-  { mes: 3, camposEntrada: { arrecadacaoPixMes: 359270143.4 } }
+  { mes: 1, camposEntrada: { arrecadacaoPixMes: "R$ 411.428.638,26", arrecadacaoTotalCanaisEletronicosMes: "625.000.000,00" } },
+  { mes: 2, camposEntrada: { arrecadacaoPixMes: "356.327.813,95", arrecadacaoTotalCanaisEletronicosMes: "R$ 525.000.000,00" } },
+  { mes: 3, camposEntrada: { arrecadacaoPixMes: "359.270.143,40", arrecadacaoTotalCanaisEletronicosMes: "536.100.000,00" } }
 ];
 const pixJaneiro = formulas.calcularIndicador(indicador(9, "Vendas com Meio de Pagamento PIX"), regraPix, pixLancamentos[0], pixLancamentos.slice(0, 1));
-closeTo(pixJaneiro.resultadoMensal, 411428638.26);
-closeTo(pixJaneiro.resultadoAcumulado, 411428638.26);
-closeTo(pixJaneiro.percentualAtingidoMensal, 411428638.26 / 311672408.59);
-closeTo(pixJaneiro.percentualAtingidoAcumulado, 411428638.26 / 311672408.59);
-assert.equal(pixJaneiro.percentualAtingidoMensalFormatado, "132,01%");
-assert.equal(pixJaneiro.situacao, "Atingido");
+closeTo(pixJaneiro.resultadoMensal, 411428638.26 / 625000000);
+closeTo(pixJaneiro.resultadoAcumulado, 411428638.26 / 625000000);
+closeTo(pixJaneiro.percentualAtingidoMensal, (411428638.26 / 625000000) / 0.65);
+assert.equal(pixJaneiro.resultadoMensalFormatado, "65,83%");
 
 const pixMarco = formulas.calcularIndicador(indicador(9, "Vendas com Meio de Pagamento PIX"), regraPix, pixLancamentos[2], pixLancamentos);
-closeTo(pixMarco.resultadoMensal, 359270143.4);
-closeTo(pixMarco.resultadoAcumulado, 1127026595.61);
-closeTo(pixMarco.metaAcumulada, 935017225.77);
-closeTo(pixMarco.percentualAtingidoMensal, 359270143.4 / 311672408.59);
-closeTo(pixMarco.percentualAtingidoAcumulado, 1127026595.61 / 935017225.77);
-assert.equal(pixMarco.percentualAtingidoMensalFormatado, "115,27%");
-assert.equal(pixMarco.percentualAtingidoAcumuladoFormatado, "120,54%");
-assert.equal(pixMarco.situacao, "Atingido");
+closeTo(pixMarco.resultadoMensal, 359270143.4 / 536100000);
+closeTo(pixMarco.resultadoAcumulado, 1127026595.61 / 1686100000);
+closeTo(pixMarco.percentualAtingidoAcumulado, (1127026595.61 / 1686100000) / 0.65);
+assert.equal(pixMarco.resultadoAcumuladoFormatado, "66,84%");
+assert.equal(pixMarco.resultadoMensalFormatado, "67,02%");
+
+const pixSemDenominador = formulas.calcularIndicador(
+  indicador(9, "Vendas com Meio de Pagamento PIX"),
+  regraPix,
+  { mes: 1, camposEntrada: { arrecadacaoPixMes: 411428638.26 } },
+  [{ mes: 1, camposEntrada: { arrecadacaoPixMes: 411428638.26 } }]
+);
+assert.equal(pixSemDenominador.erro, undefined);
+assert.equal(pixSemDenominador.statusCalculo, "aguardando_dados");
+assert.equal(pixSemDenominador.resultadoMensal, null);
 
 const regraIeo = {
   indicadorId: 6,
@@ -309,7 +363,7 @@ const ieoNaoAtingido = formulas.calcularIndicador(
   { mes: 1, camposEntrada: { ieoRealizadoMes: 15 } },
   [{ mes: 1, camposEntrada: { ieoRealizadoMes: 15 } }]
 );
-assert.equal(ieoNaoAtingido.situacao, "Nao atingido");
+assert.equal(ieoNaoAtingido.situacao, "Não atingido");
 
 const regraEcossistema = {
   indicadorId: 22,
@@ -374,7 +428,7 @@ const amostras = {
   6: { ieoRealizadoMes: 0.0642 },
   7: { lucroLiquidoRecorrenteAcumulado: 1209000000 },
   8: { arrecadacaoCanaisEletronicosMes: 15, arrecadacaoTotalProdutosLoteriasMes: 100 },
-  9: { arrecadacaoPixMes: 411428638.26 },
+  9: { arrecadacaoPixMes: 411428638.26, arrecadacaoTotalCanaisEletronicosMes: 600000000 },
   10: { etapaAtualProjeto: "MVP entregue", percentualExecucao: 80, evidenciaEntrega: "Termo" },
   11: { etapaAtual: "formalizado", percentualExecucao: 70, modalidade: "Contrato", numeroProcesso: "123" },
   12: { mediaGeralGPTW: 60, dataPesquisa: "2026-12-01", relatorioGPTW: "Relatorio oficial" },
@@ -400,7 +454,7 @@ for (const regra of regras) {
     camposEntrada: amostras[regra.indicadorId]
   };
   const resultado = formulas.calcularIndicador(indicador(regra.indicadorId, regra.nome), regra, lancamento, [lancamento]);
-  assert.equal(resultado.erro, undefined, `Regra ${regra.indicadorId} nao deveria falhar: ${resultado.mensagem}`);
+  assert.equal(resultado.erro, undefined, `Regra ${regra.indicadorId} não deveria falhar: ${resultado.mensagem}`);
   assert.notEqual(resultado.percentualAtingidoMensal, null, `Regra ${regra.indicadorId} sem percentual mensal`);
 }
 

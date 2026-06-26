@@ -62,7 +62,7 @@
   }
 
   function isEditable(lancamento) {
-    return lancamento && EDITABLE_STATUSES.includes(lancamento.status);
+    return lancamento && (EDITABLE_STATUSES.includes(lancamento.status) || lancamento.revisaoMoedaPendente === true);
   }
 
   function isManual(indicador) {
@@ -80,7 +80,7 @@
 
   function getMetaLabel(regra) {
     if (regra?.parametrosCalculo?.metaMensalFixa || regra?.parametrosCalculo?.metaMensalPix) {
-      return "Meta mensal de referencia";
+      return "Meta mensal de referência";
     }
     return regra && regra.tipoConsolidacao === "ultima_posicao"
       ? "Meta de referência mensal"
@@ -158,7 +158,11 @@
     target.innerHTML = lancamentos.slice(0, 100).map((item) => {
       const indicador = porId[item.indicadorId];
       const regra = indicador ? getRule(indicador) : null;
-      const actionLabel = isEditable(item) ? "Preencher" : "Consultar";
+      const actionLabel = item.status === "Devolvido para ajuste"
+        ? "Editar"
+        : isEditable(item)
+          ? "Preencher"
+          : "Visualizar";
       const resultadoMensal = item.resultadoMensal ?? item.realizadoMensal;
       const situacao = item.situacaoCalculada || getCalculatedSituation(item.percentualAtingido ?? item.percentualAtingidoMensal);
       return `
@@ -265,9 +269,9 @@
           class="dynamic-entry-field"
           data-entry-field="${escapeHtml(field.nome)}"
           data-entry-type="${escapeHtml(field.tipo || "numero")}"
-          type="${field.tipo === "texto" ? "text" : field.tipo === "data" ? "date" : "number"}"
-          ${field.tipo === "texto" || field.tipo === "data" ? "" : "step=\"any\""}
-          value="${escapeHtml(values[field.nome] ?? "")}"
+          type="${field.tipo === "texto" || field.tipo === "moeda" ? "text" : field.tipo === "data" ? "date" : "number"}"
+          ${field.tipo === "moeda" ? "inputmode=\"decimal\" placeholder=\"0,00\"" : field.tipo === "texto" || field.tipo === "data" ? "" : "step=\"any\""}
+          value="${escapeHtml(field.tipo === "moeda" && values[field.nome] !== "" ? CurrencyBR.formatarMoedaBR(values[field.nome]).replace(/^R\$\s?/, "") : values[field.nome] ?? "")}"
           ${field.obrigatorio ? "required" : ""}
         >
       </label>
@@ -302,7 +306,7 @@
       details.push(["% da meta anual atingida", Calculations.formatarPercentual(resultado.percentualMetaAnualAtingida)]);
     }
     if (resultado.metaReferenciaMensal !== undefined) {
-      details.push(["Meta mensal de referencia", Calculations.formatarValor(resultado.metaReferenciaMensal, resultado.unidadeMedida)]);
+      details.push(["Meta mensal de referência", Calculations.formatarValor(resultado.metaReferenciaMensal, resultado.unidadeMedida)]);
     }
     if (resultado.percentualMetaMensal !== undefined) {
       details.push(["% da meta mensal", Calculations.formatarPercentual(resultado.percentualMetaMensal)]);
@@ -317,7 +321,19 @@
       details.push(["% atingido acumulado", Calculations.formatarPercentual(resultado.percentualMetaAcumulada)]);
     }
     if (resultado.percentualMetaAnual !== undefined) {
-      details.push(["AvanÃ§o sobre a meta anual", Calculations.formatarPercentual(resultado.percentualMetaAnual)]);
+      details.push(["Avanço sobre a meta anual", Calculations.formatarPercentual(resultado.percentualMetaAnual)]);
+    }
+    if (resultado.pixAcumulado !== undefined) {
+      details.push(["Arrecadação PIX acumulada", Calculations.formatarValor(resultado.pixAcumulado, "moeda")]);
+    }
+    if (resultado.canaisEletronicosAcumulado !== undefined) {
+      details.push(["Arrecadação total dos canais eletrônicos", Calculations.formatarValor(resultado.canaisEletronicosAcumulado, "moeda")]);
+    }
+    if (resultado.produtosLoteriasAcumulado !== undefined) {
+      details.push(["Arrecadação total dos produtos de loterias", Calculations.formatarValor(resultado.produtosLoteriasAcumulado, "moeda")]);
+    }
+    if (resultado.resultadoCalculado !== undefined) {
+      details.push(["Resultado percentual calculado", Calculations.formatarPercentual(resultado.resultadoCalculado)]);
     }
 
     wrapper.hidden = !details.length;
@@ -362,9 +378,17 @@
     const disabled = !isEditable(lancamento);
     setFormDisabled(disabled);
     enforceRuleFieldState(indicador, regra, disabled);
+    document.getElementById("sendApprovalButton").textContent =
+      lancamento.status === "Devolvido para ajuste" ? "Reenviar para homologação" : "Enviar para homologação";
+    const requestButton = document.getElementById("requestReopenButton");
+    requestButton.hidden = !(lancamento.status === "Homologado" && state.user.perfil === "Unidade Apuradora");
+    requestButton.disabled = Boolean(lancamento.solicitacaoReabertura?.status === "Pendente");
+    requestButton.textContent = requestButton.disabled ? "Reabertura solicitada" : "Solicitar reabertura";
 
     if (!isEditable(lancamento)) {
       showMessage(`Lançamento com status "${lancamento.status}" está bloqueado para edição.`, "warning");
+    } else if (lancamento.revisaoMoedaPendente) {
+      showMessage("Este lançamento possui valor monetário antigo possivelmente reduzido. Confira e informe novamente os valores completos antes de salvar.", "warning");
     }
   }
 
@@ -374,6 +398,10 @@
       const type = input.dataset.entryType || "numero";
       if (type === "numero") {
         values[input.dataset.entryField] = input.value === "" ? "" : toNumberOrNull(input.value);
+        return;
+      }
+      if (type === "moeda") {
+        values[input.dataset.entryField] = input.value === "" ? "" : CurrencyBR.parseMoedaBR(input.value);
         return;
       }
       if (type === "percentual") {
@@ -443,7 +471,7 @@
       document.getElementById("launchPercentualCalculado").value = "-";
       document.getElementById("launchResultadoAcumulado").value = "-";
       document.getElementById("launchPercentualAcumulado").value = "-";
-      document.getElementById("launchSituacaoCalculada").value = "Sem cÃ¡lculo";
+      document.getElementById("launchSituacaoCalculada").value = "Sem cálculo";
     }
     renderFormulaDetails(result.resultado);
     return result;
@@ -456,6 +484,23 @@
     const evidencia = document.getElementById("launchEvidencia").value.trim();
     const percentualManual = document.getElementById("launchPercentualManual").value;
     const result = updateCalculatedPreview();
+
+    if (
+      action === "send" &&
+      regra.tipoCalculo === "razao_pix" &&
+      !result.camposEntrada.arrecadacaoTotalCanaisEletronicosMes
+    ) {
+      showMessage("Informe a arrecadação total nos canais eletrônicos antes de enviar para homologação.", "warning");
+      return false;
+    }
+    if (
+      action === "send" &&
+      regra.tipoCalculo === "razao_canais_digitais" &&
+      !result.camposEntrada.arrecadacaoTotalProdutosLoteriasMes
+    ) {
+      showMessage("Informe a arrecadação total dos produtos de loterias antes de enviar para homologação.", "warning");
+      return false;
+    }
 
     if (result && result.resultado.erro) {
       showMessage(result.resultado.mensagem, "warning");
@@ -515,14 +560,15 @@
       preenchidoPor: state.user.email || state.user.nome,
       dataPreenchimento: now.slice(0, 10),
       statusCalculo: calculation.resultado.statusCalculo,
-      mensagemCalculo: calculation.resultado.mensagem
+      mensagemCalculo: calculation.resultado.mensagem,
+      revisaoMoedaPendente: false
     };
 
     state.lancamentos = state.lancamentos.map((item) => item.id === updated.id ? updated : item);
     recomputeAccumulatedForIndicator(indicador.id, updated.ano);
     const mergedLaunches = mergeScopedLaunches();
     state.data.lancamentos = mergedLaunches;
-    DataStore.salvarLancamentos(mergedLaunches);
+    await DataStore.salvarLancamentos(mergedLaunches);
     await DataStore.appendHistory({
       usuario: state.user.email || state.user.nome,
       acao: action === "send" ? "envio_para_homologacao" : "salvar_rascunho_lancamento",
@@ -582,6 +628,33 @@
     updateCalculatedPreview();
   }
 
+  async function requestReopening() {
+    const launch = getSelectedLaunch();
+    if (!launch || launch.status !== "Homologado" || state.user.perfil !== "Unidade Apuradora") return;
+    const updated = {
+      ...launch,
+      solicitacaoReabertura: {
+        status: "Pendente",
+        solicitadaPor: state.user.email || state.user.nome,
+        dataSolicitacao: new Date().toISOString()
+      }
+    };
+    state.lancamentos = state.lancamentos.map((item) => item.id === updated.id ? updated : item);
+    const mergedLaunches = mergeScopedLaunches();
+    state.data.lancamentos = mergedLaunches;
+    await DataStore.salvarLancamentos(mergedLaunches);
+    await DataStore.appendHistory({
+      usuario: state.user.email || state.user.nome,
+      acao: "solicitacao_reabertura_lancamento",
+      entidade: "lancamentos",
+      registroId: updated.id,
+      valorAnterior: launch.solicitacaoReabertura || null,
+      valorNovo: updated.solicitacaoReabertura
+    });
+    showMessage("Solicitação de reabertura registrada para análise da diretoria.", "info");
+    renderEditor();
+  }
+
   function refresh() {
     fillFilters(state.lancamentos);
     renderTable(getFilteredLaunches());
@@ -608,6 +681,7 @@
 
     document.getElementById("saveDraftButton").addEventListener("click", () => persistLaunch("draft"));
     document.getElementById("sendApprovalButton").addEventListener("click", () => persistLaunch("send"));
+    document.getElementById("requestReopenButton").addEventListener("click", requestReopening);
     document.getElementById("clearLaunchButton").addEventListener("click", clearForm);
     document.getElementById("closeLaunchButton").addEventListener("click", () => {
       state.selectedId = null;
@@ -630,6 +704,13 @@
 
     bindEvents();
     refresh();
+
+    const requestedId = Number(new URLSearchParams(window.location.search).get("lancamentoId"));
+    if (requestedId && state.lancamentos.some((item) => item.id === requestedId)) {
+      state.selectedId = requestedId;
+      renderEditor();
+      document.getElementById("launchEditorPanel").scrollIntoView({ block: "start" });
+    }
   }
 
   window.PageModules = window.PageModules || {};

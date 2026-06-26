@@ -1,7 +1,8 @@
 (function () {
   const chartInstances = {};
   let state = {
-    regras: []
+    regras: [],
+    user: null
   };
 
   const MONTH_ORDER = {
@@ -194,21 +195,33 @@
   }
 
   function obterResultadoDashboard(indicador, regra, lancamentosDoIndicador) {
-    const lancamentosValidos = (lancamentosDoIndicador || [])
+    const validSource = regra?.tipoCalculo === "razao_canais_digitais"
+      ? (lancamentosDoIndicador || []).filter((item) => item.status === "Homologado")
+      : (lancamentosDoIndicador || []);
+    const lancamentosValidos = validSource
       .filter(hasValidLaunchData)
       .sort(sortByOfficialCompetence);
     const resultadosMensais = obterResultadosMensais(indicador, regra, lancamentosDoIndicador);
 
     if (!lancamentosValidos.length) {
+      const lancamentosOrdenados = [...(lancamentosDoIndicador || [])].sort(sortByOfficialCompetence);
+      const agora = new Date();
+      const lancamentoCompetenciaAtual = lancamentosOrdenados.find((item) => (
+        Number(item.ano) === agora.getFullYear() && Number(item.mes) === agora.getMonth() + 1
+      ));
+      const lancamentoAcao = lancamentoCompetenciaAtual || lancamentosOrdenados.at(-1) || null;
+      const possuiAndamento = lancamentoAcao && lancamentoAcao.status !== "Não iniciado";
       return {
         indicador,
         regra,
         resultado: null,
         percentualAtingido: null,
-        competencia: null,
-        status: "Sem dados",
+        competencia: possuiAndamento ? competencia(lancamentoAcao) : null,
+        status: lancamentoAcao?.status || "Não iniciado",
         lancamento: null,
+        lancamentoAcao,
         meta: regra && regra.metaAnualValor !== null ? regra.metaAnualValor : null,
+        situacaoCalculada: "Sem dados",
         resultadosMensais
       };
     }
@@ -226,7 +239,9 @@
       competencia: competencia(lancamentoOficial),
       status: lancamentoOficial.status,
       lancamento: lancamentoOficial,
+      lancamentoAcao: lancamentoOficial,
       meta: regra && regra.metaAnualValor !== null ? regra.metaAnualValor : lancamentoOficial.metaMensal,
+      situacaoCalculada: resultadoCalculado && resultadoCalculado.situacao,
       resultadosMensais
     };
   }
@@ -453,7 +468,9 @@
   }
 
   function officialSituation(resultado) {
-    if (!hasOfficialPercent(resultado)) return "Sem cálculo";
+    if (!resultado || !resultado.lancamento) return "Sem dados";
+    if (resultado.situacaoCalculada) return resultado.situacaoCalculada;
+    if (!hasOfficialPercent(resultado)) return "Em andamento";
     if (resultado.percentualAtingido >= 1) return "Atingido";
     if (resultado.percentualAtingido >= 0.8) return "Abaixo da meta";
     return "Crítico";
@@ -467,83 +484,126 @@
     return Calculations.formatarValor(resultado.meta, resultado.regra && resultado.regra.unidadeMedida);
   }
 
-  function formatMonthlyResult(resultadoOficial, resultadoMensal) {
-    return Calculations.formatarValor(resultadoMensal.resultado, resultadoOficial.regra && resultadoOficial.regra.unidadeMedida);
+  function badgeClass(status) {
+    if (status === "Homologado" || status === "Atingido") return "ok";
+    if (status === "Devolvido para ajuste" || status === "Crítico") return "danger";
+    if (status === "Enviado para homologação" || status === "Abaixo da meta") return "warn";
+    return "info";
   }
 
-  function getMonthColumns(resultadosOficiais) {
-    const columns = new Map();
-    resultadosOficiais.forEach((resultado) => {
-      (resultado.resultadosMensais || []).forEach((mensal) => {
-        if (mensal.resultado === null || mensal.resultado === undefined) return;
-        if (!columns.has(mensal.key)) {
-          columns.set(mensal.key, { key: mensal.key, label: mensal.label, mes: mensal.mes, ano: mensal.ano });
-        }
-      });
-    });
-    return [...columns.values()].sort((a, b) => a.key.localeCompare(b.key));
+  function actionLink(label, page, lancamento, indicador, modifier = "") {
+    const params = new URLSearchParams({ indicadorId: indicador.id });
+    if (lancamento) params.set("lancamentoId", lancamento.id);
+    if (modifier) params.set("acao", modifier);
+    return `<a class="secondary-action table-action dashboard-action" href="${page}?${params}">${label}</a>`;
   }
 
-  function renderOfficialPositionTable(resultadosOficiais) {
-    const table = document.getElementById("officialPositionTableElement");
-    const rows = resultadosOficiais
-      .filter((item) => item.lancamento && (item.resultadosMensais || []).some((mensal) => mensal.resultado !== null && mensal.resultado !== undefined))
-      .sort((a, b) => (Number(a.indicador.numero) || a.indicador.id) - (Number(b.indicador.numero) || b.indicador.id));
-    const monthColumns = getMonthColumns(rows);
+  function renderActions(item) {
+    const perfil = state.user?.perfil;
+    const lancamento = item.lancamentoAcao;
+    const status = lancamento?.status || "Não iniciado";
+    const actions = [actionLink("Visualizar", "indicadores.html", lancamento, item.indicador)];
 
-    if (!rows.length) {
-      table.innerHTML = '<tbody id="officialPositionTable"><tr><td>Nenhum indicador possui lançamento válido no momento.</td></tr></tbody>';
-      return monthColumns;
+    if (["Administrador", "Unidade Apuradora"].includes(perfil) && ["Não iniciado", "Em preenchimento", "Devolvido para ajuste", "Reaberto"].includes(status)) {
+      actions.unshift(actionLink("Preencher", "lancamentos.html", lancamento, item.indicador));
+    }
+    if (["Administrador", "Diretoria Homologadora"].includes(perfil) && status === "Enviado para homologação") {
+      actions.unshift(actionLink("Homologar", "homologacao.html", lancamento, item.indicador, "homologar"));
+      actions.push(actionLink("Devolver", "homologacao.html", lancamento, item.indicador, "devolver"));
+    }
+    if (["Administrador", "Diretoria Homologadora"].includes(perfil) && status === "Homologado") {
+      actions.unshift(actionLink("Reabrir", "homologacao.html", lancamento, item.indicador, "reabrir"));
     }
 
-    const colgroup = [
-      '<col class="indicator-col">',
-      ...monthColumns.map(() => '<col class="month-col">'),
-      '<col class="result-col">',
-      '<col class="meta-col">',
-      '<col class="percent-col">',
-      '<col class="situation-col">',
-      '<col class="status-col">'
-    ].join("");
+    return `<div class="row-actions dashboard-row-actions">${actions.join("")}</div>`;
+  }
 
-    const header = `
-      <thead>
-        <tr>
-          <th>Indicador</th>
-          ${monthColumns.map((month) => `<th>${escapeHtml(month.label)}</th>`).join("")}
-          <th>Resultado oficial</th>
-          <th>Meta</th>
-          <th>% atingimento oficial</th>
-          <th>Situação</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-    `;
-
-    const body = rows.map((item) => {
-      const monthlyByKey = Object.fromEntries((item.resultadosMensais || []).map((mensal) => [mensal.key, mensal]));
+  function renderIndicatorRows(items) {
+    return items.map((item) => {
+      const situacao = officialSituation(item);
+      const status = item.lancamento?.status || item.lancamentoAcao?.status || "Não iniciado";
       return `
         <tr>
-          <td class="indicator-name"><strong>${escapeHtml(item.indicador.numero)}.</strong> ${escapeHtml(item.indicador.indicador)}</td>
-          ${monthColumns.map((month) => {
-            const mensal = monthlyByKey[month.key];
-            return `<td>${mensal ? formatMonthlyResult(item, mensal) : "-"}</td>`;
-          }).join("")}
-          <td class="official-value">${formatOfficialResult(item)}</td>
+          <td class="indicator-name">
+            <strong>${escapeHtml(item.indicador.numero)}.</strong>
+            <span>${escapeHtml(item.indicador.indicador)}</span>
+          </td>
+          <td>${escapeHtml(item.competencia || "-")}</td>
+          <td class="official-value">${item.lancamento ? formatOfficialResult(item) : "-"}</td>
           <td>${formatOfficialMeta(item)}</td>
-          <td>${Calculations.formatarPercentual(item.percentualAtingido)}</td>
-          <td>${escapeHtml(officialSituation(item))}</td>
-          <td>${escapeHtml(item.status || "-")}</td>
+          <td>${hasOfficialPercent(item) ? Calculations.formatarPercentual(item.percentualAtingido) : "-"}</td>
+          <td><span class="badge ${badgeClass(situacao)}">${escapeHtml(situacao)}</span></td>
+          <td><span class="badge ${badgeClass(status)}">${escapeHtml(status)}</span></td>
+          <td>${renderActions(item)}</td>
         </tr>
       `;
     }).join("");
-
-    table.innerHTML = `<colgroup>${colgroup}</colgroup>${header}<tbody id="officialPositionTable">${body}</tbody>`;
-    return monthColumns;
   }
 
-  function renderOfficialTables(resultadosOficiais) {
-    renderOfficialPositionTable(resultadosOficiais);
+  function renderStrategicPerformance(resultadosOficiais, ano) {
+    const target = document.getElementById("strategicPerformance");
+    const planOrder = ["PEI", "PN"];
+    const orderedPlans = [
+      ...planOrder.filter((plano) => resultadosOficiais.some((item) => item.indicador.plano === plano)),
+      ...unique(resultadosOficiais.map((item) => item.indicador.plano)).filter((plano) => !planOrder.includes(plano))
+    ];
+
+    if (!resultadosOficiais.length) {
+      target.innerHTML = '<div class="panel empty-state">Nenhum indicador encontrado para os filtros selecionados.</div>';
+      return;
+    }
+
+    target.innerHTML = orderedPlans.map((plano) => {
+      const planItems = resultadosOficiais
+        .filter((item) => item.indicador.plano === plano)
+        .sort((a, b) => (Number(a.indicador.numero) || a.indicador.id) - (Number(b.indicador.numero) || b.indicador.id));
+      const pilares = unique(planItems.map((item) => item.indicador.pilar));
+
+      return `
+        <article class="strategic-plan strategic-plan-${String(plano).toLowerCase()}">
+          <header class="strategic-plan-header">
+            <div>
+              <span>Plano estratégico</span>
+              <h3>${escapeHtml(plano)} ${escapeHtml(ano)}</h3>
+            </div>
+            <strong>${planItems.length} indicador${planItems.length === 1 ? "" : "es"}</strong>
+          </header>
+          <div class="strategic-pillars">
+            ${pilares.map((pilar, index) => {
+              const items = planItems.filter((item) => item.indicador.pilar === pilar);
+              return `
+                <section class="strategic-pillar">
+                  <header class="strategic-pillar-header">
+                    <div>
+                      <span>Pilar ${index + 1}</span>
+                      <h4>${escapeHtml(pilar || "Não informado")}</h4>
+                    </div>
+                    <strong>${items.length}</strong>
+                  </header>
+                  <div class="table-wrap strategic-indicators-table">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Indicador</th>
+                          <th>Última competência</th>
+                          <th>Resultado oficial</th>
+                          <th>Meta</th>
+                          <th>Desempenho</th>
+                          <th>Situação</th>
+                          <th>Status</th>
+                          <th>Ações</th>
+                        </tr>
+                      </thead>
+                      <tbody>${renderIndicatorRows(items)}</tbody>
+                    </table>
+                  </div>
+                </section>
+              `;
+            }).join("")}
+          </div>
+        </article>
+      `;
+    }).join("");
   }
 
   function logVerificacaoOperacional(lancamentos, label = "Base operacional") {
@@ -593,22 +653,37 @@
     ));
 
     const indicatorIds = new Set(filteredIndicators.map((item) => item.id));
-    const filteredLaunches = lancamentos.filter((item) => (
+    const competenceLaunches = lancamentos.filter((item) => (
       indicatorIds.has(item.indicadorId) &&
       (!values.ano || String(item.ano) === values.ano) &&
-      (!values.mes || values.mes === "Todos" || item.nomeMes === values.mes) &&
-      (!values.status || values.status === "Todos" || item.status === values.status)
+      (!values.mes || values.mes === "Todos" || item.nomeMes === values.mes)
     ));
 
-    const resumo = calcularDashboard({ indicadores: filteredIndicators, lancamentos: filteredLaunches, regras: state.regras });
+    let visibleIndicators = filteredIndicators;
+    if (values.status && values.status !== "Todos") {
+      const preliminary = calcularDashboard({
+        indicadores: filteredIndicators,
+        lancamentos: competenceLaunches,
+        regras: state.regras
+      });
+      const statusIds = new Set(preliminary.resultadosOficiais
+        .filter((item) => (item.lancamento?.status || item.lancamentoAcao?.status || "Não iniciado") === values.status)
+        .map((item) => item.indicador.id));
+      visibleIndicators = filteredIndicators.filter((item) => statusIds.has(item.id));
+    }
+
+    const visibleIds = new Set(visibleIndicators.map((item) => item.id));
+    const filteredLaunches = competenceLaunches.filter((item) => visibleIds.has(item.indicadorId));
+    const resumo = calcularDashboard({ indicadores: visibleIndicators, lancamentos: filteredLaunches, regras: state.regras });
     renderCards(resumo);
-    renderCharts(filteredIndicators, filteredLaunches, resumo);
-    renderOfficialTables(resumo.resultadosOficiais);
+    renderCharts(visibleIndicators, filteredLaunches, resumo);
+    renderStrategicPerformance(resumo.resultadosOficiais, values.ano || "2026");
   }
 
   async function init({ data, user }) {
     state = {
-      regras: data.regrasIndicadores || []
+      regras: data.regrasIndicadores || [],
+      user
     };
     const indicadores = Auth.filterIndicatorsByUser(data.indicadores, user);
     const lancamentos = Auth.filterLaunchesByUser(data.lancamentos, data.indicadores, user);
@@ -623,4 +698,12 @@
 
   window.PageModules = window.PageModules || {};
   window.PageModules.dashboard = { init };
+  window.StrategicResults = {
+    calcularDashboard,
+    calcularResultadosOficiais,
+    officialSituation,
+    formatOfficialResult,
+    formatOfficialMeta,
+    hasOfficialPercent
+  };
 })();

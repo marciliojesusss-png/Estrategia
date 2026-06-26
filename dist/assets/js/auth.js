@@ -3,6 +3,8 @@
   const FLASH_KEY = "caixaLoterias:mensagemSistema";
 
   const PAGE_ACCESS = {
+    resumoExecutivo: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consulta/Gestão", "Usuário Companhia"],
+    visaoTrimestral: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consulta/Gestão", "Usuário Companhia"],
     dashboard: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consulta/Gestão", "Usuário Companhia"],
     indicadores: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consulta/Gestão", "Usuário Companhia"],
     lancamentos: ["Administrador", "Unidade Apuradora"],

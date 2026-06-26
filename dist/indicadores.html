@@ -1,14 +1,18 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8">
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CAIXA Loterias | Indicadores</title>
-  <link rel="stylesheet" href="assets/css/styles.css?v=REABRIR-HOMOLOGADO-001">
-  <script src="assets/js/dataStore.js?v=REABRIR-HOMOLOGADO-001" defer></script>
-  <script src="assets/js/auth.js?v=REABRIR-HOMOLOGADO-001" defer></script>
-  <script src="assets/js/indicators.js?v=REABRIR-HOMOLOGADO-001" defer></script>
-  <script src="assets/js/app.js?v=REABRIR-HOMOLOGADO-001" defer></script>
+  <link rel="stylesheet" href="assets/css/styles.css?v=RESPONSAVEIS-001">
+  <script src="assets/js/currency.js?v=RESPONSAVEIS-001" defer></script>
+  <script src="assets/js/dataStore.js?v=RESPONSAVEIS-001" defer></script>
+  <script src="assets/js/auth.js?v=RESPONSAVEIS-001" defer></script>
+  <script src="assets/js/calculations.js?v=RESPONSAVEIS-001" defer></script>
+  <script src="assets/js/formulas.js?v=RESPONSAVEIS-001" defer></script>
+  <script src="assets/js/quarterly.js?v=RESPONSAVEIS-001" defer></script>
+  <script src="assets/js/indicators.js?v=RESPONSAVEIS-001" defer></script>
+  <script src="assets/js/app.js?v=RESPONSAVEIS-001" defer></script>
 </head>
 <body data-page="indicadores">
   <div class="app-shell">
@@ -23,8 +27,8 @@
       <section class="filters" aria-label="Filtros dos indicadores">
         <label>Plano <select data-filter="plano"></select></label>
         <label>Pilar <select data-filter="pilar"></select></label>
-        <label>Unidade <select data-filter="unidade"></select></label>
-        <label>Diretoria <select data-filter="diretoria"></select></label>
+        <label>Unidade apuradora <select data-filter="unidade"></select></label>
+        <label>Diretoria responsável <select data-filter="diretoria"></select></label>
       </section>
 
       <div id="indicatorMessage" class="notice" hidden></div>
@@ -38,14 +42,14 @@
           <table>
             <thead>
               <tr>
-                <th>NÂº</th>
+                <th>Nº</th>
                 <th>Indicador</th>
                 <th>Plano</th>
                 <th>Pilar</th>
-                <th>Unidade</th>
-                <th>Diretoria</th>
-                <th>Tipo</th>
-                <th>AÃ§Ãµes</th>
+                <th>Unidade apuradora</th>
+                <th>Diretoria responsável</th>
+                <th>Tipo de cálculo</th>
+                <th>Ações</th>
               </tr>
             </thead>
             <tbody id="indicadoresTable"></tbody>
@@ -64,10 +68,62 @@
 
         <div id="indicatorReadOnly" class="detail-grid"></div>
 
+        <div id="indicatorTracking" class="indicator-tracking">
+          <section class="indicator-tracking-section">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Composição mensal</p>
+                <h3>Competências de 2026</h3>
+              </div>
+            </div>
+            <div class="table-wrap compact-table">
+              <table>
+                <thead>
+                  <tr id="indicatorMonthlyHeader">
+                    <th>Mês</th>
+                    <th>Meta mensal/referência</th>
+                    <th>Realizado mensal</th>
+                    <th>Resultado mensal</th>
+                    <th>Status mensal</th>
+                    <th>Ação</th>
+                  </tr>
+                </thead>
+                <tbody id="indicatorMonthlyComposition"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="indicator-tracking-section">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Consolidado trimestral</p>
+                <h3>Trimestres calculados automaticamente</h3>
+              </div>
+            </div>
+            <div class="table-wrap quarterly-detail-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Trimestre</th>
+                    <th>Meses homologados</th>
+                    <th>Meta trimestral</th>
+                    <th>Resultado calculado</th>
+                    <th>Resultado oficial</th>
+                    <th>Desempenho</th>
+                    <th>Situação</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="indicatorQuarterlyComposition"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+
         <form id="indicatorForm" class="editor-form" hidden>
           <input type="hidden" id="indicatorId">
 
-          <label>NÃºmero
+          <label>Número
             <input id="fieldNumero" type="number" min="1" required>
           </label>
 
@@ -79,7 +135,7 @@
             <select id="fieldPlano" required></select>
           </label>
 
-          <label>Pilar estratÃ©gico
+          <label>Pilar estratégico
             <select id="fieldPilar" required></select>
           </label>
 
@@ -91,11 +147,11 @@
             <select id="fieldUnidade"></select>
           </label>
 
-          <label>Diretoria responsÃ¡vel
+          <label>Diretoria responsável
             <select id="fieldDiretoria"></select>
           </label>
 
-          <label>Tipo de cÃ¡lculo
+          <label>Tipo de cálculo
             <select id="fieldTipoCalculo" required></select>
           </label>
 
@@ -114,7 +170,7 @@
             <textarea id="fieldMetaAnual" rows="3" required></textarea>
           </label>
 
-          <label class="full-span">MÃ©trica/FÃ³rmula de referÃªncia
+          <label class="full-span">Métrica/Fórmula de referência
             <textarea id="fieldMetrica" rows="4" required></textarea>
           </label>
 

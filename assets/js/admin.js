@@ -2,6 +2,8 @@
   const TIPOS_CALCULO = [
     ["percentual_direto", "Quanto maior o realizado em relação à meta, melhor."],
     ["percentual_inverso", "Quanto menor o realizado em relação à meta, melhor."],
+    ["razao_canais_digitais", "Razão acumulada entre canais eletrônicos e produtos de loterias."],
+    ["razao_pix", "Razão entre arrecadação PIX e arrecadação total dos canais eletrônicos."],
     ["valor_acumulado", "Resultado anual pela soma dos realizados contra soma das metas."],
     ["media_percentual", "Resultado anual pela média dos percentuais mensais."],
     ["projeto_percentual", "Percentual de execução do projeto informado como realizado."],
@@ -264,7 +266,7 @@
     state.data[config.key] = state.editingId === null
       ? [...state.data[config.key], record]
       : state.data[config.key].map((item) => item.id === state.editingId ? record : item);
-    DataStore.saveLocal(config.key, state.data[config.key]);
+    await DataStore.saveLocal(config.key, state.data[config.key]);
     await DataStore.appendHistory({
       usuario: state.user.email || state.user.nome,
       acao: state.editingId === null ? `criacao_${config.key}` : `alteracao_${config.key}`,
@@ -354,7 +356,7 @@
     state.data.metas = state.editingId === null
       ? [...state.data.metas, record]
       : state.data.metas.map((item) => item.id === state.editingId ? record : item);
-    DataStore.saveLocal("metas", state.data.metas);
+    await DataStore.saveLocal("metas", state.data.metas);
     await DataStore.appendHistory({
       usuario: state.user.email || state.user.nome,
       acao: state.editingId === null ? "criacao_meta" : "alteracao_meta",
@@ -408,14 +410,19 @@
       status: "Reaberto",
       homologadoPor: "",
       dataHomologacao: "",
-      observacaoDiretoria: `${launch.observacaoDiretoria || ""}`.trim()
+      observacaoDiretoria: `${launch.observacaoDiretoria || ""}`.trim(),
+      solicitacaoReabertura: launch.solicitacaoReabertura
+        ? { ...launch.solicitacaoReabertura, status: "Atendida", dataAtendimento: new Date().toISOString() }
+        : null
     };
     state.data.lancamentos = state.data.lancamentos.map((item) => item.id === id ? updated : item);
     state.data.homologacoes = state.data.homologacoes.map((item) => (
       item.lancamentoId === id ? { ...item, status: "Reaberto", observacaoDiretoria: updated.observacaoDiretoria } : item
     ));
-    DataStore.salvarLancamentos(state.data.lancamentos);
-    DataStore.saveLocal("homologacoes", state.data.homologacoes);
+    await Promise.all([
+      DataStore.salvarLancamentos(state.data.lancamentos),
+      DataStore.saveLocal("homologacoes", state.data.homologacoes)
+    ]);
     await DataStore.appendHistory({
       usuario: state.user.email || state.user.nome,
       acao: "reabertura_lancamento",

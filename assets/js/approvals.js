@@ -165,7 +165,12 @@
     setActionState(lancamento);
 
     if (canReopen(lancamento)) {
-      showMessage("Lançamento homologado. Use Reabrir para edição caso a unidade precise ajustar os dados.", "info");
+      showMessage(
+        lancamento.solicitacaoReabertura?.status === "Pendente"
+          ? `A unidade solicitou a reabertura em ${new Date(lancamento.solicitacaoReabertura.dataSolicitacao).toLocaleString("pt-BR")}.`
+          : "Lançamento homologado. Use Reabrir para edição caso a unidade precise ajustar os dados.",
+        lancamento.solicitacaoReabertura?.status === "Pendente" ? "warning" : "info"
+      );
     } else if (!canAct(lancamento)) {
       showMessage(`Lançamento com status "${lancamento.status}" está disponível apenas para consulta.`, "warning");
     }
@@ -238,8 +243,10 @@
     const mergedLaunches = mergeScopedLaunches();
     state.data.lancamentos = mergedLaunches;
     state.data.homologacoes = state.homologacoes;
-    DataStore.salvarLancamentos(mergedLaunches);
-    DataStore.saveLocal("homologacoes", state.homologacoes);
+    await Promise.all([
+      DataStore.salvarLancamentos(mergedLaunches),
+      DataStore.saveLocal("homologacoes", state.homologacoes)
+    ]);
     await DataStore.appendHistory({
       usuario: state.user.email || state.user.nome,
       acao: action === "approve" ? "homologacao_lancamento" : "devolucao_lancamento",
@@ -274,7 +281,10 @@
       homologadoPor: "",
       dataHomologacao: "",
       reabertoPor: state.user.email || state.user.nome,
-      dataReabertura: today
+      dataReabertura: today,
+      solicitacaoReabertura: lancamento.solicitacaoReabertura
+        ? { ...lancamento.solicitacaoReabertura, status: "Atendida", dataAtendimento: new Date().toISOString() }
+        : null
     };
 
     state.lancamentos = state.lancamentos.map((item) => item.id === updated.id ? updated : item);
@@ -283,8 +293,10 @@
     const mergedLaunches = mergeScopedLaunches();
     state.data.lancamentos = mergedLaunches;
     state.data.homologacoes = state.homologacoes;
-    DataStore.salvarLancamentos(mergedLaunches);
-    DataStore.saveLocal("homologacoes", state.homologacoes);
+    await Promise.all([
+      DataStore.salvarLancamentos(mergedLaunches),
+      DataStore.saveLocal("homologacoes", state.homologacoes)
+    ]);
     await DataStore.appendHistory({
       usuario: state.user.email || state.user.nome,
       acao: "reabertura_lancamento",
@@ -339,6 +351,13 @@
 
     bindEvents();
     refresh();
+
+    const requestedId = Number(new URLSearchParams(window.location.search).get("lancamentoId"));
+    if (requestedId && state.lancamentos.some((item) => item.id === requestedId)) {
+      state.selectedId = requestedId;
+      renderPanel();
+      document.getElementById("approvalPanel").scrollIntoView({ block: "start" });
+    }
   }
 
   window.PageModules = window.PageModules || {};

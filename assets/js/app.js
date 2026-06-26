@@ -1,5 +1,7 @@
 (function () {
   const NAV_ITEMS = [
+    ["resumo-executivo.html", "Resumo Executivo", "resumoExecutivo"],
+    ["visao-trimestral.html", "Visão Trimestral", "visaoTrimestral"],
     ["dashboard.html", "Dashboard", "dashboard"],
     ["indicadores.html", "Indicadores", "indicadores"],
     ["lancamentos.html", "Lançamentos", "lancamentos"],
@@ -33,7 +35,7 @@
       event.preventDefault();
       const user = usuarios.find((item) => item.id === select.value);
       Auth.login(user);
-      window.location.href = "dashboard.html";
+      window.location.href = "resumo-executivo.html";
     });
   }
 

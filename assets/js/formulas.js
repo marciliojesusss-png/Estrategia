@@ -1,4 +1,6 @@
 (function (root) {
+  const currency = root.CurrencyBR || (typeof require === "function" ? require("./currency.js") : null);
+
   function toNumber(value) {
     if (value === null || value === undefined || value === "") return null;
     const parsed = Number(value);
@@ -36,10 +38,10 @@
   }
 
   function formatarValor(value, unidadeMedida) {
+    if (unidadeMedida === "moeda") return currency.formatarMoedaBR(value);
     const number = toNumber(value);
     if (number === null) return "-";
     if (unidadeMedida === "percentual") return formatarPercentual(number);
-    if (unidadeMedida === "moeda") return number.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
     if (unidadeMedida === "pontos" || unidadeMedida === "pontos_percentuais") {
       return number.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
     }
@@ -95,7 +97,28 @@
   }
 
   function campo(lancamento, nome) {
-    return toNumber(raw(lancamento, nome));
+    return currency.parseMoedaBR(raw(lancamento, nome));
+  }
+
+  function pendente(mensagem, unidadeMedida, extra = {}) {
+    return {
+      resultadoMensal: null,
+      resultadoMensalFormatado: "-",
+      resultadoAcumulado: null,
+      resultadoAcumuladoFormatado: "-",
+      resultadoOficialAnual: null,
+      resultadoOficialAnualFormatado: "-",
+      percentualAtingidoMensal: null,
+      percentualAtingidoMensalFormatado: "-",
+      percentualAtingidoAcumulado: null,
+      percentualAtingidoAnual: null,
+      percentualAtingidoAcumuladoFormatado: "-",
+      percentualAtingidoAnualFormatado: "-",
+      unidadeMedida: unidadeMedida || "percentual",
+      statusCalculo: "aguardando_dados",
+      mensagem,
+      ...extra
+    };
   }
 
   function campoPercentual(lancamento, nome) {
@@ -199,23 +222,23 @@
       ((regra.camposEntrada || []).some((item) => item.nome === "qmaatu") ? "qmaatu" : null);
     const qmaantCampo = regra.parametrosCalculo?.qmaantCampo ||
       ((regra.camposEntrada || []).some((item) => item.nome === "qmaant") ? "qmaant" : null);
-    const meta = requireMeta(regra.parametrosCalculo?.metaCrescimento ?? regra.metaAnualValor, regra.unidadeMedida, "Meta de crescimento nao configurada.");
+    const meta = requireMeta(regra.parametrosCalculo?.metaCrescimento ?? regra.metaAnualValor, regra.unidadeMedida, "Meta de crescimento não configurada.");
     if (meta.erro) return meta;
 
     if (qmaatuCampo && qmaantCampo) {
       const qmaatu = campo(lancamentoAtual, qmaatuCampo);
       const qmaant = campo(lancamentoAtual, qmaantCampo);
-      if (qmaant === null || qmaant <= 0) return erro("QMAANT deve ser maior que zero para calculo do indicador.", regra.unidadeMedida);
-      if (qmaatu === null || qmaatu < 0) return erro("QMAATU deve ser informado e nao pode ser negativo.", regra.unidadeMedida);
+      if (qmaant === null || qmaant <= 0) return erro("QMAANT deve ser maior que zero para cálculo do indicador.", regra.unidadeMedida);
+      if (qmaatu === null || qmaatu < 0) return erro("QMAATU deve ser informado e não pode ser negativo.", regra.unidadeMedida);
       const crescimento = qmaatu / qmaant - 1;
       return ok(crescimento, crescimento, crescimento / meta, crescimento / meta, regra.unidadeMedida, "Crescimento entre QMAATU e QMAANT calculado com sucesso.");
     }
 
     const campoValor = regra.parametrosCalculo?.campoValor || "clientesAtivosDigitaisMes";
     const base = toNumber(regra.parametrosCalculo?.qmaant || regra.parametrosCalculo?.mediaBaseAnoAnterior);
-    if (!base) return erro("Base de comparacao do ano anterior nao cadastrada.", regra.unidadeMedida);
+    if (!base) return erro("Base de comparação do ano anterior não cadastrada.", regra.unidadeMedida);
     const valores = valoresCampo(lancamentosAteMes(lancamentoAtual, lancamentosDoAno), campoValor);
-    if (!valores.length) return erro("Nao ha valores mensais para calcular a media acumulada.", regra.unidadeMedida);
+    if (!valores.length) return erro("Não há valores mensais para calcular a média acumulada.", regra.unidadeMedida);
     const mediaAtual = valores.reduce((sum, value) => sum + value, 0) / valores.length;
     const crescimento = mediaAtual / base - 1;
     return ok(crescimento, crescimento, crescimento / meta, crescimento / meta, regra.unidadeMedida, "Crescimento por media mensal acumulada calculado com sucesso.");
@@ -260,7 +283,7 @@
     } else {
       const campoValor = regra.parametrosCalculo?.campoValor || "realizadoMensal";
       resultadoMensal = campo(lancamentoAtual, campoValor);
-      if (resultadoMensal === null || resultadoMensal < 0) return erro("Valor financeiro realizado deve ser informado e nÃ£o pode ser negativo.", regra.unidadeMedida);
+      if (resultadoMensal === null || resultadoMensal < 0) return erro("Valor financeiro realizado deve ser informado e não pode ser negativo.", regra.unidadeMedida);
       acumulado = somaCampo(ateMes, campoValor);
     }
 
@@ -271,7 +294,7 @@
       const metaAcumulada = metaMensalFixa * numeroMes;
       const percentualMensal = resultadoMensal / metaMensalFixa;
       const percentualAcumulado = acumulado / metaAcumulada;
-      const situacao = percentualAcumulado >= 1 ? "Atingido" : percentualAcumulado >= 0.8 ? "Abaixo da meta" : "Critico";
+      const situacao = percentualAcumulado >= 1 ? "Atingido" : percentualAcumulado >= 0.8 ? "Abaixo da meta" : "Crítico";
       return ok(
         resultadoMensal,
         acumulado,
@@ -292,7 +315,7 @@
     }
 
     if (regra.parametrosCalculo?.usarMetaMensalNoResultado === true) {
-      const metaMensal = requireMeta(lancamentoAtual.metaMensal, regra.unidadeMedida, "Meta de referÃªncia mensal nÃ£o configurada.");
+      const metaMensal = requireMeta(lancamentoAtual.metaMensal, regra.unidadeMedida, "Meta de referência mensal não configurada.");
       if (metaMensal.erro) return metaMensal;
       return ok(
         resultadoMensal,
@@ -325,14 +348,14 @@
       const resultado = regra.parametrosCalculo?.campoPercentual
         ? campoPercentual(lancamentoAtual, regra.parametrosCalculo.campoValor)
         : campo(lancamentoAtual, regra.parametrosCalculo.campoValor);
-      if (resultado === null || resultado < 0) return erro("IEO realizado no mes deve ser informado e nao pode ser negativo.", regra.unidadeMedida);
+      if (resultado === null || resultado < 0) return erro("IEO realizado no mês deve ser informado e não pode ser negativo.", regra.unidadeMedida);
       const percentual = resultado <= meta ? 1 : meta / resultado;
       return ok(resultado, resultado, percentual, percentual, regra.unidadeMedida, "IEO informado diretamente e comparado com a meta anual.", {
         resultadoOficialAnual: resultado,
         percentualAtingidoAnual: percentual,
         metaReferencia: meta,
         quantoMenorMelhor: true,
-        situacao: resultado <= meta ? "Atingido" : "Nao atingido"
+        situacao: resultado <= meta ? "Atingido" : "Não atingido"
       });
     }
 
@@ -360,6 +383,113 @@
     const participacao = numerador / denominador;
     const incremento = participacao - base;
     return ok(participacao, participacao, incremento / metaIncremento, incremento / metaIncremento, regra.unidadeMedida);
+  }
+
+  function calcularRazaoCanaisDigitais(indicador, regra, lancamentoAtual, lancamentosDoAno) {
+    const numeratorField = regra.parametrosCalculo?.campoNumerador || "arrecadacaoCanaisEletronicosMes";
+    const denominatorField = regra.parametrosCalculo?.campoDenominador || "arrecadacaoTotalProdutosLoteriasMes";
+    const monthlyNumerator = currency.parseMoedaBR(raw(lancamentoAtual, numeratorField));
+    const monthlyDenominator = currency.parseMoedaBR(raw(lancamentoAtual, denominatorField));
+    const target = toNumber(regra.parametrosCalculo?.metaReferencia ?? regra.metaAnualValor) || 0.2805;
+
+    if (monthlyNumerator === null || monthlyNumerator < 0) {
+      return erro("Arrecadação total nos canais eletrônicos deve ser informada e não pode ser negativa.", regra.unidadeMedida);
+    }
+    if (monthlyDenominator === null || monthlyDenominator === 0) {
+      return pendente(
+        "Informe a arrecadação total dos produtos de loterias para calcular o resultado do indicador.",
+        regra.unidadeMedida,
+        { arrecadacaoCanaisEletronicosMes: monthlyNumerator, metaReferencia: target }
+      );
+    }
+    if (monthlyDenominator < 0) {
+      return erro("Arrecadação total dos produtos de loterias não pode ser negativa.", regra.unidadeMedida);
+    }
+    if (monthlyNumerator > monthlyDenominator) {
+      return erro("Arrecadação dos canais eletrônicos não pode ser maior que a arrecadação total dos produtos de loterias.", regra.unidadeMedida);
+    }
+
+    const launches = lancamentosAteMes(lancamentoAtual, lancamentosDoAno);
+    const accumulatedNumerator = Math.round(
+      launches.reduce((sum, launch) => sum + (currency.parseMoedaBR(raw(launch, numeratorField)) || 0), 0) * 100
+    ) / 100;
+    const accumulatedDenominator = Math.round(
+      launches.reduce((sum, launch) => sum + (currency.parseMoedaBR(raw(launch, denominatorField)) || 0), 0) * 100
+    ) / 100;
+    if (accumulatedDenominator <= 0) {
+      return pendente("Ainda não há denominador acumulado para o cálculo de vendas provenientes de canais digitais.", regra.unidadeMedida);
+    }
+
+    const monthlyResult = monthlyNumerator / monthlyDenominator;
+    const accumulatedResult = accumulatedNumerator / accumulatedDenominator;
+    return ok(
+      monthlyResult,
+      accumulatedResult,
+      monthlyResult / target,
+      accumulatedResult / target,
+      regra.unidadeMedida,
+      "Participação dos canais digitais calculada pela razão acumulada entre as arrecadações.",
+      {
+        canaisEletronicosAcumulado: accumulatedNumerator,
+        produtosLoteriasAcumulado: accumulatedDenominator,
+        resultadoCalculado: accumulatedResult,
+        metaReferencia: target,
+        situacao: accumulatedResult >= target
+          ? "Atingido"
+          : accumulatedResult / target >= 0.8 ? "Abaixo da meta" : "Crítico"
+      }
+    );
+  }
+
+  function calcularRazaoPix(indicador, regra, lancamentoAtual, lancamentosDoAno) {
+    const pixField = regra.parametrosCalculo?.campoNumerador || "arrecadacaoPixMes";
+    const totalField = regra.parametrosCalculo?.campoDenominador || "arrecadacaoTotalCanaisEletronicosMes";
+    const pixMonthly = currency.parseMoedaBR(raw(lancamentoAtual, pixField));
+    const totalMonthly = currency.parseMoedaBR(raw(lancamentoAtual, totalField));
+    if (pixMonthly === null || pixMonthly < 0) {
+      return erro("Arrecadação com PIX no mês deve ser informada e não pode ser negativa.", regra.unidadeMedida);
+    }
+    if (totalMonthly === null || totalMonthly === 0) {
+      return pendente(
+        "Informe a arrecadação total nos canais eletrônicos para calcular o resultado percentual.",
+        regra.unidadeMedida,
+        { arrecadacaoPixMes: pixMonthly }
+      );
+    }
+    if (totalMonthly < 0) {
+      return erro("Arrecadação total nos canais eletrônicos não pode ser negativa.", regra.unidadeMedida);
+    }
+    if (pixMonthly > totalMonthly) {
+      return erro("Arrecadação com PIX não pode ser maior que a arrecadação total nos canais eletrônicos.", regra.unidadeMedida);
+    }
+
+    const launches = lancamentosAteMes(lancamentoAtual, lancamentosDoAno);
+    const pixAccumulated = Math.round(
+      launches.reduce((sum, launch) => sum + (currency.parseMoedaBR(raw(launch, pixField)) || 0), 0) * 100
+    ) / 100;
+    const totalAccumulated = Math.round(
+      launches.reduce((sum, launch) => sum + (currency.parseMoedaBR(raw(launch, totalField)) || 0), 0) * 100
+    ) / 100;
+    if (totalAccumulated <= 0) {
+      return pendente("Ainda não há denominador acumulado para o cálculo do indicador PIX.", regra.unidadeMedida);
+    }
+    const monthlyResult = pixMonthly / totalMonthly;
+    const accumulatedResult = pixAccumulated / totalAccumulated;
+    const annualTarget = toNumber(regra.metaAnualValor) || 0.65;
+    return ok(
+      monthlyResult,
+      accumulatedResult,
+      monthlyResult / annualTarget,
+      accumulatedResult / annualTarget,
+      regra.unidadeMedida,
+      "Participação das vendas com PIX calculada pela razão entre arrecadações.",
+      {
+        pixAcumulado: pixAccumulated,
+        canaisEletronicosAcumulado: totalAccumulated,
+        resultadoCalculado: accumulatedResult,
+        metaReferencia: annualTarget
+      }
+    );
   }
 
   function calcularProjetoMarcoEntrega(indicador, regra, lancamentoAtual) {
@@ -395,15 +525,15 @@
     if (totalMelhoriasPlano && metaMinimaMelhorias) {
       const ateMes = lancamentosAteMes(lancamentoAtual, lancamentosDoAno);
       const mensal = campo(lancamentoAtual, campoValor);
-      if (mensal === null || mensal < 0) return erro("Melhorias entregues no mes deve ser informado e nao pode ser negativo.", regra.unidadeMedida);
-      if (!Number.isInteger(mensal)) return erro("Melhorias entregues no mes deve ser numero inteiro.", regra.unidadeMedida);
+      if (mensal === null || mensal < 0) return erro("Melhorias entregues no mês devem ser informadas e não podem ser negativas.", regra.unidadeMedida);
+      if (!Number.isInteger(mensal)) return erro("Melhorias entregues no mês devem ser números inteiros.", regra.unidadeMedida);
       const acumulado = somaCampo(ateMes, campoValor);
       if (acumulado > totalMelhoriasPlano) {
-        return erro("O total de melhorias entregues nao pode ser maior que o total de melhorias previstas no plano.", regra.unidadeMedida);
+        return erro("O total de melhorias entregues não pode ser maior que o total de melhorias previstas no plano.", regra.unidadeMedida);
       }
       const percentualPlanoExecutado = acumulado / totalMelhoriasPlano;
       const percentualMetaAnualAtingida = acumulado / metaMinimaMelhorias;
-      const situacao = acumulado >= metaMinimaMelhorias ? "Atingido" : acumulado > 0 ? "Em andamento" : "Nao iniciado";
+      const situacao = acumulado >= metaMinimaMelhorias ? "Atingido" : acumulado > 0 ? "Em andamento" : "Não iniciado";
       return ok(
         percentualPlanoExecutado,
         percentualPlanoExecutado,
@@ -554,6 +684,10 @@
         return calcularIndiceInversoAjustado(indicador, regra, lancamentoAtual, lancamentosDoAno);
       case "incremento_pontos_percentuais":
         return calcularIncrementoPontosPercentuais(indicador, regra, lancamentoAtual, lancamentosDoAno);
+      case "razao_canais_digitais":
+        return calcularRazaoCanaisDigitais(indicador, regra, lancamentoAtual, lancamentosDoAno);
+      case "razao_pix":
+        return calcularRazaoPix(indicador, regra, lancamentoAtual, lancamentosDoAno);
       case "projeto_marco_entrega":
         return calcularProjetoMarcoEntrega(indicador, regra, lancamentoAtual, lancamentosDoAno);
       case "pontuacao_minima":
@@ -581,6 +715,8 @@
     obterRegra,
     regraFallback,
     toNumber,
+    parseMoedaBR: currency.parseMoedaBR,
+    formatarMoedaBR: currency.formatarMoedaBR,
     normalizarPercentual,
     calcularIndicador,
     calcularPercentualDireto,
@@ -590,6 +726,8 @@
     calcularValorFinanceiroAcumulado,
     calcularIndiceInversoAjustado,
     calcularIncrementoPontosPercentuais,
+    calcularRazaoCanaisDigitais,
+    calcularRazaoPix,
     calcularProjetoMarcoEntrega,
     calcularPontuacaoMinima,
     calcularQuantidadeAcumulada,
