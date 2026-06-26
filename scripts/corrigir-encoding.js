@@ -180,7 +180,7 @@ function standardizeHtml() {
       const original = fs.readFileSync(filePath, "utf8");
       const updated = original
         .replace(/<meta charset="utf-8">/gi, '<meta charset="UTF-8">')
-        .replace(/(assets\/(?:css|js)\/[^"'?]+)\?v=[^"']+/g, "$1?v=RESPONSAVEIS-001");
+        .replace(/(assets\/(?:css|js)\/[^"'?]+)\?v=[^"']+/g, "$1?v=PERSISTENCIA-CENTRAL-002");
       if (updated !== original) writeUtf8(filePath, updated);
     });
 }

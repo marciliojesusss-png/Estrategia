@@ -446,6 +446,23 @@
     renderModule();
   }
 
+  async function publishLocalDataToCentral() {
+    try {
+      const result = await DataStore.publicarDadosLocaisNaBaseCentral();
+      state.data = await DataStore.loadAll();
+      showMessage(
+        result.published
+          ? `Dados locais publicados na base central: ${result.keys.join(", ")}.`
+          : "Nenhum dado local operacional encontrado para publicar.",
+        result.published ? "info" : "warning"
+      );
+      renderCards();
+      renderModule();
+    } catch (error) {
+      showMessage(error.message, "danger");
+    }
+  }
+
   function renderHistorico() {
     const rows = [...state.data.historico].reverse().slice(0, 200).map((item) => `
       <tr>
@@ -488,6 +505,11 @@
     document.getElementById("resetOperationalDataButton").addEventListener("click", () => {
       const confirmed = window.confirm("Reiniciar todos os lançamentos para Não iniciado e limpar homologações/histórico locais?");
       if (confirmed) resetOperationalData();
+    });
+
+    document.getElementById("publishLocalDataButton").addEventListener("click", () => {
+      const confirmed = window.confirm("Publicar os dados operacionais locais deste navegador na base JSON central? Use esta opção apenas no perfil do Chrome que possui as informações corretas.");
+      if (confirmed) publishLocalDataToCentral();
     });
 
     document.getElementById("adminForm").addEventListener("submit", (event) => {

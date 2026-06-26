@@ -14,11 +14,15 @@
   };
 
   const OPERATIONAL_KEYS = ["lancamentos", "homologacoes", "historico", "dashboard", "relatorios"];
+  const CENTRAL_OPERATIONAL_KEYS = ["lancamentos", "homologacoes", "historico"];
   const OPERATIONAL_DATA_VERSION = "PERSISTENCIA-LOCAL-001";
   const OPERATIONAL_DATA_VERSION_KEY = "caixaLoterias:operationalDataVersion";
   const OPERATIONAL_DATA_SIGNATURE = "PERSISTENCIA-LOCAL-001:safe-migration";
   const OPERATIONAL_DATA_SIGNATURE_KEY = "caixaLoterias:operationalDataSignature";
   const JSON_DB_MIGRATION_PREFIX = "caixaLoterias:jsonDbMigrated:";
+  const JSON_DB_LOCAL_BACKUP_PREFIX = "caixaLoterias:localBackupBeforeCentral:";
+  const CENTRAL_BACKUP_PENDING_KEY = "caixaLoterias:centralBackupPending";
+  const STORAGE_MODE_KEY = "caixaLoterias:storageMode";
   const TEXT_ENCODING_MIGRATION_KEY = "caixaLoterias:textEncodingMigration";
   const TEXT_ENCODING_MIGRATION_VERSION = "UTF8-PTBR-001";
   const CURRENCY_MIGRATION_KEY = "caixaLoterias:currencyMigration";
@@ -171,6 +175,18 @@
     return `${JSON_DB_MIGRATION_PREFIX}${key}`;
   }
 
+  function jsonDbLocalBackupKey(key) {
+    return `${JSON_DB_LOCAL_BACKUP_PREFIX}${key}`;
+  }
+
+  function safeStringify(value) {
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return "";
+    }
+  }
+
   function mojibakeScore(value) {
     return (String(value).match(/[ÃÂâ�]/g) || []).length;
   }
@@ -295,6 +311,7 @@
     if (jsonDbAvailable !== null) return jsonDbAvailable;
     if (window.location.protocol === "file:") {
       jsonDbAvailable = false;
+      localStorage.setItem(STORAGE_MODE_KEY, "local");
       return false;
     }
     try {
@@ -303,6 +320,7 @@
     } catch {
       jsonDbAvailable = false;
     }
+    localStorage.setItem(STORAGE_MODE_KEY, jsonDbAvailable ? "central" : "local");
     return jsonDbAvailable;
   }
 
@@ -315,6 +333,7 @@
     } catch (error) {
       console.warn(`Banco JSON indisponível para leitura de ${key}; usando fallback.`, error);
       jsonDbAvailable = false;
+      localStorage.setItem(STORAGE_MODE_KEY, "local");
       return null;
     }
   }
@@ -335,8 +354,26 @@
     } catch (error) {
       console.warn(`Não foi possível salvar ${key} no banco JSON. Dados preservados no localStorage.`, error);
       jsonDbAvailable = false;
+      localStorage.setItem(STORAGE_MODE_KEY, "local");
       return false;
     }
+  }
+
+  function preserveLocalOperationalBackup(key, localValue, centralValue) {
+    if (!OPERATIONAL_KEYS.includes(key) || localValue === null) return;
+    const normalizedLocal = normalizeData(key, localValue);
+    const normalizedCentral = normalizeData(key, centralValue);
+
+    if (safeStringify(normalizedLocal) === safeStringify(normalizedCentral)) return;
+
+    localStorage.setItem(jsonDbLocalBackupKey(key), JSON.stringify({
+      key,
+      createdAt: new Date().toISOString(),
+      reason: "Dados locais divergentes preservados antes de assumir a base JSON central.",
+      data: normalizedLocal
+    }));
+    localStorage.setItem(CENTRAL_BACKUP_PENDING_KEY, "true");
+    console.warn(`Dados locais divergentes de ${key} foram preservados em backup local. A base JSON central foi mantida como fonte oficial.`);
   }
 
   function enqueueJsonDbWrite(key, value) {
@@ -362,6 +399,21 @@
 
   function hasLocalData(key) {
     return localStorage.getItem(storageKey(key)) !== null;
+  }
+
+  function readLocalBackup(key) {
+    const raw = localStorage.getItem(jsonDbLocalBackupKey(key));
+    if (!raw) return null;
+    try {
+      const backup = JSON.parse(raw);
+      return backup && backup.data !== undefined ? backup.data : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function hasAnyLocalBackup() {
+    return CENTRAL_OPERATIONAL_KEYS.some((key) => localStorage.getItem(jsonDbLocalBackupKey(key)) !== null);
   }
 
   function persistVersionMarkers() {
@@ -633,23 +685,13 @@
     const jsonDbValue = await loadFromJsonDb(key);
     if (jsonDbValue !== null) {
       const localValue = hasLocalData(key) ? readLocal(key) : null;
-      const shouldMigrateLocalOperationalData =
-        OPERATIONAL_KEYS.includes(key) &&
-        localValue !== null &&
-        localStorage.getItem(jsonDbMigrationKey(key)) !== "true";
-
-      if (shouldMigrateLocalOperationalData) {
-        cache[key] = normalizeData(key, localValue);
-        const migrated = await enqueueJsonDbWrite(key, cache[key]);
-        if (migrated) {
-          localStorage.setItem(jsonDbMigrationKey(key), "true");
-          console.info(`Dados locais de ${key} migrados para o banco JSON.`);
-        }
-        return cache[key];
-      }
-
       cache[key] = normalizeData(key, jsonDbValue);
+      preserveLocalOperationalBackup(key, localValue, cache[key]);
       localStorage.setItem(storageKey(key), JSON.stringify(cache[key]));
+      localStorage.setItem(STORAGE_MODE_KEY, "central");
+      if (OPERATIONAL_KEYS.includes(key)) {
+        localStorage.setItem(jsonDbMigrationKey(key), "central");
+      }
       if (key === "lancamentos") {
         console.log("Lançamentos carregados do banco JSON:", cache[key]);
       }
@@ -720,6 +762,52 @@
     return enqueueJsonDbWrite(key, value);
   }
 
+  async function getStorageInfo() {
+    const centralAvailable = await checkJsonDb();
+    return {
+      mode: centralAvailable ? "central" : "local",
+      centralAvailable,
+      hasPendingLocalBackup: localStorage.getItem(CENTRAL_BACKUP_PENDING_KEY) === "true",
+      message: centralAvailable
+        ? "Base central JSON ativa. As informaÃ§Ãµes sÃ£o compartilhadas entre perfis do Chrome neste computador."
+        : "Base central JSON nÃ£o detectada. As informaÃ§Ãµes ficam apenas neste perfil do Chrome e nÃ£o aparecem em outros perfis."
+    };
+  }
+
+  async function publicarDadosLocaisNaBaseCentral() {
+    if (!(await checkJsonDb())) {
+      throw new Error("Base central JSON nÃ£o detectada. Inicie o sistema pelo arquivo iniciar-banco-json.bat.");
+    }
+
+    const publishedKeys = [];
+    for (const key of CENTRAL_OPERATIONAL_KEYS) {
+      const source = readLocalBackup(key) || readLocal(key);
+      if (source === null) continue;
+
+      const normalized = normalizeData(key, source);
+      const published = await enqueueJsonDbWrite(key, normalized);
+      if (!published) {
+        throw new Error(`NÃ£o foi possÃ­vel publicar ${key} na base central.`);
+      }
+
+      cache[key] = normalized;
+      localStorage.setItem(storageKey(key), JSON.stringify(normalized));
+      localStorage.setItem(jsonDbMigrationKey(key), "central");
+      localStorage.removeItem(jsonDbLocalBackupKey(key));
+      publishedKeys.push(key);
+    }
+
+    if (!hasAnyLocalBackup()) {
+      localStorage.removeItem(CENTRAL_BACKUP_PENDING_KEY);
+    }
+    localStorage.setItem(STORAGE_MODE_KEY, "central");
+
+    return {
+      published: publishedKeys.length,
+      keys: publishedKeys
+    };
+  }
+
   async function appendHistory(entry) {
     const historico = await loadJson("historico");
     const nextEntry = {
@@ -742,7 +830,12 @@
     localStorage.removeItem(LEGACY_VERSION_KEY);
     localStorage.removeItem(TEXT_ENCODING_MIGRATION_KEY);
     localStorage.removeItem(CURRENCY_MIGRATION_KEY);
-    OPERATIONAL_KEYS.forEach((key) => localStorage.removeItem(jsonDbMigrationKey(key)));
+    localStorage.removeItem(CENTRAL_BACKUP_PENDING_KEY);
+    localStorage.removeItem(STORAGE_MODE_KEY);
+    OPERATIONAL_KEYS.forEach((key) => {
+      localStorage.removeItem(jsonDbMigrationKey(key));
+      localStorage.removeItem(jsonDbLocalBackupKey(key));
+    });
   }
 
   corrigirEncodingTextosSalvos();
@@ -758,6 +851,8 @@
     appendHistory,
     clearLocalData,
     getLancamentos,
+    getStorageInfo,
+    publicarDadosLocaisNaBaseCentral,
     gerarLancamentosLimpos,
     resetarBaseOperacionalGlobal,
     resetarDadosOperacionais,

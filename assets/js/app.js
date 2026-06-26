@@ -10,6 +10,35 @@
     ["administracao.html", "Administração", "administracao"]
   ];
 
+  function storageMessages(storageInfo) {
+    if (!storageInfo) return [];
+    const messages = [];
+    if (storageInfo.mode === "local") {
+      messages.push(`
+        <div class="notice warning">
+          <strong>Base central não detectada.</strong>
+          As informações ficam salvas apenas neste perfil do Chrome. Para refletir em qualquer usuário/perfil, abra o sistema pelo servidor JSON: <code>iniciar-banco-json.bat</code>.
+        </div>
+      `);
+    }
+    if (storageInfo.hasPendingLocalBackup) {
+      messages.push(`
+        <div class="notice warning">
+          Existem dados locais antigos diferentes da base central. Eles foram preservados como backup neste navegador, mas a base JSON central foi mantida como fonte oficial.
+        </div>
+      `);
+    }
+    return messages;
+  }
+
+  function renderLoginStorageNotice(storageInfo) {
+    const target = document.querySelector(".login-panel .brand-block");
+    if (!target) return;
+    const messages = storageMessages(storageInfo);
+    if (!messages.length) return;
+    target.insertAdjacentHTML("afterend", messages.join(""));
+  }
+
   async function initLogin() {
     const usuarios = await DataStore.loadJson("usuarios");
     const select = document.getElementById("usuarioSelect");
@@ -39,7 +68,7 @@
     });
   }
 
-  function renderShell(user, page) {
+  function renderShell(user, page, storageInfo) {
     const header = document.getElementById("appHeader");
     const nav = document.getElementById("appNav");
     const scope = Auth.getScopeDescription(user);
@@ -73,6 +102,7 @@
       const flash = Auth.consumeFlashMessage();
       const messages = [
         flash ? `<div class="notice ${flash.type || "info"}">${flash.message}</div>` : "",
+        ...storageMessages(storageInfo),
         scope ? `<div class="notice muted">${scope}</div>` : ""
       ].join("");
       content.insertAdjacentHTML("afterbegin", messages);
@@ -81,9 +111,11 @@
 
   async function initPage() {
     const page = document.body.dataset.page;
+    const storageInfo = await DataStore.getStorageInfo();
 
     if (page === "login") {
       await initLogin();
+      renderLoginStorageNotice(storageInfo);
       return;
     }
 
@@ -96,7 +128,7 @@
       return;
     }
 
-    renderShell(user, page);
+    renderShell(user, page, storageInfo);
 
     const module = window.PageModules && window.PageModules[page];
     if (module) {
