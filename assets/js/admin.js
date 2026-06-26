@@ -507,7 +507,9 @@
       if (confirmed) resetOperationalData();
     });
 
-    document.getElementById("publishLocalDataButton").addEventListener("click", () => {
+    const publishButton = document.getElementById("publishLocalDataButton");
+    publishButton.hidden = !state.storageInfo?.centralAvailable;
+    publishButton.addEventListener("click", () => {
       const confirmed = window.confirm("Publicar os dados operacionais locais deste navegador na base JSON central? Use esta opção apenas no perfil do Chrome que possui as informações corretas.");
       if (confirmed) publishLocalDataToCentral();
     });
@@ -552,7 +554,8 @@
   }
 
   async function init({ data, user }) {
-    state = { data, user, module: "usuarios", editingId: null };
+    const storageInfo = await DataStore.getStorageInfo();
+    state = { data, user, storageInfo, module: "usuarios", editingId: null };
     renderCards();
     bindEvents();
     setModule("usuarios");

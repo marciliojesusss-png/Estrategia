@@ -2,7 +2,7 @@ const http = require("node:http");
 const fs = require("node:fs/promises");
 const path = require("node:path");
 
-const ROOT_DIR = __dirname;
+const ROOT_DIR = path.resolve(__dirname, "..");
 const PORT = Number(process.env.PORT || 5500);
 const writeQueues = new Map();
 

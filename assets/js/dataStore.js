@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
   const DATA_FILES = {
     usuarios: "data/usuarios.json",
     planos: "data/planos.json",
@@ -23,6 +23,9 @@
   const JSON_DB_LOCAL_BACKUP_PREFIX = "caixaLoterias:localBackupBeforeCentral:";
   const CENTRAL_BACKUP_PENDING_KEY = "caixaLoterias:centralBackupPending";
   const STORAGE_MODE_KEY = "caixaLoterias:storageMode";
+  const LOCAL_JSON_DB_NAME = "caixaLoteriasJsonDb";
+  const LOCAL_JSON_DB_VERSION = 1;
+  const LOCAL_JSON_DB_STORE = "collections";
   const TEXT_ENCODING_MIGRATION_KEY = "caixaLoterias:textEncodingMigration";
   const TEXT_ENCODING_MIGRATION_VERSION = "UTF8-PTBR-001";
   const CURRENCY_MIGRATION_KEY = "caixaLoterias:currencyMigration";
@@ -82,12 +85,12 @@
     "arrecadacaoRedeLotericaMes2025"
   ]);
   const CP1252_BYTES = {
-    "€": 0x80, "‚": 0x82, "ƒ": 0x83, "„": 0x84, "…": 0x85,
-    "†": 0x86, "‡": 0x87, "ˆ": 0x88, "‰": 0x89, "Š": 0x8a,
-    "‹": 0x8b, "Œ": 0x8c, "Ž": 0x8e, "‘": 0x91, "’": 0x92,
-    "“": 0x93, "”": 0x94, "•": 0x95, "–": 0x96, "—": 0x97,
-    "˜": 0x98, "™": 0x99, "š": 0x9a, "›": 0x9b, "œ": 0x9c,
-    "ž": 0x9e, "Ÿ": 0x9f
+    "â‚¬": 0x80, "â€š": 0x82, "Æ’": 0x83, "â€ž": 0x84, "â€¦": 0x85,
+    "â€ ": 0x86, "â€¡": 0x87, "Ë†": 0x88, "â€°": 0x89, "Å ": 0x8a,
+    "â€¹": 0x8b, "Å’": 0x8c, "Å½": 0x8e, "â€˜": 0x91, "â€™": 0x92,
+    "â€œ": 0x93, "â€": 0x94, "â€¢": 0x95, "â€“": 0x96, "â€”": 0x97,
+    "Ëœ": 0x98, "â„¢": 0x99, "Å¡": 0x9a, "â€º": 0x9b, "Å“": 0x9c,
+    "Å¾": 0x9e, "Å¸": 0x9f
   };
   const TEXT_REPLACEMENTS = [
     ["Efici\u003fncia", "Eficiência"], ["Inova\u003fo", "Inovação"], ["Atua\u003fo", "Atuação"],
@@ -98,7 +101,8 @@
     ["eletr\u003fnicos", "eletrônicos"], ["lot\u003fricos", "lotéricos"],
     ["execu\u003fo", "execução"], ["Evid\u003fncia", "Evidência"], ["N\u003fmero", "Número"],
     ["M\u003fdia", "Média"], ["Refer\u003fncia", "Referência"], ["Gest\u003fo", "Gestão"],
-    ["N\u003fo", "Não"], ["n\u003fo", "não"], ["m\u003fs", "mês"], ["M\u003fs", "Mês"]
+    ["N\u003fo", "Não"], ["n\u003fo", "não"], ["m\u003fs", "mês"], ["M\u003fs", "Mês"],
+    ["â‰¥", "≥"], ["â‰¤", "≤"]
   ];
   const OPERATIONAL_NULL_FIELDS = [
     "realizado",
@@ -135,6 +139,7 @@
   ];
   const cache = {};
   const writeQueues = {};
+  let localJsonDbPromise = null;
   let jsonDbAvailable = null;
   const MESES = [
     [1, "Janeiro"],
@@ -179,6 +184,104 @@
     return `${JSON_DB_LOCAL_BACKUP_PREFIX}${key}`;
   }
 
+  function getBootstrapData(key) {
+    const bootstrap = window.CAIXA_LOTERIAS_BOOTSTRAP_DATA;
+    if (!bootstrap || bootstrap[key] === undefined) return null;
+    return JSON.parse(JSON.stringify(bootstrap[key]));
+  }
+
+  function requestToPromise(request) {
+    return new Promise((resolve, reject) => {
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  function openLocalJsonDb() {
+    if (!("indexedDB" in window)) return Promise.resolve(null);
+    if (localJsonDbPromise) return localJsonDbPromise;
+
+    localJsonDbPromise = new Promise((resolve) => {
+      const request = indexedDB.open(LOCAL_JSON_DB_NAME, LOCAL_JSON_DB_VERSION);
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        if (!db.objectStoreNames.contains(LOCAL_JSON_DB_STORE)) {
+          db.createObjectStore(LOCAL_JSON_DB_STORE, { keyPath: "key" });
+        }
+      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => {
+        console.warn("Banco JSON local IndexedDB indisponivel; usando localStorage.");
+        resolve(null);
+      };
+      request.onblocked = () => {
+        console.warn("Banco JSON local bloqueado por outra aba; usando localStorage nesta execucao.");
+        resolve(null);
+      };
+    });
+
+    return localJsonDbPromise;
+  }
+
+  async function readLocalJsonDb(key) {
+    const localValue = readLocal(key);
+    if (localValue !== null) return localValue;
+
+    try {
+      const db = await openLocalJsonDb();
+      if (!db) return null;
+      const transaction = db.transaction(LOCAL_JSON_DB_STORE, "readonly");
+      const record = await requestToPromise(transaction.objectStore(LOCAL_JSON_DB_STORE).get(key));
+      if (!record || record.value === undefined) return null;
+      localStorage.setItem(storageKey(key), JSON.stringify(record.value));
+      return record.value;
+    } catch (error) {
+      console.warn(`Nao foi possivel ler ${key} do banco JSON local.`, error);
+      return null;
+    }
+  }
+
+  async function writeLocalJsonDb(key, value) {
+    localStorage.setItem(storageKey(key), JSON.stringify(value));
+
+    try {
+      const db = await openLocalJsonDb();
+      if (!db) return false;
+      const transaction = db.transaction(LOCAL_JSON_DB_STORE, "readwrite");
+      await requestToPromise(transaction.objectStore(LOCAL_JSON_DB_STORE).put({
+        key,
+        value: JSON.parse(JSON.stringify(value)),
+        updatedAt: new Date().toISOString()
+      }));
+      return true;
+    } catch (error) {
+      console.warn(`Nao foi possivel salvar ${key} no banco JSON local IndexedDB; localStorage foi mantido.`, error);
+      return false;
+    }
+  }
+
+  async function deleteLocalJsonDbKey(key) {
+    try {
+      const db = await openLocalJsonDb();
+      if (!db) return;
+      const transaction = db.transaction(LOCAL_JSON_DB_STORE, "readwrite");
+      await requestToPromise(transaction.objectStore(LOCAL_JSON_DB_STORE).delete(key));
+    } catch (error) {
+      console.warn(`Nao foi possivel remover ${key} do banco JSON local.`, error);
+    }
+  }
+
+  async function clearLocalJsonDb() {
+    try {
+      const db = await openLocalJsonDb();
+      if (!db) return;
+      const transaction = db.transaction(LOCAL_JSON_DB_STORE, "readwrite");
+      await requestToPromise(transaction.objectStore(LOCAL_JSON_DB_STORE).clear());
+    } catch (error) {
+      console.warn("Nao foi possivel limpar o banco JSON local IndexedDB.", error);
+    }
+  }
+
   function safeStringify(value) {
     try {
       return JSON.stringify(value);
@@ -188,7 +291,7 @@
   }
 
   function mojibakeScore(value) {
-    return (String(value).match(/[ÃÂâ�]/g) || []).length;
+    return (String(value).match(/[ÃƒÃ‚Ã¢ï¿½]/g) || []).length;
   }
 
   function decodeCp1252Token(value) {
@@ -292,7 +395,7 @@
           localStorage.setItem(key, JSON.stringify(launches.map(normalizarCamposMoeda)));
         }
       } catch {
-        console.warn("Não foi possível migrar os campos monetários locais; os dados foram preservados.");
+        console.warn("Nao foi possivel migrar os campos monetarios locais; os dados foram preservados.");
       }
     });
     localStorage.setItem(CURRENCY_MIGRATION_KEY, CURRENCY_MIGRATION_VERSION);
@@ -331,7 +434,7 @@
       if (!response.ok) return null;
       return response.json();
     } catch (error) {
-      console.warn(`Banco JSON indisponível para leitura de ${key}; usando fallback.`, error);
+      console.warn(`Banco JSON indisponÃ­vel para leitura de ${key}; usando fallback.`, error);
       jsonDbAvailable = false;
       localStorage.setItem(STORAGE_MODE_KEY, "local");
       return null;
@@ -352,7 +455,7 @@
       }
       return true;
     } catch (error) {
-      console.warn(`Não foi possível salvar ${key} no banco JSON. Dados preservados no localStorage.`, error);
+      console.warn(`Nao foi possivel salvar ${key} no banco JSON. Dados preservados no localStorage.`, error);
       jsonDbAvailable = false;
       localStorage.setItem(STORAGE_MODE_KEY, "local");
       return false;
@@ -392,7 +495,7 @@
     try {
       return JSON.parse(raw);
     } catch (error) {
-      console.warn(`Dados locais inválidos para ${key}; usando arquivo inicial.`, error);
+      console.warn(`Dados locais invalidos para ${key}; usando arquivo inicial.`, error);
       return null;
     }
   }
@@ -422,7 +525,7 @@
     localStorage.setItem(LEGACY_VERSION_KEY, OPERATIONAL_DATA_VERSION);
   }
 
-  function resetarLancamentosIniciais() {
+  async function resetarLancamentosIniciais() {
     const operationalPatterns = ["lancamento", "homolog", "historico", "dashboard", "relatorio", "ranking"];
     Object.keys(localStorage).forEach((key) => {
       const normalizedKey = key.toLowerCase();
@@ -431,12 +534,13 @@
       }
     });
 
-    OPERATIONAL_KEYS.forEach((key) => {
+    await Promise.all(OPERATIONAL_KEYS.map((key) => {
       localStorage.removeItem(storageKey(key));
       localStorage.removeItem(key);
       localStorage.removeItem(jsonDbMigrationKey(key));
       delete cache[key];
-    });
+      return deleteLocalJsonDbKey(key);
+    }));
     localStorage.removeItem("dashboardData");
     localStorage.removeItem("mockDashboardData");
     localStorage.removeItem("rankingMaiorAtingimento");
@@ -451,7 +555,7 @@
     ) {
       return;
     }
-    console.info("Migração segura de armazenamento: preservando dados existentes no localStorage.");
+    console.info("Migracao segura de armazenamento: preservando dados existentes no localStorage.");
     persistVersionMarkers();
   }
 
@@ -508,7 +612,7 @@
   }
 
   async function resetarBaseOperacionalGlobal() {
-    resetarLancamentosIniciais();
+    await resetarLancamentosIniciais();
     const indicadores = await loadJson("indicadores");
     const metas = await loadJson("metas");
     const lancamentos = gerarLancamentosLimpos(indicadores, metas);
@@ -693,34 +797,43 @@
         localStorage.setItem(jsonDbMigrationKey(key), "central");
       }
       if (key === "lancamentos") {
-        console.log("Lançamentos carregados do banco JSON:", cache[key]);
+        console.log("Lancamentos carregados do banco JSON:", cache[key]);
       }
       return cache[key];
     }
 
-    if (hasLocalData(key)) {
-      const parsedLocal = readLocal(key);
-      if (!(key === "lancamentos" && Array.isArray(parsedLocal) && parsedLocal.length === 0) && parsedLocal !== null) {
+    const parsedLocal = await readLocalJsonDb(key);
+    if (parsedLocal !== null) {
+      if (!(key === "lancamentos" && Array.isArray(parsedLocal) && parsedLocal.length === 0)) {
         cache[key] = normalizeData(key, parsedLocal);
         if (key === "usuarios") {
           localStorage.setItem(storageKey(key), JSON.stringify(cache[key]));
         }
         if (key === "lancamentos") {
-          console.log("Lançamentos carregados do localStorage:", cache[key]);
+          console.log("Lancamentos carregados do banco JSON local:", cache[key]);
         }
         return cache[key];
       }
     }
 
-    const response = await fetch(DATA_FILES[key]);
-    if (!response.ok) {
-      throw new Error(`Não foi possível carregar ${DATA_FILES[key]}`);
+    let initialData = null;
+    try {
+      const response = await fetch(DATA_FILES[key]);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      initialData = await response.json();
+    } catch (error) {
+      initialData = getBootstrapData(key);
+      if (initialData === null) {
+        throw new Error(`Nao foi possivel carregar ${DATA_FILES[key]}`);
+      }
     }
 
-    cache[key] = normalizeData(key, await response.json());
+    cache[key] = normalizeData(key, initialData);
     if (key === "lancamentos" && Array.isArray(cache[key]) && cache[key].length > 0) {
       await saveLocal("lancamentos", cache[key]);
-      console.log("Lançamentos iniciais carregados e salvos no localStorage:", cache[key]);
+      console.log("Lancamentos iniciais carregados e salvos no localStorage:", cache[key]);
       return cache[key];
     }
     if ((key === "homologacoes" || key === "historico") && !hasLocalData(key)) {
@@ -755,28 +868,31 @@
 
   function saveLocal(key, value) {
     cache[key] = value;
-    localStorage.setItem(storageKey(key), JSON.stringify(value));
     if (key === "lancamentos") {
-      console.log("Lançamentos salvos:", value);
+      console.log("Lancamentos salvos:", value);
     }
-    return enqueueJsonDbWrite(key, value);
+    return Promise.all([
+      writeLocalJsonDb(key, value),
+      enqueueJsonDbWrite(key, value)
+    ]).then(([, centralSaved]) => centralSaved);
   }
 
   async function getStorageInfo() {
     const centralAvailable = await checkJsonDb();
     return {
-      mode: centralAvailable ? "central" : "local",
+      mode: centralAvailable ? "central" : "browser",
       centralAvailable,
+      localDatabase: "IndexedDB/localStorage",
       hasPendingLocalBackup: localStorage.getItem(CENTRAL_BACKUP_PENDING_KEY) === "true",
       message: centralAvailable
-        ? "Base central JSON ativa. As informaÃ§Ãµes sÃ£o compartilhadas entre perfis do Chrome neste computador."
-        : "Base central JSON nÃ£o detectada. As informaÃ§Ãµes ficam apenas neste perfil do Chrome e nÃ£o aparecem em outros perfis."
+        ? "Base central JSON ativa. As informacoes sao compartilhadas entre perfis do Chrome neste computador."
+        : "Banco JSON local ativo no navegador. Nao e necessario iniciar servidor ou arquivo .bat."
     };
   }
 
   async function publicarDadosLocaisNaBaseCentral() {
     if (!(await checkJsonDb())) {
-      throw new Error("Base central JSON nÃ£o detectada. Inicie o sistema pelo arquivo iniciar-banco-json.bat.");
+      throw new Error("Base central JSON nao esta ativa. O banco JSON local do navegador ja esta em uso.");
     }
 
     const publishedKeys = [];
@@ -787,7 +903,7 @@
       const normalized = normalizeData(key, source);
       const published = await enqueueJsonDbWrite(key, normalized);
       if (!published) {
-        throw new Error(`NÃ£o foi possÃ­vel publicar ${key} na base central.`);
+        throw new Error(`Nao foi possivel publicar ${key} na base central.`);
       }
 
       cache[key] = normalized;
@@ -825,6 +941,7 @@
       localStorage.removeItem(storageKey(key));
       delete cache[key];
     });
+    clearLocalJsonDb();
     localStorage.removeItem(OPERATIONAL_DATA_VERSION_KEY);
     localStorage.removeItem(OPERATIONAL_DATA_SIGNATURE_KEY);
     localStorage.removeItem(LEGACY_VERSION_KEY);
@@ -861,3 +978,4 @@
     corrigirMoedasSalvas
   };
 })();
+

@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
   const NAV_ITEMS = [
     ["resumo-executivo.html", "Resumo Executivo", "resumoExecutivo"],
     ["visao-trimestral.html", "Visão Trimestral", "visaoTrimestral"],
@@ -13,11 +13,11 @@
   function storageMessages(storageInfo) {
     if (!storageInfo) return [];
     const messages = [];
-    if (storageInfo.mode === "local") {
+    if (storageInfo.mode === "browser") {
       messages.push(`
-        <div class="notice warning">
-          <strong>Base central não detectada.</strong>
-          As informações ficam salvas apenas neste perfil do Chrome. Para refletir em qualquer usuário/perfil, abra o sistema pelo servidor JSON: <code>iniciar-banco-json.bat</code>.
+        <div class="notice info">
+          <strong>Banco JSON local ativo.</strong>
+          As informacoes ficam salvas neste navegador automaticamente, sem iniciar servidor ou arquivo .bat.
         </div>
       `);
     }
@@ -144,3 +144,4 @@
     });
   });
 })();
+
