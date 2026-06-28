@@ -100,6 +100,32 @@
     return currency.parseMoedaBR(raw(lancamento, nome));
   }
 
+  function competenciaKey(lancamento) {
+    if (lancamento?.competencia) return String(lancamento.competencia);
+    const ano = Number(lancamento?.ano);
+    const mes = Number(lancamento?.mes);
+    if (!ano || !mes) return "";
+    return `${ano}-${String(mes).padStart(2, "0")}`;
+  }
+
+  function getMetaAcumuladaCompetencia(regra, lancamento) {
+    const params = regra?.parametrosCalculo || {};
+    const curva = params.metasAcumuladasPorCompetencia || params.curvaMetaAcumulada || {};
+    const key = competenciaKey(lancamento);
+    if (Object.prototype.hasOwnProperty.call(curva, key)) {
+      return toNumber(curva[key]);
+    }
+    if (Number(lancamento?.mes) === 12) return toNumber(regra?.metaAnualValor);
+    return null;
+  }
+
+  function situacaoPorPercentual(percentual) {
+    if (percentual === null || percentual === undefined) return "Sem cálculo";
+    if (percentual >= 1) return "Atingido";
+    if (percentual >= 0.8) return "Abaixo da meta";
+    return "Crítico";
+  }
+
   function pendente(mensagem, unidadeMedida, extra = {}) {
     return {
       resultadoMensal: null,
@@ -128,6 +154,12 @@
   function texto(lancamento, nome) {
     const value = raw(lancamento, nome);
     return value === null || value === undefined ? "" : String(value).trim();
+  }
+
+  function valorTextoOuId(value) {
+    if (value === null || value === undefined) return "";
+    if (typeof value === "object") return String(value.id ?? value.nome ?? value.label ?? "").trim();
+    return String(value).trim();
   }
 
   function validarObrigatorios(regra, lancamento) {
@@ -174,8 +206,10 @@
 
     const temCampo = (nome) => (regra.camposEntrada || []).some((item) => item.nome === nome);
     const numeradorCampo = regra.parametrosCalculo?.numeradorCampo ||
+      (temCampo("clientesUnicosComOfertaPersonalizadaCompetencia") ? "clientesUnicosComOfertaPersonalizadaCompetencia" : null) ||
       (temCampo("clientesComOfertaPersonalizada") ? "clientesComOfertaPersonalizada" : "realizadoMensal");
     const denominadorCampo = regra.parametrosCalculo?.denominadorCampo ||
+      (temCampo("baseClientesAtivosCompetencia") ? "baseClientesAtivosCompetencia" : null) ||
       (temCampo("baseClientesAtivos") ? "baseClientesAtivos" : null);
     const meta = requireMeta(regra.parametrosCalculo?.metaReferencia ?? regra.metaAnualValor ?? lancamentoAtual.metaMensal, regra.unidadeMedida);
     if (meta.erro) return meta;
@@ -184,6 +218,7 @@
     if (denominadorCampo) {
       const numerador = campo(lancamentoAtual, numeradorCampo);
       const denominador = campo(lancamentoAtual, denominadorCampo);
+      if (Number(regra.indicadorId) === 1 && (denominador === null || denominador <= 0)) return pendente("Dados insuficientes para cálculo.", regra.unidadeMedida);
       if (denominador === null || denominador <= 0) return erro("Não foi possível calcular o indicador, pois o denominador informado é zero.", regra.unidadeMedida);
       if (numerador === null || numerador < 0) return erro("Numerador deve ser informado e não pode ser negativo.", regra.unidadeMedida);
       if (regra.parametrosCalculo?.validarNumeradorAteDenominador !== false && numerador > denominador) {
@@ -200,6 +235,56 @@
 
     const percentual = resultadoMensal / meta;
     return ok(resultadoMensal, resultadoMensal, percentual, percentual, regra.unidadeMedida);
+  }
+
+  function calcularCoberturaCapacitacao(indicador, regra, lancamentoAtual) {
+    const required = validarObrigatorios(regra, lancamentoAtual);
+    if (required) return erro(required, regra.unidadeMedida);
+    const params = regra.parametrosCalculo || {};
+    const campoPublico = params.campoPublicoAlvo || "publicoAlvoElegivelCapacitacao";
+    const campoCapacitados = params.campoCapacitados || "empregadosCapacitadosCapacitacao";
+    const campoQuantidadeMinima = params.campoQuantidadeCursos || params.campoQuantidadeMinima || "quantidadeCursosMinimaCapacitacao";
+    const publicoAlvo = campo(lancamentoAtual, campoPublico);
+    const capacitados = campo(lancamentoAtual, campoCapacitados);
+    if (publicoAlvo === null || publicoAlvo <= 0) {
+      return pendente("Dados insuficientes para cálculo.", regra.unidadeMedida);
+    }
+    if (capacitados === null || capacitados < 0) {
+      return erro("Empregados capacitados devem ser informados e não podem ser negativos.", regra.unidadeMedida);
+    }
+    if (capacitados > publicoAlvo) {
+      return erro("Empregados capacitados não pode ser maior que o público-alvo elegível.", regra.unidadeMedida);
+    }
+
+    const trimestre = lancamentoAtual.trimestre || `${Math.ceil(Number(lancamentoAtual.mes) / 3)}TRI/${lancamentoAtual.ano || 2026}`;
+    const curva = params.curvaTrimestralCursos || params.curvaJogoResponsavel2026 || {};
+    const criterioTrimestre = curva[trimestre] || {};
+    const metaCobertura = toNumber(criterioTrimestre.metaCobertura ?? params.metaCobertura ?? params.metaReferencia ?? regra.metaAnualValor);
+    const quantidadeCursosMinima = campo(lancamentoAtual, campoQuantidadeMinima) ??
+      toNumber(criterioTrimestre.quantidadeCursosMinima ?? criterioTrimestre.quantidadeMinimaIniciativas);
+    if (metaCobertura === null || metaCobertura <= 0) {
+      return erro("Meta de cobertura de capacitação não configurada.", regra.unidadeMedida);
+    }
+
+    const cobertura = capacitados / publicoAlvo;
+    const percentualMatematico = cobertura / metaCobertura;
+    const percentualAtingido = cobertura >= metaCobertura ? 1 : percentualMatematico;
+    const situacao = cobertura >= metaCobertura
+      ? "Atingido"
+      : cobertura >= metaCobertura * 0.8
+        ? "Abaixo da meta"
+        : "Crítico";
+
+    return ok(cobertura, cobertura, percentualAtingido, percentualAtingido, regra.unidadeMedida, "Cobertura de capacitação calculada por público-alvo elegível.", {
+      publicoAlvoElegivelCapacitacao: publicoAlvo,
+      empregadosCapacitadosCapacitacao: capacitados,
+      metaCoberturaCapacitacao: metaCobertura,
+      quantidadeCursosMinimaCapacitacao: quantidadeCursosMinima,
+      quantidadeMinimaIniciativasJR: quantidadeCursosMinima,
+      criterioCapacitacao: criterioTrimestre.descricao || null,
+      percentualAtingidoMatematico: percentualMatematico,
+      situacao
+    });
   }
 
   function calcularReducaoGap(indicador, regra, lancamentoAtual) {
@@ -270,6 +355,7 @@
     if (regra.parametrosCalculo?.valorAcumuladoCampo) {
       resultadoMensal = campo(lancamentoAtual, regra.parametrosCalculo.valorAcumuladoCampo);
       acumulado = ultimoCampo(ateMes, regra.parametrosCalculo.valorAcumuladoCampo);
+      if (resultadoMensal === null || resultadoMensal < 0) return erro("Valor financeiro acumulado deve ser informado e não pode ser negativo.", regra.unidadeMedida);
     } else if (regra.parametrosCalculo?.formula === "diferenca") {
       const receita = campo(lancamentoAtual, regra.parametrosCalculo.campoReceita);
       const deducao = campo(lancamentoAtual, regra.parametrosCalculo.campoDeducao);
@@ -285,6 +371,38 @@
       resultadoMensal = campo(lancamentoAtual, campoValor);
       if (resultadoMensal === null || resultadoMensal < 0) return erro("Valor financeiro realizado deve ser informado e não pode ser negativo.", regra.unidadeMedida);
       acumulado = somaCampo(ateMes, campoValor);
+    }
+
+    if (regra.parametrosCalculo?.metaTipo === "curva_acumulada_por_competencia") {
+      const metaAcumulada = getMetaAcumuladaCompetencia(regra, lancamentoAtual);
+      const key = competenciaKey(lancamentoAtual);
+      if (metaAcumulada === null || metaAcumulada <= 0) {
+        return pendente("Meta de referência não cadastrada para a competência. Pendente de curva orçamentária.", regra.unidadeMedida, {
+          metaPendente: true,
+          competenciaReferencia: key,
+          metaReferenciaMensagem: "Pendente de curva orçamentária"
+        });
+      }
+      const percentual = acumulado / metaAcumulada;
+      const situacao = percentual >= 1 ? "Atingido" : percentual >= 0.8 ? "Abaixo da meta" : "Crítico";
+      return ok(
+        resultadoMensal,
+        acumulado,
+        percentual,
+        percentual,
+        regra.unidadeMedida,
+        "Valor financeiro acumulado comparado com curva de meta por competência.",
+        {
+          metaReferenciaMensal: metaAcumulada,
+          metaAcumulada,
+          realizadoAcumulado: acumulado,
+          competenciaReferencia: key,
+          percentualMetaAcumulada: percentual,
+          percentualAtingidoAnual: percentual,
+          resultadoOficialAnual: acumulado,
+          situacao
+        }
+      );
     }
 
     const metaMensalFixa = toNumber(regra.parametrosCalculo?.metaMensalFixa ?? regra.parametrosCalculo?.metaMensalPix);
@@ -338,6 +456,52 @@
     return ok(resultadoMensal, acumulado, resultadoMensal === null ? null : resultadoMensal / metaAcumulada, acumulado / metaAcumulada, regra.unidadeMedida);
   }
 
+  function calcularGgrFormula(indicador, regra, lancamentoAtual, lancamentosDoAno) {
+    const required = validarObrigatorios(regra, lancamentoAtual);
+    if (required) return pendente("Dados insuficientes para cálculo.", regra.unidadeMedida);
+
+    const arrecadacao = campo(lancamentoAtual, regra.parametrosCalculo?.campoArrecadacao || "arrecadacaoTotalMes");
+    const premios = campo(lancamentoAtual, regra.parametrosCalculo?.campoPremios || "premiosAPagarMes");
+    if (arrecadacao === null || premios === null) return pendente("Dados insuficientes para cálculo.", regra.unidadeMedida);
+    if (arrecadacao < 0 || premios < 0) return erro("Arrecadação total e prêmios a pagar não podem ser negativos.", regra.unidadeMedida);
+
+    const ggrMes = arrecadacao - premios;
+    const ateMes = lancamentosAteMes(lancamentoAtual, lancamentosDoAno);
+    const ggrAcumulado = ateMes.reduce((sum, item) => {
+      const itemArrecadacao = campo(item, regra.parametrosCalculo?.campoArrecadacao || "arrecadacaoTotalMes");
+      const itemPremios = campo(item, regra.parametrosCalculo?.campoPremios || "premiosAPagarMes");
+      return itemArrecadacao === null || itemPremios === null ? sum : sum + itemArrecadacao - itemPremios;
+    }, 0);
+    const metaAcumulada = getMetaAcumuladaCompetencia(regra, lancamentoAtual);
+
+    if (metaAcumulada === null || metaAcumulada <= 0) {
+      return pendente("Meta de referência não cadastrada para a competência. Pendente de curva orçamentária.", regra.unidadeMedida, {
+        resultadoMensal: ggrMes,
+        resultadoMensalFormatado: formatarValor(ggrMes, regra.unidadeMedida),
+        resultadoAcumulado: ggrAcumulado,
+        resultadoAcumuladoFormatado: formatarValor(ggrAcumulado, regra.unidadeMedida),
+        resultadoOficialAnual: ggrAcumulado,
+        resultadoOficialAnualFormatado: formatarValor(ggrAcumulado, regra.unidadeMedida),
+        metaPendente: true,
+        metaReferenciaMensagem: "Pendente de curva orçamentária",
+        ggrCalculadoMes: ggrMes,
+        ggrAcumuladoAteCompetencia: ggrAcumulado
+      });
+    }
+
+    const percentual = ggrAcumulado / metaAcumulada;
+    return ok(ggrMes, ggrAcumulado, percentual, percentual, regra.unidadeMedida, "GGR calculado pela fórmula oficial e comparado com a curva acumulada.", {
+      resultadoOficialAnual: ggrAcumulado,
+      percentualAtingidoAnual: percentual,
+      metaReferenciaMensal: metaAcumulada,
+      metaAcumulada,
+      ggrCalculadoMes: ggrMes,
+      ggrAcumuladoAteCompetencia: ggrAcumulado,
+      percentualMetaAcumulada: percentual,
+      situacao: situacaoPorPercentual(percentual)
+    });
+  }
+
   function calcularIndiceInversoAjustado(indicador, regra, lancamentoAtual, lancamentosDoAno) {
     const required = validarObrigatorios(regra, lancamentoAtual);
     if (required) return erro(required, regra.unidadeMedida);
@@ -367,6 +531,88 @@
     const resultado = numerador / denominador;
     const percentual = resultado <= 0 ? 1 : meta / resultado;
     return ok(resultado, resultado, percentual, percentual, regra.unidadeMedida, "Índice inverso ajustado calculado com sucesso.");
+  }
+
+  function situacaoIndicadorInverso(resultado, meta) {
+    if (resultado === null || meta === null || meta <= 0) return "Sem calculo";
+    if (resultado <= meta) return "Atingido";
+    if (resultado <= meta * 1.2) return "Abaixo da meta";
+    return "Crítico";
+  }
+
+  function desempenhoIndicadorInverso(resultado, meta) {
+    if (resultado === null || meta === null || meta <= 0) return null;
+    return 1 + ((meta - resultado) / meta);
+  }
+
+  function getMetaReferenciaInversa(regra, lancamentoAtual) {
+    const params = regra?.parametrosCalculo || {};
+    const curva = params.metasAcumuladasPorCompetencia || params.curvaMetaAcumulada || {};
+    const key = competenciaKey(lancamentoAtual);
+    if (params.metaTipo === "curva_acumulada_por_competencia" && Object.prototype.hasOwnProperty.call(curva, key) && curva[key] === null && Number(lancamentoAtual?.mes) !== 12) {
+      return null;
+    }
+    return getMetaAcumuladaCompetencia(regra, lancamentoAtual) ??
+      toNumber(lancamentoAtual?.metaMensal) ??
+      toNumber(regra.parametrosCalculo?.metaReferencia) ??
+      toNumber(regra.metaAnualValor);
+  }
+
+  function calcularIndiceInverso(indicador, regra, lancamentoAtual, lancamentosDoAno) {
+    const campoInformado = regra.parametrosCalculo?.campoIeoInformado || regra.parametrosCalculo?.campoValor || "ieoApuradoInformado";
+    const informado = campoPercentual(lancamentoAtual, campoInformado);
+    const percentualOficial = campoPercentual(lancamentoAtual, regra.parametrosCalculo?.campoPercentualOficial || "percentualAtingidoOficialInformado");
+    let resultado = informado;
+    let origemResultado = informado !== null ? "informado" : "calculado";
+
+    if (resultado === null) {
+      const despesaPessoal = campo(lancamentoAtual, regra.parametrosCalculo?.campoDespesaPessoal || "despesaPessoalMes");
+      const despesasAdministrativas = campo(lancamentoAtual, regra.parametrosCalculo?.campoDespesasAdministrativas || "despesasAdministrativasMes");
+      const receitasLiquidas = campo(lancamentoAtual, regra.parametrosCalculo?.campoReceitasLiquidas || "receitasLiquidasMes");
+      if (despesaPessoal === null || despesasAdministrativas === null || receitasLiquidas === null || receitasLiquidas === 0) {
+        return pendente("Dados insuficientes para cálculo.", regra.unidadeMedida);
+      }
+      if (despesaPessoal < 0 || despesasAdministrativas < 0 || receitasLiquidas < 0) {
+        return erro("Despesa de pessoal, despesas administrativas e receitas líquidas não podem ser negativas.", regra.unidadeMedida);
+      }
+      resultado = (despesaPessoal + despesasAdministrativas) / receitasLiquidas;
+    }
+
+    if (resultado < 0) return erro("IEO realizado não pode ser negativo.", regra.unidadeMedida);
+    const meta = getMetaReferenciaInversa(regra, lancamentoAtual);
+    if (meta === null || meta <= 0) {
+      return ok(resultado, resultado, null, null, regra.unidadeMedida, "IEO calculado. Meta de referência não cadastrada para a competência.", {
+        resultadoOficialAnual: resultado,
+        percentualAtingidoAnual: null,
+        metaReferencia: null,
+        metaAcumulada: null,
+        metaPendente: true,
+        metaReferenciaMensagem: "Pendente de curva orçamentária",
+        quantoMenorMelhor: true,
+        sentidoMeta: "quanto_menor_melhor",
+        situacao: "Sem meta de referência",
+        ieoRealizadoMes: resultado,
+        ieoApuradoInformado: informado,
+        percentualAtingidoOficialInformado: percentualOficial,
+        origemResultado
+      });
+    }
+    const percentual = percentualOficial ?? desempenhoIndicadorInverso(resultado, meta);
+    const situacao = situacaoIndicadorInverso(resultado, meta);
+
+    return ok(resultado, resultado, percentual, percentual, regra.unidadeMedida, "IEO recorrente calculado pela regra inversa.", {
+      resultadoOficialAnual: resultado,
+      percentualAtingidoAnual: percentual,
+      metaReferencia: meta,
+      metaAcumulada: meta,
+      quantoMenorMelhor: true,
+      sentidoMeta: "quanto_menor_melhor",
+      situacao,
+      ieoRealizadoMes: resultado,
+      ieoApuradoInformado: informado,
+      percentualAtingidoOficialInformado: percentualOficial,
+      origemResultado
+    });
   }
 
   function calcularIncrementoPontosPercentuais(indicador, regra, lancamentoAtual, lancamentosDoAno) {
@@ -495,13 +741,68 @@
   function calcularProjetoMarcoEntrega(indicador, regra, lancamentoAtual) {
     const required = validarObrigatorios(regra, lancamentoAtual);
     if (required) return erro(required, regra.unidadeMedida);
-    const status = texto(lancamentoAtual, regra.parametrosCalculo?.campoStatus || "statusProjeto").toLowerCase();
-    let percentual = clamp01(campo(lancamentoAtual, regra.parametrosCalculo?.campoPercentual || "percentualExecucao"));
+    const statusOriginal = texto(lancamentoAtual, regra.parametrosCalculo?.campoStatus || "statusProjeto");
+    const status = statusOriginal.toLowerCase();
+    if (regra.parametrosCalculo?.metaTipo === "marco_anual") {
+      const campoMarco = regra.parametrosCalculo?.campoMarco || regra.parametrosCalculo?.campoStatus || "marcoAtualProjeto";
+      const marcoAtual = texto(lancamentoAtual, campoMarco);
+      const statusConcluido = regra.parametrosCalculo?.statusConcluido || "Piloto/MVP concluído";
+      const marcoConcluido = regra.parametrosCalculo?.marcoConcluido || "Piloto/MVP concluído";
+      const concluido = statusOriginal === statusConcluido || marcoAtual === marcoConcluido;
+      const situacao = concluido
+        ? "Atingido"
+        : statusOriginal || marcoAtual
+          ? "Em andamento"
+          : "Não iniciado";
+      return ok(
+        concluido ? 1 : null,
+        concluido ? 1 : null,
+        null,
+        null,
+        regra.unidadeMedida,
+        "Acompanhamento de marco anual sem desempenho percentual em 2026.",
+        {
+          marcoAtual,
+          statusProjeto: statusOriginal,
+          situacao,
+          desempenhoNaoAplicavel: true,
+          metaAnualMarco: regra.parametrosCalculo?.metaAnualMarco || regra.metaAnualDescricao || "Piloto/MVP"
+        }
+      );
+    }
+    const marcos = regra.parametrosCalculo?.marcosCapacidadeTIC || regra.parametrosCalculo?.marcosProjeto || [];
+    const marcoConfigurado = marcos.find((item) => item.label === statusOriginal);
+    let percentual = marcoConfigurado ? toNumber(marcoConfigurado.percentual) : null;
+    if (percentual === null) {
+      percentual = clamp01(campo(lancamentoAtual, regra.parametrosCalculo?.campoPercentual || "percentualExecucao"));
+    }
     if (["entregue", "mvp entregue", "formalizado", "celebrada", "concluido", "concluído"].includes(status)) {
       percentual = 1;
     }
     if (percentual === null) return erro("Percentual de execução deve ser informado.", regra.unidadeMedida);
-    return ok(percentual, percentual, percentual, percentual, regra.unidadeMedida, "Avanço de projeto calculado com sucesso.");
+    const trimestre = lancamentoAtual.trimestre || `${Math.ceil(Number(lancamentoAtual.mes) / 3)}TRI/${lancamentoAtual.ano || 2026}`;
+    const curva = regra.parametrosCalculo?.curvaTrimestralPercentual || {};
+    const metaTrimestral = regra.parametrosCalculo?.metaTipo === "curva_trimestral_percentual"
+      ? toNumber(curva[trimestre]?.metaPercentual)
+      : null;
+    const percentualAtingido = metaTrimestral ? percentual / metaTrimestral : percentual;
+    const situacao = metaTrimestral
+      ? percentual >= metaTrimestral
+        ? "Atingido"
+        : percentualAtingido >= 0.8
+          ? "Abaixo da meta"
+          : "Crítico"
+      : percentual >= 1
+        ? "Atingido"
+        : percentual > 0
+          ? "Em andamento"
+          : "Não iniciado";
+    return ok(percentual, percentual, percentualAtingido, percentualAtingido, regra.unidadeMedida, "Avanço de projeto calculado com sucesso.", {
+      marcoAlcancado: statusOriginal,
+      marcoEsperadoTrimestre: curva[trimestre]?.marcoEsperado || null,
+      metaTrimestral,
+      situacao
+    });
   }
   function calcularPontuacaoMinima(indicador, regra, lancamentoAtual) {
     const required = validarObrigatorios(regra, lancamentoAtual);
@@ -516,10 +817,117 @@
     if (meta.erro) return meta;
     return ok(valor, valor, valor / meta, valor / meta, regra.unidadeMedida);
   }
+
+  function calcularNotaPesquisaNps(indicador, regra, lancamentoAtual) {
+    const required = validarObrigatorios(regra, lancamentoAtual);
+    if (required) return erro(required, regra.unidadeMedida);
+    const params = regra.parametrosCalculo || {};
+    const campoNps = params.campoNps || "npsApurado";
+    const campoPromotores = params.campoPromotores || "percentualPromotores";
+    const campoDetratores = params.campoDetratores || "percentualDetratores";
+    let npsRealizado = campo(lancamentoAtual, campoNps);
+    const promotores = normalizarPercentual(raw(lancamentoAtual, campoPromotores));
+    const detratores = normalizarPercentual(raw(lancamentoAtual, campoDetratores));
+    if (npsRealizado === null && promotores !== null && detratores !== null) {
+      npsRealizado = (promotores - detratores) * 100;
+    }
+    if (npsRealizado === null) {
+      return pendente("NPS apurado ou percentuais de promotores e detratores devem ser informados.", regra.unidadeMedida);
+    }
+    if (npsRealizado < -100 || npsRealizado > 100) {
+      return erro("NPS deve estar entre -100 e 100 pontos.", regra.unidadeMedida);
+    }
+    const key = competenciaKey(lancamentoAtual);
+    const referencias = params.referenciasPorCompetencia || {};
+    const metaReferenciaInformada = campo(lancamentoAtual, params.campoMetaReferencia || "metaReferenciaCompetenciaNPS");
+    const metaReferenciaPeriodo = metaReferenciaInformada !== null
+      ? metaReferenciaInformada
+      : Object.prototype.hasOwnProperty.call(referencias, key)
+        ? toNumber(referencias[key])
+        : toNumber(params.metaAnualMetodologica ?? regra.metaAnualValor);
+    if (metaReferenciaPeriodo === null || metaReferenciaPeriodo === 0) {
+      return erro("Meta de referência do NPS não configurada.", regra.unidadeMedida);
+    }
+    const tipoPosicao = texto(lancamentoAtual, params.campoTipoPosicao || "tipoPosicaoNPS");
+    const metaAnual = toNumber(params.metaAnualMetodologica ?? regra.metaAnualValor);
+    const isBaselineOuAcompanhamento = ["Baseline", "Acompanhamento", "Revisão metodológica"].includes(tipoPosicao);
+    const isFechamentoAnual = tipoPosicao === "Fechamento anual";
+    const referenciaSituacao = isFechamentoAnual && metaAnual ? metaAnual : metaReferenciaPeriodo;
+    const percentualAtingido = npsRealizado / metaReferenciaPeriodo;
+    const percentualAnual = isFechamentoAnual && metaAnual ? npsRealizado / metaAnual : percentualAtingido;
+    const situacao = isBaselineOuAcompanhamento
+      ? "Em acompanhamento"
+      : npsRealizado >= referenciaSituacao
+        ? "Atingido"
+        : npsRealizado >= referenciaSituacao * 0.8
+          ? "Abaixo da meta"
+          : "Crítico";
+    return ok(npsRealizado, npsRealizado, percentualAtingido, percentualAtingido, regra.unidadeMedida, "NPS calculado por posição de pesquisa.", {
+      npsRealizado,
+      metaReferenciaPeriodo,
+      metaAnualCorretaNPS: metaAnual,
+      desempenhoReferencia: percentualAtingido,
+      tipoPosicaoNPS: tipoPosicao,
+      baselineNPS: toNumber(params.baselineNPS),
+      notaReferenciaNPS: toNumber(params.notaReferenciaNPS),
+      percentualReducaoGap: toNumber(params.percentualReducaoGap),
+      situacao,
+      ...(isFechamentoAnual ? { percentualAtingidoAnual: percentualAnual } : {})
+    });
+  }
+
+  function calcularNotaPesquisaAnual(indicador, regra, lancamentoAtual) {
+    const required = validarObrigatorios(regra, lancamentoAtual);
+    if (required) return erro(required, regra.unidadeMedida);
+    const params = regra.parametrosCalculo || {};
+    const campoNota = params.campoNota || "notaClimaApurada";
+    const campoMetaReferencia = params.campoMetaReferencia || "metaReferenciaClima";
+    const tipoPosicao = texto(lancamentoAtual, params.campoTipoPosicao || "tipoPosicaoClima");
+    const notaApurada = campo(lancamentoAtual, campoNota);
+    if (notaApurada === null) {
+      return pendente("Nota/média geral apurada ou posição de referência deve ser informada.", regra.unidadeMedida);
+    }
+    if (notaApurada < 0 || notaApurada > 100) {
+      return erro("Nota/média geral apurada deve estar entre 0 e 100 pontos.", regra.unidadeMedida);
+    }
+
+    const metaReferenciaInformada = campo(lancamentoAtual, campoMetaReferencia);
+    const metaReferenciaPeriodo = metaReferenciaInformada !== null
+      ? metaReferenciaInformada
+      : toNumber(params.metaReferencia ?? regra.metaAnualValor);
+    if (metaReferenciaPeriodo === null || metaReferenciaPeriodo === 0) {
+      return erro("Meta de referência da pesquisa anual não configurada.", regra.unidadeMedida);
+    }
+
+    const metaAnual = toNumber(regra.metaAnualValor ?? params.metaReferencia ?? metaReferenciaPeriodo);
+    const percentualAtingido = notaApurada / metaReferenciaPeriodo;
+    const isPlanoAcao = tipoPosicao === "Plano de ação";
+    const isAcompanhamento = ["Acompanhamento", "Revisão metodológica"].includes(tipoPosicao);
+    const isPesquisaFinal = ["Pesquisa oficial", "Fechamento anual"].includes(tipoPosicao);
+    const situacao = isPlanoAcao
+      ? "Plano de ação em andamento"
+      : isAcompanhamento || !isPesquisaFinal
+        ? "Em acompanhamento"
+        : notaApurada >= metaAnual
+          ? "Atingido"
+          : notaApurada >= metaAnual * 0.8
+            ? "Abaixo da meta"
+            : "Crítico";
+
+    return ok(notaApurada, notaApurada, percentualAtingido, percentualAtingido, regra.unidadeMedida, "Nota de pesquisa anual calculada por posição de referência.", {
+      notaClimaApurada: notaApurada,
+      metaReferenciaPeriodo,
+      metaReferenciaClima: metaReferenciaPeriodo,
+      desempenhoReferencia: percentualAtingido,
+      tipoPosicaoClima: tipoPosicao,
+      situacao
+    });
+  }
+
   function calcularQuantidadeAcumulada(indicador, regra, lancamentoAtual, lancamentosDoAno) {
     const required = validarObrigatorios(regra, lancamentoAtual);
     if (required) return erro(required, regra.unidadeMedida);
-    const campoValor = regra.parametrosCalculo?.campoValor || "quantidadeRealizadaMes";
+    const campoValor = regra.parametrosCalculo?.campoValor || regra.parametrosCalculo?.campoMelhorias || "quantidadeRealizadaMes";
     const totalMelhoriasPlano = toNumber(regra.parametrosCalculo?.totalMelhoriasPlano2026);
     const metaMinimaMelhorias = toNumber(regra.parametrosCalculo?.metaMinimaMelhoriasAno);
     if (totalMelhoriasPlano && metaMinimaMelhorias) {
@@ -531,26 +939,50 @@
       if (acumulado > totalMelhoriasPlano) {
         return erro("O total de melhorias entregues não pode ser maior que o total de melhorias previstas no plano.", regra.unidadeMedida);
       }
-      const percentualPlanoExecutado = acumulado / totalMelhoriasPlano;
+      let percentualPlanoExecutado = acumulado / totalMelhoriasPlano;
+      const percentualPlanoExecutadoCalculado = percentualPlanoExecutado;
       const percentualMetaAnualAtingida = acumulado / metaMinimaMelhorias;
-      const situacao = acumulado >= metaMinimaMelhorias ? "Atingido" : acumulado > 0 ? "Em andamento" : "Não iniciado";
+      const trimestre = `${Math.ceil(Number(lancamentoAtual.mes) / 3)}TRI/${lancamentoAtual.ano || 2026}`;
+      const curva = regra.parametrosCalculo?.curvaTrimestralAcumulada || {};
+      const metaTrimestral = toNumber(curva[trimestre]?.metaPercentual);
+      const metaQuantidadeTrimestral = toNumber(curva[trimestre]?.metaQuantidadeAcumulada);
+      if (metaTrimestral && metaQuantidadeTrimestral !== null && acumulado === metaQuantidadeTrimestral) {
+        percentualPlanoExecutado = metaTrimestral;
+      }
+      const percentualAtingidoCurva = metaTrimestral ? percentualPlanoExecutado / metaTrimestral : percentualMetaAnualAtingida;
+      const situacao = metaTrimestral
+        ? percentualPlanoExecutado >= metaTrimestral
+          ? "Atingido"
+          : percentualAtingidoCurva >= 0.8
+            ? "Abaixo da meta"
+            : "Crítico"
+        : acumulado >= metaMinimaMelhorias
+          ? "Atingido"
+          : acumulado > 0
+            ? "Em andamento"
+            : "Não iniciado";
       return ok(
         percentualPlanoExecutado,
         percentualPlanoExecutado,
-        percentualMetaAnualAtingida,
-        percentualMetaAnualAtingida,
+        percentualAtingidoCurva,
+        percentualAtingidoCurva,
         "percentual",
         "Aprimoramento da experiencia do cliente calculado por melhorias acumuladas.",
         {
           melhoriasEntreguesMes: mensal,
+          melhoriasImplementadasMes: mensal,
           melhoriasEntreguesAcumuladas: acumulado,
+          melhoriasImplementadasAcumuladas: acumulado,
           totalMelhoriasPlano2026: totalMelhoriasPlano,
           metaMinimaMelhoriasAno: metaMinimaMelhorias,
           metaPercentualReferencia: toNumber(regra.parametrosCalculo?.metaPercentualReferencia),
+          metaTrimestral,
+          metaQuantidadeTrimestral,
           percentualPlanoExecutado,
+          percentualPlanoExecutadoCalculado,
           percentualMetaAnualAtingida,
           resultadoOficialAnual: percentualPlanoExecutado,
-          percentualAtingidoAnual: percentualMetaAnualAtingida,
+          percentualAtingidoAnual: percentualAtingidoCurva,
           situacao
         }
       );
@@ -566,11 +998,232 @@
   function calcularPlanoAcaoPorElementos(indicador, regra, lancamentoAtual, lancamentosDoAno) {
     const required = validarObrigatorios(regra, lancamentoAtual);
     if (required) return erro(required, regra.unidadeMedida);
+    const campoElemento = regra.parametrosCalculo?.campoElemento || "elementoRGF";
+    const campoStatus = regra.parametrosCalculo?.campoStatus || "statusAcao";
+    const statusQueContam = regra.parametrosCalculo?.statusQueContam || ["Concluída", "Concluida", "Homologada"];
+    if (regra.parametrosCalculo?.metaTipo === "curva_trimestral_acumulada" || regra.parametrosCalculo?.curvaTrimestralAcumulada) {
+      const ateMes = lancamentosAteMes(lancamentoAtual, lancamentosDoAno);
+      const statusValidos = new Set(statusQueContam.map((item) => String(item).toLocaleLowerCase("pt-BR")));
+      const elementosAtendidos = [...new Set(ateMes
+        .filter((item) => statusValidos.has(texto(item, campoStatus).toLocaleLowerCase("pt-BR")))
+        .map((item) => texto(item, campoElemento).trim())
+        .filter(Boolean))];
+      const acumulado = elementosAtendidos.length;
+      const trimestre = lancamentoAtual.trimestre || `${Math.ceil(Number(lancamentoAtual.mes) / 3)}TRI/${lancamentoAtual.ano || 2026}`;
+      const curva = regra.parametrosCalculo?.curvaTrimestralAcumulada || {};
+      const metaTrimestral = toNumber(curva[trimestre]?.metaElementosAcumulados);
+      const metaReferencia = metaTrimestral || toNumber(regra.metaAnualValor);
+      const percentual = metaReferencia ? acumulado / metaReferencia : null;
+      const situacao = metaReferencia
+        ? acumulado >= metaReferencia
+          ? "Atingido"
+          : percentual >= 0.8
+            ? "Abaixo da meta"
+            : "Crítico"
+        : "Sem cálculo";
+      return ok(acumulado, acumulado, percentual, percentual, regra.unidadeMedida, "Elementos únicos atendidos calculados com sucesso.", {
+        elementosAtendidos,
+        elementosAtendidosAcumulados: acumulado,
+        metaTrimestral,
+        situacao
+      });
+    }
     const campoValor = regra.parametrosCalculo?.campoValor || "elementosExecutadosAcumulado";
     const meta = requireMeta(regra.metaAnualValor, regra.unidadeMedida);
     if (meta.erro) return meta;
     const acumulado = Math.min(ultimoCampo(lancamentosAteMes(lancamentoAtual, lancamentosDoAno), campoValor) || 0, meta);
     return ok(acumulado, acumulado, acumulado / meta, acumulado / meta, regra.unidadeMedida);
+  }
+
+  function calcularIniciativasApoiadas(indicador, regra, lancamentoAtual, lancamentosDoAno) {
+    const required = validarObrigatorios(regra, lancamentoAtual);
+    if (required) return erro(required, regra.unidadeMedida);
+    const campoNome = regra.parametrosCalculo?.campoNome || "nomeIniciativaSocioambiental";
+    const campoStatus = regra.parametrosCalculo?.campoStatus || "statusIniciativaSocioambiental";
+    const statusQueConta = regra.parametrosCalculo?.statusQueConta || "Apoiada/realizada";
+    const ateMes = lancamentosAteMes(lancamentoAtual, lancamentosDoAno);
+    const iniciativasApoiadas = [...new Set(ateMes
+      .filter((item) => texto(item, campoStatus) === statusQueConta)
+      .map((item) => texto(item, campoNome).trim())
+      .filter(Boolean))];
+    const acumulado = iniciativasApoiadas.length;
+    const trimestre = lancamentoAtual.trimestre || `${Math.ceil(Number(lancamentoAtual.mes) / 3)}TRI/${lancamentoAtual.ano || 2026}`;
+    const curva = regra.parametrosCalculo?.curvaTrimestralAcumulada || {};
+    const metaTrimestral = toNumber(curva[trimestre]?.metaQuantidadeAcumulada);
+    const possuiAndamento = ateMes.some((item) => {
+      const status = texto(item, campoStatus);
+      return ["Em prospecção", "Em estruturação", "Em rito de governança"].includes(status);
+    });
+    if (metaTrimestral === 0) {
+      return ok(acumulado, acumulado, null, null, regra.unidadeMedida, "Sem meta de entrega no período.", {
+        iniciativasApoiadas,
+        iniciativasApoiadasAcumuladas: acumulado,
+        metaTrimestral,
+        situacao: possuiAndamento ? "Em prospecção/estruturação" : "Sem meta no período",
+        statusCalculo: "sem_meta_periodo"
+      });
+    }
+    const metaReferencia = metaTrimestral ?? toNumber(regra.metaAnualValor);
+    const percentual = metaReferencia ? acumulado / metaReferencia : null;
+    const situacao = metaReferencia
+      ? acumulado >= metaReferencia
+        ? "Atingido"
+        : percentual >= 0.8
+          ? "Abaixo da meta"
+          : "Crítico"
+      : "Sem cálculo";
+    return ok(acumulado, acumulado, percentual, percentual, regra.unidadeMedida, "Iniciativas apoiadas calculadas com sucesso.", {
+      iniciativasApoiadas,
+      iniciativasApoiadasAcumuladas: acumulado,
+      metaTrimestral,
+      situacao
+    });
+  }
+
+  function calcularExecucaoAcoesPropostas(indicador, regra, lancamentoAtual, lancamentosDoAno) {
+    const required = validarObrigatorios(regra, lancamentoAtual);
+    if (required) return erro(required, regra.unidadeMedida);
+    const params = regra.parametrosCalculo || {};
+    const campoAcao = params.campoAcao || "acaoPropostaVisibilidade";
+    const campoStatus = params.campoStatus || "statusAcaoVisibilidade";
+    const statusQueConta = params.statusQueConta || "Publicada/realizada";
+    const acoesPropostas = params.acoesPropostasVisibilidade || params.acoesPropostas || [];
+    const totalAcoes = toNumber(params.totalAcoesPropostas) || acoesPropostas.length || toNumber(regra.metaAnualValor);
+    if (!totalAcoes) return erro("Total de ações propostas não configurado para o indicador.", regra.unidadeMedida);
+
+    const normalizarAcao = (value) => {
+      const current = valorTextoOuId(value);
+      if (!current) return "";
+      const match = acoesPropostas.find((acao) => (
+        valorTextoOuId(acao.id) === current ||
+        valorTextoOuId(acao.nome) === current ||
+        valorTextoOuId(acao.label) === current
+      ));
+      return match ? valorTextoOuId(match.id ?? match.nome) : current;
+    };
+
+    const ateMes = lancamentosAteMes(lancamentoAtual, lancamentosDoAno);
+    const realizadas = new Set();
+    ateMes.forEach((item) => {
+      if (texto(item, campoStatus) !== statusQueConta) return;
+      const acao = normalizarAcao(raw(item, campoAcao));
+      if (acao) realizadas.add(acao);
+    });
+
+    const acoesRealizadasAcumuladas = realizadas.size;
+    const resultadoPercentual = acoesRealizadasAcumuladas / totalAcoes;
+    const trimestre = lancamentoAtual.trimestre || `${Math.ceil(Number(lancamentoAtual.mes) / 3)}TRI/${lancamentoAtual.ano || 2026}`;
+    const curva = params.curvaTrimestralAcumulada || {};
+    const alvoTrimestre = curva[trimestre] || {};
+    const metaAcoesRealizadasAcumuladas = toNumber(alvoTrimestre.metaAcoesRealizadasAcumuladas);
+    const possuiAndamento = ateMes.some((item) => {
+      const status = texto(item, campoStatus);
+      return ["Em planejamento", "Em elaboração", "Em homologação"].includes(status);
+    });
+
+    if (metaAcoesRealizadasAcumuladas === 0) {
+      return ok(resultadoPercentual, resultadoPercentual, null, null, regra.unidadeMedida, "Sem meta de entrega no período.", {
+        resultadoPercentualVisibilidade: resultadoPercentual,
+        acoesRealizadasAcumuladas,
+        acoesRealizadas: [...realizadas],
+        totalAcoesPropostasVisibilidade: totalAcoes,
+        metaTrimestral: 0,
+        metaAcoesRealizadasAcumuladas: 0,
+        metaPercentualTrimestral: toNumber(alvoTrimestre.metaPercentual),
+        marcoEsperado: alvoTrimestre.marcoEsperado || null,
+        desempenhoNaoAplicavel: true,
+        statusCalculo: "sem_meta_periodo",
+        situacao: possuiAndamento ? "Em elaboração/homologação" : "Sem meta no período"
+      });
+    }
+
+    const metaReferencia = metaAcoesRealizadasAcumuladas ?? toNumber(regra.metaAnualValor);
+    if (!metaReferencia) return erro("Meta trimestral de ações propostas não configurada.", regra.unidadeMedida);
+    const percentual = acoesRealizadasAcumuladas / metaReferencia;
+    const situacao = acoesRealizadasAcumuladas >= metaReferencia
+      ? "Atingido"
+      : percentual >= 0.8
+        ? "Abaixo da meta"
+        : "Crítico";
+
+    return ok(resultadoPercentual, resultadoPercentual, percentual, percentual, regra.unidadeMedida, "Execução de ações propostas calculada.", {
+      resultadoPercentualVisibilidade: resultadoPercentual,
+      acoesRealizadasAcumuladas,
+      acoesRealizadas: [...realizadas],
+      totalAcoesPropostasVisibilidade: totalAcoes,
+      metaTrimestral: metaReferencia,
+      metaAcoesRealizadasAcumuladas: metaReferencia,
+      metaPercentualTrimestral: toNumber(alvoTrimestre.metaPercentual),
+      marcoEsperado: alvoTrimestre.marcoEsperado || null,
+      situacao
+    });
+  }
+
+  function calcularInvestimentoSocioambiental(indicador, regra, lancamentoAtual, lancamentosDoAno) {
+    const required = validarObrigatorios(regra, lancamentoAtual);
+    if (required) return erro(required, regra.unidadeMedida);
+    const params = regra.parametrosCalculo || {};
+    const campoStatus = params.campoStatus || "statusProjetoIncentivoSocioambiental";
+    const campoValorMes = params.campoValorMes || "valorInvestidoMes";
+    const campoValorAcumulado = params.campoValorAcumulado || "valorInvestidoAcumuladoCompetencia";
+    const statusQueConta = params.statusQueConta || "Investimento realizado";
+    const statusAtual = texto(lancamentoAtual, campoStatus);
+    const ateMes = lancamentosAteMes(lancamentoAtual, lancamentosDoAno);
+    const lancamentosComInvestimento = ateMes.filter((item) => texto(item, campoStatus) === statusQueConta);
+
+    const valorAcumuladoInformado = statusAtual === statusQueConta ? campo(lancamentoAtual, campoValorAcumulado) : null;
+    if (statusAtual === statusQueConta) {
+      const valorMesAtual = campo(lancamentoAtual, campoValorMes);
+      if (valorAcumuladoInformado === null && valorMesAtual === null) {
+        return erro("Informe o valor investido no mês ou o valor acumulado até a competência.", regra.unidadeMedida);
+      }
+      if ((valorMesAtual !== null && valorMesAtual < 0) || (valorAcumuladoInformado !== null && valorAcumuladoInformado < 0)) {
+        return erro("Valores investidos não podem ser negativos.", regra.unidadeMedida);
+      }
+    }
+
+    const valorInvestidoAcumulado = valorAcumuladoInformado !== null
+      ? valorAcumuladoInformado
+      : lancamentosComInvestimento.reduce((total, item) => total + (campo(item, campoValorMes) || 0), 0);
+
+    const trimestre = lancamentoAtual.trimestre || `${Math.ceil(Number(lancamentoAtual.mes) / 3)}TRI/${lancamentoAtual.ano || 2026}`;
+    const curva = params.curvaTrimestralAcumulada || {};
+    const metaTrimestral = toNumber(curva[trimestre]?.metaValorAcumulado);
+    const possuiAndamento = ateMes.some((item) => ["Em prospecção", "Em estruturação", "Em rito de governança", "Aprovado"].includes(texto(item, campoStatus)));
+
+    if (metaTrimestral === 0) {
+      return ok(valorInvestidoAcumulado, valorInvestidoAcumulado, null, null, regra.unidadeMedida, "Sem meta de investimento no período.", {
+        valorInvestidoAcumulado,
+        valorInvestidoAcumuladoAteCompetencia: valorInvestidoAcumulado,
+        metaTrimestral,
+        metaValorAcumulado: metaTrimestral,
+        marcoEsperado: curva[trimestre]?.marcoEsperado || null,
+        statusProjetoIncentivoSocioambiental: statusAtual,
+        statusCalculo: "sem_meta_periodo",
+        desempenhoNaoAplicavel: true,
+        situacao: possuiAndamento ? "Em prospecção/estruturação" : "Sem meta no período"
+      });
+    }
+
+    const metaReferencia = metaTrimestral ?? toNumber(regra.metaAnualValor);
+    if (!metaReferencia) {
+      return erro("Meta de investimento socioambiental não configurada.", regra.unidadeMedida);
+    }
+    const percentual = valorInvestidoAcumulado / metaReferencia;
+    const situacao = valorInvestidoAcumulado >= metaReferencia
+      ? "Atingido"
+      : percentual >= 0.8
+        ? "Abaixo da meta"
+        : "Crítico";
+    return ok(valorInvestidoAcumulado, valorInvestidoAcumulado, percentual, percentual, regra.unidadeMedida, "Investimento socioambiental acumulado calculado.", {
+      valorInvestidoAcumulado,
+      valorInvestidoAcumuladoAteCompetencia: valorInvestidoAcumulado,
+      metaTrimestral,
+      metaValorAcumulado: metaTrimestral,
+      marcoEsperado: curva[trimestre]?.marcoEsperado || null,
+      statusProjetoIncentivoSocioambiental: statusAtual,
+      situacao
+    });
   }
 
   function calcularInvestimentoPercentualLucro(indicador, regra, lancamentoAtual) {
@@ -680,8 +1333,12 @@
         return calcularPercentualAcumulado(indicador, regra, lancamentoAtual, lancamentosDoAno);
       case "valor_financeiro_acumulado":
         return calcularValorFinanceiroAcumulado(indicador, regra, lancamentoAtual, lancamentosDoAno);
+      case "ggr_formula":
+        return calcularGgrFormula(indicador, regra, lancamentoAtual, lancamentosDoAno);
       case "indice_inverso_ajustado":
         return calcularIndiceInversoAjustado(indicador, regra, lancamentoAtual, lancamentosDoAno);
+      case "indice_inverso":
+        return calcularIndiceInverso(indicador, regra, lancamentoAtual, lancamentosDoAno);
       case "incremento_pontos_percentuais":
         return calcularIncrementoPontosPercentuais(indicador, regra, lancamentoAtual, lancamentosDoAno);
       case "razao_canais_digitais":
@@ -689,15 +1346,27 @@
       case "razao_pix":
         return calcularRazaoPix(indicador, regra, lancamentoAtual, lancamentosDoAno);
       case "projeto_marco_entrega":
+      case "marco_projeto_percentual":
         return calcularProjetoMarcoEntrega(indicador, regra, lancamentoAtual, lancamentosDoAno);
+      case "nota_pesquisa_nps":
+        return calcularNotaPesquisaNps(indicador, regra, lancamentoAtual, lancamentosDoAno);
+      case "nota_pesquisa_anual":
+        return calcularNotaPesquisaAnual(indicador, regra, lancamentoAtual, lancamentosDoAno);
       case "pontuacao_minima":
         return calcularPontuacaoMinima(indicador, regra, lancamentoAtual, lancamentosDoAno);
       case "quantidade_acumulada":
+      case "melhorias_acumuladas":
         return calcularQuantidadeAcumulada(indicador, regra, lancamentoAtual, lancamentosDoAno);
       case "plano_acao_por_elementos":
         return calcularPlanoAcaoPorElementos(indicador, regra, lancamentoAtual, lancamentosDoAno);
+      case "iniciativas_apoiadas":
+        return calcularIniciativasApoiadas(indicador, regra, lancamentoAtual, lancamentosDoAno);
       case "investimento_percentual_lucro":
         return calcularInvestimentoPercentualLucro(indicador, regra, lancamentoAtual, lancamentosDoAno);
+      case "investimento_socioambiental":
+        return calcularInvestimentoSocioambiental(indicador, regra, lancamentoAtual, lancamentosDoAno);
+      case "execucao_acoes_propostas":
+        return calcularExecucaoAcoesPropostas(indicador, regra, lancamentoAtual, lancamentosDoAno);
       case "percentual_execucao_plano_acao":
         return calcularPercentualExecucaoPlanoAcao(indicador, regra, lancamentoAtual, lancamentosDoAno);
       case "crescimento_relativo_participacao":
@@ -706,6 +1375,9 @@
         return calcularCrescimentoRelativoValor(indicador, regra, lancamentoAtual, lancamentosDoAno);
       case "cobertura_capacitacao_minima":
         return calcularPercentualDireto(indicador, regra, lancamentoAtual, lancamentosDoAno);
+      case "cobertura_capacitacao_jogo_responsavel":
+      case "cobertura_capacitacao":
+        return calcularCoberturaCapacitacao(indicador, regra, lancamentoAtual, lancamentosDoAno);
       default:
         return erro("Tipo de cálculo não configurado para este indicador.", regra.unidadeMedida);
     }
@@ -733,6 +1405,7 @@
     calcularQuantidadeAcumulada,
     calcularPlanoAcaoPorElementos,
     calcularInvestimentoPercentualLucro,
+    calcularExecucaoAcoesPropostas,
     calcularPercentualExecucaoPlanoAcao,
     calcularCrescimentoRelativoParticipacao,
     calcularCrescimentoRelativoValor

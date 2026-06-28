@@ -111,13 +111,22 @@
 
   function renderReference(indicador, lancamento) {
     const regra = getRule(indicador);
+    const metaReferencia = regra?.parametrosCalculo?.metaTipo === "curva_acumulada_por_competencia"
+      ? (() => {
+        const key = lancamento?.competencia || `${lancamento?.ano}-${String(lancamento?.mes).padStart(2, "0")}`;
+        const curva = regra.parametrosCalculo.metasAcumuladasPorCompetencia || {};
+        return Object.prototype.hasOwnProperty.call(curva, key) && curva[key] !== null
+          ? Calculations.formatarValor(curva[key], regra.unidadeMedida)
+          : "Pendente de curva orcamentaria";
+      })()
+      : Calculations.formatarValor(regra && regra.metaAnualValor !== null ? regra.metaAnualValor : lancamento.metaMensal, regra && regra.unidadeMedida);
     document.getElementById("approvalReference").innerHTML = [
       ["Plano", indicador.plano],
       ["Pilar", indicador.pilar],
       ["Unidade apuradora", indicador.unidadeApuradora || "Não informado"],
       ["Diretoria responsável", indicador.diretoriaResponsavel || "Não informado"],
       ["Mês/Ano", `${lancamento.nomeMes}/${lancamento.ano}`],
-      ["Meta mensal", Calculations.formatarValor(regra && regra.metaAnualValor !== null ? regra.metaAnualValor : lancamento.metaMensal, regra && regra.unidadeMedida)],
+      ["Meta de referência", metaReferencia],
       ["Realizado mensal", Calculations.formatarValor(lancamento.resultadoMensal ?? lancamento.realizadoMensal, regra && regra.unidadeMedida)],
       ["Percentual atingido", Calculations.formatarPercentual(lancamento.percentualAtingido)],
       ["Resultado acumulado", Calculations.formatarValor(lancamento.resultadoAcumulado, regra && regra.unidadeMedida)],

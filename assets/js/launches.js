@@ -78,7 +78,19 @@
     return hasSpecificInputRule(regra) && !isManual(indicador);
   }
 
+  function isIeoRule(regra) {
+    return regra?.tipoCalculo === "indice_inverso" && regra?.indicadorId === 6;
+  }
+
+  function canAdjustOfficialPerformance() {
+    return ["Administrador", "GERIN"].includes(state.user?.perfil);
+  }
+
   function getMetaLabel(regra) {
+    if (isIeoRule(regra)) return "Meta de referência da competência";
+    if (regra?.parametrosCalculo?.metaTipo === "curva_acumulada_por_competencia") {
+      return "Meta acumulada de referencia";
+    }
     if (regra?.parametrosCalculo?.metaMensalFixa || regra?.parametrosCalculo?.metaMensalPix) {
       return "Meta mensal de referência";
     }
@@ -92,12 +104,24 @@
   }
 
   function getDisplayMeta(regra, lancamento) {
+    if (regra?.parametrosCalculo?.metaTipo === "curva_acumulada_por_competencia") {
+      const key = lancamento?.competencia || `${lancamento?.ano}-${String(lancamento?.mes).padStart(2, "0")}`;
+      const curva = regra.parametrosCalculo.metasAcumuladasPorCompetencia || {};
+      return Object.prototype.hasOwnProperty.call(curva, key) && curva[key] !== null
+        ? curva[key]
+        : "Pendente de curva orcamentaria";
+    }
     return regra?.parametrosCalculo?.metaMensalFixa ??
       regra?.parametrosCalculo?.metaMensalPix ??
       regra?.parametrosCalculo?.metaMinimaMelhoriasAno ??
       regra?.parametrosCalculo?.metaReferencia ??
       lancamento.metaMensal ??
       regra?.metaAnualValor;
+  }
+
+  function formatDisplayMeta(regra, lancamento) {
+    const meta = getDisplayMeta(regra, lancamento);
+    return typeof meta === "string" ? meta : Calculations.formatarValor(meta, regra && regra.unidadeMedida);
   }
 
   function getEntryValuesFromLaunch(lancamento, regra) {
@@ -109,8 +133,54 @@
     }));
   }
 
+  function formatEntryValue(field, value) {
+    if (field.tipo === "moeda" && value !== "") return CurrencyBR.formatarMoedaBR(value).replace(/^R\$\s?/, "");
+    return value ?? "";
+  }
+
+  function renderEntryInput(field, value, extra = "") {
+    if (field.tipo === "selecao") {
+      const options = field.opcoes || [];
+      return `
+        <label>${escapeHtml(field.rotulo || field.nome)}
+          <select
+            class="dynamic-entry-field"
+            data-entry-field="${escapeHtml(field.nome)}"
+            data-entry-type="texto"
+            ${field.obrigatorio ? "required" : ""}
+            ${extra}
+          >
+            ${options.map((option) => {
+              const label = typeof option === "string" ? option : option.label;
+              return `<option value="${escapeHtml(label)}" ${String(value || "") === String(label) ? "selected" : ""}>${escapeHtml(label)}</option>`;
+            }).join("")}
+          </select>
+        </label>
+      `;
+    }
+    return `
+      <label>${escapeHtml(field.rotulo || field.nome)}
+        <input
+          class="dynamic-entry-field"
+          data-entry-field="${escapeHtml(field.nome)}"
+          data-entry-type="${escapeHtml(field.tipo || "numero")}"
+          type="${field.tipo === "texto" || field.tipo === "moeda" ? "text" : field.tipo === "data" ? "date" : "number"}"
+          ${field.tipo === "moeda" ? "inputmode=\"decimal\" placeholder=\"0,00\"" : field.tipo === "texto" || field.tipo === "data" ? "" : "step=\"any\""}
+          value="${escapeHtml(formatEntryValue(field, value))}"
+          ${field.obrigatorio ? "required" : ""}
+          ${extra}
+        >
+      </label>
+    `;
+  }
+
   function isOfertasPersonalizadasRule(regra) {
-    return Boolean(regra && (regra.camposEntrada || []).some((field) => field.nome === "baseClientesAtivos") && (regra.camposEntrada || []).some((field) => field.nome === "clientesComOfertaPersonalizada"));
+    return Boolean(regra && (
+      ((regra.camposEntrada || []).some((field) => field.nome === "baseClientesAtivos") &&
+        (regra.camposEntrada || []).some((field) => field.nome === "clientesComOfertaPersonalizada")) ||
+      ((regra.camposEntrada || []).some((field) => field.nome === "baseClientesAtivosCompetencia") &&
+        (regra.camposEntrada || []).some((field) => field.nome === "clientesUnicosComOfertaPersonalizadaCompetencia"))
+    ));
   }
 
   function isOfertasPersonalizadasIndicator(indicador, regra) {
@@ -118,7 +188,8 @@
   }
 
   function shouldHideGoalAchievementFields(indicador, regra) {
-    if (isOfertasPersonalizadasIndicator(indicador, regra)) return true;
+    if (isIeoRule(regra)) return false;
+    if (isOfertasPersonalizadasIndicator(indicador, regra)) return false;
     return usesAutomaticCalculation(indicador, regra) && regra && (regra.unidadeMedida === "percentual" || regra.parametrosCalculo?.quantoMenorMelhor);
   }
 
@@ -169,7 +240,7 @@
         <tr>
           <td>${escapeHtml(indicador ? indicador.indicador : item.indicadorId)}</td>
           <td>${escapeHtml(item.nomeMes)}/${escapeHtml(item.ano)}</td>
-          <td>${Calculations.formatarValor(getDisplayMeta(regra, item), regra && regra.unidadeMedida)}</td>
+          <td>${escapeHtml(formatDisplayMeta(regra, item))}</td>
           <td>${Calculations.formatarValor(resultadoMensal, regra && regra.unidadeMedida)}</td>
           <td>${escapeHtml(situacao)}</td>
           <td><span class="badge ${badgeClass(item.status)}">${escapeHtml(item.status)}</span></td>
@@ -213,7 +284,7 @@
     ].forEach((id) => {
       document.getElementById(id).disabled = disabled;
     });
-    document.querySelectorAll(".dynamic-entry-field").forEach((input) => {
+    document.querySelectorAll(".dynamic-entry-field, .dynamic-entry-toggle").forEach((input) => {
       input.disabled = disabled;
     });
   }
@@ -236,6 +307,27 @@
     document.getElementById("percentualMensalWrapper").hidden = hideAtingimentoFields;
     document.getElementById("percentualAnualWrapper").hidden = hideAtingimentoFields;
     document.getElementById("situacaoCalculadaWrapper").hidden = !automatic;
+    if (isIeoRule(regra)) {
+      document.getElementById("percentualMensalWrapper").hidden = false;
+      document.getElementById("percentualAnualWrapper").hidden = true;
+    }
+
+    document.getElementById("launchResultadoMensalLabel").textContent = isIeoRule(regra)
+      ? "IEO calculado da competência"
+      : isOfertasPersonalizadasIndicator(indicador, regra)
+        ? "Resultado da competência"
+      : "Resultado mensal";
+    document.getElementById("launchPercentualCalculadoLabel").textContent = isIeoRule(regra)
+      ? "% atingido"
+      : "% da meta atingida mensal";
+    document.getElementById("launchResultadoAcumuladoLabel").textContent = isIeoRule(regra)
+      ? "Posição acumulada até a competência"
+      : isOfertasPersonalizadasIndicator(indicador, regra)
+        ? "Resultado oficial do indicador"
+      : "Resultado oficial anual";
+    document.getElementById("launchSituacaoCalculadaLabel").textContent = isIeoRule(regra)
+      ? "Situação da competência"
+      : "Situação";
 
     const realizedInput = document.getElementById("launchRealizado");
     realizedInput.readOnly = automatic;
@@ -263,19 +355,60 @@
   function renderDynamicFields(lancamento, regra) {
     const values = getEntryValuesFromLaunch(lancamento, regra);
     document.getElementById("realizadoWrapper").hidden = hasSpecificInputRule(regra);
+    if (isIeoRule(regra)) {
+      const mainFields = [
+        { nome: "despesaPessoalMes", rotulo: "Despesa de pessoal", tipo: "moeda", obrigatorio: true },
+        { nome: "despesasAdministrativasMes", rotulo: "Despesas administrativas", tipo: "moeda", obrigatorio: true },
+        { nome: "receitasLiquidasMes", rotulo: "Receitas líquidas", tipo: "moeda", obrigatorio: true }
+      ];
+      const directChecked = values.ieoApuradoInformado !== "" && values.ieoApuradoInformado !== null && values.ieoApuradoInformado !== undefined;
+      const admin = canAdjustOfficialPerformance();
+      document.getElementById("dynamicInputFields").innerHTML = `
+        ${mainFields.map((field) => renderEntryInput(field, values[field.nome] ?? "")).join("")}
+        <label class="full-span">
+          <input id="ieoDirectToggle" class="dynamic-entry-toggle" type="checkbox" ${directChecked ? "checked" : ""}>
+          Informar IEO apurado diretamente pela unidade?
+        </label>
+        <div id="ieoDirectFieldWrapper" class="full-span" ${directChecked ? "" : "hidden"}>
+          <p class="notice">Use este campo apenas quando a unidade responsável possuir o índice oficial já apurado e validado.</p>
+          ${renderEntryInput(
+            { nome: "ieoApuradoInformado", rotulo: "IEO apurado pela unidade", tipo: "percentual", obrigatorio: false },
+            values.ieoApuradoInformado ?? "",
+            directChecked ? "" : "disabled"
+          )}
+        </div>
+        ${admin ? `
+          <div class="full-span">
+            <p class="eyebrow">Ajuste de desempenho oficial</p>
+            <p class="notice">Use apenas para reproduzir desempenho oficial já informado ao Conselho de Administração.</p>
+            ${renderEntryInput(
+              { nome: "percentualAtingidoOficialInformado", rotulo: "% atingido oficial informado", tipo: "percentual", obrigatorio: false },
+              values.percentualAtingidoOficialInformado ?? ""
+            )}
+            <label>Observação do ajuste oficial
+              <textarea class="dynamic-entry-field" data-entry-field="observacaoAjusteOficial" data-entry-type="texto" rows="3">${escapeHtml((lancamento.camposEntrada || {}).observacaoAjusteOficial || "")}</textarea>
+            </label>
+          </div>
+        ` : ""}
+      `;
+      updateIeoOptionalVisibility();
+      return;
+    }
     document.getElementById("dynamicInputFields").innerHTML = (regra.camposEntrada || []).map((field) => `
-      <label>${escapeHtml(field.rotulo || field.nome)}
-        <input
-          class="dynamic-entry-field"
-          data-entry-field="${escapeHtml(field.nome)}"
-          data-entry-type="${escapeHtml(field.tipo || "numero")}"
-          type="${field.tipo === "texto" || field.tipo === "moeda" ? "text" : field.tipo === "data" ? "date" : "number"}"
-          ${field.tipo === "moeda" ? "inputmode=\"decimal\" placeholder=\"0,00\"" : field.tipo === "texto" || field.tipo === "data" ? "" : "step=\"any\""}
-          value="${escapeHtml(field.tipo === "moeda" && values[field.nome] !== "" ? CurrencyBR.formatarMoedaBR(values[field.nome]).replace(/^R\$\s?/, "") : values[field.nome] ?? "")}"
-          ${field.obrigatorio ? "required" : ""}
-        >
-      </label>
+      ${renderEntryInput(field, values[field.nome] ?? "")}
     `).join("");
+  }
+
+  function updateIeoOptionalVisibility() {
+    const toggle = document.getElementById("ieoDirectToggle");
+    const wrapper = document.getElementById("ieoDirectFieldWrapper");
+    if (!toggle || !wrapper) return;
+    const input = wrapper.querySelector("[data-entry-field='ieoApuradoInformado']");
+    wrapper.hidden = !toggle.checked;
+    if (input) {
+      input.disabled = !toggle.checked;
+      if (!toggle.checked) input.value = "";
+    }
   }
 
   function renderFormulaDetails(resultado) {
@@ -364,7 +497,7 @@
 
     document.getElementById("launchId").value = lancamento.id;
     document.getElementById("launchMetaLabel").textContent = getMetaLabel(regra);
-    document.getElementById("launchMeta").value = Calculations.formatarValor(getDisplayMeta(regra, lancamento), regra.unidadeMedida);
+    document.getElementById("launchMeta").value = formatDisplayMeta(regra, lancamento);
     document.getElementById("launchRealizado").value = lancamento.realizadoMensal ?? "";
     document.getElementById("launchPercentualManual").value = lancamento.percentualManual ?? lancamento.percentualAtingido ?? "";
     document.getElementById("launchJustificativa").value = lancamento.justificativa || "";
@@ -395,6 +528,7 @@
   function collectEntryValues() {
     const values = {};
     document.querySelectorAll(".dynamic-entry-field").forEach((input) => {
+      if (input.disabled) return;
       const type = input.dataset.entryType || "numero";
       if (type === "numero") {
         values[input.dataset.entryField] = input.value === "" ? "" : toNumberOrNull(input.value);
@@ -413,9 +547,32 @@
     return values;
   }
 
+  function updateCapacidadeTicPercentual(marcoSelecionado) {
+    const lancamento = getSelectedLaunch();
+    if (!lancamento) return;
+    const indicador = state.indicadores.find((item) => item.id === lancamento.indicadorId);
+    const regra = getRule(indicador);
+    const marcos = regra?.parametrosCalculo?.marcosCapacidadeTIC || [];
+    const marco = marcos.find((item) => item.label === marcoSelecionado);
+    const percentualInput = document.querySelector('[data-entry-field="percentualRealizadoTIC"]');
+    if (!marco || !percentualInput) return;
+    percentualInput.value = Number(marco.percentual) * 100;
+  }
+
   function calculateLaunchValues(lancamento, indicador) {
     const regra = getRule(indicador);
-    const camposEntrada = collectEntryValues();
+    const camposEntrada = {
+      ...(lancamento.camposEntrada || {}),
+      ...collectEntryValues()
+    };
+    const ieoDirectToggle = document.getElementById("ieoDirectToggle");
+    if (isIeoRule(regra) && ieoDirectToggle && !ieoDirectToggle.checked) {
+      camposEntrada.ieoApuradoInformado = "";
+    }
+    if (isIeoRule(regra) && !canAdjustOfficialPerformance()) {
+      camposEntrada.percentualAtingidoOficialInformado = (lancamento.camposEntrada || {}).percentualAtingidoOficialInformado ?? "";
+      camposEntrada.observacaoAjusteOficial = (lancamento.camposEntrada || {}).observacaoAjusteOficial ?? "";
+    }
     const automatic = usesAutomaticCalculation(indicador, regra);
     const manual = isManual(indicador);
     const realizado = automatic ? null : camposEntrada.realizadoMensal ?? toNumberOrNull(document.getElementById("launchRealizado").value);
@@ -461,8 +618,15 @@
     document.getElementById("realizadoWrapper").hidden = usesAutomaticCalculation(indicador, result.regra);
     document.getElementById("manualPercentWrapper").hidden = !isManual(indicador);
     document.getElementById("situacaoCalculadaWrapper").hidden = !usesAutomaticCalculation(indicador, result.regra);
+    if (isIeoRule(result.regra)) {
+      document.getElementById("percentualMensalWrapper").hidden = false;
+      document.getElementById("percentualAnualWrapper").hidden = true;
+      document.getElementById("launchPercentualCalculadoLabel").textContent = "% atingido";
+    }
     document.getElementById("launchResultadoMensal").value = result.resultado.resultadoMensalFormatado || Calculations.formatarValor(result.resultado.resultadoMensal, result.resultado.unidadeMedida);
-    document.getElementById("launchPercentualCalculado").value = result.resultado.percentualAtingidoMensalFormatado || Calculations.formatarPercentual(result.resultado.percentualAtingidoMensal);
+    document.getElementById("launchPercentualCalculado").value = isIeoRule(result.regra) && result.resultado.percentualAtingidoMensal === null
+      ? "Sem cálculo"
+      : result.resultado.percentualAtingidoMensalFormatado || Calculations.formatarPercentual(result.resultado.percentualAtingidoMensal);
     document.getElementById("launchResultadoAcumulado").value = result.resultado.resultadoOficialAnualFormatado || Calculations.formatarValor(result.resultado.resultadoOficialAnual, result.resultado.unidadeMedida);
     document.getElementById("launchPercentualAcumulado").value = result.resultado.percentualAtingidoAnualFormatado || Calculations.formatarPercentual(result.resultado.percentualAtingidoAnual);
     document.getElementById("launchSituacaoCalculada").value = result.resultado.situacao || getCalculatedSituation(result.resultado.percentualAtingidoAnual ?? result.resultado.percentualAtingidoMensal);
@@ -499,6 +663,14 @@
       !result.camposEntrada.arrecadacaoTotalProdutosLoteriasMes
     ) {
       showMessage("Informe a arrecadação total dos produtos de loterias antes de enviar para homologação.", "warning");
+      return false;
+    }
+    if (
+      action === "send" &&
+      isIeoRule(regra) &&
+      (result.resultado.resultadoMensal === null || result.resultado.resultadoMensal === undefined)
+    ) {
+      showMessage("Informe despesa de pessoal, despesas administrativas e receitas líquidas para calcular o IEO antes de enviar.", "warning");
       return false;
     }
 
@@ -625,6 +797,11 @@
     document.querySelectorAll(".dynamic-entry-field").forEach((input) => {
       input.value = "";
     });
+    const ieoDirectToggle = document.getElementById("ieoDirectToggle");
+    if (ieoDirectToggle) {
+      ieoDirectToggle.checked = false;
+      updateIeoOptionalVisibility();
+    }
     updateCalculatedPreview();
   }
 
@@ -678,6 +855,13 @@
     });
 
     document.getElementById("dynamicInputFields").addEventListener("input", updateCalculatedPreview);
+    document.getElementById("dynamicInputFields").addEventListener("change", (event) => {
+      if (event.target.id === "ieoDirectToggle") updateIeoOptionalVisibility();
+      if (event.target.dataset.entryField === "marcoAlcancadoTIC") {
+        updateCapacidadeTicPercentual(event.target.value);
+      }
+      updateCalculatedPreview();
+    });
 
     document.getElementById("saveDraftButton").addEventListener("click", () => persistLaunch("draft"));
     document.getElementById("sendApprovalButton").addEventListener("click", () => persistLaunch("send"));

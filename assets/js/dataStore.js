@@ -65,8 +65,206 @@
     "Atuação em Ecossistema"
   ];
   const PIX_QUARTER_TARGETS = [0.61, 0.62, 0.63, 0.65];
+  const APRIMORAMENTO_CURVA_TRIMESTRAL_2026 = {
+    "1TRI/2026": { metaPercentual: 0.0454, metaQuantidadeAcumulada: 1 },
+    "2TRI/2026": { metaPercentual: 0.1364, metaQuantidadeAcumulada: 3 },
+    "3TRI/2026": { metaPercentual: 0.1818, metaQuantidadeAcumulada: 4 },
+    "4TRI/2026": { metaPercentual: 0.25, metaQuantidadeAcumulada: 6 }
+  };
+  const CAPACIDADE_TIC_CURVA_TRIMESTRAL_2026 = {
+    "1TRI/2026": { metaPercentual: 0.35, marcoEsperado: "Realização de Consulta Pública de Informações - RFI" },
+    "2TRI/2026": { metaPercentual: 0.70, marcoEsperado: "Realização de Consulta Pública de Propostas - RFP" },
+    "3TRI/2026": { metaPercentual: 0.85, marcoEsperado: "Iniciação da Fase Seleção" },
+    "4TRI/2026": { metaPercentual: 1.00, marcoEsperado: "Contrato assinado com fornecedor" }
+  };
+  const CAPACIDADE_TIC_MARCOS = [
+    { label: "Não iniciado", percentual: 0 },
+    { label: "Consulta Pública de Informações - RFI realizada", percentual: 0.35 },
+    { label: "Consulta Pública de Propostas - RFP realizada", percentual: 0.70 },
+    { label: "Fase de Seleção iniciada", percentual: 0.85 },
+    { label: "Contrato assinado com fornecedor", percentual: 1.00 }
+  ];
+  const PRINCIPIOS_JOGO_RESPONSAVEL_CURVA_2026 = {
+    "1TRI/2026": { metaElementosAcumulados: 1 },
+    "2TRI/2026": { metaElementosAcumulados: 2 },
+    "3TRI/2026": { metaElementosAcumulados: 5 },
+    "4TRI/2026": { metaElementosAcumulados: 10 }
+  };
+  const ELEMENTOS_JOGO_RESPONSAVEL = [
+    "Pesquisa",
+    "Programa para empregados",
+    "Programa para revendedores",
+    "Desenho para jogos",
+    "Canais de jogos remotos",
+    "Publicidade, comunicação e marketing",
+    "Educação do jogador",
+    "Orientação ao jogador para tratamento",
+    "Envolvimento das partes interessadas",
+    "Relatório de medições e riscos"
+  ];
+  const STATUS_ACAO_JOGO_RESPONSAVEL = [
+    "Não iniciada",
+    "Em andamento",
+    "Concluída",
+    "Homologada",
+    "Cancelada"
+  ];
+  const STATUS_PROJETO_PLATAFORMA_JOGOS = [
+    "Não iniciado",
+    "Em planejamento",
+    "Em andamento",
+    "Piloto/MVP em desenvolvimento",
+    "Piloto/MVP concluído",
+    "Cancelado"
+  ];
+  const MARCOS_PLATAFORMA_JOGOS_2026 = [
+    { label: "Não iniciado", percentualReferencia: 0 },
+    { label: "Equipe do projeto alocada", percentualReferencia: null },
+    { label: "Kickoff realizado", percentualReferencia: null },
+    { label: "Sprints iniciais executadas", percentualReferencia: null },
+    { label: "Arquitetura do sistema em definição", percentualReferencia: null },
+    { label: "Ambiente tecnológico criado", percentualReferencia: null },
+    { label: "Acessos concedidos", percentualReferencia: null },
+    { label: "Funcionalidade negocial definida", percentualReferencia: null },
+    { label: "Piloto/MVP concluído", percentualReferencia: 1 }
+  ];
+  const APOIO_SOCIOAMBIENTAL_CURVA_2026 = {
+    "1TRI/2026": {
+      metaPercentual: 0,
+      metaQuantidadeAcumulada: 0,
+      marcoEsperado: "Sem meta de entrega no período; projetos em prospecção e estruturação"
+    },
+    "2TRI/2026": {
+      metaPercentual: 0.50,
+      metaQuantidadeAcumulada: 1,
+      marcoEsperado: "1ª iniciativa realizada"
+    },
+    "3TRI/2026": {
+      metaPercentual: 0.50,
+      metaQuantidadeAcumulada: 1,
+      marcoEsperado: "Manutenção do acumulado de 50%, considerando a meta do 2TRI"
+    },
+    "4TRI/2026": {
+      metaPercentual: 1.00,
+      metaQuantidadeAcumulada: 2,
+      marcoEsperado: "2ª iniciativa realizada"
+    }
+  };
+  const STATUS_INICIATIVA_SOCIOAMBIENTAL = [
+    "Não iniciada",
+    "Em prospecção",
+    "Em estruturação",
+    "Em rito de governança",
+    "Apoiada/realizada",
+    "Cancelada"
+  ];
+  const VISIBILIDADE_REPASSES_CURVA_2026 = {
+    "1TRI/2026": {
+      metaPercentual: 0,
+      metaAcoesRealizadasAcumuladas: 0,
+      marcoEsperado: "Sem meta de entrega no período; relatório em elaboração/homologação"
+    },
+    "2TRI/2026": {
+      metaPercentual: 0.50,
+      metaAcoesRealizadasAcumuladas: 1,
+      marcoEsperado: "Publicar relatório institucional \"A Sorte em Números — 2025\""
+    },
+    "3TRI/2026": {
+      metaPercentual: 0.50,
+      metaAcoesRealizadasAcumuladas: 1,
+      marcoEsperado: "Sem nova meta no período; acumulado de 50% considerando a meta do 2TRI"
+    },
+    "4TRI/2026": {
+      metaPercentual: 1.00,
+      metaAcoesRealizadasAcumuladas: 2,
+      marcoEsperado: "Realizar campanha publicitária exclusiva sobre repasse social das Loterias CAIXA"
+    }
+  };
+  const ACOES_VISIBILIDADE_REPASSES_2026 = [
+    {
+      id: "relatorio_sorte_em_numeros_2025",
+      nome: "Publicar relatório institucional \"A Sorte em Números — 2025\"",
+      semestrePrevisto: "1º semestre/2026",
+      pesoPercentual: 0.50
+    },
+    {
+      id: "campanha_repasses_sociais",
+      nome: "Realizar campanha publicitária exclusiva com foco no repasse social das Loterias CAIXA",
+      semestrePrevisto: "2º semestre/2026",
+      pesoPercentual: 0.50
+    }
+  ];
+  const STATUS_ACAO_VISIBILIDADE = [
+    "Não iniciada",
+    "Em planejamento",
+    "Em elaboração",
+    "Em homologação",
+    "Publicada/realizada",
+    "Cancelada"
+  ];
+  const GGR_META_ACUMULADA_2026 = {
+    "2026-01": 1056593039,
+    "2026-02": 1997659493,
+    "2026-03": 3070246140.78,
+    "2026-04": 4193018947,
+    "2026-05": 5285128208,
+    "2026-06": 6512131485,
+    "2026-07": 7644597006,
+    "2026-08": 8771034927,
+    "2026-09": 10271204884,
+    "2026-10": 11442642920,
+    "2026-11": 12525118608,
+    "2026-12": 15600000000
+  };
+  const IEO_META_ACUMULADA_2026 = {
+    "2026-01": null,
+    "2026-02": null,
+    "2026-03": 0.1441,
+    "2026-04": null,
+    "2026-05": null,
+    "2026-06": null,
+    "2026-07": null,
+    "2026-08": null,
+    "2026-09": null,
+    "2026-10": null,
+    "2026-11": null,
+    "2026-12": 0.1403
+  };
+  const REPASSE_SOCIAL_META_ACUMULADA_2026 = {
+    "2026-01": 737118539.30,
+    "2026-02": 1394613495.00,
+    "2026-03": 2142991572.00,
+    "2026-04": 2926098294.00,
+    "2026-05": 3688125380.00,
+    "2026-06": 4545104157.00,
+    "2026-07": 5335136943.00,
+    "2026-08": 6121095220.00,
+    "2026-09": 7165115749.00,
+    "2026-10": 7982318714.00,
+    "2026-11": 8738217864.00,
+    "2026-12": 10452751135.00
+  };
+  const LUCRO_LIQUIDO_META_ACUMULADA_2026 = {
+    "2026-01": 89555555.56,
+    "2026-02": 179111111.11,
+    "2026-03": 268666666.67,
+    "2026-04": null,
+    "2026-05": null,
+    "2026-06": null,
+    "2026-07": null,
+    "2026-08": null,
+    "2026-09": null,
+    "2026-10": null,
+    "2026-11": null,
+    "2026-12": 1209000000
+  };
   const CURRENCY_FIELD_NAMES = new Set([
     "ggrRealizadoMes",
+    "arrecadacaoTotalMes",
+    "premiosAPagarMes",
+    "despesaPessoalMes",
+    "despesasAdministrativasMes",
+    "receitasLiquidasMes",
     "lucroLiquidoRecorrenteAcumulado",
     "arrecadacaoCanaisEletronicosMes",
     "arrecadacaoTotalProdutosLoteriasMes",
@@ -75,10 +273,12 @@
     "pixAcumuladoTrimestre",
     "canaisAcumuladoTrimestre",
     "repasseSocialAcumulado",
+    "repasseSocialAcumuladoCompetencia",
     "valorInvestidoAcumulado",
+    "valorInvestidoMes",
+    "valorInvestidoAcumuladoCompetencia",
     "lucroLiquidoBase",
     "arrecadacaoEcossistemaMes",
-    "arrecadacaoTotalMes",
     "arrecadacaoEcossistema2025",
     "arrecadacaoTotal2025",
     "arrecadacaoRedeLotericaMes2026",
@@ -154,6 +354,98 @@
     [10, "Outubro"],
     [11, "Novembro"],
     [12, "Dezembro"]
+  ];
+  const NPS_REFERENCIAS_2026 = {
+    "2026-03": 55
+  };
+  const TIPOS_POSICAO_NPS = [
+    "Baseline",
+    "Acompanhamento",
+    "Pesquisa oficial",
+    "Revisão metodológica",
+    "Fechamento anual"
+  ];
+  const TIPOS_POSICAO_CLIMA = [
+    "Acompanhamento",
+    "Plano de ação",
+    "Pesquisa oficial",
+    "Revisão metodológica",
+    "Fechamento anual"
+  ];
+  const CAPACITACAO_EMPREGADOS_CURVA_TRIMESTRAL_2026 = {
+    "1TRI/2026": {
+      metaCobertura: 0.90,
+      quantidadeCursosMinima: 1,
+      descricao: "90% do público-alvo com 01 curso concluído: Curso de Jogo Responsável"
+    },
+    "2TRI/2026": {
+      metaCobertura: 0.90,
+      quantidadeCursosMinima: 2,
+      descricao: "90% do público-alvo com 02 cursos concluídos acumulados"
+    },
+    "3TRI/2026": {
+      metaCobertura: 0.90,
+      quantidadeCursosMinima: 4,
+      descricao: "90% do público-alvo com 04 cursos concluídos acumulados"
+    },
+    "4TRI/2026": {
+      metaCobertura: 0.90,
+      quantidadeCursosMinima: 5,
+      descricao: "90% do público-alvo com 05 cursos concluídos acumulados"
+    }
+  };
+  const JOGO_RESPONSAVEL_CAPACITACAO_CURVA_2026 = {
+    "1TRI/2026": {
+      metaCobertura: 0.90,
+      quantidadeMinimaIniciativas: 1,
+      descricao: "90% do público-alvo com pelo menos 1 ação de disseminação de Jogo Responsável concluída"
+    },
+    "2TRI/2026": {
+      metaCobertura: 0.90,
+      quantidadeMinimaIniciativas: 2,
+      descricao: "90% do público-alvo com pelo menos 2 iniciativas de Jogo Responsável concluídas"
+    },
+    "3TRI/2026": {
+      metaCobertura: 0.90,
+      quantidadeMinimaIniciativas: 2,
+      descricao: "90% do público-alvo com pelo menos 2 iniciativas de Jogo Responsável concluídas"
+    },
+    "4TRI/2026": {
+      metaCobertura: 0.90,
+      quantidadeMinimaIniciativas: 2,
+      descricao: "90% do público-alvo com pelo menos 2 iniciativas de Jogo Responsável concluídas"
+    }
+  };
+  const INCENTIVO_SOCIOAMBIENTAL_CURVA_2026 = {
+    "1TRI/2026": {
+      metaPercentualLucro: 0,
+      metaValorAcumulado: 0,
+      marcoEsperado: "Sem meta de investimento no período; projetos em prospecção e estruturação"
+    },
+    "2TRI/2026": {
+      metaPercentualLucro: 0.0005,
+      metaValorAcumulado: 652700,
+      marcoEsperado: "Investimento acumulado de 0,05% do lucro líquido de referência"
+    },
+    "3TRI/2026": {
+      metaPercentualLucro: 0.0010,
+      metaValorAcumulado: 1305400,
+      marcoEsperado: "Investimento acumulado de 0,10% do lucro líquido de referência"
+    },
+    "4TRI/2026": {
+      metaPercentualLucro: 0.0033,
+      metaValorAcumulado: 4307900,
+      marcoEsperado: "Investimento acumulado de 0,33% do lucro líquido de referência"
+    }
+  };
+  const STATUS_INCENTIVO_SOCIOAMBIENTAL = [
+    "Não iniciado",
+    "Em prospecção",
+    "Em estruturação",
+    "Em rito de governança",
+    "Aprovado",
+    "Investimento realizado",
+    "Cancelado"
   ];
 
   function storageKey(key) {
@@ -410,6 +702,341 @@
     return PILLAR_NAMES[5];
   }
 
+  function getLucroLiquidoMetaAcumulada(ano, mes) {
+    return LUCRO_LIQUIDO_META_ACUMULADA_2026[`${ano}-${String(mes).padStart(2, "0")}`] ?? null;
+  }
+
+  function getNpsMetaReferencia(ano, mes) {
+    const key = `${ano}-${String(mes).padStart(2, "0")}`;
+    return NPS_REFERENCIAS_2026[key] ?? 58;
+  }
+
+  function getGgrMetaAcumulada(ano, mes) {
+    return GGR_META_ACUMULADA_2026[`${ano}-${String(mes).padStart(2, "0")}`] ?? null;
+  }
+
+  function getIeoMetaAcumulada(ano, mes) {
+    const key = `${ano}-${String(mes).padStart(2, "0")}`;
+    return Object.prototype.hasOwnProperty.call(IEO_META_ACUMULADA_2026, key) ? IEO_META_ACUMULADA_2026[key] : null;
+  }
+
+  function getRepasseSocialMetaAcumulada(ano, mes) {
+    return REPASSE_SOCIAL_META_ACUMULADA_2026[`${ano}-${String(mes).padStart(2, "0")}`] ?? null;
+  }
+
+  function getAprimoramentoMetaTrimestral(ano, mes) {
+    const trimestre = `${Math.ceil(Number(mes) / 3)}TRI/${ano}`;
+    return APRIMORAMENTO_CURVA_TRIMESTRAL_2026[trimestre]?.metaPercentual ?? null;
+  }
+
+  function getCapacidadeTicMetaTrimestral(ano, mes) {
+    const trimestre = `${Math.ceil(Number(mes) / 3)}TRI/${ano}`;
+    return CAPACIDADE_TIC_CURVA_TRIMESTRAL_2026[trimestre]?.metaPercentual ?? null;
+  }
+
+  function getPrincipiosJogoResponsavelMetaTrimestral(ano, mes) {
+    const trimestre = `${Math.ceil(Number(mes) / 3)}TRI/${ano}`;
+    return PRINCIPIOS_JOGO_RESPONSAVEL_CURVA_2026[trimestre]?.metaElementosAcumulados ?? null;
+  }
+
+  function getApoioSocioambientalMetaTrimestral(ano, mes) {
+    const trimestre = `${Math.ceil(Number(mes) / 3)}TRI/${ano}`;
+    return APOIO_SOCIOAMBIENTAL_CURVA_2026[trimestre]?.metaQuantidadeAcumulada ?? null;
+  }
+
+  function getCapacitacaoEmpregadosMetaTrimestral(ano, mes) {
+    const trimestre = `${Math.ceil(Number(mes) / 3)}TRI/${ano}`;
+    return CAPACITACAO_EMPREGADOS_CURVA_TRIMESTRAL_2026[trimestre]?.metaCobertura ?? null;
+  }
+
+  function getJogoResponsavelCapacitacaoMetaTrimestral(ano, mes) {
+    const trimestre = `${Math.ceil(Number(mes) / 3)}TRI/${ano}`;
+    return JOGO_RESPONSAVEL_CAPACITACAO_CURVA_2026[trimestre]?.metaCobertura ?? null;
+  }
+
+  function getIncentivoSocioambientalMetaTrimestral(ano, mes) {
+    const trimestre = `${Math.ceil(Number(mes) / 3)}TRI/${ano}`;
+    return INCENTIVO_SOCIOAMBIENTAL_CURVA_2026[trimestre]?.metaValorAcumulado ?? null;
+  }
+
+  function getVisibilidadeRepassesMetaTrimestral(ano, mes) {
+    const trimestre = `${Math.ceil(Number(mes) / 3)}TRI/${ano}`;
+    return VISIBILIDADE_REPASSES_CURVA_2026[trimestre]?.metaAcoesRealizadasAcumuladas ?? null;
+  }
+
+  function migrarCampoGgrLegado(launch) {
+    if (Number(launch?.indicadorId) !== 5) return launch;
+    const camposEntrada = { ...(launch.camposEntrada || {}) };
+    if (camposEntrada.ggrRealizadoMes !== undefined && camposEntrada.ggrRealizadoMesMigrado === undefined) {
+      camposEntrada.ggrRealizadoMesMigrado = camposEntrada.ggrRealizadoMes;
+      delete camposEntrada.ggrRealizadoMes;
+    }
+    return { ...launch, camposEntrada };
+  }
+
+  function migrarCampoRepasseSocialLegado(launch) {
+    if (Number(launch?.indicadorId) !== 17) return launch;
+    const camposEntrada = { ...(launch.camposEntrada || {}) };
+    if (camposEntrada.repasseSocialAcumulado !== undefined && camposEntrada.repasseSocialAcumuladoCompetencia === undefined) {
+      camposEntrada.repasseSocialAcumuladoCompetencia = camposEntrada.repasseSocialAcumulado;
+      camposEntrada.repasseSocialAcumuladoMigrado = camposEntrada.repasseSocialAcumulado;
+      delete camposEntrada.repasseSocialAcumulado;
+    }
+    return { ...launch, camposEntrada };
+  }
+
+  function migrarCampoOfertasLegado(launch) {
+    if (Number(launch?.indicadorId) !== 1) return launch;
+    const camposEntrada = { ...(launch.camposEntrada || {}) };
+    if (camposEntrada.baseClientesAtivos !== undefined && camposEntrada.baseClientesAtivosCompetencia === undefined) {
+      camposEntrada.baseClientesAtivosCompetencia = camposEntrada.baseClientesAtivos;
+      camposEntrada.baseClientesAtivosMigrado = camposEntrada.baseClientesAtivos;
+      delete camposEntrada.baseClientesAtivos;
+    }
+    if (camposEntrada.clientesComOfertaPersonalizada !== undefined && camposEntrada.clientesUnicosComOfertaPersonalizadaCompetencia === undefined) {
+      camposEntrada.clientesUnicosComOfertaPersonalizadaCompetencia = camposEntrada.clientesComOfertaPersonalizada;
+      camposEntrada.clientesComOfertaPersonalizadaMigrado = camposEntrada.clientesComOfertaPersonalizada;
+      delete camposEntrada.clientesComOfertaPersonalizada;
+    }
+    return { ...launch, camposEntrada };
+  }
+
+  function migrarCampoNpsLegado(launch) {
+    if (Number(launch?.indicadorId) !== 2) return launch;
+    const camposEntrada = { ...(launch.camposEntrada || {}) };
+    if (camposEntrada.npsRealizado !== undefined && camposEntrada.npsApurado === undefined) {
+      camposEntrada.npsApurado = camposEntrada.npsRealizado;
+      camposEntrada.npsRealizadoMigrado = camposEntrada.npsRealizado;
+      delete camposEntrada.npsRealizado;
+    }
+    if (camposEntrada.dataPesquisa !== undefined && camposEntrada.dataBasePesquisaNPS === undefined) {
+      camposEntrada.dataBasePesquisaNPS = camposEntrada.dataPesquisa;
+      camposEntrada.dataPesquisaMigrado = camposEntrada.dataPesquisa;
+      delete camposEntrada.dataPesquisa;
+    }
+    if (camposEntrada.dataBaseApuracao !== undefined && camposEntrada.dataBasePesquisaNPS === undefined) {
+      camposEntrada.dataBasePesquisaNPS = camposEntrada.dataBaseApuracao;
+      camposEntrada.dataBaseApuracaoMigrado = camposEntrada.dataBaseApuracao;
+      delete camposEntrada.dataBaseApuracao;
+    }
+    if (camposEntrada.relatorioPesquisa !== undefined && camposEntrada.fontePesquisaNPS === undefined) {
+      camposEntrada.fontePesquisaNPS = camposEntrada.relatorioPesquisa;
+      camposEntrada.relatorioPesquisaMigrado = camposEntrada.relatorioPesquisa;
+      delete camposEntrada.relatorioPesquisa;
+    }
+    return { ...launch, camposEntrada };
+  }
+
+  function migrarCampoClimaLegado(launch) {
+    if (Number(launch?.indicadorId) !== 12) return launch;
+    const camposEntrada = { ...(launch.camposEntrada || {}) };
+    if (camposEntrada.mediaGeralGPTW !== undefined && camposEntrada.notaClimaApurada === undefined) {
+      camposEntrada.notaClimaApurada = camposEntrada.mediaGeralGPTW;
+      camposEntrada.mediaGeralGPTWMigrado = camposEntrada.mediaGeralGPTW;
+      delete camposEntrada.mediaGeralGPTW;
+    }
+    if (camposEntrada.dataPesquisa !== undefined && camposEntrada.dataBasePesquisaClima === undefined) {
+      camposEntrada.dataBasePesquisaClima = camposEntrada.dataPesquisa;
+      camposEntrada.dataPesquisaMigrado = camposEntrada.dataPesquisa;
+      delete camposEntrada.dataPesquisa;
+    }
+    if (camposEntrada.dataBaseApuracao !== undefined && camposEntrada.dataBasePesquisaClima === undefined) {
+      camposEntrada.dataBasePesquisaClima = camposEntrada.dataBaseApuracao;
+      camposEntrada.dataBaseApuracaoMigrado = camposEntrada.dataBaseApuracao;
+      delete camposEntrada.dataBaseApuracao;
+    }
+    if (camposEntrada.relatorioGPTW !== undefined && camposEntrada.fonteEvidenciaClima === undefined) {
+      camposEntrada.fonteEvidenciaClima = camposEntrada.relatorioGPTW;
+      camposEntrada.relatorioGPTWMigrado = camposEntrada.relatorioGPTW;
+      delete camposEntrada.relatorioGPTW;
+    }
+    return { ...launch, camposEntrada };
+  }
+
+  function migrarCampoCapacitacaoLegado(launch) {
+    if (Number(launch?.indicadorId) !== 15) return launch;
+    const camposEntrada = { ...(launch.camposEntrada || {}) };
+    if (camposEntrada.empregadosElegiveisMes !== undefined && camposEntrada.publicoAlvoElegivelCapacitacao === undefined) {
+      camposEntrada.publicoAlvoElegivelCapacitacao = camposEntrada.empregadosElegiveisMes;
+      camposEntrada.empregadosElegiveisMesMigrado = camposEntrada.empregadosElegiveisMes;
+      delete camposEntrada.empregadosElegiveisMes;
+    }
+    if (camposEntrada.empregadosCapacitadosMes !== undefined && camposEntrada.empregadosCapacitadosCapacitacao === undefined) {
+      camposEntrada.empregadosCapacitadosCapacitacao = camposEntrada.empregadosCapacitadosMes;
+      camposEntrada.empregadosCapacitadosMesMigrado = camposEntrada.empregadosCapacitadosMes;
+      delete camposEntrada.empregadosCapacitadosMes;
+    }
+    if (camposEntrada.dataBaseApuracao !== undefined && camposEntrada.dataBaseApuracaoCapacitacao === undefined) {
+      camposEntrada.dataBaseApuracaoCapacitacao = camposEntrada.dataBaseApuracao;
+      camposEntrada.dataBaseApuracaoMigrado = camposEntrada.dataBaseApuracao;
+      delete camposEntrada.dataBaseApuracao;
+    }
+    return { ...launch, camposEntrada };
+  }
+
+  function migrarCampoJogoResponsavelCapacitacaoLegado(launch) {
+    if (Number(launch?.indicadorId) !== 21) return launch;
+    const camposEntrada = { ...(launch.camposEntrada || {}) };
+    if (camposEntrada.empregadosElegiveisMes !== undefined && camposEntrada.publicoAlvoElegivelJR === undefined) {
+      camposEntrada.publicoAlvoElegivelJR = camposEntrada.empregadosElegiveisMes;
+      camposEntrada.empregadosElegiveisMesMigrado = camposEntrada.empregadosElegiveisMes;
+      delete camposEntrada.empregadosElegiveisMes;
+    }
+    if (camposEntrada.empregadosComDuasIniciativasConcluidas !== undefined && camposEntrada.empregadosCapacitadosJR === undefined) {
+      camposEntrada.empregadosCapacitadosJR = camposEntrada.empregadosComDuasIniciativasConcluidas;
+      camposEntrada.empregadosComDuasIniciativasConcluidasMigrado = camposEntrada.empregadosComDuasIniciativasConcluidas;
+      delete camposEntrada.empregadosComDuasIniciativasConcluidas;
+    }
+    if (camposEntrada.dataBaseApuracao !== undefined && camposEntrada.dataBaseApuracaoJR === undefined) {
+      camposEntrada.dataBaseApuracaoJR = camposEntrada.dataBaseApuracao;
+      camposEntrada.dataBaseApuracaoMigrado = camposEntrada.dataBaseApuracao;
+      delete camposEntrada.dataBaseApuracao;
+    }
+    if (camposEntrada.evidencia !== undefined && camposEntrada.fonteEvidenciaJR === undefined) {
+      camposEntrada.fonteEvidenciaJR = camposEntrada.evidencia;
+      camposEntrada.evidenciaMigrada = camposEntrada.evidencia;
+      delete camposEntrada.evidencia;
+    }
+    return { ...launch, camposEntrada };
+  }
+
+  function migrarCampoIncentivoSocioambientalLegado(launch) {
+    if (Number(launch?.indicadorId) !== 19) return launch;
+    const camposEntrada = { ...(launch.camposEntrada || {}) };
+    if (camposEntrada.valorInvestidoAcumulado !== undefined && camposEntrada.valorInvestidoAcumuladoCompetencia === undefined) {
+      camposEntrada.valorInvestidoAcumuladoCompetencia = camposEntrada.valorInvestidoAcumulado;
+      camposEntrada.valorInvestidoAcumuladoMigrado = camposEntrada.valorInvestidoAcumulado;
+      delete camposEntrada.valorInvestidoAcumulado;
+    }
+    if (camposEntrada.statusAcao !== undefined && camposEntrada.statusProjetoIncentivoSocioambiental === undefined) {
+      camposEntrada.statusProjetoIncentivoSocioambiental = camposEntrada.statusAcao;
+      camposEntrada.statusAcaoMigrado = camposEntrada.statusAcao;
+      delete camposEntrada.statusAcao;
+    }
+    if (camposEntrada.evidencia !== undefined && camposEntrada.evidenciaIncentivoSocioambiental === undefined) {
+      camposEntrada.evidenciaIncentivoSocioambiental = camposEntrada.evidencia;
+      camposEntrada.evidenciaMigrada = camposEntrada.evidencia;
+      delete camposEntrada.evidencia;
+    }
+    return { ...launch, camposEntrada };
+  }
+
+  function migrarCampoAprimoramentoLegado(launch) {
+    if (Number(launch?.indicadorId) !== 4) return launch;
+    const camposEntrada = { ...(launch.camposEntrada || {}) };
+    if (camposEntrada.melhoriasEntreguesMes !== undefined && camposEntrada.melhoriasImplementadasMes === undefined) {
+      camposEntrada.melhoriasImplementadasMes = camposEntrada.melhoriasEntreguesMes;
+      camposEntrada.melhoriasEntreguesMesMigrado = camposEntrada.melhoriasEntreguesMes;
+      delete camposEntrada.melhoriasEntreguesMes;
+    }
+    return { ...launch, camposEntrada };
+  }
+
+  function migrarCampoPlataformaJogosLegado(launch) {
+    if (Number(launch?.indicadorId) !== 10) return launch;
+    const camposEntrada = { ...(launch.camposEntrada || {}) };
+    if (camposEntrada.etapaAtualProjeto !== undefined && camposEntrada.marcoAtualPlataformaJogos === undefined) {
+      camposEntrada.marcoAtualPlataformaJogos = camposEntrada.etapaAtualProjeto;
+      camposEntrada.etapaAtualProjetoMigrado = camposEntrada.etapaAtualProjeto;
+      delete camposEntrada.etapaAtualProjeto;
+    }
+    if (camposEntrada.evidenciaEntrega !== undefined && camposEntrada.evidenciaPlataformaJogos === undefined) {
+      camposEntrada.evidenciaPlataformaJogos = camposEntrada.evidenciaEntrega;
+      camposEntrada.evidenciaEntregaMigrado = camposEntrada.evidenciaEntrega;
+      delete camposEntrada.evidenciaEntrega;
+    }
+    if (camposEntrada.percentualExecucao !== undefined && camposEntrada.percentualExecucaoMigrado === undefined) {
+      camposEntrada.percentualExecucaoMigrado = camposEntrada.percentualExecucao;
+      delete camposEntrada.percentualExecucao;
+    }
+    return { ...launch, camposEntrada };
+  }
+
+  function migrarCampoCapacidadeTicLegado(launch) {
+    if (Number(launch?.indicadorId) !== 11) return launch;
+    const camposEntrada = { ...(launch.camposEntrada || {}) };
+    if (camposEntrada.etapaAtual !== undefined && camposEntrada.marcoAlcancadoTIC === undefined) {
+      camposEntrada.marcoAlcancadoTIC = camposEntrada.etapaAtual;
+      camposEntrada.etapaAtualMigrado = camposEntrada.etapaAtual;
+      delete camposEntrada.etapaAtual;
+    }
+    if (camposEntrada.percentualExecucao !== undefined && camposEntrada.percentualRealizadoTIC === undefined) {
+      camposEntrada.percentualRealizadoTIC = camposEntrada.percentualExecucao;
+      camposEntrada.percentualExecucaoMigrado = camposEntrada.percentualExecucao;
+      delete camposEntrada.percentualExecucao;
+    }
+    if (camposEntrada.numeroProcesso !== undefined && camposEntrada.descricaoAndamentoTIC === undefined) {
+      camposEntrada.descricaoAndamentoTIC = camposEntrada.numeroProcesso;
+      camposEntrada.numeroProcessoMigrado = camposEntrada.numeroProcesso;
+      delete camposEntrada.numeroProcesso;
+    }
+    return { ...launch, camposEntrada };
+  }
+
+  function migrarCampoPrincipiosJogoResponsavelLegado(launch) {
+    if (Number(launch?.indicadorId) !== 18) return launch;
+    const camposEntrada = { ...(launch.camposEntrada || {}) };
+    if (camposEntrada.acaoMelhoria !== undefined && camposEntrada.acaoExecutada === undefined) {
+      camposEntrada.acaoExecutada = camposEntrada.acaoMelhoria;
+      camposEntrada.acaoMelhoriaMigrado = camposEntrada.acaoMelhoria;
+      delete camposEntrada.acaoMelhoria;
+    }
+    if (camposEntrada.dataExecucao !== undefined && camposEntrada.dataConclusao === undefined) {
+      camposEntrada.dataConclusao = camposEntrada.dataExecucao;
+      camposEntrada.dataExecucaoMigrado = camposEntrada.dataExecucao;
+      delete camposEntrada.dataExecucao;
+    }
+    if (camposEntrada.elementosExecutadosAcumulado !== undefined && camposEntrada.elementosExecutadosAcumuladoMigrado === undefined) {
+      camposEntrada.elementosExecutadosAcumuladoMigrado = camposEntrada.elementosExecutadosAcumulado;
+      delete camposEntrada.elementosExecutadosAcumulado;
+    }
+    return { ...launch, camposEntrada };
+  }
+
+  function migrarCampoApoioSocioambientalLegado(launch) {
+    if (Number(launch?.indicadorId) !== 16) return launch;
+    const camposEntrada = { ...(launch.camposEntrada || {}) };
+    if (camposEntrada.nomeIniciativa !== undefined && camposEntrada.nomeIniciativaSocioambiental === undefined) {
+      camposEntrada.nomeIniciativaSocioambiental = camposEntrada.nomeIniciativa;
+      camposEntrada.nomeIniciativaMigrado = camposEntrada.nomeIniciativa;
+      delete camposEntrada.nomeIniciativa;
+    }
+    if (camposEntrada.dataApoio !== undefined && camposEntrada.dataApoioIniciativa === undefined) {
+      camposEntrada.dataApoioIniciativa = camposEntrada.dataApoio;
+      camposEntrada.dataApoioMigrado = camposEntrada.dataApoio;
+      delete camposEntrada.dataApoio;
+    }
+    if (camposEntrada.quantidadeIniciativasApoiadasMes !== undefined && camposEntrada.quantidadeIniciativasApoiadasMesMigrado === undefined) {
+      camposEntrada.quantidadeIniciativasApoiadasMesMigrado = camposEntrada.quantidadeIniciativasApoiadasMes;
+      delete camposEntrada.quantidadeIniciativasApoiadasMes;
+    }
+    return { ...launch, camposEntrada };
+  }
+
+  function migrarCampoVisibilidadeRepassesLegado(launch) {
+    if (Number(launch?.indicadorId) !== 20) return launch;
+    const camposEntrada = { ...(launch.camposEntrada || {}) };
+    if (camposEntrada.statusAcao !== undefined && camposEntrada.statusAcaoVisibilidade === undefined) {
+      camposEntrada.statusAcaoVisibilidade = camposEntrada.statusAcao;
+      camposEntrada.statusAcaoMigrado = camposEntrada.statusAcao;
+      delete camposEntrada.statusAcao;
+    }
+    if (camposEntrada.evidencia !== undefined && camposEntrada.evidenciaVisibilidade === undefined) {
+      camposEntrada.evidenciaVisibilidade = camposEntrada.evidencia;
+      camposEntrada.evidenciaMigrada = camposEntrada.evidencia;
+      delete camposEntrada.evidencia;
+    }
+    if (camposEntrada.totalAcoesPropostas !== undefined && camposEntrada.totalAcoesPropostasMigrado === undefined) {
+      camposEntrada.totalAcoesPropostasMigrado = camposEntrada.totalAcoesPropostas;
+      delete camposEntrada.totalAcoesPropostas;
+    }
+    if (camposEntrada.totalAcoesRealizadas !== undefined && camposEntrada.totalAcoesRealizadasMigrado === undefined) {
+      camposEntrada.totalAcoesRealizadasMigrado = camposEntrada.totalAcoesRealizadas;
+      delete camposEntrada.totalAcoesRealizadas;
+    }
+    return { ...launch, camposEntrada };
+  }
+
   async function checkJsonDb() {
     if (jsonDbAvailable !== null) return jsonDbAvailable;
     if (window.location.protocol === "file:") {
@@ -635,6 +1262,15 @@
           pilar: getCanonicalPillar(Number(indicator.id)),
           periodicidade: indicator.periodicidade === "Não especificado" ? "Não especificada" : indicator.periodicidade
         };
+        if (Number(indicator.id) === 1) {
+          return {
+            ...normalized,
+            tipoCalculo: "percentual_direto",
+            unidadeMedida: "percentual",
+            metaAnualDescricao: "≥ 10%",
+            metrica: "Clientes únicos com oferta personalizada / Base de clientes ativos identificáveis"
+          };
+        }
         if (Number(indicator.id) === 8) {
           return {
             ...normalized,
@@ -644,6 +1280,136 @@
             metrica: "(Arrecadação total nos canais eletrônicos) / (Arrecadação total dos produtos de loterias)",
             tipoCalculo: "razao_canais_digitais",
             unidadeMedida: "percentual"
+          };
+        }
+        if (Number(indicator.id) === 4) {
+          return {
+            ...normalized,
+            tipoCalculo: "melhorias_acumuladas",
+            unidadeMedida: "percentual",
+            metaAnualDescricao: "Implementar melhorias que atendam a 25% das ocorrências apontadas na pesquisa NPS de baseline.",
+            metrica: "Melhorias implementadas acumuladas / 22 melhorias mapeadas no plano de trabalho"
+          };
+        }
+        if (Number(indicator.id) === 5) {
+          return {
+            ...normalized,
+            tipoCalculo: "ggr_formula",
+            unidadeMedida: "moeda",
+            metaAnualDescricao: "≥ R$ 15,6 bilhões",
+            metrica: "GGR = Arrecadação total - Prêmios a pagar"
+          };
+        }
+        if (Number(indicator.id) === 6) {
+          return {
+            ...normalized,
+            tipoCalculo: "indice_inverso",
+            unidadeMedida: "percentual",
+            metaAnualDescricao: "≤ 14,03%",
+            metrica: "((Despesa de pessoal + Despesas Administrativas) / Receitas Líquidas) × 100"
+          };
+        }
+        if (Number(indicator.id) === 2) {
+          return {
+            ...normalized,
+            tipoCalculo: "nota_pesquisa_nps",
+            unidadeMedida: "pontos",
+            metaAnualDescricao: "Meta anual correta: NPS 58",
+            metrica: "NPS = % promotores - % detratores. Baseline 55; referência 70; redução esperada do gap 20%."
+          };
+        }
+        if (Number(indicator.id) === 17) {
+          return {
+            ...normalized,
+            tipoCalculo: "valor_financeiro_acumulado",
+            unidadeMedida: "moeda",
+            metaAnualDescricao: "≥ R$ 10,4 bilhões",
+            metrica: "Repasse social acumulado até a competência"
+          };
+        }
+        if (Number(indicator.id) === 11) {
+          return {
+            ...normalized,
+            tipoCalculo: "marco_projeto_percentual",
+            unidadeMedida: "percentual",
+            metaAnualDescricao: "Contratação e/ou celebração de parceria para o desenvolvimento de soluções de TIC até o final do exercício de 2026.",
+            metrica: "Avanço por marcos trimestrais de contratação/parceria de TIC"
+          };
+        }
+        if (Number(indicator.id) === 12) {
+          return {
+            ...normalized,
+            unidadeApuradora: "GERIN",
+            diretoriaResponsavel: "DILOT",
+            tipoCalculo: "nota_pesquisa_anual",
+            unidadeMedida: "pontos",
+            metaAnualDescricao: "Média geral ≥ 60",
+            metrica: "Resultado da média geral da pesquisa de clima para o ano de 2026"
+          };
+        }
+        if (Number(indicator.id) === 15) {
+          return {
+            ...normalized,
+            unidadeApuradora: "GERIN",
+            diretoriaResponsavel: "DILOT",
+            tipoCalculo: "cobertura_capacitacao",
+            unidadeMedida: "percentual",
+            metaAnualDescricao: "≥ 90%",
+            metrica: "Empregados capacitados no critério trimestral / Público-alvo elegível"
+          };
+        }
+        if (Number(indicator.id) === 21) {
+          return {
+            ...normalized,
+            tipoCalculo: "cobertura_capacitacao_jogo_responsavel",
+            unidadeMedida: "percentual",
+            metaAnualDescricao: "≥ 90% do público-alvo capacitado em pelo menos 2 iniciativas de Jogo Responsável",
+            metrica: "Empregados elegíveis com a quantidade mínima de iniciativas concluídas / Público-alvo elegível"
+          };
+        }
+        if (Number(indicator.id) === 10) {
+          return {
+            ...normalized,
+            tipoCalculo: "projeto_marco_entrega",
+            unidadeMedida: "marco",
+            metaAnualDescricao: "Piloto ou MVP da Plataforma de Jogos",
+            metrica: "Referência futura: (GGR da CAIXA Loterias) / (Total de GGR do Mercado) x 100. Aplicável após implementação da plataforma e disponibilidade de dados oficiais de mercado."
+          };
+        }
+        if (Number(indicator.id) === 18) {
+          return {
+            ...normalized,
+            tipoCalculo: "plano_acao_por_elementos",
+            unidadeMedida: "quantidade",
+            metaAnualDescricao: "Nível 3 RGF-WLA - Executar ações de melhoria para os 10 elementos.",
+            metrica: "Quantidade de elementos RGF-WLA únicos atendidos por ações concluídas ou homologadas"
+          };
+        }
+        if (Number(indicator.id) === 16) {
+          return {
+            ...normalized,
+            tipoCalculo: "iniciativas_apoiadas",
+            unidadeMedida: "quantidade",
+            metaAnualDescricao: "02 iniciativas apoiadas",
+            metrica: "Quantidade de iniciativas socioambientais únicas com status Apoiada/realizada"
+          };
+        }
+        if (Number(indicator.id) === 19) {
+          return {
+            ...normalized,
+            tipoCalculo: "investimento_socioambiental",
+            unidadeMedida: "moeda",
+            metaAnualDescricao: "0,33% do Lucro Líquido do ano (R$ 4.307.900,00 estimados)",
+            metrica: "Valor investido em iniciativas com impacto socioambiental"
+          };
+        }
+        if (Number(indicator.id) === 20) {
+          return {
+            ...normalized,
+            tipoCalculo: "execucao_acoes_propostas",
+            unidadeMedida: "percentual",
+            metaAnualDescricao: "Implantar 100% das ações propostas",
+            metrica: "Ações propostas publicadas/realizadas / 2 ações propostas em 2026"
           };
         }
         return Number(indicator.id) === 9 ? {
@@ -661,6 +1427,498 @@
         const normalizedFields = (rule.camposEntrada || []).map((field) => (
           CURRENCY_FIELD_NAMES.has(field.nome) ? { ...field, tipo: "moeda" } : field
         ));
+        if (Number(rule.indicadorId) === 1) {
+          return {
+            ...rule,
+            nome: INDICATOR_NAMES[0],
+            tipoCalculo: "percentual_direto",
+            tipoConsolidacao: "acumulado_por_competencia",
+            unidadeMedida: "percentual",
+            metaAnualValor: 0.10,
+            parametrosCalculo: {
+              numeradorCampo: "clientesUnicosComOfertaPersonalizadaCompetencia",
+              denominadorCampo: "baseClientesAtivosCompetencia",
+              metaReferencia: 0.10,
+              metaTipo: "fixa",
+              sentidoMeta: "quanto_maior_melhor",
+              validarNumeradorAteDenominador: false
+            },
+            camposEntrada: [
+              { nome: "baseClientesAtivosCompetencia", rotulo: "Base de clientes ativos identificáveis da competência", tipo: "numero", obrigatorio: true },
+              { nome: "clientesUnicosComOfertaPersonalizadaCompetencia", rotulo: "Clientes únicos com oferta personalizada até a competência", tipo: "numero", obrigatorio: true }
+            ],
+            campoResultadoPrincipal: "resultadoMensal",
+            campoPercentualAtingido: "percentualAtingidoMensal",
+            resultadoOficial: "ultima_posicao_homologada"
+          };
+        }
+        if (Number(rule.indicadorId) === 2) {
+          return {
+            ...rule,
+            nome: INDICATOR_NAMES[1],
+            tipoCalculo: "nota_pesquisa_nps",
+            tipoConsolidacao: "resultado_pesquisa_ou_ultima_posicao",
+            unidadeMedida: "pontos",
+            metaAnualValor: 58,
+            parametrosCalculo: {
+              campoTipoPosicao: "tipoPosicaoNPS",
+              campoMetaReferencia: "metaReferenciaCompetenciaNPS",
+              campoNps: "npsApurado",
+              campoPromotores: "percentualPromotores",
+              campoDetratores: "percentualDetratores",
+              campoDataBase: "dataBasePesquisaNPS",
+              campoFonte: "fontePesquisaNPS",
+              metaTipo: "baseline_com_meta_anual_corrigida",
+              baselineNPS: 55,
+              notaReferenciaNPS: 70,
+              percentualReducaoGap: 0.20,
+              metaAnualMetodologica: 58,
+              referenciasPorCompetencia: NPS_REFERENCIAS_2026,
+              sentidoMeta: "quanto_maior_melhor"
+            },
+            camposEntrada: [
+              { nome: "tipoPosicaoNPS", rotulo: "Tipo da posição", tipo: "selecao", obrigatorio: true, opcoes: TIPOS_POSICAO_NPS },
+              { nome: "metaReferenciaCompetenciaNPS", rotulo: "Meta de referência da competência", tipo: "numero", obrigatorio: false },
+              { nome: "npsApurado", rotulo: "NPS apurado na pesquisa", tipo: "numero", obrigatorio: false },
+              { nome: "percentualPromotores", rotulo: "Percentual de promotores", tipo: "percentual", obrigatorio: false },
+              { nome: "percentualDetratores", rotulo: "Percentual de detratores", tipo: "percentual", obrigatorio: false },
+              { nome: "dataBasePesquisaNPS", rotulo: "Data-base da pesquisa", tipo: "data", obrigatorio: false },
+              { nome: "fontePesquisaNPS", rotulo: "Fonte/evidência da pesquisa", tipo: "texto", obrigatorio: false },
+              { nome: "observacaoArea", rotulo: "Observação da área", tipo: "texto", obrigatorio: false }
+            ],
+            campoResultadoPrincipal: "npsApurado",
+            campoPercentualAtingido: "percentualAtingidoMensal",
+            resultadoOficial: "resultado_pesquisa_ou_ultima_posicao_homologada"
+          };
+        }
+        if (Number(rule.indicadorId) === 4) {
+          return {
+            ...rule,
+            nome: INDICATOR_NAMES[3],
+            tipoCalculo: "melhorias_acumuladas",
+            tipoConsolidacao: "quantidade_acumulada",
+            unidadeMedida: "percentual",
+            metaAnualValor: 0.25,
+            parametrosCalculo: {
+              campoValor: "melhoriasImplementadasMes",
+              campoValorLegado: "melhoriasEntreguesMes",
+              totalMelhoriasPlano2026: 22,
+              metaPercentualAnualAprimoramento: 0.25,
+              metaMinimaMelhoriasAno: 6,
+              metaTipo: "curva_trimestral_acumulada",
+              curvaTrimestralAcumulada: APRIMORAMENTO_CURVA_TRIMESTRAL_2026,
+              sentidoMeta: "quanto_maior_melhor"
+            },
+            camposEntrada: [
+              { nome: "melhoriasImplementadasMes", rotulo: "Quantidade de melhorias implementadas no mês", tipo: "numero", obrigatorio: true },
+              { nome: "descricaoMelhoriasMes", rotulo: "Descrição da melhoria implementada", tipo: "texto", obrigatorio: false },
+              { nome: "evidenciaMelhoriasMes", rotulo: "Evidência da melhoria", tipo: "texto", obrigatorio: false }
+            ],
+            campoResultadoPrincipal: "resultadoMensal",
+            campoPercentualAtingido: "percentualAtingidoMensal",
+            resultadoOficial: "curva_trimestral_acumulada"
+          };
+        }
+        if (Number(rule.indicadorId) === 10) {
+          return {
+            ...rule,
+            nome: INDICATOR_NAMES[9],
+            tipoCalculo: "projeto_marco_entrega",
+            tipoConsolidacao: "ultima_posicao_trimestral",
+            unidadeMedida: "marco",
+            metaAnualValor: null,
+            parametrosCalculo: {
+              campoMarco: "marcoAtualPlataformaJogos",
+              campoStatus: "statusProjetoPlataformaJogos",
+              metaTipo: "marco_anual",
+              sentidoMeta: "marco_concluido",
+              metaAnualMarco: "Piloto/MVP da Plataforma de Jogos",
+              marcoConcluido: "Piloto/MVP concluído",
+              statusConcluido: "Piloto/MVP concluído",
+              marcosPlataformaJogos2026: MARCOS_PLATAFORMA_JOGOS_2026,
+              statusProjetoPlataformaJogos: STATUS_PROJETO_PLATAFORMA_JOGOS
+            },
+            camposEntrada: [
+              { nome: "marcoAtualPlataformaJogos", rotulo: "Marco/etapa atual do projeto", tipo: "selecao", obrigatorio: true, opcoes: MARCOS_PLATAFORMA_JOGOS_2026 },
+              { nome: "statusProjetoPlataformaJogos", rotulo: "Status do projeto", tipo: "selecao", obrigatorio: true, opcoes: STATUS_PROJETO_PLATAFORMA_JOGOS },
+              { nome: "descricaoAndamentoPlataformaJogos", rotulo: "Descrição do andamento", tipo: "texto", obrigatorio: false },
+              { nome: "evidenciaPlataformaJogos", rotulo: "Evidência", tipo: "texto", obrigatorio: false },
+              { nome: "observacaoArea", rotulo: "Observação da área", tipo: "texto", obrigatorio: false }
+            ],
+            campoResultadoPrincipal: "marcoAtual",
+            campoPercentualAtingido: null,
+            resultadoOficial: "ultima_posicao_trimestral"
+          };
+        }
+        if (Number(rule.indicadorId) === 11) {
+          return {
+            ...rule,
+            nome: INDICATOR_NAMES[10],
+            tipoCalculo: "marco_projeto_percentual",
+            tipoConsolidacao: "ultima_posicao_trimestral",
+            unidadeMedida: "percentual",
+            metaAnualValor: 1,
+            parametrosCalculo: {
+              campoStatus: "marcoAlcancadoTIC",
+              campoPercentual: "percentualRealizadoTIC",
+              metaTipo: "curva_trimestral_percentual",
+              curvaTrimestralPercentual: CAPACIDADE_TIC_CURVA_TRIMESTRAL_2026,
+              marcosCapacidadeTIC: CAPACIDADE_TIC_MARCOS,
+              sentidoMeta: "quanto_maior_melhor"
+            },
+            camposEntrada: [
+              { nome: "marcoAlcancadoTIC", rotulo: "Marco alcançado", tipo: "selecao", obrigatorio: true, opcoes: CAPACIDADE_TIC_MARCOS },
+              { nome: "percentualRealizadoTIC", rotulo: "Percentual realizado", tipo: "percentual", obrigatorio: false },
+              { nome: "descricaoAndamentoTIC", rotulo: "Descrição do andamento", tipo: "texto", obrigatorio: false },
+              { nome: "evidenciaTIC", rotulo: "Evidência", tipo: "texto", obrigatorio: false }
+            ],
+            campoResultadoPrincipal: "resultadoMensal",
+            campoPercentualAtingido: "percentualAtingidoMensal",
+            resultadoOficial: "ultima_posicao_trimestral"
+          };
+        }
+        if (Number(rule.indicadorId) === 12) {
+          return {
+            ...rule,
+            nome: INDICATOR_NAMES[11],
+            tipoCalculo: "nota_pesquisa_anual",
+            tipoConsolidacao: "resultado_pesquisa_ou_ultima_posicao",
+            unidadeMedida: "pontos",
+            metaAnualValor: 60,
+            parametrosCalculo: {
+              campoTipoPosicao: "tipoPosicaoClima",
+              campoMetaReferencia: "metaReferenciaClima",
+              campoNota: "notaClimaApurada",
+              campoDataBase: "dataBasePesquisaClima",
+              campoFonte: "fonteEvidenciaClima",
+              metaTipo: "fixa_anual",
+              metaReferencia: 60,
+              sentidoMeta: "quanto_maior_melhor"
+            },
+            camposEntrada: [
+              { nome: "tipoPosicaoClima", rotulo: "Tipo da posição", tipo: "selecao", obrigatorio: true, opcoes: TIPOS_POSICAO_CLIMA },
+              { nome: "metaReferenciaClima", rotulo: "Meta de referência", tipo: "numero", obrigatorio: false },
+              { nome: "notaClimaApurada", rotulo: "Nota/média geral apurada", tipo: "numero", obrigatorio: false },
+              { nome: "dataBasePesquisaClima", rotulo: "Data-base da pesquisa", tipo: "data", obrigatorio: false },
+              { nome: "acoesRealizadasClima", rotulo: "Ações realizadas no período", tipo: "texto", obrigatorio: false },
+              { nome: "descricaoAndamentoClima", rotulo: "Descrição do andamento", tipo: "texto", obrigatorio: false },
+              { nome: "fonteEvidenciaClima", rotulo: "Fonte/evidência", tipo: "texto", obrigatorio: false },
+              { nome: "observacaoArea", rotulo: "Observação da área", tipo: "texto", obrigatorio: false }
+            ],
+            campoResultadoPrincipal: "notaClimaApurada",
+            campoPercentualAtingido: "percentualAtingidoMensal",
+            resultadoOficial: "resultado_pesquisa_ou_ultima_posicao_homologada"
+          };
+        }
+        if (Number(rule.indicadorId) === 5) {
+          return {
+            ...rule,
+            nome: INDICATOR_NAMES[4],
+            tipoCalculo: "ggr_formula",
+            tipoConsolidacao: "acumulado_por_soma_mensal",
+            unidadeMedida: "moeda",
+            metaAnualValor: 15600000000,
+            parametrosCalculo: {
+              campoArrecadacao: "arrecadacaoTotalMes",
+              campoPremios: "premiosAPagarMes",
+              metaTipo: "curva_acumulada_por_competencia",
+              metasAcumuladasPorCompetencia: GGR_META_ACUMULADA_2026,
+              sentidoMeta: "quanto_maior_melhor"
+            },
+            camposEntrada: [
+              { nome: "arrecadacaoTotalMes", rotulo: "Arrecadação total no mês", tipo: "moeda", obrigatorio: true },
+              { nome: "premiosAPagarMes", rotulo: "Prêmios a pagar no mês", tipo: "moeda", obrigatorio: true }
+            ],
+            campoResultadoPrincipal: "resultadoMensal",
+            campoPercentualAtingido: "percentualAtingidoMensal",
+            resultadoOficial: "ggr_acumulado_por_curva"
+          };
+        }
+        if (Number(rule.indicadorId) === 6) {
+          return {
+            ...rule,
+            nome: INDICATOR_NAMES[5],
+            tipoCalculo: "indice_inverso",
+            tipoConsolidacao: "ultima_posicao_acumulada",
+            unidadeMedida: "percentual",
+            metaAnualValor: 0.1403,
+            parametrosCalculo: {
+              campoDespesaPessoal: "despesaPessoalMes",
+              campoDespesasAdministrativas: "despesasAdministrativasMes",
+              campoReceitasLiquidas: "receitasLiquidasMes",
+              campoIeoInformado: "ieoApuradoInformado",
+              campoPercentualOficial: "percentualAtingidoOficialInformado",
+              metaTipo: "curva_acumulada_por_competencia",
+              metasAcumuladasPorCompetencia: IEO_META_ACUMULADA_2026,
+              sentidoMeta: "quanto_menor_melhor"
+            },
+            camposEntrada: [
+              { nome: "despesaPessoalMes", rotulo: "Despesa de pessoal", tipo: "moeda", obrigatorio: false },
+              { nome: "despesasAdministrativasMes", rotulo: "Despesas administrativas", tipo: "moeda", obrigatorio: false },
+              { nome: "receitasLiquidasMes", rotulo: "Receitas líquidas", tipo: "moeda", obrigatorio: false },
+              { nome: "ieoApuradoInformado", rotulo: "IEO apurado pela unidade", tipo: "percentual", obrigatorio: false },
+              { nome: "percentualAtingidoOficialInformado", rotulo: "% atingido oficial informado", tipo: "percentual", obrigatorio: false }
+            ],
+            campoResultadoPrincipal: "resultadoMensal",
+            campoPercentualAtingido: "percentualAtingidoMensal",
+            resultadoOficial: "ultima_posicao_acumulada_homologada"
+          };
+        }
+        if (Number(rule.indicadorId) === 7) {
+          return {
+            ...rule,
+            nome: INDICATOR_NAMES[6],
+            tipoCalculo: "valor_financeiro_acumulado",
+            tipoConsolidacao: "ultima_posicao_acumulada",
+            unidadeMedida: "moeda",
+            metaAnualValor: 1209000000,
+            parametrosCalculo: {
+              ...(rule.parametrosCalculo || {}),
+              valorAcumuladoCampo: "lucroLiquidoRecorrenteAcumulado",
+              metaTipo: "curva_acumulada_por_competencia",
+              metasAcumuladasPorCompetencia: LUCRO_LIQUIDO_META_ACUMULADA_2026
+            },
+            camposEntrada: [{
+              nome: "lucroLiquidoRecorrenteAcumulado",
+              rotulo: "Lucro líquido recorrente acumulado até a competência",
+              tipo: "moeda",
+              obrigatorio: true
+            }],
+            campoResultadoPrincipal: "resultadoMensal",
+            campoPercentualAtingido: "percentualAtingidoMensal",
+            resultadoOficial: "ultima_posicao_acumulada_homologada"
+          };
+        }
+        if (Number(rule.indicadorId) === 16) {
+          return {
+            ...rule,
+            nome: INDICATOR_NAMES[15],
+            tipoCalculo: "iniciativas_apoiadas",
+            tipoConsolidacao: "iniciativas_acumuladas",
+            unidadeMedida: "quantidade",
+            metaAnualValor: 2,
+            parametrosCalculo: {
+              campoNome: "nomeIniciativaSocioambiental",
+              campoStatus: "statusIniciativaSocioambiental",
+              statusQueConta: "Apoiada/realizada",
+              metaTipo: "curva_trimestral_acumulada",
+              curvaTrimestralAcumulada: APOIO_SOCIOAMBIENTAL_CURVA_2026,
+              sentidoMeta: "quanto_maior_melhor"
+            },
+            camposEntrada: [
+              { nome: "nomeIniciativaSocioambiental", rotulo: "Nome da iniciativa", tipo: "texto", obrigatorio: true },
+              { nome: "tipoIniciativaSocioambiental", rotulo: "Tipo da iniciativa", tipo: "texto", obrigatorio: false },
+              { nome: "statusIniciativaSocioambiental", rotulo: "Status da iniciativa", tipo: "selecao", obrigatorio: true, opcoes: STATUS_INICIATIVA_SOCIOAMBIENTAL },
+              { nome: "dataApoioIniciativa", rotulo: "Data de apoio/realização", tipo: "data", obrigatorio: false },
+              { nome: "descricaoAndamentoSocioambiental", rotulo: "Descrição do andamento", tipo: "texto", obrigatorio: false },
+              { nome: "evidenciaIniciativaSocioambiental", rotulo: "Evidência", tipo: "texto", obrigatorio: false },
+              { nome: "observacaoArea", rotulo: "Observação da área", tipo: "texto", obrigatorio: false }
+            ],
+            campoResultadoPrincipal: "iniciativasApoiadasAcumuladas",
+            campoPercentualAtingido: "percentualAtingidoMensal",
+            resultadoOficial: "iniciativas_acumuladas_homologadas"
+          };
+        }
+        if (Number(rule.indicadorId) === 17) {
+          return {
+            ...rule,
+            nome: INDICATOR_NAMES[16],
+            tipoCalculo: "valor_financeiro_acumulado",
+            tipoConsolidacao: "ultima_posicao_acumulada",
+            unidadeMedida: "moeda",
+            metaAnualValor: 10400000000,
+            parametrosCalculo: {
+              valorAcumuladoCampo: "repasseSocialAcumuladoCompetencia",
+              metaTipo: "curva_acumulada_por_competencia",
+              metasAcumuladasPorCompetencia: REPASSE_SOCIAL_META_ACUMULADA_2026,
+              sentidoMeta: "quanto_maior_melhor"
+            },
+            camposEntrada: [{
+              nome: "repasseSocialAcumuladoCompetencia",
+              rotulo: "Repasse social acumulado até a competência",
+              tipo: "moeda",
+              obrigatorio: true
+            }],
+            campoResultadoPrincipal: "resultadoMensal",
+            campoPercentualAtingido: "percentualAtingidoMensal",
+            resultadoOficial: "ultima_posicao_acumulada_homologada"
+          };
+        }
+        if (Number(rule.indicadorId) === 18) {
+          return {
+            ...rule,
+            nome: INDICATOR_NAMES[17],
+            tipoCalculo: "plano_acao_por_elementos",
+            tipoConsolidacao: "elementos_acumulados",
+            unidadeMedida: "quantidade",
+            metaAnualValor: 10,
+            parametrosCalculo: {
+              campoElemento: "elementoRGF",
+              campoStatus: "statusAcao",
+              metaTipo: "curva_trimestral_acumulada",
+              curvaTrimestralAcumulada: PRINCIPIOS_JOGO_RESPONSAVEL_CURVA_2026,
+              elementosJogoResponsavel: ELEMENTOS_JOGO_RESPONSAVEL,
+              statusQueContam: ["Concluída", "Homologada"],
+              sentidoMeta: "quanto_maior_melhor"
+            },
+            camposEntrada: [
+              { nome: "elementoRGF", rotulo: "Elemento RGF-WLA atendido", tipo: "selecao", obrigatorio: true, opcoes: ELEMENTOS_JOGO_RESPONSAVEL },
+              { nome: "acaoExecutada", rotulo: "Ação executada", tipo: "texto", obrigatorio: true },
+              { nome: "descricaoAcao", rotulo: "Descrição da ação", tipo: "texto", obrigatorio: false },
+              { nome: "statusAcao", rotulo: "Status da ação", tipo: "selecao", obrigatorio: true, opcoes: STATUS_ACAO_JOGO_RESPONSAVEL },
+              { nome: "dataConclusao", rotulo: "Data de conclusão", tipo: "data", obrigatorio: false },
+              { nome: "evidenciaAcao", rotulo: "Evidência", tipo: "texto", obrigatorio: false }
+            ],
+            campoResultadoPrincipal: "elementosAtendidosAcumulados",
+            campoPercentualAtingido: "percentualAtingidoMensal",
+            resultadoOficial: "elementos_acumulados_homologados"
+          };
+        }
+        if (Number(rule.indicadorId) === 15) {
+          return {
+            ...rule,
+            nome: INDICATOR_NAMES[14],
+            tipoCalculo: "cobertura_capacitacao",
+            tipoConsolidacao: "ultima_posicao_acumulada",
+            unidadeMedida: "percentual",
+            metaAnualValor: 0.90,
+            parametrosCalculo: {
+              campoPublicoAlvo: "publicoAlvoElegivelCapacitacao",
+              campoCapacitados: "empregadosCapacitadosCapacitacao",
+              campoQuantidadeCursos: "quantidadeCursosMinimaCapacitacao",
+              campoCursosConsiderados: "cursosConsideradosCapacitacao",
+              campoDataBase: "dataBaseApuracaoCapacitacao",
+              campoFonte: "fonteEvidenciaCapacitacao",
+              metaTipo: "curva_trimestral_quantidade_cursos",
+              metaCobertura: 0.90,
+              curvaTrimestralCursos: CAPACITACAO_EMPREGADOS_CURVA_TRIMESTRAL_2026,
+              sentidoMeta: "quanto_maior_melhor"
+            },
+            camposEntrada: [
+              { nome: "publicoAlvoElegivelCapacitacao", rotulo: "Público-alvo elegível", tipo: "numero", obrigatorio: true },
+              { nome: "empregadosCapacitadosCapacitacao", rotulo: "Empregados capacitados no critério do trimestre", tipo: "numero", obrigatorio: true },
+              { nome: "quantidadeCursosMinimaCapacitacao", rotulo: "Quantidade mínima de cursos exigida", tipo: "numero", obrigatorio: false },
+              { nome: "cursosConsideradosCapacitacao", rotulo: "Curso(s)/trilha considerada", tipo: "texto", obrigatorio: false },
+              { nome: "dataBaseApuracaoCapacitacao", rotulo: "Data-base da apuração", tipo: "data", obrigatorio: false },
+              { nome: "fonteEvidenciaCapacitacao", rotulo: "Fonte/evidência", tipo: "texto", obrigatorio: false },
+              { nome: "observacaoArea", rotulo: "Observação da área", tipo: "texto", obrigatorio: false }
+            ],
+            campoResultadoPrincipal: "resultadoMensal",
+            campoPercentualAtingido: "percentualAtingidoMensal",
+            resultadoOficial: "ultima_posicao_acumulada_homologada"
+          };
+        }
+        if (Number(rule.indicadorId) === 21) {
+          return {
+            ...rule,
+            nome: INDICATOR_NAMES[20],
+            tipoCalculo: "cobertura_capacitacao_jogo_responsavel",
+            tipoConsolidacao: "ultima_posicao_acumulada",
+            unidadeMedida: "percentual",
+            metaAnualValor: 0.90,
+            parametrosCalculo: {
+              campoPublicoAlvo: "publicoAlvoElegivelJR",
+              campoCapacitados: "empregadosCapacitadosJR",
+              campoQuantidadeMinima: "quantidadeMinimaIniciativasJR",
+              campoIniciativas: "iniciativasConsideradasJR",
+              campoDataBase: "dataBaseApuracaoJR",
+              campoFonte: "fonteEvidenciaJR",
+              metaTipo: "cobertura_com_quantidade_minima_de_iniciativas",
+              metaCobertura: 0.90,
+              quantidadeMinimaIniciativasAnual: 2,
+              curvaJogoResponsavel2026: JOGO_RESPONSAVEL_CAPACITACAO_CURVA_2026,
+              sentidoMeta: "quanto_maior_melhor"
+            },
+            camposEntrada: [
+              { nome: "publicoAlvoElegivelJR", rotulo: "Público-alvo elegível", tipo: "numero", obrigatorio: true },
+              { nome: "empregadosCapacitadosJR", rotulo: "Empregados capacitados no critério do período", tipo: "numero", obrigatorio: true },
+              { nome: "quantidadeMinimaIniciativasJR", rotulo: "Quantidade mínima de iniciativas exigida", tipo: "numero", obrigatorio: false },
+              { nome: "iniciativasConsideradasJR", rotulo: "Iniciativas consideradas", tipo: "texto", obrigatorio: false },
+              { nome: "dataBaseApuracaoJR", rotulo: "Data-base da apuração", tipo: "data", obrigatorio: false },
+              { nome: "fonteEvidenciaJR", rotulo: "Fonte/evidência", tipo: "texto", obrigatorio: false },
+              { nome: "observacaoArea", rotulo: "Observação da área", tipo: "texto", obrigatorio: false }
+            ],
+            campoResultadoPrincipal: "resultadoMensal",
+            campoPercentualAtingido: "percentualAtingidoMensal",
+            resultadoOficial: "ultima_posicao_homologada"
+          };
+        }
+        if (Number(rule.indicadorId) === 19) {
+          return {
+            ...rule,
+            nome: INDICATOR_NAMES[18],
+            tipoCalculo: "investimento_socioambiental",
+            tipoConsolidacao: "valor_acumulado",
+            unidadeMedida: "moeda",
+            metaAnualValor: 4307900,
+            parametrosCalculo: {
+              campoNome: "nomeProjetoIncentivoSocioambiental",
+              campoTipo: "tipoIncentivoSocioambiental",
+              campoStatus: "statusProjetoIncentivoSocioambiental",
+              campoValorMes: "valorInvestidoMes",
+              campoValorAcumulado: "valorInvestidoAcumuladoCompetencia",
+              campoDataInvestimento: "dataInvestimentoSocioambiental",
+              campoDescricao: "descricaoAndamentoIncentivoSocioambiental",
+              campoEvidencia: "evidenciaIncentivoSocioambiental",
+              statusQueConta: "Investimento realizado",
+              metaTipo: "curva_trimestral_acumulada",
+              lucroLiquidoReferencia: 1305400000,
+              percentualMetaAnual: 0.0033,
+              curvaTrimestralAcumulada: INCENTIVO_SOCIOAMBIENTAL_CURVA_2026,
+              sentidoMeta: "quanto_maior_melhor"
+            },
+            camposEntrada: [
+              { nome: "nomeProjetoIncentivoSocioambiental", rotulo: "Nome do projeto/iniciativa", tipo: "texto", obrigatorio: true },
+              { nome: "tipoIncentivoSocioambiental", rotulo: "Tipo de incentivo/patrocínio", tipo: "texto", obrigatorio: false },
+              { nome: "statusProjetoIncentivoSocioambiental", rotulo: "Status do projeto", tipo: "selecao", obrigatorio: true, opcoes: STATUS_INCENTIVO_SOCIOAMBIENTAL },
+              { nome: "valorInvestidoMes", rotulo: "Valor investido no mês", tipo: "moeda", obrigatorio: false },
+              { nome: "valorInvestidoAcumuladoCompetencia", rotulo: "Valor investido acumulado até a competência", tipo: "moeda", obrigatorio: false },
+              { nome: "dataInvestimentoSocioambiental", rotulo: "Data do investimento", tipo: "data", obrigatorio: false },
+              { nome: "descricaoAndamentoIncentivoSocioambiental", rotulo: "Descrição do andamento", tipo: "texto", obrigatorio: false },
+              { nome: "evidenciaIncentivoSocioambiental", rotulo: "Evidência", tipo: "texto", obrigatorio: false },
+              { nome: "observacaoArea", rotulo: "Observação da área", tipo: "texto", obrigatorio: false }
+            ],
+            campoResultadoPrincipal: "valorInvestidoAcumuladoCompetencia",
+            campoPercentualAtingido: "percentualAtingidoMensal",
+            resultadoOficial: "valor_acumulado_homologado"
+          };
+        }
+        if (Number(rule.indicadorId) === 20) {
+          return {
+            ...rule,
+            nome: INDICATOR_NAMES[19],
+            tipoCalculo: "execucao_acoes_propostas",
+            tipoConsolidacao: "acoes_realizadas_acumuladas",
+            unidadeMedida: "percentual",
+            metaAnualValor: 1,
+            parametrosCalculo: {
+              campoAcao: "acaoPropostaVisibilidade",
+              campoStatus: "statusAcaoVisibilidade",
+              campoEtapa: "etapaAtualVisibilidade",
+              campoDescricao: "descricaoAndamentoVisibilidade",
+              campoDataConclusao: "dataConclusaoVisibilidade",
+              campoEvidencia: "evidenciaVisibilidade",
+              statusQueConta: "Publicada/realizada",
+              totalAcoesPropostas: 2,
+              metaTipo: "curva_trimestral_acumulada",
+              curvaTrimestralAcumulada: VISIBILIDADE_REPASSES_CURVA_2026,
+              acoesPropostasVisibilidade: ACOES_VISIBILIDADE_REPASSES_2026,
+              sentidoMeta: "quanto_maior_melhor"
+            },
+            camposEntrada: [
+              { nome: "acaoPropostaVisibilidade", rotulo: "Ação proposta", tipo: "selecao", obrigatorio: true, opcoes: ACOES_VISIBILIDADE_REPASSES_2026 },
+              { nome: "statusAcaoVisibilidade", rotulo: "Status da ação", tipo: "selecao", obrigatorio: true, opcoes: STATUS_ACAO_VISIBILIDADE },
+              { nome: "etapaAtualVisibilidade", rotulo: "Etapa atual", tipo: "texto", obrigatorio: false },
+              { nome: "descricaoAndamentoVisibilidade", rotulo: "Descrição do andamento", tipo: "texto", obrigatorio: false },
+              { nome: "dataConclusaoVisibilidade", rotulo: "Data de conclusão/publicação", tipo: "data", obrigatorio: false },
+              { nome: "evidenciaVisibilidade", rotulo: "Evidência", tipo: "texto", obrigatorio: false },
+              { nome: "observacaoArea", rotulo: "Observação da área", tipo: "texto", obrigatorio: false }
+            ],
+            campoResultadoPrincipal: "resultadoMensal",
+            campoPercentualAtingido: "percentualAtingidoMensal",
+            resultadoOficial: "acoes_realizadas_acumuladas_homologadas"
+          };
+        }
         if (Number(rule.indicadorId) === 8) {
           return {
             ...rule,
@@ -720,9 +1978,73 @@
         ...meta,
         metaMensal: 0.2805,
         fonte: "meta_fixa_canais_digitais_2026"
+      } : Number(meta.indicadorId) === 1 ? {
+        ...meta,
+        metaMensal: 0.10,
+        fonte: "meta_fixa_ofertas_personalizadas_2026"
+      } : Number(meta.indicadorId) === 2 ? {
+        ...meta,
+        metaMensal: getNpsMetaReferencia(meta.ano, meta.mes),
+        fonte: "baseline_meta_anual_nps_2026"
+      } : Number(meta.indicadorId) === 4 ? {
+        ...meta,
+        metaMensal: getAprimoramentoMetaTrimestral(meta.ano, meta.mes),
+        fonte: "curva_trimestral_aprimoramento_experiencia_2026"
+      } : Number(meta.indicadorId) === 10 ? {
+        ...meta,
+        metaMensal: null,
+        fonte: "marco_anual_plataforma_jogos_2026"
+      } : Number(meta.indicadorId) === 11 ? {
+        ...meta,
+        metaMensal: getCapacidadeTicMetaTrimestral(meta.ano, meta.mes),
+        fonte: "curva_trimestral_capacidade_tic_2026"
+      } : Number(meta.indicadorId) === 12 ? {
+        ...meta,
+        metaMensal: 60,
+        fonte: "meta_fixa_clima_organizacional_2026"
+      } : Number(meta.indicadorId) === 18 ? {
+        ...meta,
+        metaMensal: getPrincipiosJogoResponsavelMetaTrimestral(meta.ano, meta.mes),
+        fonte: "curva_trimestral_principios_jogo_responsavel_2026"
+      } : Number(meta.indicadorId) === 16 ? {
+        ...meta,
+        metaMensal: getApoioSocioambientalMetaTrimestral(meta.ano, meta.mes),
+        fonte: "curva_trimestral_apoio_socioambiental_2026"
+      } : Number(meta.indicadorId) === 15 ? {
+        ...meta,
+        metaMensal: getCapacitacaoEmpregadosMetaTrimestral(meta.ano, meta.mes),
+        fonte: "curva_trimestral_capacitacao_empregados_2026"
+      } : Number(meta.indicadorId) === 21 ? {
+        ...meta,
+        metaMensal: getJogoResponsavelCapacitacaoMetaTrimestral(meta.ano, meta.mes),
+        fonte: "curva_trimestral_jogo_responsavel_capacitacao_2026"
+      } : Number(meta.indicadorId) === 5 ? {
+        ...meta,
+        metaMensal: getGgrMetaAcumulada(meta.ano, meta.mes),
+        fonte: "curva_acumulada_ggr_2026"
+      } : Number(meta.indicadorId) === 6 ? {
+        ...meta,
+        metaMensal: getIeoMetaAcumulada(meta.ano, meta.mes),
+        fonte: "curva_acumulada_ieo_2026"
+      } : Number(meta.indicadorId) === 17 ? {
+        ...meta,
+        metaMensal: getRepasseSocialMetaAcumulada(meta.ano, meta.mes),
+        fonte: "curva_acumulada_repasse_social_2026"
+      } : Number(meta.indicadorId) === 19 ? {
+        ...meta,
+        metaMensal: getIncentivoSocioambientalMetaTrimestral(meta.ano, meta.mes),
+        fonte: "curva_trimestral_incentivo_socioambiental_2026"
+      } : Number(meta.indicadorId) === 20 ? {
+        ...meta,
+        metaMensal: getVisibilidadeRepassesMetaTrimestral(meta.ano, meta.mes),
+        fonte: "curva_trimestral_visibilidade_repasses_2026"
       } : Number(meta.indicadorId) === 9 ? {
         ...meta,
         metaMensal: PIX_QUARTER_TARGETS[Math.ceil(Number(meta.mes) / 3) - 1]
+      } : Number(meta.indicadorId) === 7 ? {
+        ...meta,
+        metaMensal: getLucroLiquidoMetaAcumulada(meta.ano, meta.mes),
+        fonte: "curva_lucro_liquido_recorrente_2026"
       } : meta);
     }
 
@@ -734,7 +2056,7 @@
     }
 
     if (key === "lancamentos" && Array.isArray(value)) {
-      return value.map((launch) => normalizarCamposMoeda({
+      return value.map((launch) => normalizarCamposMoeda(migrarCampoJogoResponsavelCapacitacaoLegado(migrarCampoVisibilidadeRepassesLegado(migrarCampoIncentivoSocioambientalLegado(migrarCampoApoioSocioambientalLegado(migrarCampoPrincipiosJogoResponsavelLegado(migrarCampoCapacidadeTicLegado(migrarCampoPlataformaJogosLegado(migrarCampoAprimoramentoLegado(migrarCampoCapacitacaoLegado(migrarCampoClimaLegado(migrarCampoNpsLegado(migrarCampoOfertasLegado(migrarCampoRepasseSocialLegado(migrarCampoGgrLegado({
         ...launch,
         pilar: getCanonicalPillar(Number(launch.indicadorId)),
         competencia: launch.competencia || `${launch.ano}-${String(launch.mes).padStart(2, "0")}`,
@@ -743,13 +2065,81 @@
           metaMensal: PIX_QUARTER_TARGETS[Math.ceil(Number(launch.mes) / 3) - 1],
           metaAnualDescricao: "Aumentar em 05 p.p. as vendas com o meio de pagamento PIX no canal eletrônico."
         } : {}),
+        ...(Number(launch.indicadorId) === 1 ? {
+          metaMensal: 0.10,
+          metaAnualDescricao: "≥ 10%"
+        } : {}),
+        ...(Number(launch.indicadorId) === 2 ? {
+          metaMensal: getNpsMetaReferencia(launch.ano, launch.mes),
+          metaAnualDescricao: "Meta anual correta: NPS 58"
+        } : {}),
+        ...(Number(launch.indicadorId) === 4 ? {
+          metaMensal: getAprimoramentoMetaTrimestral(launch.ano, launch.mes),
+          metaAnualDescricao: "Implementar melhorias que atendam a 25% das ocorrências apontadas na pesquisa NPS de baseline."
+        } : {}),
+        ...(Number(launch.indicadorId) === 10 ? {
+          metaMensal: null,
+          metaAnualDescricao: "Piloto ou MVP da Plataforma de Jogos"
+        } : {}),
+        ...(Number(launch.indicadorId) === 11 ? {
+          metaMensal: getCapacidadeTicMetaTrimestral(launch.ano, launch.mes),
+          metaAnualDescricao: "Contratação e/ou celebração de parceria para o desenvolvimento de soluções de TIC até o final do exercício de 2026."
+        } : {}),
+        ...(Number(launch.indicadorId) === 12 ? {
+          unidadeApuradora: "GERIN",
+          diretoriaResponsavel: "DILOT",
+          metaMensal: 60,
+          metaAnualDescricao: "Média geral ≥ 60"
+        } : {}),
+        ...(Number(launch.indicadorId) === 15 ? {
+          unidadeApuradora: "GERIN",
+          diretoriaResponsavel: "DILOT",
+          metaMensal: getCapacitacaoEmpregadosMetaTrimestral(launch.ano, launch.mes),
+          metaAnualDescricao: "≥ 90%"
+        } : {}),
+        ...(Number(launch.indicadorId) === 18 ? {
+          metaMensal: getPrincipiosJogoResponsavelMetaTrimestral(launch.ano, launch.mes),
+          metaAnualDescricao: "Nível 3 RGF-WLA - Executar ações de melhoria para os 10 elementos."
+        } : {}),
+        ...(Number(launch.indicadorId) === 16 ? {
+          metaMensal: getApoioSocioambientalMetaTrimestral(launch.ano, launch.mes),
+          metaAnualDescricao: "02 iniciativas apoiadas"
+        } : {}),
+        ...(Number(launch.indicadorId) === 5 ? {
+          metaMensal: getGgrMetaAcumulada(launch.ano, launch.mes),
+          metaAnualDescricao: "≥ R$ 15,6 bilhões"
+        } : {}),
+        ...(Number(launch.indicadorId) === 6 ? {
+          metaMensal: getIeoMetaAcumulada(launch.ano, launch.mes),
+          metaAnualDescricao: "≤ 14,03%"
+        } : {}),
+        ...(Number(launch.indicadorId) === 7 ? {
+          metaMensal: getLucroLiquidoMetaAcumulada(launch.ano, launch.mes),
+          metaAnualDescricao: "R$ 1,209 bilhão"
+        } : {}),
+        ...(Number(launch.indicadorId) === 17 ? {
+          metaMensal: getRepasseSocialMetaAcumulada(launch.ano, launch.mes),
+          metaAnualDescricao: "≥ R$ 10,4 bilhões"
+        } : {}),
+        ...(Number(launch.indicadorId) === 19 ? {
+          metaMensal: getIncentivoSocioambientalMetaTrimestral(launch.ano, launch.mes),
+          metaAnualDescricao: "0,33% do Lucro Líquido do ano (R$ 4.307.900,00 estimados)"
+        } : {}),
+        ...(Number(launch.indicadorId) === 20 ? {
+          metaMensal: getVisibilidadeRepassesMetaTrimestral(launch.ano, launch.mes),
+          metaAnualDescricao: "Implantar 100% das ações propostas"
+        } : {}),
+        ...(Number(launch.indicadorId) === 21 ? {
+          metaMensal: getJogoResponsavelCapacitacaoMetaTrimestral(launch.ano, launch.mes),
+          metaAnualDescricao: "≥ 90% do público-alvo capacitado em pelo menos 2 iniciativas de Jogo Responsável"
+        } : {}),
         ...(Number(launch.indicadorId) === 8 ? {
           unidadeApuradora: "SUCOL",
           diretoriaResponsavel: "DICOT",
           metaMensal: 0.2805,
           metaAnualDescricao: "Aumentar em 05 p.p. as vendas provenientes de canais digitais."
         } : {})
-      }));
+      }))))))))))))))));
     }
 
     if ((key === "homologacoes" || key === "historico") && Array.isArray(value)) {

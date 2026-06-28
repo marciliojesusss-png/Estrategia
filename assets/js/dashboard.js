@@ -131,6 +131,7 @@
   }
 
   function getOfficialResult(lancamento, resultado) {
+    if (resultado && toFiniteNumber(resultado.acoesRealizadasAcumuladas) !== null) return toFiniteNumber(resultado.acoesRealizadasAcumuladas);
     if (resultado && toFiniteNumber(resultado.resultadoOficialAnual) !== null) return toFiniteNumber(resultado.resultadoOficialAnual);
     if (resultado && toFiniteNumber(resultado.resultadoAcumulado) !== null) return toFiniteNumber(resultado.resultadoAcumulado);
     if (resultado && toFiniteNumber(resultado.resultadoMensal) !== null) return toFiniteNumber(resultado.resultadoMensal);
@@ -140,6 +141,43 @@
       lancamento.resultadoMensal,
       lancamento.realizadoMensal
     ].map(toFiniteNumber).find((value) => value !== null) ?? null;
+  }
+
+  function getOfficialMeta(regra, lancamento, resultado) {
+    if (regra?.parametrosCalculo?.metaTipo === "curva_acumulada_por_competencia") {
+      const metaCalculada = toFiniteNumber(resultado?.metaAcumulada ?? resultado?.metaReferenciaMensal);
+      if (metaCalculada !== null) return metaCalculada;
+      const key = lancamento?.competencia || `${lancamento?.ano}-${String(lancamento?.mes).padStart(2, "0")}`;
+      const curva = regra.parametrosCalculo.metasAcumuladasPorCompetencia || {};
+      return Object.prototype.hasOwnProperty.call(curva, key) ? toFiniteNumber(curva[key]) : null;
+    }
+    if (regra?.parametrosCalculo?.metaTipo === "curva_trimestral_acumulada") {
+      const trimestre = lancamento?.trimestre || `${Math.ceil(Number(lancamento?.mes) / 3)}TRI/${lancamento?.ano || 2026}`;
+      const target = regra.parametrosCalculo.curvaTrimestralAcumulada?.[trimestre] || {};
+      if (regra?.tipoCalculo === "iniciativas_apoiadas") return toFiniteNumber(target.metaQuantidadeAcumulada);
+      if (regra?.tipoCalculo === "plano_acao_por_elementos") return toFiniteNumber(target.metaElementosAcumulados);
+      if (regra?.tipoCalculo === "execucao_acoes_propostas") return toFiniteNumber(target.metaAcoesRealizadasAcumuladas);
+      return toFiniteNumber(target.metaValorAcumulado ?? target.metaPercentual ?? target.metaQuantidadeAcumulada ?? target.metaElementosAcumulados);
+    }
+    if (regra?.parametrosCalculo?.metaTipo === "curva_trimestral_percentual") {
+      const trimestre = lancamento?.trimestre || `${Math.ceil(Number(lancamento?.mes) / 3)}TRI/${lancamento?.ano || 2026}`;
+      return toFiniteNumber(regra.parametrosCalculo.curvaTrimestralPercentual?.[trimestre]?.metaPercentual);
+    }
+    if (regra?.parametrosCalculo?.metaTipo === "curva_trimestral_quantidade_cursos") {
+      const trimestre = lancamento?.trimestre || `${Math.ceil(Number(lancamento?.mes) / 3)}TRI/${lancamento?.ano || 2026}`;
+      return toFiniteNumber(regra.parametrosCalculo.curvaTrimestralCursos?.[trimestre]?.metaCobertura ?? regra.parametrosCalculo.metaCobertura ?? regra.metaAnualValor);
+    }
+    if (regra?.parametrosCalculo?.metaTipo === "cobertura_com_quantidade_minima_de_iniciativas") {
+      const trimestre = lancamento?.trimestre || `${Math.ceil(Number(lancamento?.mes) / 3)}TRI/${lancamento?.ano || 2026}`;
+      return toFiniteNumber(regra.parametrosCalculo.curvaJogoResponsavel2026?.[trimestre]?.metaCobertura ?? regra.parametrosCalculo.metaCobertura ?? regra.metaAnualValor);
+    }
+    if (["baseline_com_meta_anual", "baseline_com_meta_anual_corrigida"].includes(regra?.parametrosCalculo?.metaTipo)) {
+      const key = lancamento?.competencia || `${lancamento?.ano}-${String(lancamento?.mes).padStart(2, "0")}`;
+      const referencias = regra.parametrosCalculo.referenciasPorCompetencia || {};
+      if (Object.prototype.hasOwnProperty.call(referencias, key)) return toFiniteNumber(referencias[key]);
+      return toFiniteNumber(regra.parametrosCalculo.metaAnualMetodologica ?? regra.metaAnualValor);
+    }
+    return regra && regra.metaAnualValor !== null ? regra.metaAnualValor : lancamento?.metaMensal ?? null;
   }
 
   function selectOfficialLaunch(regra, lancamentosValidos) {
@@ -220,7 +258,7 @@
         status: lancamentoAcao?.status || "Não iniciado",
         lancamento: null,
         lancamentoAcao,
-        meta: regra && regra.metaAnualValor !== null ? regra.metaAnualValor : null,
+        meta: getOfficialMeta(regra, lancamentoAcao, null),
         situacaoCalculada: "Sem dados",
         resultadosMensais
       };
@@ -240,7 +278,7 @@
       status: lancamentoOficial.status,
       lancamento: lancamentoOficial,
       lancamentoAcao: lancamentoOficial,
-      meta: regra && regra.metaAnualValor !== null ? regra.metaAnualValor : lancamentoOficial.metaMensal,
+      meta: getOfficialMeta(regra, lancamentoOficial, resultadoCalculado),
       situacaoCalculada: resultadoCalculado && resultadoCalculado.situacao,
       resultadosMensais
     };
@@ -477,10 +515,19 @@
   }
 
   function formatOfficialResult(resultado) {
+    if (resultado?.regra?.tipoCalculo === "execucao_acoes_propostas") {
+      return Calculations.formatarValor(resultado.resultado, "quantidade");
+    }
     return Calculations.formatarValor(resultado.resultado, resultado.regra && resultado.regra.unidadeMedida);
   }
 
   function formatOfficialMeta(resultado) {
+    if (resultado?.regra?.parametrosCalculo?.metaTipo === "curva_acumulada_por_competencia" && resultado.meta === null) {
+      return "Pendente de curva orcamentaria";
+    }
+    if (resultado?.regra?.tipoCalculo === "execucao_acoes_propostas") {
+      return Calculations.formatarValor(resultado.meta, "quantidade");
+    }
     return Calculations.formatarValor(resultado.meta, resultado.regra && resultado.regra.unidadeMedida);
   }
 

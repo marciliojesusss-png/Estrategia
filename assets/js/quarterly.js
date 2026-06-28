@@ -22,7 +22,11 @@
   ];
   const YTD_TYPES = new Set([
     "quantidade_acumulada",
-    "plano_acao_por_elementos"
+    "melhorias_acumuladas",
+    "iniciativas_apoiadas",
+    "plano_acao_por_elementos",
+    "execucao_acoes_propostas",
+    "ggr_formula"
   ]);
   const PIX_QUARTER_TARGETS = Object.freeze({
     "1TRI/2026": 0.61,
@@ -72,6 +76,10 @@
       const accumulatedQuantity = toNumber(calculation?.melhoriasEntreguesAcumuladas);
       if (accumulatedQuantity !== null) return accumulatedQuantity;
     }
+    if (rule?.tipoCalculo === "execucao_acoes_propostas") {
+      const accumulatedActions = toNumber(calculation?.acoesRealizadasAcumuladas);
+      if (accumulatedActions !== null) return accumulatedActions;
+    }
     return [
       calculation?.resultadoOficialAnual,
       calculation?.resultadoAcumulado,
@@ -87,8 +95,66 @@
     ].map(toNumber).find((value) => value !== null) ?? null;
   }
 
+  function competenciaKey(lancamento) {
+    if (lancamento?.competencia) return String(lancamento.competencia);
+    const ano = Number(lancamento?.ano);
+    const mes = Number(lancamento?.mes);
+    if (!ano || !mes) return "";
+    return `${ano}-${String(mes).padStart(2, "0")}`;
+  }
+
+  function getMetaAcumuladaCompetencia(rule, lancamento) {
+    const params = rule?.parametrosCalculo || {};
+    const curva = params.metasAcumuladasPorCompetencia || params.curvaMetaAcumulada || {};
+    const key = competenciaKey(lancamento);
+    if (Object.prototype.hasOwnProperty.call(curva, key)) {
+      return toNumber(curva[key]);
+    }
+    if (Number(lancamento?.mes) === 12) return toNumber(rule?.metaAnualValor);
+    return null;
+  }
+
+  function getReferenciaNpsCompetencia(rule, lancamento) {
+    const params = rule?.parametrosCalculo || {};
+    const key = competenciaKey(lancamento);
+    const referencias = params.referenciasPorCompetencia || {};
+    if (Object.prototype.hasOwnProperty.call(referencias, key)) return toNumber(referencias[key]);
+    return toNumber(params.metaAnualMetodologica ?? rule?.metaAnualValor);
+  }
+
   function getReferenceMeta(rule, quarterLaunches, quarterNumberValue, quarterLabel) {
     const params = rule?.parametrosCalculo || {};
+    if (rule?.tipoCalculo === "ggr_formula" && quarterNumberValue && quarterLabel) {
+      const year = getYear(quarterLabel);
+      const quarterEnd = QUARTERS.find((item) => item.number === quarterNumberValue)?.months.at(-1);
+      return getMetaAcumuladaCompetencia(rule, { ano: year, mes: quarterEnd, competencia: `${year}-${String(quarterEnd).padStart(2, "0")}` });
+    }
+    if (params.metaTipo === "curva_acumulada_por_competencia") {
+      const referenceLaunch = lastByMonth((quarterLaunches || []).filter((item) => item.status === STATUS_LANCAMENTO.HOMOLOGADO));
+      return referenceLaunch ? getMetaAcumuladaCompetencia(rule, referenceLaunch) : null;
+    }
+    if (params.metaTipo === "curva_trimestral_acumulada") {
+      const quarterTarget = params.curvaTrimestralAcumulada?.[quarterLabel] || {};
+      if (rule?.tipoCalculo === "iniciativas_apoiadas") return toNumber(quarterTarget.metaQuantidadeAcumulada);
+      if (rule?.tipoCalculo === "plano_acao_por_elementos") return toNumber(quarterTarget.metaElementosAcumulados);
+      if (rule?.tipoCalculo === "execucao_acoes_propostas") return toNumber(quarterTarget.metaAcoesRealizadasAcumuladas);
+      return toNumber(quarterTarget.metaValorAcumulado ?? quarterTarget.metaPercentual ?? quarterTarget.metaQuantidadeAcumulada ?? quarterTarget.metaElementosAcumulados);
+    }
+    if (params.metaTipo === "curva_trimestral_percentual") {
+      return toNumber(params.curvaTrimestralPercentual?.[quarterLabel]?.metaPercentual);
+    }
+    if (params.metaTipo === "curva_trimestral_quantidade_cursos") {
+      return toNumber(params.curvaTrimestralCursos?.[quarterLabel]?.metaCobertura ?? params.metaCobertura ?? rule?.metaAnualValor);
+    }
+    if (params.metaTipo === "cobertura_com_quantidade_minima_de_iniciativas") {
+      return toNumber(params.curvaJogoResponsavel2026?.[quarterLabel]?.metaCobertura ?? params.metaCobertura ?? rule?.metaAnualValor);
+    }
+    if (params.metaTipo === "marco_anual") return null;
+    if (["baseline_com_meta_anual", "baseline_com_meta_anual_corrigida"].includes(params.metaTipo)) {
+      const year = getYear(quarterLabel);
+      const quarterEnd = QUARTERS.find((item) => item.number === quarterNumberValue)?.months.at(-1);
+      return getReferenciaNpsCompetencia(rule, { ano: year, mes: quarterEnd, competencia: `${year}-${String(quarterEnd).padStart(2, "0")}` });
+    }
     const configuredQuarterTarget = toNumber(params.metasTrimestrais?.[quarterLabel] ?? PIX_QUARTER_TARGETS[quarterLabel]);
     if (rule?.tipoCalculo === "razao_pix" && configuredQuarterTarget !== null) return configuredQuarterTarget;
     if (rule?.tipoCalculo === "razao_canais_digitais") {
@@ -113,7 +179,7 @@
     );
     if (annualMeta === null) return null;
 
-    if (rule?.tipoCalculo === "quantidade_acumulada") return annualMeta * (quarterNumberValue / 4);
+    if (rule?.tipoCalculo === "quantidade_acumulada" || rule?.tipoCalculo === "melhorias_acumuladas") return annualMeta * (quarterNumberValue / 4);
     if (["soma_acumulada_no_ano", "valor_acumulado_com_meta_dinamica"].includes(rule?.tipoConsolidacao)) {
       return annualMeta / 4;
     }
@@ -219,8 +285,9 @@
     if (
       result !== null &&
       meta !== null &&
-      (["soma_acumulada_no_ano", "valor_acumulado_com_meta_dinamica"].includes(regra?.tipoConsolidacao) ||
-        regra?.tipoCalculo === "quantidade_acumulada")
+      (["soma_acumulada_no_ano", "valor_acumulado_com_meta_dinamica", "acumulado_por_soma_mensal"].includes(regra?.tipoConsolidacao) ||
+        regra?.tipoCalculo === "quantidade_acumulada" ||
+        regra?.tipoCalculo === "melhorias_acumuladas")
     ) {
       performance = result / meta;
     }

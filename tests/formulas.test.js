@@ -1,4 +1,4 @@
-const assert = require("node:assert/strict");
+﻿const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const formulas = require("../assets/js/formulas.js");
 
@@ -18,21 +18,26 @@ closeTo(formulas.normalizarPercentual(0.0642), 0.0642);
 const regraOfertas = {
   indicadorId: 1,
   tipoCalculo: "percentual_direto",
-  tipoConsolidacao: "ultima_posicao",
+  tipoConsolidacao: "acumulado_por_competencia",
   unidadeMedida: "percentual",
   metaAnualValor: 0.1,
-  parametrosCalculo: { metaReferencia: 0.1, validarNumeradorAteDenominador: false },
+  parametrosCalculo: {
+    numeradorCampo: "clientesUnicosComOfertaPersonalizadaCompetencia",
+    denominadorCampo: "baseClientesAtivosCompetencia",
+    metaReferencia: 0.1,
+    validarNumeradorAteDenominador: false
+  },
   camposEntrada: [
-    { nome: "baseClientesAtivos", obrigatorio: true },
-    { nome: "clientesComOfertaPersonalizada", obrigatorio: true }
+    { nome: "baseClientesAtivosCompetencia", obrigatorio: true },
+    { nome: "clientesUnicosComOfertaPersonalizadaCompetencia", obrigatorio: true }
   ]
 };
 
 const ofertas = formulas.calcularIndicador(
   indicador(1, "Índice de Ofertas Personalizadas aos Clientes Ativos"),
   regraOfertas,
-  { mes: 1, camposEntrada: { baseClientesAtivos: 100000, clientesComOfertaPersonalizada: 20840 } },
-  [{ mes: 1, camposEntrada: { baseClientesAtivos: 100000, clientesComOfertaPersonalizada: 20840 } }]
+  { mes: 1, camposEntrada: { baseClientesAtivosCompetencia: 100000, clientesUnicosComOfertaPersonalizadaCompetencia: 20840 } },
+  [{ mes: 1, camposEntrada: { baseClientesAtivosCompetencia: 100000, clientesUnicosComOfertaPersonalizadaCompetencia: 20840 } }]
 );
 closeTo(ofertas.resultadoMensal, 0.2084);
 closeTo(ofertas.percentualAtingidoMensal, 2.084);
@@ -44,8 +49,8 @@ assert.equal(ofertas.percentualAtingidoMensalFormatado, "208,4%");
 const ofertasAcimaDaBase = formulas.calcularIndicador(
   indicador(1, "Índice de Ofertas Personalizadas aos Clientes Ativos"),
   regraOfertas,
-  { mes: 1, camposEntrada: { baseClientesAtivos: 100000, clientesComOfertaPersonalizada: 120000 } },
-  [{ mes: 1, camposEntrada: { baseClientesAtivos: 100000, clientesComOfertaPersonalizada: 120000 } }]
+  { mes: 1, camposEntrada: { baseClientesAtivosCompetencia: 100000, clientesUnicosComOfertaPersonalizadaCompetencia: 120000 } },
+  [{ mes: 1, camposEntrada: { baseClientesAtivosCompetencia: 100000, clientesUnicosComOfertaPersonalizadaCompetencia: 120000 } }]
 );
 closeTo(ofertasAcimaDaBase.resultadoMensal, 1.2);
 closeTo(ofertasAcimaDaBase.percentualAtingidoMensal, 12);
@@ -53,13 +58,38 @@ closeTo(ofertasAcimaDaBase.percentualAtingidoMensal, 12);
 const ofertasExemploUsuario = formulas.calcularIndicador(
   indicador(1, "Índice de Ofertas Personalizadas aos Clientes Ativos"),
   regraOfertas,
-  { mes: 1, camposEntrada: { baseClientesAtivos: 248005, clientesComOfertaPersonalizada: 636553 } },
-  [{ mes: 1, camposEntrada: { baseClientesAtivos: 248005, clientesComOfertaPersonalizada: 636553 } }]
+  { mes: 1, camposEntrada: { baseClientesAtivosCompetencia: 248005, clientesUnicosComOfertaPersonalizadaCompetencia: 636553 } },
+  [{ mes: 1, camposEntrada: { baseClientesAtivosCompetencia: 248005, clientesUnicosComOfertaPersonalizadaCompetencia: 636553 } }]
 );
 closeTo(ofertasExemploUsuario.resultadoMensal, 636553 / 248005);
 closeTo(ofertasExemploUsuario.percentualAtingidoMensal, (636553 / 248005) / 0.1);
 assert.equal(ofertasExemploUsuario.resultadoMensalFormatado, "256,67%");
 assert.equal(ofertasExemploUsuario.percentualAtingidoMensalFormatado, "2.566,69%");
+
+const ofertasInforme1Tri = formulas.calcularIndicador(
+  indicador(1, "Índice de Ofertas Personalizadas aos Clientes Ativos"),
+  regraOfertas,
+  { ano: 2026, mes: 3, competencia: "2026-03", camposEntrada: { baseClientesAtivosCompetencia: 2773599, clientesUnicosComOfertaPersonalizadaCompetencia: 1241587 } },
+  [
+    { ano: 2026, mes: 1, competencia: "2026-01", camposEntrada: {} },
+    { ano: 2026, mes: 2, competencia: "2026-02", camposEntrada: {} },
+    { ano: 2026, mes: 3, competencia: "2026-03", camposEntrada: { baseClientesAtivosCompetencia: 2773599, clientesUnicosComOfertaPersonalizadaCompetencia: 1241587 } }
+  ]
+);
+closeTo(ofertasInforme1Tri.resultadoMensal, 1241587 / 2773599);
+closeTo(ofertasInforme1Tri.percentualAtingidoMensal, (1241587 / 2773599) / 0.1);
+assert.equal(ofertasInforme1Tri.resultadoMensalFormatado, "44,76%");
+assert.equal(ofertasInforme1Tri.percentualAtingidoMensalFormatado, "447,64%");
+assert.ok(ofertasInforme1Tri.percentualAtingidoMensal > 1);
+
+const ofertasSemBase = formulas.calcularIndicador(
+  indicador(1, "Índice de Ofertas Personalizadas aos Clientes Ativos"),
+  regraOfertas,
+  { mes: 1, camposEntrada: { baseClientesAtivosCompetencia: 0, clientesUnicosComOfertaPersonalizadaCompetencia: 100 } },
+  [{ mes: 1, camposEntrada: { baseClientesAtivosCompetencia: 0, clientesUnicosComOfertaPersonalizadaCompetencia: 100 } }]
+);
+assert.equal(ofertasSemBase.statusCalculo, "aguardando_dados");
+assert.equal(ofertasSemBase.mensagem, "Dados insuficientes para cálculo.");
 
 const regraMulheresGestoras = {
   indicadorId: 13,
@@ -115,26 +145,123 @@ assert.equal(mulheresGestorasInvalidas.erro, true);
 
 const regraNps = {
   indicadorId: 2,
-  tipoCalculo: "pontuacao_minima",
-  tipoConsolidacao: "ultima_posicao",
+  tipoCalculo: "nota_pesquisa_nps",
+  tipoConsolidacao: "resultado_pesquisa_ou_ultima_posicao",
   unidadeMedida: "pontos",
-  metaAnualValor: 62,
-  parametrosCalculo: { campoValor: "npsRealizado" },
-  camposEntrada: [{ nome: "npsRealizado", obrigatorio: true }]
+  metaAnualValor: 58,
+  parametrosCalculo: {
+    campoTipoPosicao: "tipoPosicaoNPS",
+    campoNps: "npsApurado",
+    campoPromotores: "percentualPromotores",
+    campoDetratores: "percentualDetratores",
+    campoMetaReferencia: "metaReferenciaCompetenciaNPS",
+    metaTipo: "baseline_com_meta_anual_corrigida",
+    baselineNPS: 55,
+    notaReferenciaNPS: 70,
+    percentualReducaoGap: 0.20,
+    metaAnualMetodologica: 58,
+    referenciasPorCompetencia: { "2026-03": 55 },
+    sentidoMeta: "quanto_maior_melhor"
+  },
+  camposEntrada: [{ nome: "tipoPosicaoNPS", obrigatorio: true }]
 };
 
 const nps = formulas.calcularIndicador(
   indicador(2, "Índice de Satisfação de Clientes - NPS"),
   regraNps,
-  { mes: 1, metaMensal: 58, camposEntrada: { npsRealizado: 55 } },
-  [{ mes: 1, metaMensal: 58, camposEntrada: { npsRealizado: 55 } }]
+  { ano: 2026, mes: 3, competencia: "2026-03", metaMensal: 55, camposEntrada: { tipoPosicaoNPS: "Baseline", metaReferenciaCompetenciaNPS: 55, npsApurado: 55, dataBasePesquisaNPS: "2026-03-31", fontePesquisaNPS: "Informe" } },
+  [{ ano: 2026, mes: 3, competencia: "2026-03", metaMensal: 55, camposEntrada: { tipoPosicaoNPS: "Baseline", metaReferenciaCompetenciaNPS: 55, npsApurado: 55 } }]
 );
 closeTo(nps.resultadoMensal, 55);
-closeTo(nps.percentualAtingidoMensal, 55 / 58);
+closeTo(nps.percentualAtingidoMensal, 1);
 closeTo(nps.resultadoOficialAnual, 55);
-closeTo(nps.percentualAtingidoAnual, 55 / 58);
+closeTo(nps.percentualAtingidoAnual, 1);
 assert.equal(nps.resultadoMensalFormatado, "55");
-assert.equal(nps.percentualAtingidoMensalFormatado, "94,83%");
+assert.equal(nps.percentualAtingidoMensalFormatado, "100%");
+assert.equal(nps.metaReferenciaPeriodo, 55);
+assert.equal(nps.metaAnualCorretaNPS, 58);
+assert.equal(nps.situacao, "Em acompanhamento");
+
+const npsDetalhado = formulas.calcularIndicador(
+  indicador(2, "Índice de Satisfação de Clientes - NPS"),
+  regraNps,
+  { ano: 2026, mes: 12, competencia: "2026-12", camposEntrada: { tipoPosicaoNPS: "Pesquisa oficial", percentualPromotores: 0.72, percentualDetratores: 0.12 } },
+  [{ ano: 2026, mes: 12, competencia: "2026-12", camposEntrada: { tipoPosicaoNPS: "Pesquisa oficial", percentualPromotores: 0.72, percentualDetratores: 0.12 } }]
+);
+closeTo(npsDetalhado.resultadoMensal, 60);
+closeTo(npsDetalhado.percentualAtingidoMensal, 60 / 58);
+assert.equal(npsDetalhado.situacao, "Atingido");
+
+const regraClimaOrganizacional = {
+  indicadorId: 12,
+  tipoCalculo: "nota_pesquisa_anual",
+  tipoConsolidacao: "resultado_pesquisa_ou_ultima_posicao",
+  unidadeMedida: "pontos",
+  metaAnualValor: 60,
+  parametrosCalculo: {
+    campoTipoPosicao: "tipoPosicaoClima",
+    campoMetaReferencia: "metaReferenciaClima",
+    campoNota: "notaClimaApurada",
+    metaTipo: "fixa_anual",
+    metaReferencia: 60,
+    sentidoMeta: "quanto_maior_melhor"
+  },
+  camposEntrada: [{ nome: "tipoPosicaoClima", obrigatorio: true }]
+};
+
+const climaAcompanhamento = formulas.calcularIndicador(
+  indicador(12, "Clima Organizacional"),
+  regraClimaOrganizacional,
+  { ano: 2026, mes: 3, competencia: "2026-03", camposEntrada: { tipoPosicaoClima: "Acompanhamento", metaReferenciaClima: 60, notaClimaApurada: 60 } },
+  [{ ano: 2026, mes: 3, competencia: "2026-03", camposEntrada: { tipoPosicaoClima: "Acompanhamento", metaReferenciaClima: 60, notaClimaApurada: 60 } }]
+);
+closeTo(climaAcompanhamento.resultadoMensal, 60);
+closeTo(climaAcompanhamento.percentualAtingidoMensal, 1);
+assert.equal(climaAcompanhamento.situacao, "Em acompanhamento");
+
+const climaFechamentoAnual = formulas.calcularIndicador(
+  indicador(12, "Clima Organizacional"),
+  regraClimaOrganizacional,
+  { ano: 2026, mes: 12, competencia: "2026-12", camposEntrada: { tipoPosicaoClima: "Fechamento anual", metaReferenciaClima: 60, notaClimaApurada: 61 } },
+  [{ ano: 2026, mes: 12, competencia: "2026-12", camposEntrada: { tipoPosicaoClima: "Fechamento anual", metaReferenciaClima: 60, notaClimaApurada: 61 } }]
+);
+closeTo(climaFechamentoAnual.percentualAtingidoMensal, 61 / 60);
+assert.equal(climaFechamentoAnual.situacao, "Atingido");
+
+const regraCapacitacaoEmpregados = {
+  indicadorId: 15,
+  tipoCalculo: "cobertura_capacitacao",
+  tipoConsolidacao: "ultima_posicao_acumulada",
+  unidadeMedida: "percentual",
+  metaAnualValor: 0.90,
+  parametrosCalculo: {
+    campoPublicoAlvo: "publicoAlvoElegivelCapacitacao",
+    campoCapacitados: "empregadosCapacitadosCapacitacao",
+    campoQuantidadeCursos: "quantidadeCursosMinimaCapacitacao",
+    metaTipo: "curva_trimestral_quantidade_cursos",
+    metaCobertura: 0.90,
+    curvaTrimestralCursos: {
+      "1TRI/2026": { metaCobertura: 0.90, quantidadeCursosMinima: 1, descricao: "90% do público-alvo com 01 curso concluído: Curso de Jogo Responsável" }
+    },
+    sentidoMeta: "quanto_maior_melhor"
+  },
+  camposEntrada: [
+    { nome: "publicoAlvoElegivelCapacitacao", obrigatorio: true },
+    { nome: "empregadosCapacitadosCapacitacao", obrigatorio: true }
+  ]
+};
+
+const capacitacaoEmpregados = formulas.calcularIndicador(
+  indicador(15, "Capacitação dos Empregados da CAIXA Loterias"),
+  regraCapacitacaoEmpregados,
+  { ano: 2026, mes: 3, trimestre: "1TRI/2026", camposEntrada: { publicoAlvoElegivelCapacitacao: 151, empregadosCapacitadosCapacitacao: 137, quantidadeCursosMinimaCapacitacao: 1 } },
+  [{ ano: 2026, mes: 3, trimestre: "1TRI/2026", camposEntrada: { publicoAlvoElegivelCapacitacao: 151, empregadosCapacitadosCapacitacao: 137 } }]
+);
+closeTo(capacitacaoEmpregados.resultadoMensal, 137 / 151);
+closeTo(capacitacaoEmpregados.percentualAtingidoMensal, 1);
+closeTo(capacitacaoEmpregados.percentualAtingidoMatematico, (137 / 151) / 0.9);
+assert.equal(capacitacaoEmpregados.quantidadeCursosMinimaCapacitacao, 1);
+assert.equal(capacitacaoEmpregados.situacao, "Atingido");
 
 const regraDigitais = {
   indicadorId: 3,
@@ -177,48 +304,61 @@ assert.equal(digitaisSemBase.mensagem, "QMAANT deve ser maior que zero para cál
 
 const regraAprimoramento = {
   indicadorId: 4,
-  tipoCalculo: "quantidade_acumulada",
-  tipoConsolidacao: "soma_acumulada_no_ano",
-  unidadeMedida: "melhorias",
-  metaAnualValor: 6,
+  tipoCalculo: "melhorias_acumuladas",
+  tipoConsolidacao: "quantidade_acumulada",
+  unidadeMedida: "percentual",
+  metaAnualValor: 0.25,
   parametrosCalculo: {
-    campoValor: "melhoriasEntreguesMes",
+    campoValor: "melhoriasImplementadasMes",
     totalMelhoriasPlano2026: 22,
+    metaPercentualAnualAprimoramento: 0.25,
     metaMinimaMelhoriasAno: 6,
-    metaPercentualReferencia: 0.25
+    metaTipo: "curva_trimestral_acumulada",
+    curvaTrimestralAcumulada: {
+      "1TRI/2026": { metaPercentual: 0.0454, metaQuantidadeAcumulada: 1 },
+      "2TRI/2026": { metaPercentual: 0.1364, metaQuantidadeAcumulada: 3 },
+      "3TRI/2026": { metaPercentual: 0.1818, metaQuantidadeAcumulada: 4 },
+      "4TRI/2026": { metaPercentual: 0.25, metaQuantidadeAcumulada: 6 }
+    },
+    sentidoMeta: "quanto_maior_melhor"
   },
   camposEntrada: [
-    { nome: "melhoriasEntreguesMes", obrigatorio: true },
-    { nome: "dataBaseApuracao", obrigatorio: false }
+    { nome: "melhoriasImplementadasMes", obrigatorio: true },
+    { nome: "descricaoMelhoriasMes", obrigatorio: false },
+    { nome: "evidenciaMelhoriasMes", obrigatorio: false }
   ]
 };
 
 const melhoriasLancamentos = [
-  { mes: 1, camposEntrada: { melhoriasEntreguesMes: 1, dataBaseApuracao: "2026-01-31" } }
+  { ano: 2026, mes: 1, status: "Homologado", camposEntrada: { melhoriasImplementadasMes: 0 } },
+  { ano: 2026, mes: 2, status: "Homologado", camposEntrada: { melhoriasImplementadasMes: 0 } },
+  { ano: 2026, mes: 3, status: "Homologado", camposEntrada: { melhoriasImplementadasMes: 1 } }
 ];
 const melhorias = formulas.calcularIndicador(
   indicador(4, "Aprimoramento da Experiência do Cliente"),
   regraAprimoramento,
-  melhoriasLancamentos[0],
+  melhoriasLancamentos[2],
   melhoriasLancamentos
 );
-closeTo(melhorias.resultadoMensal, 1 / 22);
-closeTo(melhorias.resultadoAcumulado, 1 / 22);
-closeTo(melhorias.resultadoOficialAnual, 1 / 22);
-closeTo(melhorias.percentualAtingidoMensal, 1 / 6);
-closeTo(melhorias.percentualAtingidoAnual, 1 / 6);
-assert.equal(melhorias.resultadoMensalFormatado, "4,55%");
-assert.equal(melhorias.percentualAtingidoMensalFormatado, "16,67%");
+closeTo(melhorias.resultadoMensal, 0.0454);
+closeTo(melhorias.resultadoAcumulado, 0.0454);
+closeTo(melhorias.resultadoOficialAnual, 0.0454);
+closeTo(melhorias.percentualAtingidoMensal, 1);
+closeTo(melhorias.percentualAtingidoAnual, 1);
+assert.equal(melhorias.resultadoMensalFormatado, "4,54%");
+assert.equal(melhorias.percentualAtingidoMensalFormatado, "100%");
 assert.equal(melhorias.melhoriasEntreguesAcumuladas, 1);
-assert.equal(melhorias.situacao, "Em andamento");
+assert.equal(melhorias.melhoriasImplementadasAcumuladas, 1);
+assert.equal(melhorias.percentualPlanoExecutadoCalculado > 0.0454, true);
+assert.equal(melhorias.situacao, "Atingido");
 
 const melhoriasAcimaDoPlano = formulas.calcularIndicador(
   indicador(4, "Aprimoramento da Experiência do Cliente"),
   regraAprimoramento,
-  { mes: 2, camposEntrada: { melhoriasEntreguesMes: 12 } },
+  { ano: 2026, mes: 2, camposEntrada: { melhoriasImplementadasMes: 12 } },
   [
-    { mes: 1, camposEntrada: { melhoriasEntreguesMes: 11 } },
-    { mes: 2, camposEntrada: { melhoriasEntreguesMes: 12 } }
+    { ano: 2026, mes: 1, camposEntrada: { melhoriasImplementadasMes: 11 } },
+    { ano: 2026, mes: 2, camposEntrada: { melhoriasImplementadasMes: 12 } }
   ]
 );
 assert.equal(melhoriasAcimaDoPlano.erro, true);
@@ -226,28 +366,99 @@ assert.equal(melhoriasAcimaDoPlano.mensagem, "O total de melhorias entregues nã
 
 const regraGgr = {
   indicadorId: 5,
-  tipoCalculo: "valor_financeiro_acumulado",
-  tipoConsolidacao: "soma_acumulada_no_ano",
+  tipoCalculo: "ggr_formula",
+  tipoConsolidacao: "acumulado_por_soma_mensal",
   unidadeMedida: "moeda",
   metaAnualValor: 15600000000,
-  parametrosCalculo: { campoValor: "ggrRealizadoMes", usarMetaMensalNoResultado: true },
-  camposEntrada: [{ nome: "ggrRealizadoMes", obrigatorio: true }]
+  parametrosCalculo: {
+    campoArrecadacao: "arrecadacaoTotalMes",
+    campoPremios: "premiosAPagarMes",
+    metaTipo: "curva_acumulada_por_competencia",
+    metasAcumuladasPorCompetencia: {
+      "2026-01": 1056593039,
+      "2026-02": 1997659493,
+      "2026-03": 3070246140.78,
+      "2026-12": 15600000000
+    }
+  },
+  camposEntrada: [
+    { nome: "arrecadacaoTotalMes", obrigatorio: true },
+    { nome: "premiosAPagarMes", obrigatorio: true }
+  ]
 };
 
 const ggr = formulas.calcularIndicador(
   indicador(5, "Gross Gaming Revenue (GGR)"),
   regraGgr,
-  { mes: 1, metaMensal: 1056593038.57, camposEntrada: { ggrRealizadoMes: 1131557094.81 } },
-  [{ mes: 1, metaMensal: 1056593038.57, camposEntrada: { ggrRealizadoMes: 1131557094.81 } }]
+  { ano: 2026, mes: 1, competencia: "2026-01", camposEntrada: { arrecadacaoTotalMes: 1900000000, premiosAPagarMes: 843406961.43 } },
+  [{ ano: 2026, mes: 1, competencia: "2026-01", camposEntrada: { arrecadacaoTotalMes: 1900000000, premiosAPagarMes: 843406961.43 } }]
 );
-closeTo(ggr.resultadoMensal, 1131557094.81);
-closeTo(ggr.percentualAtingidoMensal, 1131557094.81 / 1056593038.57);
-closeTo(ggr.resultadoOficialAnual, 1131557094.81);
-closeTo(ggr.percentualAtingidoAnual, 1131557094.81 / 15600000000);
-assert.equal(ggr.resultadoMensalFormatado, "R$ 1.131.557.094,81");
-assert.equal(ggr.percentualAtingidoMensalFormatado, "107,09%");
-assert.equal(ggr.percentualAtingidoAnualFormatado, "7,25%");
+closeTo(ggr.resultadoMensal, 1056593038.57);
+closeTo(ggr.ggrCalculadoMes, 1056593038.57);
+closeTo(ggr.percentualAtingidoMensal, 1056593038.57 / 1056593039);
+closeTo(ggr.resultadoOficialAnual, 1056593038.57);
+closeTo(ggr.percentualAtingidoAnual, 1056593038.57 / 1056593039);
+assert.equal(ggr.resultadoMensalFormatado, "R$\u00a01.056.593.038,57");
+assert.equal(ggr.percentualAtingidoMensalFormatado, "100%");
 
+const ggrSemPremios = formulas.calcularIndicador(
+  indicador(5, "Gross Gaming Revenue (GGR)"),
+  regraGgr,
+  { ano: 2026, mes: 1, competencia: "2026-01", camposEntrada: { arrecadacaoTotalMes: 1900000000 } },
+  [{ ano: 2026, mes: 1, competencia: "2026-01", camposEntrada: { arrecadacaoTotalMes: 1900000000 } }]
+);
+assert.equal(ggrSemPremios.statusCalculo, "aguardando_dados");
+assert.equal(ggrSemPremios.mensagem, "Dados insuficientes para cálculo.");
+
+const regraLucroLiquido = {
+  indicadorId: 7,
+  tipoCalculo: "valor_financeiro_acumulado",
+  tipoConsolidacao: "ultima_posicao_acumulada",
+  unidadeMedida: "moeda",
+  metaAnualValor: 1209000000,
+  parametrosCalculo: {
+    valorAcumuladoCampo: "lucroLiquidoRecorrenteAcumulado",
+    metaTipo: "curva_acumulada_por_competencia",
+    metasAcumuladasPorCompetencia: {
+      "2026-01": 89555555.56,
+      "2026-02": 179111111.11,
+      "2026-03": 268666666.67,
+      "2026-04": null,
+      "2026-12": 1209000000
+    }
+  },
+  camposEntrada: [{ nome: "lucroLiquidoRecorrenteAcumulado", obrigatorio: true }]
+};
+const lucroJaneiro = formulas.calcularIndicador(
+  indicador(7, "Lucro Liquido Recorrente"),
+  regraLucroLiquido,
+  { ano: 2026, mes: 1, competencia: "2026-01", camposEntrada: { lucroLiquidoRecorrenteAcumulado: 119377680.03 } },
+  [{ ano: 2026, mes: 1, competencia: "2026-01", camposEntrada: { lucroLiquidoRecorrenteAcumulado: 119377680.03 } }]
+);
+closeTo(lucroJaneiro.percentualAtingidoMensal, 119377680.03 / 89555555.56);
+assert.equal(lucroJaneiro.situacao, "Atingido");
+const lucroMarco = formulas.calcularIndicador(
+  indicador(7, "Lucro Liquido Recorrente"),
+  regraLucroLiquido,
+  { ano: 2026, mes: 3, competencia: "2026-03", camposEntrada: { lucroLiquidoRecorrenteAcumulado: 336321887.69 } },
+  [
+    { ano: 2026, mes: 1, competencia: "2026-01", camposEntrada: { lucroLiquidoRecorrenteAcumulado: 119377680.03 } },
+    { ano: 2026, mes: 2, competencia: "2026-02", camposEntrada: { lucroLiquidoRecorrenteAcumulado: 222011430.58 } },
+    { ano: 2026, mes: 3, competencia: "2026-03", camposEntrada: { lucroLiquidoRecorrenteAcumulado: 336321887.69 } }
+  ]
+);
+closeTo(lucroMarco.percentualAtingidoMensal, 336321887.69 / 268666666.67);
+closeTo(lucroMarco.resultadoOficialAnual, 336321887.69);
+closeTo(lucroMarco.metaAcumulada, 268666666.67);
+const lucroAbrilSemCurva = formulas.calcularIndicador(
+  indicador(7, "Lucro Liquido Recorrente"),
+  regraLucroLiquido,
+  { ano: 2026, mes: 4, competencia: "2026-04", camposEntrada: { lucroLiquidoRecorrenteAcumulado: 400000000 } },
+  [{ ano: 2026, mes: 4, competencia: "2026-04", camposEntrada: { lucroLiquidoRecorrenteAcumulado: 400000000 } }]
+);
+assert.equal(lucroAbrilSemCurva.statusCalculo, "aguardando_dados");
+assert.equal(lucroAbrilSemCurva.percentualAtingidoMensal, null);
+assert.equal(lucroAbrilSemCurva.metaReferenciaMensagem, "Pendente de curva orçamentária");
 const regraPix = {
   indicadorId: 9,
   tipoCalculo: "razao_pix",
@@ -337,33 +548,111 @@ assert.equal(pixSemDenominador.resultadoMensal, null);
 
 const regraIeo = {
   indicadorId: 6,
-  tipoCalculo: "indice_inverso_ajustado",
-  tipoConsolidacao: "ultima_posicao",
+  tipoCalculo: "indice_inverso",
+  tipoConsolidacao: "ultima_posicao_acumulada",
   unidadeMedida: "percentual",
   metaAnualValor: 0.1403,
-  parametrosCalculo: { campoValor: "ieoRealizadoMes", campoPercentual: true, metaReferencia: 0.1403, quantoMenorMelhor: true },
-  camposEntrada: [{ nome: "ieoRealizadoMes", obrigatorio: true }]
+  parametrosCalculo: {
+    campoDespesaPessoal: "despesaPessoalMes",
+    campoDespesasAdministrativas: "despesasAdministrativasMes",
+    campoReceitasLiquidas: "receitasLiquidasMes",
+    campoIeoInformado: "ieoApuradoInformado",
+    campoPercentualOficial: "percentualAtingidoOficialInformado",
+    metaTipo: "curva_acumulada_por_competencia",
+    metasAcumuladasPorCompetencia: {
+      "2026-01": null,
+      "2026-02": null,
+      "2026-03": 0.1441,
+      "2026-12": 0.1403
+    },
+    sentidoMeta: "quanto_menor_melhor"
+  },
+  camposEntrada: [
+    { nome: "despesaPessoalMes", obrigatorio: false },
+    { nome: "despesasAdministrativasMes", obrigatorio: false },
+    { nome: "receitasLiquidasMes", obrigatorio: false },
+    { nome: "ieoApuradoInformado", obrigatorio: false },
+    { nome: "percentualAtingidoOficialInformado", obrigatorio: false }
+  ]
 };
 
 const ieo = formulas.calcularIndicador(
   indicador(6, "IEO Recorrente"),
   regraIeo,
-  { mes: 1, metaMensal: 0.1449, camposEntrada: { ieoRealizadoMes: 6.42 } },
-  [{ mes: 1, metaMensal: 0.1449, camposEntrada: { ieoRealizadoMes: 6.42 } }]
+  { ano: 2026, mes: 3, competencia: "2026-03", camposEntrada: { ieoApuradoInformado: 0.108, percentualAtingidoOficialInformado: 104.22 } },
+  [{ ano: 2026, mes: 3, competencia: "2026-03", camposEntrada: { ieoApuradoInformado: 0.108, percentualAtingidoOficialInformado: 104.22 } }]
 );
-closeTo(ieo.resultadoMensal, 0.0642);
-closeTo(ieo.resultadoOficialAnual, 0.0642);
-assert.equal(ieo.resultadoMensalFormatado, "6,42%");
-assert.equal(ieo.resultadoOficialAnualFormatado, "6,42%");
+closeTo(ieo.resultadoMensal, 0.108);
+closeTo(ieo.resultadoOficialAnual, 0.108);
+closeTo(ieo.percentualAtingidoMensal, 1.0422);
+assert.equal(ieo.resultadoMensalFormatado, "10,8%");
+assert.equal(ieo.resultadoOficialAnualFormatado, "10,8%");
 assert.equal(ieo.situacao, "Atingido");
 
-const ieoNaoAtingido = formulas.calcularIndicador(
+const ieoCalculado = formulas.calcularIndicador(
   indicador(6, "IEO Recorrente"),
   regraIeo,
-  { mes: 1, camposEntrada: { ieoRealizadoMes: 15 } },
-  [{ mes: 1, camposEntrada: { ieoRealizadoMes: 15 } }]
+  { ano: 2026, mes: 3, competencia: "2026-03", camposEntrada: { despesaPessoalMes: 60, despesasAdministrativasMes: 48, receitasLiquidasMes: 1000 } },
+  [{ ano: 2026, mes: 3, competencia: "2026-03", camposEntrada: { despesaPessoalMes: 60, despesasAdministrativasMes: 48, receitasLiquidasMes: 1000 } }]
 );
-assert.equal(ieoNaoAtingido.situacao, "Não atingido");
+closeTo(ieoCalculado.resultadoMensal, 0.108);
+closeTo(ieoCalculado.percentualAtingidoMensal, 1 + ((0.1441 - 0.108) / 0.1441));
+assert.equal(ieoCalculado.situacao, "Atingido");
+
+const ieoJaneiroSemMeta = formulas.calcularIndicador(
+  indicador(6, "IEO Recorrente"),
+  regraIeo,
+  {
+    ano: 2026,
+    mes: 1,
+    competencia: "2026-01",
+    camposEntrada: {
+      despesaPessoalMes: 5700000,
+      despesasAdministrativasMes: 8655120,
+      receitasLiquidasMes: 223600000
+    }
+  },
+  [{
+    ano: 2026,
+    mes: 1,
+    competencia: "2026-01",
+    camposEntrada: {
+      despesaPessoalMes: 5700000,
+      despesasAdministrativasMes: 8655120,
+      receitasLiquidasMes: 223600000
+    }
+  }]
+);
+closeTo(ieoJaneiroSemMeta.resultadoMensal, 0.0642);
+assert.equal(ieoJaneiroSemMeta.resultadoMensalFormatado, "6,42%");
+assert.equal(ieoJaneiroSemMeta.percentualAtingidoMensal, null);
+assert.equal(ieoJaneiroSemMeta.situacao, "Sem meta de referência");
+assert.equal(ieoJaneiroSemMeta.metaPendente, true);
+
+const ieoAbaixo = formulas.calcularIndicador(
+  indicador(6, "IEO Recorrente"),
+  regraIeo,
+  { ano: 2026, mes: 3, competencia: "2026-03", camposEntrada: { ieoApuradoInformado: 0.16 } },
+  [{ ano: 2026, mes: 3, competencia: "2026-03", camposEntrada: { ieoApuradoInformado: 0.16 } }]
+);
+assert.equal(ieoAbaixo.situacao, "Abaixo da meta");
+
+const ieoCritico = formulas.calcularIndicador(
+  indicador(6, "IEO Recorrente"),
+  regraIeo,
+  { ano: 2026, mes: 3, competencia: "2026-03", camposEntrada: { ieoApuradoInformado: 0.18 } },
+  [{ ano: 2026, mes: 3, competencia: "2026-03", camposEntrada: { ieoApuradoInformado: 0.18 } }]
+);
+assert.equal(ieoCritico.situacao, "Crítico");
+
+const ieoSemDenominador = formulas.calcularIndicador(
+  indicador(6, "IEO Recorrente"),
+  regraIeo,
+  { ano: 2026, mes: 3, competencia: "2026-03", camposEntrada: { despesaPessoalMes: 60, despesasAdministrativasMes: 48 } },
+  [{ ano: 2026, mes: 3, competencia: "2026-03", camposEntrada: { despesaPessoalMes: 60, despesasAdministrativasMes: 48 } }]
+);
+assert.equal(ieoSemDenominador.statusCalculo, "aguardando_dados");
+assert.equal(ieoSemDenominador.mensagem, "Dados insuficientes para cálculo.");
 
 const regraEcossistema = {
   indicadorId: 22,
@@ -418,29 +707,467 @@ const ecossistemaSemReferencia = formulas.calcularIndicador(
 assert.equal(ecossistemaSemReferencia.erro, true);
 assert.equal(ecossistemaSemReferencia.mensagem, "Resultado referência de 2025 não informado. Não é possível calcular a meta 2026.");
 
+const regraRepasseSocial = {
+  indicadorId: 17,
+  tipoCalculo: "valor_financeiro_acumulado",
+  tipoConsolidacao: "ultima_posicao_acumulada",
+  unidadeMedida: "moeda",
+  metaAnualValor: 10400000000,
+  parametrosCalculo: {
+    valorAcumuladoCampo: "repasseSocialAcumuladoCompetencia",
+    metaTipo: "curva_acumulada_por_competencia",
+    metasAcumuladasPorCompetencia: {
+      "2026-01": 737118539.30,
+      "2026-02": 1394613495.00,
+      "2026-03": 2142991572.00,
+      "2026-12": 10452751135.00
+    },
+    sentidoMeta: "quanto_maior_melhor"
+  },
+  camposEntrada: [{ nome: "repasseSocialAcumuladoCompetencia", obrigatorio: true }]
+};
+const repasseMarco = formulas.calcularIndicador(
+  indicador(17, "Repasse Social", "moeda"),
+  regraRepasseSocial,
+  { ano: 2026, mes: 3, competencia: "2026-03", camposEntrada: { repasseSocialAcumuladoCompetencia: 2253033146.00 } },
+  [
+    { ano: 2026, mes: 1, competencia: "2026-01", camposEntrada: { repasseSocialAcumuladoCompetencia: 769496203.10 } },
+    { ano: 2026, mes: 2, competencia: "2026-02", camposEntrada: { repasseSocialAcumuladoCompetencia: 1506381391.00 } },
+    { ano: 2026, mes: 3, competencia: "2026-03", camposEntrada: { repasseSocialAcumuladoCompetencia: 2253033146.00 } }
+  ]
+);
+closeTo(repasseMarco.resultadoMensal, 2253033146.00);
+closeTo(repasseMarco.resultadoOficialAnual, 2253033146.00);
+closeTo(repasseMarco.percentualAtingidoMensal, 2253033146.00 / 2142991572.00);
+assert.equal(repasseMarco.situacao, "Atingido");
+
+const regraCapacidadeTic = {
+  indicadorId: 11,
+  tipoCalculo: "marco_projeto_percentual",
+  tipoConsolidacao: "ultima_posicao_trimestral",
+  unidadeMedida: "percentual",
+  metaAnualValor: 1,
+  parametrosCalculo: {
+    campoStatus: "marcoAlcancadoTIC",
+    campoPercentual: "percentualRealizadoTIC",
+    metaTipo: "curva_trimestral_percentual",
+    curvaTrimestralPercentual: {
+      "1TRI/2026": { metaPercentual: 0.35, marcoEsperado: "Realização de Consulta Pública de Informações - RFI" },
+      "2TRI/2026": { metaPercentual: 0.70, marcoEsperado: "Realização de Consulta Pública de Propostas - RFP" },
+      "3TRI/2026": { metaPercentual: 0.85, marcoEsperado: "Iniciação da Fase Seleção" },
+      "4TRI/2026": { metaPercentual: 1.00, marcoEsperado: "Contrato assinado com fornecedor" }
+    },
+    marcosCapacidadeTIC: [
+      { label: "Não iniciado", percentual: 0 },
+      { label: "Consulta Pública de Informações - RFI realizada", percentual: 0.35 },
+      { label: "Consulta Pública de Propostas - RFP realizada", percentual: 0.70 },
+      { label: "Fase de Seleção iniciada", percentual: 0.85 },
+      { label: "Contrato assinado com fornecedor", percentual: 1.00 }
+    ]
+  },
+  camposEntrada: [{ nome: "marcoAlcancadoTIC", obrigatorio: true }]
+};
+const capacidadeTic = formulas.calcularIndicador(
+  indicador(11, "Ampliar Capacidade de Desenvolvimento de Soluções de TIC"),
+  regraCapacidadeTic,
+  { ano: 2026, mes: 3, trimestre: "1TRI/2026", camposEntrada: { marcoAlcancadoTIC: "Consulta Pública de Informações - RFI realizada" } },
+  []
+);
+closeTo(capacidadeTic.resultadoMensal, 0.35);
+closeTo(capacidadeTic.percentualAtingidoMensal, 1);
+assert.equal(capacidadeTic.marcoEsperadoTrimestre, "Realização de Consulta Pública de Informações - RFI");
+assert.equal(capacidadeTic.situacao, "Atingido");
+
+const regraPlataformaJogos = {
+  indicadorId: 10,
+  tipoCalculo: "projeto_marco_entrega",
+  tipoConsolidacao: "ultima_posicao_trimestral",
+  unidadeMedida: "marco",
+  metaAnualValor: null,
+  parametrosCalculo: {
+    campoMarco: "marcoAtualPlataformaJogos",
+    campoStatus: "statusProjetoPlataformaJogos",
+    metaTipo: "marco_anual",
+    sentidoMeta: "marco_concluido",
+    metaAnualMarco: "Piloto/MVP da Plataforma de Jogos",
+    marcoConcluido: "Piloto/MVP concluído",
+    statusConcluido: "Piloto/MVP concluído"
+  },
+  camposEntrada: [
+    { nome: "marcoAtualPlataformaJogos", obrigatorio: true },
+    { nome: "statusProjetoPlataformaJogos", obrigatorio: true }
+  ]
+};
+const plataformaJogos1Tri = formulas.calcularIndicador(
+  indicador(10, "Share da Plataforma de Jogos"),
+  regraPlataformaJogos,
+  {
+    ano: 2026,
+    mes: 3,
+    trimestre: "1TRI/2026",
+    camposEntrada: {
+      marcoAtualPlataformaJogos: "Sprints iniciais executadas",
+      statusProjetoPlataformaJogos: "Em andamento",
+      descricaoAndamentoPlataformaJogos: "Projeto em andamento."
+    }
+  },
+  []
+);
+assert.equal(plataformaJogos1Tri.resultadoMensal, null);
+assert.equal(plataformaJogos1Tri.percentualAtingidoMensal, null);
+assert.equal(plataformaJogos1Tri.desempenhoNaoAplicavel, true);
+assert.equal(plataformaJogos1Tri.situacao, "Em andamento");
+
+const plataformaJogosConcluida = formulas.calcularIndicador(
+  indicador(10, "Share da Plataforma de Jogos"),
+  regraPlataformaJogos,
+  {
+    ano: 2026,
+    mes: 12,
+    trimestre: "4TRI/2026",
+    camposEntrada: {
+      marcoAtualPlataformaJogos: "Piloto/MVP concluído",
+      statusProjetoPlataformaJogos: "Piloto/MVP concluído"
+    }
+  },
+  []
+);
+assert.equal(plataformaJogosConcluida.resultadoMensal, 1);
+assert.equal(plataformaJogosConcluida.percentualAtingidoMensal, null);
+assert.equal(plataformaJogosConcluida.situacao, "Atingido");
+
+const regraPrincipiosJogoResponsavel = {
+  indicadorId: 18,
+  tipoCalculo: "plano_acao_por_elementos",
+  tipoConsolidacao: "elementos_acumulados",
+  unidadeMedida: "quantidade",
+  metaAnualValor: 10,
+  parametrosCalculo: {
+    campoElemento: "elementoRGF",
+    campoStatus: "statusAcao",
+    metaTipo: "curva_trimestral_acumulada",
+    curvaTrimestralAcumulada: {
+      "1TRI/2026": { metaElementosAcumulados: 1 },
+      "2TRI/2026": { metaElementosAcumulados: 2 },
+      "3TRI/2026": { metaElementosAcumulados: 5 },
+      "4TRI/2026": { metaElementosAcumulados: 10 }
+    },
+    statusQueContam: ["Concluída", "Homologada"]
+  },
+  camposEntrada: [
+    { nome: "elementoRGF", obrigatorio: true },
+    { nome: "acaoExecutada", obrigatorio: true },
+    { nome: "statusAcao", obrigatorio: true }
+  ]
+};
+const principiosJogoResponsavel = formulas.calcularIndicador(
+  indicador(18, "Princípios de Jogo Responsável"),
+  regraPrincipiosJogoResponsavel,
+  { ano: 2026, mes: 3, trimestre: "1TRI/2026", camposEntrada: { elementoRGF: "Envolvimento das partes interessadas", acaoExecutada: "Instituição do Fórum de Jogo Responsável", statusAcao: "Concluída" } },
+  [
+    { ano: 2026, mes: 1, trimestre: "1TRI/2026", camposEntrada: { elementoRGF: "Pesquisa", acaoExecutada: "Ação em elaboração", statusAcao: "Em andamento" } },
+    { ano: 2026, mes: 2, trimestre: "1TRI/2026", camposEntrada: { elementoRGF: "Envolvimento das partes interessadas", acaoExecutada: "Preparação do fórum", statusAcao: "Concluída" } },
+    { ano: 2026, mes: 3, trimestre: "1TRI/2026", camposEntrada: { elementoRGF: "Envolvimento das partes interessadas", acaoExecutada: "Instituição do Fórum de Jogo Responsável", statusAcao: "Concluída" } }
+  ]
+);
+assert.equal(principiosJogoResponsavel.resultadoMensal, 1);
+assert.equal(principiosJogoResponsavel.elementosAtendidosAcumulados, 1);
+assert.deepEqual(principiosJogoResponsavel.elementosAtendidos, ["Envolvimento das partes interessadas"]);
+closeTo(principiosJogoResponsavel.percentualAtingidoMensal, 1);
+assert.equal(principiosJogoResponsavel.situacao, "Atingido");
+
+const regraApoioSocioambiental = {
+  indicadorId: 16,
+  tipoCalculo: "iniciativas_apoiadas",
+  tipoConsolidacao: "iniciativas_acumuladas",
+  unidadeMedida: "quantidade",
+  metaAnualValor: 2,
+  parametrosCalculo: {
+    campoNome: "nomeIniciativaSocioambiental",
+    campoStatus: "statusIniciativaSocioambiental",
+    statusQueConta: "Apoiada/realizada",
+    metaTipo: "curva_trimestral_acumulada",
+    curvaTrimestralAcumulada: {
+      "1TRI/2026": { metaPercentual: 0, metaQuantidadeAcumulada: 0 },
+      "2TRI/2026": { metaPercentual: 0.5, metaQuantidadeAcumulada: 1 },
+      "3TRI/2026": { metaPercentual: 0.5, metaQuantidadeAcumulada: 1 },
+      "4TRI/2026": { metaPercentual: 1, metaQuantidadeAcumulada: 2 }
+    },
+    sentidoMeta: "quanto_maior_melhor"
+  },
+  camposEntrada: [
+    { nome: "nomeIniciativaSocioambiental", obrigatorio: true },
+    { nome: "statusIniciativaSocioambiental", obrigatorio: true }
+  ]
+};
+const apoioSocioambiental1Tri = formulas.calcularIndicador(
+  indicador(16, "Apoio ao Desenvolvimento Socioambiental"),
+  regraApoioSocioambiental,
+  {
+    ano: 2026,
+    mes: 3,
+    trimestre: "1TRI/2026",
+    camposEntrada: {
+      nomeIniciativaSocioambiental: "Projeto socioambiental em prospecção",
+      statusIniciativaSocioambiental: "Em prospecção",
+      descricaoAndamentoSocioambiental: "Projetos em fase de prospecção e estruturação."
+    }
+  },
+  [
+    { ano: 2026, mes: 1, trimestre: "1TRI/2026", camposEntrada: { nomeIniciativaSocioambiental: "Projeto socioambiental em prospecção", statusIniciativaSocioambiental: "Em prospecção" } },
+    { ano: 2026, mes: 2, trimestre: "1TRI/2026", camposEntrada: { nomeIniciativaSocioambiental: "Projeto socioambiental em prospecção", statusIniciativaSocioambiental: "Em estruturação" } },
+    { ano: 2026, mes: 3, trimestre: "1TRI/2026", camposEntrada: { nomeIniciativaSocioambiental: "Projeto socioambiental em prospecção", statusIniciativaSocioambiental: "Em prospecção" } }
+  ]
+);
+assert.equal(apoioSocioambiental1Tri.resultadoMensal, 0);
+assert.equal(apoioSocioambiental1Tri.iniciativasApoiadasAcumuladas, 0);
+assert.equal(apoioSocioambiental1Tri.percentualAtingidoMensal, null);
+assert.equal(apoioSocioambiental1Tri.situacao, "Em prospecção/estruturação");
+assert.equal(apoioSocioambiental1Tri.statusCalculo, "sem_meta_periodo");
+
+const apoioSocioambiental2Tri = formulas.calcularIndicador(
+  indicador(16, "Apoio ao Desenvolvimento Socioambiental"),
+  regraApoioSocioambiental,
+  {
+    ano: 2026,
+    mes: 6,
+    trimestre: "2TRI/2026",
+    camposEntrada: {
+      nomeIniciativaSocioambiental: "1ª iniciativa socioambiental apoiada",
+      statusIniciativaSocioambiental: "Apoiada/realizada"
+    }
+  },
+  [
+    { ano: 2026, mes: 3, trimestre: "1TRI/2026", camposEntrada: { nomeIniciativaSocioambiental: "Projeto socioambiental em prospecção", statusIniciativaSocioambiental: "Em prospecção" } },
+    { ano: 2026, mes: 6, trimestre: "2TRI/2026", camposEntrada: { nomeIniciativaSocioambiental: "1ª iniciativa socioambiental apoiada", statusIniciativaSocioambiental: "Apoiada/realizada" } }
+  ]
+);
+assert.equal(apoioSocioambiental2Tri.resultadoMensal, 1);
+assert.equal(apoioSocioambiental2Tri.iniciativasApoiadasAcumuladas, 1);
+closeTo(apoioSocioambiental2Tri.percentualAtingidoMensal, 1);
+assert.equal(apoioSocioambiental2Tri.situacao, "Atingido");
+
+const regraIncentivoSocioambiental = {
+  indicadorId: 19,
+  tipoCalculo: "investimento_socioambiental",
+  tipoConsolidacao: "valor_acumulado",
+  unidadeMedida: "moeda",
+  metaAnualValor: 4307900,
+  parametrosCalculo: {
+    campoStatus: "statusProjetoIncentivoSocioambiental",
+    campoValorMes: "valorInvestidoMes",
+    campoValorAcumulado: "valorInvestidoAcumuladoCompetencia",
+    statusQueConta: "Investimento realizado",
+    metaTipo: "curva_trimestral_acumulada",
+    curvaTrimestralAcumulada: {
+      "1TRI/2026": { metaPercentualLucro: 0, metaValorAcumulado: 0 },
+      "2TRI/2026": { metaPercentualLucro: 0.0005, metaValorAcumulado: 652700 }
+    },
+    sentidoMeta: "quanto_maior_melhor"
+  },
+  camposEntrada: [
+    { nome: "nomeProjetoIncentivoSocioambiental", obrigatorio: true },
+    { nome: "statusProjetoIncentivoSocioambiental", obrigatorio: true }
+  ]
+};
+const incentivo1Tri = formulas.calcularIndicador(
+  indicador(19, "Incentivo Socioambiental"),
+  regraIncentivoSocioambiental,
+  {
+    ano: 2026,
+    mes: 3,
+    trimestre: "1TRI/2026",
+    camposEntrada: {
+      nomeProjetoIncentivoSocioambiental: "Projeto de impacto socioambiental em prospecção",
+      statusProjetoIncentivoSocioambiental: "Em prospecção",
+      valorInvestidoMes: 0
+    }
+  },
+  [
+    { ano: 2026, mes: 1, trimestre: "1TRI/2026", camposEntrada: { nomeProjetoIncentivoSocioambiental: "Projeto", statusProjetoIncentivoSocioambiental: "Em prospecção", valorInvestidoMes: 0 } },
+    { ano: 2026, mes: 2, trimestre: "1TRI/2026", camposEntrada: { nomeProjetoIncentivoSocioambiental: "Projeto", statusProjetoIncentivoSocioambiental: "Em estruturação", valorInvestidoMes: 0 } },
+    { ano: 2026, mes: 3, trimestre: "1TRI/2026", camposEntrada: { nomeProjetoIncentivoSocioambiental: "Projeto", statusProjetoIncentivoSocioambiental: "Em prospecção", valorInvestidoMes: 0 } }
+  ]
+);
+assert.equal(incentivo1Tri.resultadoMensal, 0);
+assert.equal(incentivo1Tri.percentualAtingidoMensal, null);
+assert.equal(incentivo1Tri.statusCalculo, "sem_meta_periodo");
+assert.equal(incentivo1Tri.situacao, "Em prospecção/estruturação");
+
+const incentivo2Tri = formulas.calcularIndicador(
+  indicador(19, "Incentivo Socioambiental"),
+  regraIncentivoSocioambiental,
+  {
+    ano: 2026,
+    mes: 6,
+    trimestre: "2TRI/2026",
+    camposEntrada: {
+      nomeProjetoIncentivoSocioambiental: "Projeto de impacto socioambiental apoiado",
+      statusProjetoIncentivoSocioambiental: "Investimento realizado",
+      valorInvestidoMes: 652700
+    }
+  },
+  [
+    { ano: 2026, mes: 3, trimestre: "1TRI/2026", camposEntrada: { nomeProjetoIncentivoSocioambiental: "Projeto", statusProjetoIncentivoSocioambiental: "Em prospecção", valorInvestidoMes: 0 } },
+    { ano: 2026, mes: 6, trimestre: "2TRI/2026", camposEntrada: { nomeProjetoIncentivoSocioambiental: "Projeto de impacto socioambiental apoiado", statusProjetoIncentivoSocioambiental: "Investimento realizado", valorInvestidoMes: 652700 } }
+  ]
+);
+assert.equal(incentivo2Tri.resultadoMensal, 652700);
+closeTo(incentivo2Tri.percentualAtingidoMensal, 1);
+assert.equal(incentivo2Tri.situacao, "Atingido");
+
+const regraVisibilidadeRepasses = {
+  indicadorId: 20,
+  tipoCalculo: "execucao_acoes_propostas",
+  tipoConsolidacao: "acoes_realizadas_acumuladas",
+  unidadeMedida: "percentual",
+  metaAnualValor: 1,
+  parametrosCalculo: {
+    campoAcao: "acaoPropostaVisibilidade",
+    campoStatus: "statusAcaoVisibilidade",
+    statusQueConta: "Publicada/realizada",
+    totalAcoesPropostas: 2,
+    metaTipo: "curva_trimestral_acumulada",
+    curvaTrimestralAcumulada: {
+      "1TRI/2026": { metaPercentual: 0, metaAcoesRealizadasAcumuladas: 0 },
+      "2TRI/2026": { metaPercentual: 0.5, metaAcoesRealizadasAcumuladas: 1 },
+      "3TRI/2026": { metaPercentual: 0.5, metaAcoesRealizadasAcumuladas: 1 },
+      "4TRI/2026": { metaPercentual: 1, metaAcoesRealizadasAcumuladas: 2 }
+    },
+    acoesPropostasVisibilidade: [
+      { id: "relatorio_sorte_em_numeros_2025", nome: "Publicar relatório institucional A Sorte em Números 2025" },
+      { id: "campanha_repasses_sociais", nome: "Realizar campanha publicitária exclusiva" }
+    ],
+    sentidoMeta: "quanto_maior_melhor"
+  },
+  camposEntrada: [
+    { nome: "acaoPropostaVisibilidade", obrigatorio: true },
+    { nome: "statusAcaoVisibilidade", obrigatorio: true }
+  ]
+};
+const visibilidade1Tri = formulas.calcularIndicador(
+  indicador(20, "Visibilidade dos Repasses Sociais das Loterias CAIXA"),
+  regraVisibilidadeRepasses,
+  {
+    ano: 2026,
+    mes: 3,
+    trimestre: "1TRI/2026",
+    camposEntrada: {
+      acaoPropostaVisibilidade: "relatorio_sorte_em_numeros_2025",
+      statusAcaoVisibilidade: "Em homologação",
+      etapaAtualVisibilidade: "Diagramação e layout concluídos; relatório em homologação prévia à publicação"
+    }
+  },
+  [
+    { ano: 2026, mes: 1, trimestre: "1TRI/2026", camposEntrada: { acaoPropostaVisibilidade: "relatorio_sorte_em_numeros_2025", statusAcaoVisibilidade: "Em elaboração" } },
+    { ano: 2026, mes: 2, trimestre: "1TRI/2026", camposEntrada: { acaoPropostaVisibilidade: "relatorio_sorte_em_numeros_2025", statusAcaoVisibilidade: "Em elaboração" } },
+    { ano: 2026, mes: 3, trimestre: "1TRI/2026", camposEntrada: { acaoPropostaVisibilidade: "relatorio_sorte_em_numeros_2025", statusAcaoVisibilidade: "Em homologação" } }
+  ]
+);
+assert.equal(visibilidade1Tri.resultadoMensal, 0);
+assert.equal(visibilidade1Tri.acoesRealizadasAcumuladas, 0);
+assert.equal(visibilidade1Tri.percentualAtingidoMensal, null);
+assert.equal(visibilidade1Tri.statusCalculo, "sem_meta_periodo");
+assert.equal(visibilidade1Tri.situacao, "Em elaboração/homologação");
+
+const visibilidade2Tri = formulas.calcularIndicador(
+  indicador(20, "Visibilidade dos Repasses Sociais das Loterias CAIXA"),
+  regraVisibilidadeRepasses,
+  {
+    ano: 2026,
+    mes: 6,
+    trimestre: "2TRI/2026",
+    camposEntrada: {
+      acaoPropostaVisibilidade: "relatorio_sorte_em_numeros_2025",
+      statusAcaoVisibilidade: "Publicada/realizada",
+      dataConclusaoVisibilidade: "2026-06-30"
+    }
+  },
+  [
+    { ano: 2026, mes: 3, trimestre: "1TRI/2026", camposEntrada: { acaoPropostaVisibilidade: "relatorio_sorte_em_numeros_2025", statusAcaoVisibilidade: "Em homologação" } },
+    { ano: 2026, mes: 5, trimestre: "2TRI/2026", camposEntrada: { acaoPropostaVisibilidade: "relatorio_sorte_em_numeros_2025", statusAcaoVisibilidade: "Publicada/realizada" } },
+    { ano: 2026, mes: 6, trimestre: "2TRI/2026", camposEntrada: { acaoPropostaVisibilidade: "relatorio_sorte_em_numeros_2025", statusAcaoVisibilidade: "Publicada/realizada" } }
+  ]
+);
+closeTo(visibilidade2Tri.resultadoMensal, 0.5);
+assert.equal(visibilidade2Tri.acoesRealizadasAcumuladas, 1);
+closeTo(visibilidade2Tri.percentualAtingidoMensal, 1);
+assert.equal(visibilidade2Tri.situacao, "Atingido");
+
+const regraJogoResponsavelCapacitacao = {
+  indicadorId: 21,
+  tipoCalculo: "cobertura_capacitacao_jogo_responsavel",
+  tipoConsolidacao: "ultima_posicao_acumulada",
+  unidadeMedida: "percentual",
+  metaAnualValor: 0.90,
+  parametrosCalculo: {
+    campoPublicoAlvo: "publicoAlvoElegivelJR",
+    campoCapacitados: "empregadosCapacitadosJR",
+    campoQuantidadeMinima: "quantidadeMinimaIniciativasJR",
+    metaTipo: "cobertura_com_quantidade_minima_de_iniciativas",
+    metaCobertura: 0.90,
+    curvaJogoResponsavel2026: {
+      "1TRI/2026": {
+        metaCobertura: 0.90,
+        quantidadeMinimaIniciativas: 1,
+        descricao: "90% do público-alvo com pelo menos 1 ação de disseminação concluída"
+      },
+      "2TRI/2026": {
+        metaCobertura: 0.90,
+        quantidadeMinimaIniciativas: 2,
+        descricao: "90% do público-alvo com pelo menos 2 iniciativas concluídas"
+      }
+    }
+  },
+  camposEntrada: [
+    { nome: "publicoAlvoElegivelJR", obrigatorio: true },
+    { nome: "empregadosCapacitadosJR", obrigatorio: true }
+  ]
+};
+const jogoResponsavel1Tri = formulas.calcularIndicador(
+  indicador(21, "Jogo Responsável 2026 (Capacitação e Disseminação)"),
+  regraJogoResponsavelCapacitacao,
+  {
+    ano: 2026,
+    mes: 3,
+    trimestre: "1TRI/2026",
+    camposEntrada: {
+      publicoAlvoElegivelJR: 151,
+      empregadosCapacitadosJR: 137,
+      quantidadeMinimaIniciativasJR: 1,
+      iniciativasConsideradasJR: "Ação de disseminação de Jogo Responsável na Universidade CAIXA"
+    }
+  },
+  []
+);
+closeTo(jogoResponsavel1Tri.resultadoMensal, 137 / 151);
+assert.equal(jogoResponsavel1Tri.percentualAtingidoMensal, 1);
+assert.equal(jogoResponsavel1Tri.quantidadeMinimaIniciativasJR, 1);
+assert.equal(jogoResponsavel1Tri.situacao, "Atingido");
+
 const regras = JSON.parse(fs.readFileSync("data/regras-indicadores.json", "utf8"));
 const amostras = {
-  1: { baseClientesAtivos: 1000, clientesComOfertaPersonalizada: 100 },
-  2: { npsRealizado: 62 },
+  1: { baseClientesAtivosCompetencia: 1000, clientesUnicosComOfertaPersonalizadaCompetencia: 100 },
+  2: { tipoPosicaoNPS: "Fechamento anual", metaReferenciaCompetenciaNPS: 58, npsApurado: 58, dataBasePesquisaNPS: "2026-12-31", fontePesquisaNPS: "Relatorio oficial" },
   3: { qmaatu: 2480052, qmaant: 1424272, dataBaseApuracao: "2026-01-31" },
-  4: { melhoriasEntreguesMes: 6, dataBaseApuracao: "2026-12-31" },
-  5: { ggrRealizadoMes: 15600000000 },
-  6: { ieoRealizadoMes: 0.0642 },
+  4: { melhoriasImplementadasMes: 6, descricaoMelhoriasMes: "Melhorias executadas", evidenciaMelhoriasMes: "Informe" },
+  5: { arrecadacaoTotalMes: 1900000000, premiosAPagarMes: 843406961.43 },
+  6: { ieoApuradoInformado: 0.0642 },
   7: { lucroLiquidoRecorrenteAcumulado: 1209000000 },
   8: { arrecadacaoCanaisEletronicosMes: 15, arrecadacaoTotalProdutosLoteriasMes: 100 },
   9: { arrecadacaoPixMes: 411428638.26, arrecadacaoTotalCanaisEletronicosMes: 600000000 },
-  10: { etapaAtualProjeto: "MVP entregue", percentualExecucao: 80, evidenciaEntrega: "Termo" },
-  11: { etapaAtual: "formalizado", percentualExecucao: 70, modalidade: "Contrato", numeroProcesso: "123" },
-  12: { mediaGeralGPTW: 60, dataPesquisa: "2026-12-01", relatorioGPTW: "Relatorio oficial" },
+  10: { marcoAtualPlataformaJogos: "Piloto/MVP concluído", statusProjetoPlataformaJogos: "Piloto/MVP concluído", descricaoAndamentoPlataformaJogos: "MVP concluído", evidenciaPlataformaJogos: "Termo" },
+  11: { marcoAlcancadoTIC: "Contrato assinado com fornecedor", percentualRealizadoTIC: 1, descricaoAndamentoTIC: "Contrato assinado", evidenciaTIC: "Termo" },
+  12: { tipoPosicaoClima: "Fechamento anual", metaReferenciaClima: 60, notaClimaApurada: 60, dataBasePesquisaClima: "2026-12-01", fonteEvidenciaClima: "Relatorio oficial" },
   13: { mulheresGestorasMes: 425, totalGestoresMes: 1000, dataBaseApuracao: "2026-12-31" },
   14: { gestoresEnquadradosMes: 350, totalGestoresMes: 1000, dataBaseApuracao: "2026-12-31" },
-  15: { empregadosElegiveisMes: 1000, empregadosCapacitadosMes: 900 },
-  16: { quantidadeIniciativasApoiadasMes: 2, nomeIniciativa: "Projeto", dataApoio: "2026-12-01" },
-  17: { repasseSocialAcumulado: 10400000000, dataBaseApuracao: "2026-12-31" },
-  18: { elementosExecutadosAcumulado: 10, elementoRGF: "1", acaoMelhoria: "Acao", statusAcao: "Executada", dataExecucao: "2026-12-01" },
-  19: { valorInvestidoAcumulado: 3300, lucroLiquidoBase: 1000000 },
-  20: { totalAcoesPropostas: 10, totalAcoesRealizadas: 10, statusAcao: "Concluida" },
-  21: { empregadosElegiveisMes: 1000, empregadosComDuasIniciativasConcluidas: 900 },
+  15: { publicoAlvoElegivelCapacitacao: 1000, empregadosCapacitadosCapacitacao: 900, quantidadeCursosMinimaCapacitacao: 5, cursosConsideradosCapacitacao: "Trilha completa" },
+  16: { nomeIniciativaSocioambiental: "1ª iniciativa socioambiental apoiada", tipoIniciativaSocioambiental: "Parceria", statusIniciativaSocioambiental: "Apoiada/realizada", dataApoioIniciativa: "2026-12-01", descricaoAndamentoSocioambiental: "Apoiada", evidenciaIniciativaSocioambiental: "Documento", observacaoArea: "Validado" },
+  17: { repasseSocialAcumuladoCompetencia: 10452751135, dataBaseApuracao: "2026-12-31" },
+  18: { elementoRGF: "Pesquisa", acaoExecutada: "Acao", descricaoAcao: "Descricao", statusAcao: "Concluída", dataConclusao: "2026-12-01", evidenciaAcao: "Evidencia" },
+  19: { nomeProjetoIncentivoSocioambiental: "Projeto apoiado", statusProjetoIncentivoSocioambiental: "Investimento realizado", valorInvestidoAcumuladoCompetencia: 4307900, evidenciaIncentivoSocioambiental: "Documento" },
+  20: { acaoPropostaVisibilidade: "campanha_repasses_sociais", statusAcaoVisibilidade: "Publicada/realizada" },
+  21: { publicoAlvoElegivelJR: 1000, empregadosCapacitadosJR: 900, quantidadeMinimaIniciativasJR: 2, iniciativasConsideradasJR: "Duas iniciativas concluídas" },
   22: { arrecadacaoEcossistemaMes: 10, arrecadacaoTotalMes: 100, participacaoEcossistema2025: 0.08 },
   23: { arrecadacaoRedeLotericaMes2026: 102, arrecadacaoRedeLotericaMes2025: 100 }
 };
@@ -455,7 +1182,14 @@ for (const regra of regras) {
   };
   const resultado = formulas.calcularIndicador(indicador(regra.indicadorId, regra.nome), regra, lancamento, [lancamento]);
   assert.equal(resultado.erro, undefined, `Regra ${regra.indicadorId} não deveria falhar: ${resultado.mensagem}`);
-  assert.notEqual(resultado.percentualAtingidoMensal, null, `Regra ${regra.indicadorId} sem percentual mensal`);
+  if (regra.indicadorId === 10) {
+    assert.equal(resultado.percentualAtingidoMensal, null, "Regra 10 não deve calcular percentual mensal em 2026");
+    assert.equal(resultado.situacao, "Atingido");
+  } else {
+    assert.notEqual(resultado.percentualAtingidoMensal, null, `Regra ${regra.indicadorId} sem percentual mensal`);
+  }
 }
 
 console.log("Testes de fórmulas OK");
+
+
