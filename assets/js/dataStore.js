@@ -15,9 +15,9 @@
 
   const OPERATIONAL_KEYS = ["lancamentos", "homologacoes", "historico", "dashboard", "relatorios"];
   const CENTRAL_OPERATIONAL_KEYS = ["lancamentos", "homologacoes", "historico"];
-  const OPERATIONAL_DATA_VERSION = "PERSISTENCIA-LOCAL-001";
+  const OPERATIONAL_DATA_VERSION = "SQLITE-SEED-2026-06-29-001";
   const OPERATIONAL_DATA_VERSION_KEY = "caixaLoterias:operationalDataVersion";
-  const OPERATIONAL_DATA_SIGNATURE = "PERSISTENCIA-LOCAL-001:safe-migration";
+  const OPERATIONAL_DATA_SIGNATURE = "SQLITE-SEED-2026-06-29-001:authoritative-seed";
   const OPERATIONAL_DATA_SIGNATURE_KEY = "caixaLoterias:operationalDataSignature";
   const JSON_DB_MIGRATION_PREFIX = "caixaLoterias:jsonDbMigrated:";
   const JSON_DB_LOCAL_BACKUP_PREFIX = "caixaLoterias:localBackupBeforeCentral:";
@@ -1233,14 +1233,27 @@
     persistVersionMarkers();
   }
 
-  function ensureOperationalDataVersion() {
+  async function ensureOperationalDataVersion() {
     if (
       localStorage.getItem(OPERATIONAL_DATA_VERSION_KEY) === OPERATIONAL_DATA_VERSION &&
       localStorage.getItem(OPERATIONAL_DATA_SIGNATURE_KEY) === OPERATIONAL_DATA_SIGNATURE
     ) {
       return;
     }
-    console.info("Migracao segura de armazenamento: preservando dados existentes no localStorage.");
+    console.info("Atualizando armazenamento local para a base SQL versionada do projeto.");
+    Object.keys(DATA_FILES).forEach((key) => {
+      localStorage.removeItem(storageKey(key));
+      localStorage.removeItem(key);
+      delete cache[key];
+    });
+    localStorage.removeItem(VALIDATION_BASE_KEY);
+    localStorage.removeItem(STORAGE_MODE_KEY);
+    localStorage.removeItem(CENTRAL_BACKUP_PENDING_KEY);
+    OPERATIONAL_KEYS.forEach((key) => {
+      localStorage.removeItem(jsonDbMigrationKey(key));
+      localStorage.removeItem(jsonDbLocalBackupKey(key));
+    });
+    await clearLocalJsonDb();
     persistVersionMarkers();
   }
 
@@ -2378,7 +2391,7 @@
   async function loadJson(key) {
     corrigirEncodingTextosSalvos();
     corrigirMoedasSalvas();
-    ensureOperationalDataVersion();
+    await ensureOperationalDataVersion();
 
     if (cache[key]) {
       return cache[key];
@@ -2519,11 +2532,14 @@
 
   async function getStorageInfo() {
     const centralAvailable = await checkJsonDb();
+    if (!centralAvailable) {
+      localStorage.removeItem(CENTRAL_BACKUP_PENDING_KEY);
+    }
     return {
       mode: readValidationBase() ? "validacao_local" : centralAvailable ? "central" : "browser",
       centralAvailable,
       localDatabase: "IndexedDB/localStorage",
-      hasPendingLocalBackup: localStorage.getItem(CENTRAL_BACKUP_PENDING_KEY) === "true",
+      hasPendingLocalBackup: centralAvailable && localStorage.getItem(CENTRAL_BACKUP_PENDING_KEY) === "true",
       message: readValidationBase()
         ? "Modo validação local ativo. Os dados são salvos automaticamente neste perfil do navegador."
         : centralAvailable

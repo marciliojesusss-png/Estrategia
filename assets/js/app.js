@@ -37,13 +37,6 @@
         A base versionavel fica em <code>/database/indicadores.sqlite</code> e nao substitui o banco corporativo multiusuario.
       </div>
     `);
-    if (storageInfo.hasPendingLocalBackup) {
-      messages.push(`
-        <div class="notice warning">
-          Existem dados locais antigos diferentes da base de validacao preservados neste navegador.
-        </div>
-      `);
-    }
     return messages;
   }
 

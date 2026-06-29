@@ -22,7 +22,7 @@ Abra o arquivo:
 index.html
 ```
 
-Os dados sao carregados a partir de `assets/js/bootstrap-data.js` e da base local de validacao. O banco SQLite versionado em `database/indicadores.sqlite` representa a base SQL local portavel do projeto.
+Os dados sao carregados a partir de `assets/js/bootstrap-data.js` e da base local de validacao. O banco SQLite versionado em `database/indicadores.sqlite` representa a base SQL local portavel do projeto. Quando a versao de dados do projeto muda, bases antigas salvas em perfis do navegador sao substituidas automaticamente pela base versionada.
 
 Para compartilhar a mesma base entre computadores, versionar o arquivo SQLite com Git. Perfis diferentes do Chrome mantem armazenamentos locais separados.
 
@@ -58,7 +58,7 @@ A aplicacao trabalha com tres camadas:
 
 O antigo banco JSON em arquivos foi removido apos a verificacao de migracao para SQLite. O relatorio da migracao fica em `database/migration-report.json`.
 
-No modo recomendado, os dados ficam salvos no navegador/perfil atual e a base SQL portavel fica no arquivo SQLite versionado. Perfis diferentes do Google Chrome possuem armazenamentos locais separados.
+No modo recomendado, os dados ficam salvos no navegador/perfil atual e a base SQL portavel fica no arquivo SQLite versionado. Perfis diferentes do Google Chrome possuem armazenamentos locais separados; portanto, alteracoes feitas manualmente em um perfil nao aparecem em outro perfil sem um backend/local server gravando em uma base comum.
 
 ### Base De Validacao Local
 

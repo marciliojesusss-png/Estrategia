@@ -25,10 +25,18 @@ function createLocalStorage() {
   };
 }
 
-async function createDataStore({ localLaunches }) {
+const CURRENT_DATA_VERSION = "SQLITE-SEED-2026-06-29-001";
+const CURRENT_DATA_SIGNATURE = "SQLITE-SEED-2026-06-29-001:authoritative-seed";
+
+async function createDataStore({ localLaunches, currentVersion = false } = {}) {
   const localStorage = createLocalStorage();
   if (localLaunches) {
     localStorage.setItem("caixaLoterias:lancamentos", JSON.stringify(localLaunches));
+  }
+  if (currentVersion) {
+    localStorage.setItem("caixaLoterias:operationalDataVersion", CURRENT_DATA_VERSION);
+    localStorage.setItem("caixaLoterias:operationalDataSignature", CURRENT_DATA_SIGNATURE);
+    localStorage.setItem("storageVersion", CURRENT_DATA_VERSION);
   }
 
   const context = {
@@ -62,16 +70,27 @@ async function createDataStore({ localLaunches }) {
 }
 
 (async () => {
+  const bootstrap = loadBootstrapData(path.join(__dirname, ".."));
   const localLaunches = [{ id: 1, indicadorId: 1, ano: 2026, mes: 1, status: "Local correto" }];
   const { DataStore, localStorage } = await createDataStore({ localLaunches });
   const loaded = await DataStore.loadJson("lancamentos");
 
-  assert.equal(loaded[0].status, "Local correto", "Sem servidor JSON, a base local do navegador deve ser preservada.");
+  assert.equal(loaded[0].status, bootstrap.lancamentos[0].status, "Dados antigos de outro perfil devem ser substituidos pela base versionada.");
+  assert.equal(localStorage.getItem("caixaLoterias:operationalDataVersion"), CURRENT_DATA_VERSION);
+  assert.equal(localStorage.getItem("caixaLoterias:operationalDataSignature"), CURRENT_DATA_SIGNATURE);
   assert.equal(localStorage.getItem("caixaLoterias:localBackupBeforeCentral:lancamentos"), null);
+  localStorage.setItem("caixaLoterias:centralBackupPending", "true");
+  const storageInfo = await DataStore.getStorageInfo();
+  assert.equal(storageInfo.hasPendingLocalBackup, false);
+  assert.equal(localStorage.getItem("caixaLoterias:centralBackupPending"), null);
   await assert.rejects(
     () => DataStore.publicarDadosLocaisNaBaseCentral(),
     /Publicacao em base JSON foi desativada/
   );
+
+  const current = await createDataStore({ localLaunches, currentVersion: true });
+  const currentLoaded = await current.DataStore.loadJson("lancamentos");
+  assert.equal(currentLoaded[0].status, "Local correto", "Dados locais da versao atual devem continuar preservados neste perfil.");
 
   const launchesWithout23 = Array.from({ length: 12 }, (_, index) => ({
     id: index + 1,
