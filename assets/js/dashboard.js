@@ -33,6 +33,10 @@
       .replaceAll("'", "&#039;");
   }
 
+  function limparNomeIndicador(nome) {
+    return String(nome || "").replace(/^\s*\d+\.\s*/, "").trim();
+  }
+
   function countBy(items, key) {
     return items.reduce((acc, item) => {
       const value = item[key] || "Não informado";
@@ -177,6 +181,12 @@
       if (Object.prototype.hasOwnProperty.call(referencias, key)) return toFiniteNumber(referencias[key]);
       return toFiniteNumber(regra.parametrosCalculo.metaAnualMetodologica ?? regra.metaAnualValor);
     }
+    if (["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(regra?.tipoCalculo)) {
+      const metaIndice = toFiniteNumber(resultado?.metaIndiceCrescimento ?? regra?.parametrosCalculo?.metaIndice);
+      if (metaIndice !== null) return metaIndice;
+      const crescimentoMeta = toFiniteNumber(regra?.parametrosCalculo?.metaCrescimento);
+      return 1 + (crescimentoMeta ?? 0.1);
+    }
     return regra && regra.metaAnualValor !== null ? regra.metaAnualValor : lancamento?.metaMensal ?? null;
   }
 
@@ -233,7 +243,8 @@
   }
 
   function obterResultadoDashboard(indicador, regra, lancamentosDoIndicador) {
-    const validSource = regra?.tipoCalculo === "razao_canais_digitais"
+    const homologatedOnlyTypes = new Set(["razao_canais_digitais", "crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"]);
+    const validSource = homologatedOnlyTypes.has(regra?.tipoCalculo)
       ? (lancamentosDoIndicador || []).filter((item) => item.status === "Homologado")
       : (lancamentosDoIndicador || []);
     const lancamentosValidos = validSource
@@ -572,8 +583,7 @@
       return `
         <tr>
           <td class="indicator-name">
-            <strong>${escapeHtml(item.indicador.numero)}.</strong>
-            <span>${escapeHtml(item.indicador.indicador)}</span>
+            <span>${escapeHtml(limparNomeIndicador(item.indicador.indicador))}</span>
           </td>
           <td>${escapeHtml(item.competencia || "-")}</td>
           <td class="official-value">${item.lancamento ? formatOfficialResult(item) : "-"}</td>

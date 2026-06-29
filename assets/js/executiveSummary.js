@@ -14,13 +14,33 @@
   ];
   const SITUATIONS = ["Atingido", "Abaixo da meta", "Crítico", "Sem dados", "Em andamento", "Não atingido", "Sem cálculo"];
   const PLAN_ORDER = { PEI: 1, PN: 2 };
+  const HIGHLIGHT_LIMIT = 12;
+  const HIGHLIGHT_INDICATORS = [
+    "ggr",
+    "lucro liquido recorrente",
+    "ieo recorrente",
+    "vendas com meio de pagamento pix",
+    "vendas provenientes de canais digitais",
+    "nps",
+    "clima organizacional",
+    "repasse social",
+    "principios de jogo responsavel",
+    "arrecadacao gerada com o ecossistema",
+    "participacao da rede loterica nos negocios"
+  ];
   let chartInstance = null;
   let state = {
     data: null,
     user: null,
     indicators: [],
     launches: [],
-    rules: []
+    rules: [],
+    chartFilter: {
+      pilar: null,
+      situacao: null
+    },
+    highlightFilterId: null,
+    highlightsPaused: false
   };
 
   function unique(values) {
@@ -34,6 +54,10 @@
       .replaceAll(">", "&gt;")
       .replaceAll('"', "&quot;")
       .replaceAll("'", "&#039;");
+  }
+
+  function limparNomeIndicador(nome) {
+    return String(nome || "").replace(/^\s*\d+\.\s*/, "").trim();
   }
 
   function badgeClass(value) {
@@ -52,12 +76,119 @@
     return StrategicResults.officialSituation(result);
   }
 
+  function normalizeText(value) {
+    return String(value || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim()
+      .toLowerCase();
+  }
+
+  function normalizeSituation(value) {
+    const normalized = normalizeText(value);
+    if (normalized === "atingido" || normalized === "atingida") return "Atingido";
+    if (normalized === "critico" || normalized === "nao atingido") return "Crítico";
+    if (normalized === "sem dados" || normalized === "sem calculo" || normalized === "nao iniciado" || normalized === "-") return "Sem dados";
+    if (normalized === "abaixo da meta") return "Abaixo da meta";
+    return value || "Sem dados";
+  }
+
   function chartSituation(result) {
-    const situation = displaySituation(result);
+    const situation = normalizeSituation(displaySituation(result));
     if (situation === "Atingido") return "Atingido";
-    if (situation === "Crítico" || situation === "Não atingido") return "Crítico";
-    if (situation === "Sem dados" || situation === "Sem cálculo") return "Sem dados";
+    if (situation === "Crítico") return "Crítico";
+    if (situation === "Sem dados") return "Sem dados";
     return "Abaixo da meta";
+  }
+
+  function hasChartFilter() {
+    return Boolean(state.chartFilter.pilar && state.chartFilter.situacao);
+  }
+
+  function clearChartFilter() {
+    state.chartFilter = { pilar: null, situacao: null };
+    refresh();
+  }
+
+  function applyChartFilter(pilar, situacao) {
+    if (state.chartFilter.pilar === pilar && state.chartFilter.situacao === situacao) {
+      clearChartFilter();
+      return;
+    }
+    state.chartFilter = { pilar, situacao };
+    refresh();
+  }
+
+  function filterResultsByChart(results) {
+    if (!hasChartFilter()) return results;
+    return results.filter((result) => (
+      normalizeText(result.indicador.pilar) === normalizeText(state.chartFilter.pilar) &&
+      chartSituation(result) === state.chartFilter.situacao
+    ));
+  }
+
+  function hasHighlightFilter() {
+    return Boolean(state.highlightFilterId);
+  }
+
+  function clearHighlightFilter() {
+    state.highlightFilterId = null;
+    refresh();
+  }
+
+  function applyHighlightFilter(indicadorId) {
+    if (state.highlightFilterId === indicadorId) {
+      clearHighlightFilter();
+      return;
+    }
+    state.highlightFilterId = indicadorId;
+    refresh();
+    document.getElementById("executiveTableTitle")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function filterResultsByHighlight(results) {
+    if (!hasHighlightFilter()) return results;
+    return results.filter((result) => Number(result.indicador.id) === Number(state.highlightFilterId));
+  }
+
+  function clearInteractiveFilters() {
+    state.chartFilter = { pilar: null, situacao: null };
+    state.highlightFilterId = null;
+    refresh();
+    document.getElementById("executiveTableTitle")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function highlightPriority(result) {
+    const situation = normalizeSituation(displaySituation(result));
+    if (situation === "Crítico") return 0;
+    if (situation === "Abaixo da meta") return 1;
+    if (situation === "Sem dados") return 2;
+    if (normalizeText(displaySituation(result)) === "em acompanhamento") return 3;
+    if (situation === "Atingido") return 4;
+    return 5;
+  }
+
+  function suggestedHighlightPriority(result) {
+    const name = normalizeText(limparNomeIndicador(result.indicador.indicador));
+    const index = HIGHLIGHT_INDICATORS.findIndex((item) => name.includes(item));
+    return index === -1 ? 99 : index;
+  }
+
+  function selectedHighlightResults(results) {
+    const used = new Set();
+    return [...results]
+      .filter((result) => {
+        if (used.has(result.indicador.id)) return false;
+        used.add(result.indicador.id);
+        return true;
+      })
+      .sort((a, b) => (
+        highlightPriority(a) - highlightPriority(b) ||
+        suggestedHighlightPriority(a) - suggestedHighlightPriority(b) ||
+        (PLAN_ORDER[a.indicador.plano] || 99) - (PLAN_ORDER[b.indicador.plano] || 99) ||
+        Number(a.indicador.numero) - Number(b.indicador.numero)
+      ))
+      .slice(0, HIGHLIGHT_LIMIT);
   }
 
   function selectedFilters() {
@@ -298,40 +429,156 @@
       noData: group.items.filter((item) => chartSituation(item) === "Sem dados").length
     }));
 
-    document.getElementById("executivePillarBreakdown").innerHTML = rows.length
-      ? rows.map((row) => `
-        <tr>
-          <td>${escapeHtml(row.pillar)}</td>
-          <td>${row.achieved}</td>
-          <td>${row.attention}</td>
-          <td>${row.critical}</td>
-          <td>${row.noData}</td>
-        </tr>
-      `).join("")
-      : '<tr><td colspan="5">Nenhum indicador encontrado.</td></tr>';
-
     if (!groups.length || !window.Chart) return;
+    const chartSegments = [
+      { label: "Atingidos", situation: "Atingido", key: "achieved", color: "#2f7d32", muted: "rgba(47, 125, 50, 0.28)" },
+      { label: "Abaixo da meta", situation: "Abaixo da meta", key: "attention", color: "#c28b00", muted: "rgba(194, 139, 0, 0.28)" },
+      { label: "Críticos", situation: "Crítico", key: "critical", color: "#b3261e", muted: "rgba(179, 38, 30, 0.28)" },
+      { label: "Sem dados", situation: "Sem dados", key: "noData", color: "#9aa6b2", muted: "rgba(154, 166, 178, 0.32)" }
+    ];
+    const activeFilter = hasChartFilter();
+    const isSelectedSegment = (row, situation) => (
+      activeFilter &&
+      normalizeText(row.pillar) === normalizeText(state.chartFilter.pilar) &&
+      situation === state.chartFilter.situacao
+    );
     chartInstance = new Chart(canvas, {
       type: "bar",
       data: {
         labels: rows.map((row) => row.pillar),
-        datasets: [
-          { label: "Atingidos", data: rows.map((row) => row.achieved), backgroundColor: "#2f7d32" },
-          { label: "Abaixo da meta", data: rows.map((row) => row.attention), backgroundColor: "#c28b00" },
-          { label: "Críticos", data: rows.map((row) => row.critical), backgroundColor: "#b3261e" },
-          { label: "Sem dados", data: rows.map((row) => row.noData), backgroundColor: "#9aa6b2" }
-        ]
+        datasets: chartSegments.map((segment) => ({
+          label: segment.label,
+          data: rows.map((row) => row[segment.key]),
+          backgroundColor: rows.map((row) => !activeFilter || isSelectedSegment(row, segment.situation) ? segment.color : segment.muted),
+          borderColor: rows.map((row) => isSelectedSegment(row, segment.situation) ? "#14345d" : "transparent"),
+          borderWidth: rows.map((row) => isSelectedSegment(row, segment.situation) ? 3 : 0),
+          borderSkipped: false
+        }))
       },
       options: {
         indexAxis: "y",
         responsive: true,
-        plugins: { legend: { position: "bottom" } },
+        onClick: (event, elements, chart) => {
+          const points = chart.getElementsAtEventForMode(event, "nearest", { intersect: true }, true);
+          const point = points[0];
+          if (!point) return;
+          const row = rows[point.index];
+          const segment = chartSegments[point.datasetIndex];
+          if (!row || !segment || !row[segment.key]) return;
+          applyChartFilter(row.pillar, segment.situation);
+        },
+        onHover: (event, elements) => {
+          const point = elements && elements[0];
+          const row = point ? rows[point.index] : null;
+          const segment = point ? chartSegments[point.datasetIndex] : null;
+          canvas.style.cursor = row && segment && row[segment.key] ? "pointer" : "default";
+        },
+        plugins: {
+          legend: { position: "bottom" },
+          tooltip: {
+            callbacks: {
+              title: () => "",
+              label: (context) => {
+                const segment = chartSegments[context.datasetIndex];
+                const quantity = Number(context.raw || 0);
+                return [
+                  `Pilar: ${context.label}`,
+                  `Situação: ${segment.situation}`,
+                  `Quantidade: ${quantity} indicador${quantity === 1 ? "" : "es"}`
+                ];
+              }
+            }
+          }
+        },
         scales: {
           x: { stacked: true, beginAtZero: true, ticks: { precision: 0 } },
           y: { stacked: true }
         }
       }
     });
+  }
+
+  function highlightCard(result, duplicate = false) {
+    const name = limparNomeIndicador(result.indicador.indicador);
+    const officialResult = result.lancamento ? StrategicResults.formatOfficialResult(result) : "-";
+    const meta = StrategicResults.formatOfficialMeta(result);
+    const situation = displaySituation(result);
+    const status = displayStatus(result);
+    const competence = result.competencia || "-";
+    const active = Number(result.indicador.id) === Number(state.highlightFilterId);
+    const tooltip = [
+      `Indicador: ${name}`,
+      `Resultado oficial: ${officialResult}`,
+      `Meta: ${meta}`,
+      `Situacao: ${situation}`,
+      `Status: ${status}`,
+      `Ultima competencia: ${competence}`
+    ].join("\n");
+    return `
+      <button
+        class="executive-highlight-card ${active ? "is-active" : ""}"
+        type="button"
+        data-highlight-indicator-id="${result.indicador.id}"
+        title="${escapeHtml(tooltip)}"
+        ${duplicate ? 'aria-hidden="true" tabindex="-1"' : ""}
+      >
+        <span class="executive-highlight-name">${escapeHtml(name)}</span>
+        <strong>${officialResult}</strong>
+        <span class="badge ${badgeClass(situation)}">${escapeHtml(situation)}</span>
+        <span class="executive-highlight-footer">
+          <span>${escapeHtml(competence)}</span>
+          <span class="badge ${badgeClass(status)}">${escapeHtml(status)}</span>
+        </span>
+      </button>
+    `;
+  }
+
+  function renderHighlights(results) {
+    const section = document.getElementById("executiveHighlights");
+    const track = document.getElementById("executiveHighlightsTrack");
+    const empty = document.getElementById("executiveHighlightsEmpty");
+    const toggle = document.getElementById("toggleExecutiveHighlights");
+    if (!section || !track || !empty || !toggle) return;
+
+    const highlights = selectedHighlightResults(results);
+    section.hidden = false;
+    empty.hidden = Boolean(highlights.length);
+    toggle.disabled = highlights.length < 2;
+    toggle.textContent = state.highlightsPaused ? "Continuar" : "Pausar";
+    track.classList.toggle("is-paused", state.highlightsPaused);
+    track.classList.toggle("is-static", highlights.length < 2);
+    track.innerHTML = highlights.length
+      ? [
+        ...highlights.map((result) => highlightCard(result)),
+        ...highlights.map((result) => highlightCard(result, true))
+      ].join("")
+      : "";
+  }
+
+  function renderChartFilterBanner() {
+    const banner = document.getElementById("executiveChartFilterBanner");
+    const text = document.getElementById("executiveChartFilterText");
+    const clearChart = document.getElementById("clearExecutiveChartFilter");
+    const clearHighlight = document.getElementById("clearExecutiveHighlightFilter");
+    if (!banner || !text) return;
+    const filters = [];
+    if (hasChartFilter()) filters.push(`${state.chartFilter.pilar} > ${state.chartFilter.situacao}`);
+    if (hasHighlightFilter()) {
+      const indicator = state.indicators.find((item) => Number(item.id) === Number(state.highlightFilterId));
+      filters.push(limparNomeIndicador(indicator?.indicador || "Indicador selecionado"));
+    }
+
+    if (!filters.length) {
+      banner.hidden = true;
+      text.textContent = "";
+      if (clearChart) clearChart.hidden = true;
+      if (clearHighlight) clearHighlight.hidden = true;
+      return;
+    }
+    banner.hidden = false;
+    text.textContent = `Filtro aplicado: ${filters.join(" | ")}`;
+    if (clearChart) clearChart.hidden = !hasChartFilter();
+    if (clearHighlight) clearHighlight.hidden = !hasHighlightFilter();
   }
 
   function renderTable(results) {
@@ -353,13 +600,13 @@
         <tr>
           <td><span class="executive-plan-chip executive-plan-${result.indicador.plano.toLowerCase()}">${escapeHtml(result.indicador.plano)}</span></td>
           <td>${escapeHtml(result.indicador.pilar)}</td>
-          <td class="indicator-name"><strong>${escapeHtml(result.indicador.numero)}.</strong> ${escapeHtml(result.indicador.indicador)}</td>
+          <td class="indicator-name">${escapeHtml(limparNomeIndicador(result.indicador.indicador))}</td>
           <td>${escapeHtml(result.competencia || "-")}</td>
           <td class="official-value">${result.lancamento ? StrategicResults.formatOfficialResult(result) : "-"}</td>
           <td>${StrategicResults.formatOfficialMeta(result)}</td>
           <td><span class="badge ${badgeClass(situation)}">${escapeHtml(situation)}</span></td>
           <td><span class="badge ${badgeClass(status)}">${escapeHtml(status)}</span></td>
-          <td><a class="secondary-action table-action dashboard-action" href="indicadores.html?indicadorId=${result.indicador.id}">Visualizar</a></td>
+          <td><a class="secondary-action table-action dashboard-action" href="indicadores.html?indicadorId=${result.indicador.id}" title="Visualizar indicador">Ver</a></td>
         </tr>
       `;
     }).join("");
@@ -367,12 +614,13 @@
 
   function refresh() {
     const results = getFilteredResults();
+    const tableResults = filterResultsByHighlight(filterResultsByChart(results));
     const groups = groupByPillar(results);
     renderCards(results);
-    renderInsights(results, groups);
-    renderPillarCards(groups);
     renderChart(groups);
-    renderTable(results);
+    renderHighlights(results);
+    renderChartFilterBanner();
+    renderTable(tableResults);
   }
 
   async function init({ data, user }) {
@@ -381,7 +629,13 @@
       user,
       indicators: Auth.filterIndicatorsByUser(data.indicadores, user),
       launches: Auth.filterLaunchesByUser(data.lancamentos, data.indicadores, user),
-      rules: data.regrasIndicadores || []
+      rules: data.regrasIndicadores || [],
+      chartFilter: {
+        pilar: null,
+        situacao: null
+      },
+      highlightFilterId: null,
+      highlightsPaused: false
     };
     fillFilters();
     document.querySelectorAll("[data-executive-filter]").forEach((select) => {
@@ -389,6 +643,20 @@
         if (select.dataset.executiveFilter === "periodo") updatePeriodFilters();
         refresh();
       });
+    });
+    document.getElementById("clearExecutiveChartFilter")?.addEventListener("click", clearChartFilter);
+    document.getElementById("clearExecutiveHighlightFilter")?.addEventListener("click", clearHighlightFilter);
+    document.getElementById("viewAllExecutiveIndicators")?.addEventListener("click", clearInteractiveFilters);
+    document.getElementById("toggleExecutiveHighlights")?.addEventListener("click", () => {
+      state.highlightsPaused = !state.highlightsPaused;
+      renderHighlights(getFilteredResults());
+    });
+    document.getElementById("executiveHighlightsTrack")?.addEventListener("click", (event) => {
+      const item = event.target instanceof Element
+        ? event.target.closest("[data-highlight-indicator-id]")
+        : null;
+      if (!item) return;
+      applyHighlightFilter(Number(item.dataset.highlightIndicatorId));
     });
     updatePeriodFilters();
     refresh();

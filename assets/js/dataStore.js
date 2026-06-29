@@ -1,16 +1,16 @@
 ﻿(function () {
   const DATA_FILES = {
-    usuarios: "data/usuarios.json",
-    planos: "data/planos.json",
-    pilares: "data/pilares.json",
-    unidades: "data/unidades.json",
-    diretorias: "data/diretorias.json",
-    indicadores: "data/indicadores.json",
-    metas: "data/metas-mensais.json",
-    regrasIndicadores: "data/regras-indicadores.json",
-    lancamentos: "data/lancamentos.json",
-    homologacoes: "data/homologacoes.json",
-    historico: "data/historico.json"
+    usuarios: "usuarios",
+    planos: "planos",
+    pilares: "pilares",
+    unidades: "unidades",
+    diretorias: "diretorias",
+    indicadores: "indicadores",
+    metas: "metas",
+    regrasIndicadores: "regrasIndicadores",
+    lancamentos: "lancamentos",
+    homologacoes: "homologacoes",
+    historico: "historico"
   };
 
   const OPERATIONAL_KEYS = ["lancamentos", "homologacoes", "historico", "dashboard", "relatorios"];
@@ -23,6 +23,7 @@
   const JSON_DB_LOCAL_BACKUP_PREFIX = "caixaLoterias:localBackupBeforeCentral:";
   const CENTRAL_BACKUP_PENDING_KEY = "caixaLoterias:centralBackupPending";
   const STORAGE_MODE_KEY = "caixaLoterias:storageMode";
+  const VALIDATION_BASE_KEY = "central_indicadores_base_validacao";
   const LOCAL_JSON_DB_NAME = "caixaLoteriasJsonDb";
   const LOCAL_JSON_DB_VERSION = 1;
   const LOCAL_JSON_DB_STORE = "collections";
@@ -279,10 +280,20 @@
     "valorInvestidoAcumuladoCompetencia",
     "lucroLiquidoBase",
     "arrecadacaoEcossistemaMes",
+    "arrecadacaoEcossistemaMes2026",
+    "arrecadacaoEcossistemaAcumulada2026",
+    "arrecadacaoEcossistema2025PeriodoEquivalente",
+    "arrecadacaoEcossistema2025Acumulada",
+    "arrecadacaoEcossistema2026PeriodoAtual",
     "arrecadacaoEcossistema2025",
     "arrecadacaoTotal2025",
     "arrecadacaoRedeLotericaMes2026",
-    "arrecadacaoRedeLotericaMes2025"
+    "arrecadacaoRedeLotericaMes2025",
+    "arrecadacaoRedeLotericaAcumulada2026",
+    "arrecadacaoRedeLoterica2026PeriodoAtual",
+    "arrecadacaoRedeLoterica2025PeriodoEquivalente",
+    "arrecadacaoRedeLoterica2025Acumulada",
+    "arrecadacaoTotalLoteriasPeriodo"
   ]);
   const CP1252_BYTES = {
     "â‚¬": 0x80, "â€š": 0x82, "Æ’": 0x83, "â€ž": 0x84, "â€¦": 0x85,
@@ -482,6 +493,55 @@
     return JSON.parse(JSON.stringify(bootstrap[key]));
   }
 
+  function createValidationMetadata() {
+    return {
+      sistema: "Central de Indicadores Estratégicos",
+      empresa: "CAIXA Loterias",
+      modo: "validacao_local",
+      versaoBase: "1.0",
+      dataAtualizacao: new Date().toISOString(),
+      anoReferencia: 2026
+    };
+  }
+
+  function readValidationBase() {
+    const raw = localStorage.getItem(VALIDATION_BASE_KEY);
+    if (!raw) return null;
+    try {
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === "object" ? parsed : null;
+    } catch (error) {
+      console.warn("Base de validação local inválida; usando coleções locais.", error);
+      return null;
+    }
+  }
+
+  function writeValidationBase(base) {
+    const normalized = {
+      metadata: {
+        ...createValidationMetadata(),
+        ...(base?.metadata || {}),
+        dataAtualizacao: new Date().toISOString()
+      },
+      ...base
+    };
+    localStorage.setItem(VALIDATION_BASE_KEY, JSON.stringify(normalized));
+    return normalized;
+  }
+
+  function readValidationCollection(key) {
+    const base = readValidationBase();
+    if (!base || base[key] === undefined) return null;
+    return base[key];
+  }
+
+  function syncValidationCollection(key, value) {
+    if (!DATA_FILES[key]) return;
+    const base = readValidationBase() || { metadata: createValidationMetadata() };
+    base[key] = value;
+    writeValidationBase(base);
+  }
+
   function requestToPromise(request) {
     return new Promise((resolve, reject) => {
       request.onsuccess = () => resolve(request.result);
@@ -503,11 +563,11 @@
       };
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => {
-        console.warn("Banco JSON local IndexedDB indisponivel; usando localStorage.");
+        console.warn("Armazenamento local IndexedDB indisponivel; usando localStorage.");
         resolve(null);
       };
       request.onblocked = () => {
-        console.warn("Banco JSON local bloqueado por outra aba; usando localStorage nesta execucao.");
+        console.warn("Armazenamento local bloqueado por outra aba; usando localStorage nesta execucao.");
         resolve(null);
       };
     });
@@ -528,7 +588,7 @@
       localStorage.setItem(storageKey(key), JSON.stringify(record.value));
       return record.value;
     } catch (error) {
-      console.warn(`Nao foi possivel ler ${key} do banco JSON local.`, error);
+      console.warn(`Nao foi possivel ler ${key} do armazenamento local.`, error);
       return null;
     }
   }
@@ -547,7 +607,7 @@
       }));
       return true;
     } catch (error) {
-      console.warn(`Nao foi possivel salvar ${key} no banco JSON local IndexedDB; localStorage foi mantido.`, error);
+      console.warn(`Nao foi possivel salvar ${key} no armazenamento local IndexedDB; localStorage foi mantido.`, error);
       return false;
     }
   }
@@ -559,7 +619,7 @@
       const transaction = db.transaction(LOCAL_JSON_DB_STORE, "readwrite");
       await requestToPromise(transaction.objectStore(LOCAL_JSON_DB_STORE).delete(key));
     } catch (error) {
-      console.warn(`Nao foi possivel remover ${key} do banco JSON local.`, error);
+      console.warn(`Nao foi possivel remover ${key} do armazenamento local.`, error);
     }
   }
 
@@ -570,7 +630,7 @@
       const transaction = db.transaction(LOCAL_JSON_DB_STORE, "readwrite");
       await requestToPromise(transaction.objectStore(LOCAL_JSON_DB_STORE).clear());
     } catch (error) {
-      console.warn("Nao foi possivel limpar o banco JSON local IndexedDB.", error);
+      console.warn("Nao foi possivel limpar o armazenamento local IndexedDB.", error);
     }
   }
 
@@ -781,6 +841,42 @@
       camposEntrada.repasseSocialAcumuladoCompetencia = camposEntrada.repasseSocialAcumulado;
       camposEntrada.repasseSocialAcumuladoMigrado = camposEntrada.repasseSocialAcumulado;
       delete camposEntrada.repasseSocialAcumulado;
+    }
+    return { ...launch, camposEntrada };
+  }
+
+  function migrarCampoEcossistemaLegado(launch) {
+    if (Number(launch?.indicadorId) !== 22) return launch;
+    const camposEntrada = { ...(launch.camposEntrada || {}) };
+    if (camposEntrada.arrecadacaoEcossistemaMes !== undefined && camposEntrada.arrecadacaoEcossistemaMes2026 === undefined) {
+      camposEntrada.arrecadacaoEcossistemaMes2026 = camposEntrada.arrecadacaoEcossistemaMes;
+      camposEntrada.arrecadacaoEcossistemaMesMigrado = camposEntrada.arrecadacaoEcossistemaMes;
+      delete camposEntrada.arrecadacaoEcossistemaMes;
+    }
+    if (camposEntrada.arrecadacaoEcossistema2025 !== undefined && camposEntrada.arrecadacaoEcossistema2025PeriodoEquivalente === undefined) {
+      camposEntrada.arrecadacaoEcossistema2025PeriodoEquivalente = camposEntrada.arrecadacaoEcossistema2025;
+      camposEntrada.arrecadacaoEcossistema2025Migrado = camposEntrada.arrecadacaoEcossistema2025;
+      delete camposEntrada.arrecadacaoEcossistema2025;
+    }
+    if (camposEntrada.arrecadacaoEcossistema2026PeriodoAtual !== undefined && camposEntrada.arrecadacaoEcossistemaAcumulada2026 === undefined) {
+      camposEntrada.arrecadacaoEcossistemaAcumulada2026 = camposEntrada.arrecadacaoEcossistema2026PeriodoAtual;
+      camposEntrada.arrecadacaoEcossistema2026PeriodoAtualMigrado = camposEntrada.arrecadacaoEcossistema2026PeriodoAtual;
+      delete camposEntrada.arrecadacaoEcossistema2026PeriodoAtual;
+    }
+    return { ...launch, camposEntrada };
+  }
+
+  function migrarCampoRedeLotericaLegado(launch) {
+    if (Number(launch?.indicadorId) !== 23) return launch;
+    const camposEntrada = { ...(launch.camposEntrada || {}) };
+    if (camposEntrada.arrecadacaoRedeLotericaMes2025 !== undefined && camposEntrada.arrecadacaoRedeLoterica2025PeriodoEquivalente === undefined) {
+      camposEntrada.arrecadacaoRedeLoterica2025PeriodoEquivalente = camposEntrada.arrecadacaoRedeLotericaMes2025;
+      camposEntrada.arrecadacaoRedeLotericaMes2025Migrado = camposEntrada.arrecadacaoRedeLotericaMes2025;
+      delete camposEntrada.arrecadacaoRedeLotericaMes2025;
+    }
+    if (camposEntrada.arrecadacaoRedeLoterica2026PeriodoAtual !== undefined && camposEntrada.arrecadacaoRedeLotericaAcumulada2026 === undefined) {
+      camposEntrada.arrecadacaoRedeLotericaAcumulada2026 = camposEntrada.arrecadacaoRedeLoterica2026PeriodoAtual;
+      camposEntrada.arrecadacaoRedeLoterica2026PeriodoAtualMigrado = camposEntrada.arrecadacaoRedeLoterica2026PeriodoAtual;
     }
     return { ...launch, camposEntrada };
   }
@@ -1038,55 +1134,17 @@
   }
 
   async function checkJsonDb() {
-    if (jsonDbAvailable !== null) return jsonDbAvailable;
-    if (window.location.protocol === "file:") {
-      jsonDbAvailable = false;
-      localStorage.setItem(STORAGE_MODE_KEY, "local");
-      return false;
-    }
-    try {
-      const response = await fetch("api/health", { cache: "no-store" });
-      jsonDbAvailable = response.ok;
-    } catch {
-      jsonDbAvailable = false;
-    }
-    localStorage.setItem(STORAGE_MODE_KEY, jsonDbAvailable ? "central" : "local");
-    return jsonDbAvailable;
+    jsonDbAvailable = false;
+    localStorage.setItem(STORAGE_MODE_KEY, "sql_local");
+    return false;
   }
 
   async function loadFromJsonDb(key) {
-    if (!(await checkJsonDb())) return null;
-    try {
-      const response = await fetch(`api/data/${encodeURIComponent(key)}`, { cache: "no-store" });
-      if (!response.ok) return null;
-      return response.json();
-    } catch (error) {
-      console.warn(`Banco JSON indisponÃ­vel para leitura de ${key}; usando fallback.`, error);
-      jsonDbAvailable = false;
-      localStorage.setItem(STORAGE_MODE_KEY, "local");
-      return null;
-    }
+    return null;
   }
 
   async function saveToJsonDb(key, value) {
-    if (!DATA_FILES[key] || !(await checkJsonDb())) return false;
-
-    try {
-      const response = await fetch(`api/data/${encodeURIComponent(key)}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(value)
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-      return true;
-    } catch (error) {
-      console.warn(`Nao foi possivel salvar ${key} no banco JSON. Dados preservados no localStorage.`, error);
-      jsonDbAvailable = false;
-      localStorage.setItem(STORAGE_MODE_KEY, "local");
-      return false;
-    }
+    return false;
   }
 
   function preserveLocalOperationalBackup(key, localValue, centralValue) {
@@ -1099,11 +1157,11 @@
     localStorage.setItem(jsonDbLocalBackupKey(key), JSON.stringify({
       key,
       createdAt: new Date().toISOString(),
-      reason: "Dados locais divergentes preservados antes de assumir a base JSON central.",
+      reason: "Dados locais divergentes preservados antes de atualizar a base de validacao.",
       data: normalizedLocal
     }));
     localStorage.setItem(CENTRAL_BACKUP_PENDING_KEY, "true");
-    console.warn(`Dados locais divergentes de ${key} foram preservados em backup local. A base JSON central foi mantida como fonte oficial.`);
+    console.warn(`Dados locais divergentes de ${key} foram preservados em copia local de seguranca.`);
   }
 
   function enqueueJsonDbWrite(key, value) {
@@ -1236,6 +1294,47 @@
         metaAnualDescricao: indicador.metaAnualDescricao || ""
       }])[0];
     }));
+  }
+
+  function completarLancamentosAusentes(lancamentos, indicadores, metas = [], ano = 2026) {
+    if (!Array.isArray(lancamentos) || !Array.isArray(indicadores)) return lancamentos;
+
+    const existentes = new Set(lancamentos.map((item) => (
+      `${Number(item.indicadorId)}:${Number(item.ano)}:${Number(item.mes)}`
+    )));
+    const metasPorIndicadorMes = new Map(
+      (metas || []).map((meta) => [`${Number(meta.indicadorId)}:${Number(meta.ano)}:${Number(meta.mes)}`, meta])
+    );
+    let nextId = lancamentos.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) + 1;
+    const ausentes = [];
+
+    indicadores
+      .filter((indicador) => indicador && indicador.ativo !== false)
+      .forEach((indicador) => {
+        MESES.forEach(([mes, nomeMes]) => {
+          const key = `${Number(indicador.id)}:${ano}:${mes}`;
+          if (existentes.has(key)) return;
+          const meta = metasPorIndicadorMes.get(key) || {};
+          ausentes.push(resetarDadosOperacionais([{
+            id: nextId++,
+            indicadorId: indicador.id,
+            ano,
+            mes,
+            competencia: `${ano}-${String(mes).padStart(2, "0")}`,
+            trimestre: `${Math.ceil(mes / 3)}TRI/${ano}`,
+            nomeMes: meta.nomeMes || nomeMes,
+            plano: indicador.plano || "",
+            pilar: indicador.pilar || "",
+            unidadeApuradora: indicador.unidadeApuradora || "",
+            diretoriaResponsavel: indicador.diretoriaResponsavel || "",
+            metaMensal: meta.metaMensal ?? null,
+            metaAnualDescricao: indicador.metaAnualDescricao || ""
+          }])[0]);
+          existentes.add(key);
+        });
+      });
+
+    return ausentes.length ? [...lancamentos, ...ausentes] : lancamentos;
   }
 
   async function resetarBaseOperacionalGlobal() {
@@ -1410,6 +1509,24 @@
             unidadeMedida: "percentual",
             metaAnualDescricao: "Implantar 100% das ações propostas",
             metrica: "Ações propostas publicadas/realizadas / 2 ações propostas em 2026"
+          };
+        }
+        if (Number(indicator.id) === 22) {
+          return {
+            ...normalized,
+            tipoCalculo: "crescimento_comparado_base_2025",
+            unidadeMedida: "percentual",
+            metaAnualDescricao: "Resultado 2026 ≥ 110% da base 2025",
+            metrica: "Arrecadação do ecossistema em 2026 / Arrecadação do ecossistema em 2025, sempre em período equivalente"
+          };
+        }
+        if (Number(indicator.id) === 23) {
+          return {
+            ...normalized,
+            tipoCalculo: "crescimento_rede_loterica_base_2025",
+            unidadeMedida: "percentual",
+            metaAnualDescricao: "Resultado 2026 ≥ 102% da base 2025",
+            metrica: "Arrecadação da Rede Lotérica em 2026 / Arrecadação da Rede Lotérica em 2025, sempre em período equivalente"
           };
         }
         return Number(indicator.id) === 9 ? {
@@ -1843,6 +1960,81 @@
             resultadoOficial: "ultima_posicao_homologada"
           };
         }
+        if (Number(rule.indicadorId) === 22) {
+          return {
+            ...rule,
+            nome: INDICATOR_NAMES[21],
+            tipoCalculo: "crescimento_comparado_base_2025",
+            tipoConsolidacao: "acumulado_periodo_equivalente",
+            unidadeMedida: "percentual",
+            metaAnualValor: 1.1,
+            parametrosCalculo: {
+              campoValor2026Mes: "arrecadacaoEcossistemaMes2026",
+              campoValor2026Acumulado: "arrecadacaoEcossistemaAcumulada2026",
+              campoBase2025PeriodoEquivalente: "arrecadacaoEcossistema2025PeriodoEquivalente",
+              campoBase2025Acumulada: "arrecadacaoEcossistema2025Acumulada",
+              campoNumerador: "arrecadacaoEcossistemaMes2026",
+              campoNumeradorLegado: "arrecadacaoEcossistemaMes",
+              campoNumerador2025: "arrecadacaoEcossistema2025PeriodoEquivalente",
+              campoNumerador2025Legado: "arrecadacaoEcossistema2025",
+              metaTipo: "crescimento_minimo",
+              metaCrescimento: 0.1,
+              metaIndice: 1.1,
+              sentidoMeta: "quanto_maior_melhor"
+            },
+            camposEntrada: [
+              { nome: "arrecadacaoEcossistema2025PeriodoEquivalente", rotulo: "Base 2025 - período equivalente", tipo: "moeda", obrigatorio: true },
+              { nome: "arrecadacaoEcossistemaMes2026", rotulo: "Arrecadação do ecossistema 2026 no mês", tipo: "moeda", obrigatorio: true },
+              { nome: "arrecadacaoEcossistemaAcumulada2026", rotulo: "Arrecadação do ecossistema 2026 acumulada até a competência", tipo: "moeda", obrigatorio: false },
+              { nome: "descricaoComposicaoEcossistema", rotulo: "Descrição da composição do ecossistema", tipo: "texto", obrigatorio: false },
+              { nome: "fonteEvidenciaEcossistema", rotulo: "Fonte/evidência", tipo: "texto", obrigatorio: false },
+              { nome: "observacaoArea", rotulo: "Observação da área", tipo: "texto", obrigatorio: false }
+            ],
+            campoResultadoPrincipal: "indiceEmRelacaoA2025",
+            campoPercentualAtingido: "percentualAtingidoMensal",
+            resultadoOficial: "crescimento_acumulado_periodo_equivalente"
+          };
+        }
+        if (Number(rule.indicadorId) === 23) {
+          return {
+            ...rule,
+            nome: INDICATOR_NAMES[22],
+            tipoCalculo: "crescimento_rede_loterica_base_2025",
+            tipoConsolidacao: "acumulado_periodo_equivalente",
+            unidadeMedida: "percentual",
+            metaAnualValor: 1.02,
+            parametrosCalculo: {
+              campoValor2026Mes: "arrecadacaoRedeLotericaMes2026",
+              campoValor2026Acumulado: "arrecadacaoRedeLotericaAcumulada2026",
+              campoValor2026PeriodoAtual: "arrecadacaoRedeLoterica2026PeriodoAtual",
+              campoBase2025PeriodoEquivalente: "arrecadacaoRedeLoterica2025PeriodoEquivalente",
+              campoBase2025Acumulada: "arrecadacaoRedeLoterica2025Acumulada",
+              campoBase2025PeriodoAtual: "arrecadacaoRedeLoterica2025PeriodoEquivalente",
+              campoNumerador: "arrecadacaoRedeLotericaMes2026",
+              campoNumeradorLegado: "arrecadacaoRedeLotericaMes2026",
+              campoNumerador2025: "arrecadacaoRedeLoterica2025PeriodoEquivalente",
+              campoNumerador2025Legado: "arrecadacaoRedeLotericaMes2025",
+              metaTipo: "incremento_minimo",
+              metaCrescimento: 0.02,
+              metaIndice: 1.02,
+              sentidoMeta: "quanto_maior_melhor",
+              mensagemBaseInsuficiente: "Dados insuficientes: informe a arrecadação da Rede Lotérica em 2025 para o período equivalente.",
+              mensagemRealizadoInsuficiente: "Arrecadação da Rede Lotérica 2026 deve ser informada e não pode ser negativa."
+            },
+            camposEntrada: [
+              { nome: "arrecadacaoRedeLoterica2025PeriodoEquivalente", rotulo: "Base 2025 - Rede Lotérica no período equivalente", tipo: "moeda", obrigatorio: true },
+              { nome: "arrecadacaoRedeLotericaMes2026", rotulo: "Arrecadação Rede Lotérica 2026 no mês", tipo: "moeda", obrigatorio: true },
+              { nome: "arrecadacaoRedeLotericaAcumulada2026", rotulo: "Arrecadação Rede Lotérica 2026 acumulada até a competência", tipo: "moeda", obrigatorio: false },
+              { nome: "arrecadacaoRedeLoterica2026PeriodoAtual", rotulo: "Arrecadação Rede Lotérica 2026 no período atual", tipo: "moeda", obrigatorio: false },
+              { nome: "arrecadacaoTotalLoteriasPeriodo", rotulo: "Arrecadação total de loterias no período", tipo: "moeda", obrigatorio: false },
+              { nome: "fonteEvidenciaRedeLoterica", rotulo: "Fonte/evidência da Rede Lotérica", tipo: "texto", obrigatorio: false },
+              { nome: "observacaoArea", rotulo: "Observação da área", tipo: "texto", obrigatorio: false }
+            ],
+            campoResultadoPrincipal: "indiceEmRelacaoA2025",
+            campoPercentualAtingido: "percentualAtingidoMensal",
+            resultadoOficial: "crescimento_acumulado_periodo_equivalente"
+          };
+        }
         if (Number(rule.indicadorId) === 19) {
           return {
             ...rule,
@@ -2018,6 +2210,14 @@
         ...meta,
         metaMensal: getJogoResponsavelCapacitacaoMetaTrimestral(meta.ano, meta.mes),
         fonte: "curva_trimestral_jogo_responsavel_capacitacao_2026"
+      } : Number(meta.indicadorId) === 22 ? {
+        ...meta,
+        metaMensal: 1.1,
+        fonte: "crescimento_minimo_ecossistema_base_2025"
+      } : Number(meta.indicadorId) === 23 ? {
+        ...meta,
+        metaMensal: 1.02,
+        fonte: "crescimento_minimo_rede_loterica_base_2025"
       } : Number(meta.indicadorId) === 5 ? {
         ...meta,
         metaMensal: getGgrMetaAcumulada(meta.ano, meta.mes),
@@ -2056,7 +2256,7 @@
     }
 
     if (key === "lancamentos" && Array.isArray(value)) {
-      return value.map((launch) => normalizarCamposMoeda(migrarCampoJogoResponsavelCapacitacaoLegado(migrarCampoVisibilidadeRepassesLegado(migrarCampoIncentivoSocioambientalLegado(migrarCampoApoioSocioambientalLegado(migrarCampoPrincipiosJogoResponsavelLegado(migrarCampoCapacidadeTicLegado(migrarCampoPlataformaJogosLegado(migrarCampoAprimoramentoLegado(migrarCampoCapacitacaoLegado(migrarCampoClimaLegado(migrarCampoNpsLegado(migrarCampoOfertasLegado(migrarCampoRepasseSocialLegado(migrarCampoGgrLegado({
+      return value.map((launch) => normalizarCamposMoeda(migrarCampoJogoResponsavelCapacitacaoLegado(migrarCampoVisibilidadeRepassesLegado(migrarCampoIncentivoSocioambientalLegado(migrarCampoApoioSocioambientalLegado(migrarCampoPrincipiosJogoResponsavelLegado(migrarCampoCapacidadeTicLegado(migrarCampoPlataformaJogosLegado(migrarCampoAprimoramentoLegado(migrarCampoCapacitacaoLegado(migrarCampoClimaLegado(migrarCampoNpsLegado(migrarCampoOfertasLegado(migrarCampoRedeLotericaLegado(migrarCampoEcossistemaLegado(migrarCampoRepasseSocialLegado(migrarCampoGgrLegado({
         ...launch,
         pilar: getCanonicalPillar(Number(launch.indicadorId)),
         competencia: launch.competencia || `${launch.ano}-${String(launch.mes).padStart(2, "0")}`,
@@ -2133,13 +2333,21 @@
           metaMensal: getJogoResponsavelCapacitacaoMetaTrimestral(launch.ano, launch.mes),
           metaAnualDescricao: "≥ 90% do público-alvo capacitado em pelo menos 2 iniciativas de Jogo Responsável"
         } : {}),
+        ...(Number(launch.indicadorId) === 22 ? {
+          metaMensal: 1.1,
+          metaAnualDescricao: "Resultado 2026 ≥ 110% da base 2025"
+        } : {}),
+        ...(Number(launch.indicadorId) === 23 ? {
+          metaMensal: 1.02,
+          metaAnualDescricao: "Resultado 2026 ≥ 102% da base 2025"
+        } : {}),
         ...(Number(launch.indicadorId) === 8 ? {
           unidadeApuradora: "SUCOL",
           diretoriaResponsavel: "DICOT",
           metaMensal: 0.2805,
           metaAnualDescricao: "Aumentar em 05 p.p. as vendas provenientes de canais digitais."
         } : {})
-      }))))))))))))))));
+      }))))))))))))))))));
     }
 
     if ((key === "homologacoes" || key === "historico") && Array.isArray(value)) {
@@ -2176,6 +2384,14 @@
       return cache[key];
     }
 
+    const validationValue = readValidationCollection(key);
+    if (validationValue !== null) {
+      cache[key] = normalizeData(key, validationValue);
+      localStorage.setItem(storageKey(key), JSON.stringify(cache[key]));
+      localStorage.setItem(STORAGE_MODE_KEY, "validacao_local");
+      return cache[key];
+    }
+
     const jsonDbValue = await loadFromJsonDb(key);
     if (jsonDbValue !== null) {
       const localValue = hasLocalData(key) ? readLocal(key) : null;
@@ -2187,7 +2403,7 @@
         localStorage.setItem(jsonDbMigrationKey(key), "central");
       }
       if (key === "lancamentos") {
-        console.log("Lancamentos carregados do banco JSON:", cache[key]);
+        console.log("Lancamentos carregados do armazenamento central legado:", cache[key]);
       }
       return cache[key];
     }
@@ -2200,24 +2416,15 @@
           localStorage.setItem(storageKey(key), JSON.stringify(cache[key]));
         }
         if (key === "lancamentos") {
-          console.log("Lancamentos carregados do banco JSON local:", cache[key]);
+          console.log("Lancamentos carregados do armazenamento local:", cache[key]);
         }
         return cache[key];
       }
     }
 
-    let initialData = null;
-    try {
-      const response = await fetch(DATA_FILES[key]);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-      initialData = await response.json();
-    } catch (error) {
-      initialData = getBootstrapData(key);
-      if (initialData === null) {
-        throw new Error(`Nao foi possivel carregar ${DATA_FILES[key]}`);
-      }
+    const initialData = getBootstrapData(key);
+    if (initialData === null) {
+      throw new Error(`Nao foi possivel carregar a semente local ${DATA_FILES[key]}`);
     }
 
     cache[key] = normalizeData(key, initialData);
@@ -2240,7 +2447,49 @@
     const entries = await Promise.all(
       Object.keys(DATA_FILES).map(async (key) => [key, await loadJson(key)])
     );
-    return Object.fromEntries(entries);
+    const data = Object.fromEntries(entries);
+    const lancamentosCompletos = completarLancamentosAusentes(data.lancamentos, data.indicadores, data.metas);
+    if (lancamentosCompletos !== data.lancamentos) {
+      data.lancamentos = normalizeData("lancamentos", lancamentosCompletos);
+      await saveLocal("lancamentos", data.lancamentos);
+    }
+    return data;
+  }
+
+  async function carregarBaseValidacaoCompleta() {
+    const data = await loadAll();
+    const base = {
+      metadata: createValidationMetadata(),
+      ...data
+    };
+    writeValidationBase(base);
+    return base;
+  }
+
+  async function salvarBaseValidacaoCompleta(base) {
+    if (!base || typeof base !== "object") {
+      throw new Error("Base de validação inválida.");
+    }
+
+    const normalizedBase = {
+      metadata: {
+        ...createValidationMetadata(),
+        ...(base.metadata || {})
+      }
+    };
+
+    Object.keys(DATA_FILES).forEach((key) => {
+      const value = base[key] !== undefined ? base[key] : getBootstrapData(key);
+      normalizedBase[key] = normalizeData(key, value || []);
+      cache[key] = normalizedBase[key];
+      localStorage.setItem(storageKey(key), JSON.stringify(normalizedBase[key]));
+      writeLocalJsonDb(key, normalizedBase[key]);
+      enqueueJsonDbWrite(key, normalizedBase[key]);
+    });
+
+    writeValidationBase(normalizedBase);
+    localStorage.setItem(STORAGE_MODE_KEY, "validacao_local");
+    return normalizedBase;
   }
 
   async function getLancamentos() {
@@ -2258,6 +2507,7 @@
 
   function saveLocal(key, value) {
     cache[key] = value;
+    syncValidationCollection(key, value);
     if (key === "lancamentos") {
       console.log("Lancamentos salvos:", value);
     }
@@ -2270,19 +2520,21 @@
   async function getStorageInfo() {
     const centralAvailable = await checkJsonDb();
     return {
-      mode: centralAvailable ? "central" : "browser",
+      mode: readValidationBase() ? "validacao_local" : centralAvailable ? "central" : "browser",
       centralAvailable,
       localDatabase: "IndexedDB/localStorage",
       hasPendingLocalBackup: localStorage.getItem(CENTRAL_BACKUP_PENDING_KEY) === "true",
-      message: centralAvailable
-        ? "Base central JSON ativa. As informacoes sao compartilhadas entre perfis do Chrome neste computador."
-        : "Banco JSON local ativo no navegador. Nao e necessario iniciar servidor ou arquivo .bat."
+      message: readValidationBase()
+        ? "Modo validação local ativo. Os dados são salvos automaticamente neste perfil do navegador."
+        : centralAvailable
+        ? "Base SQL local ativa."
+        : "Armazenamento local do navegador ativo. Nao e necessario iniciar servidor ou arquivo .bat."
     };
   }
 
   async function publicarDadosLocaisNaBaseCentral() {
     if (!(await checkJsonDb())) {
-      throw new Error("Base central JSON nao esta ativa. O banco JSON local do navegador ja esta em uso.");
+      throw new Error("Publicacao em base JSON foi desativada. Use o SQLite local versionado.");
     }
 
     const publishedKeys = [];
@@ -2339,6 +2591,7 @@
     localStorage.removeItem(CURRENCY_MIGRATION_KEY);
     localStorage.removeItem(CENTRAL_BACKUP_PENDING_KEY);
     localStorage.removeItem(STORAGE_MODE_KEY);
+    localStorage.removeItem(VALIDATION_BASE_KEY);
     OPERATIONAL_KEYS.forEach((key) => {
       localStorage.removeItem(jsonDbMigrationKey(key));
       localStorage.removeItem(jsonDbLocalBackupKey(key));
@@ -2350,8 +2603,11 @@
 
   window.DataStore = {
     STORAGE_KEYS,
+    VALIDATION_BASE_KEY,
     loadJson,
     loadAll,
+    carregarBaseValidacaoCompleta,
+    salvarBaseValidacaoCompleta,
     saveLocal,
     salvarLancamentos,
     carregarLancamentos,
@@ -2361,6 +2617,7 @@
     getStorageInfo,
     publicarDadosLocaisNaBaseCentral,
     gerarLancamentosLimpos,
+    completarLancamentosAusentes,
     resetarBaseOperacionalGlobal,
     resetarDadosOperacionais,
     resetarLancamentosIniciais,

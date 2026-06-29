@@ -9,6 +9,7 @@
   <script src="assets/js/currency.js?v=PERSISTENCIA-CENTRAL-002" defer></script>
   <script src="assets/js/bootstrap-data.js?v=PERSISTENCIA-CENTRAL-002" defer></script>
   <script src="assets/js/dataStore.js?v=PERSISTENCIA-CENTRAL-002" defer></script>
+  <script src="assets/js/databaseService.js?v=PERSISTENCIA-CENTRAL-002" defer></script>
   <script src="assets/js/auth.js?v=PERSISTENCIA-CENTRAL-002" defer></script>
   <script src="assets/js/calculations.js?v=PERSISTENCIA-CENTRAL-002" defer></script>
   <script src="assets/js/formulas.js?v=PERSISTENCIA-CENTRAL-002" defer></script>
@@ -28,7 +29,7 @@
           <h1>Resumo Executivo</h1>
           <p>Leitura consolidada do desempenho oficial dos indicadores estratégicos.</p>
         </div>
-        <a class="secondary-action executive-detail-link" href="dashboard.html">Ver visão detalhada</a>
+        <a class="secondary-action executive-detail-link" href="indicadores.html">Ver catálogo de indicadores</a>
       </section>
 
       <section class="filters executive-filters" aria-label="Filtros do resumo executivo">
@@ -44,18 +45,6 @@
 
       <section id="executiveCards" class="executive-summary-grid" aria-label="Indicadores gerais"></section>
 
-      <section id="executiveInsights" class="executive-insights" aria-label="Destaques executivos"></section>
-
-      <section aria-labelledby="pillarCardsTitle">
-        <div class="section-heading executive-section-heading">
-          <div>
-            <p class="eyebrow">Desempenho por pilar</p>
-            <h2 id="pillarCardsTitle">Panorama dos pilares</h2>
-          </div>
-        </div>
-        <div id="executivePillarCards" class="executive-pillar-grid"></div>
-      </section>
-
       <section class="panel executive-chart-panel" aria-labelledby="pillarChartTitle">
         <div class="section-heading executive-section-heading">
           <div>
@@ -65,19 +54,22 @@
         </div>
         <div id="executiveChartEmpty" class="empty-state" hidden>Não há indicadores para os filtros selecionados.</div>
         <canvas id="executivePillarChart" height="250"></canvas>
-        <div class="table-wrap executive-breakdown-table">
-          <table>
-            <thead>
-              <tr>
-                <th>Pilar</th>
-                <th>Atingidos</th>
-                <th>Abaixo da meta</th>
-                <th>Críticos</th>
-                <th>Sem dados</th>
-              </tr>
-            </thead>
-            <tbody id="executivePillarBreakdown"></tbody>
-          </table>
+      </section>
+
+      <section id="executiveHighlights" class="panel executive-highlights-panel" aria-labelledby="executiveHighlightsTitle">
+        <div class="section-heading executive-section-heading">
+          <div>
+            <p class="eyebrow">Leitura rápida</p>
+            <h2 id="executiveHighlightsTitle">Destaques dos Indicadores</h2>
+          </div>
+          <div class="executive-highlights-actions">
+            <button id="toggleExecutiveHighlights" class="secondary-action table-action" type="button">Pausar</button>
+            <button id="viewAllExecutiveIndicators" class="secondary-action table-action" type="button">Ver todos</button>
+          </div>
+        </div>
+        <div id="executiveHighlightsEmpty" class="empty-state" hidden>Nenhum indicador encontrado para os filtros selecionados.</div>
+        <div id="executiveHighlightsScroller" class="executive-highlights-scroller" aria-label="Destaques dos indicadores">
+          <div id="executiveHighlightsTrack" class="executive-highlights-track"></div>
         </div>
       </section>
 
@@ -89,8 +81,15 @@
           </div>
           <strong id="executiveResultCount" class="result-count"></strong>
         </div>
+        <div id="executiveChartFilterBanner" class="executive-chart-filter-banner" hidden>
+          <span id="executiveChartFilterText"></span>
+          <span class="executive-active-filter-actions">
+            <button id="clearExecutiveHighlightFilter" class="secondary-action table-action" type="button" hidden>Limpar filtro</button>
+            <button id="clearExecutiveChartFilter" class="secondary-action table-action" type="button" hidden>Limpar filtro do gráfico</button>
+          </span>
+        </div>
         <div class="table-wrap executive-table-wrap">
-          <table>
+          <table class="tabela-executiva">
             <thead>
               <tr>
                 <th>Plano</th>

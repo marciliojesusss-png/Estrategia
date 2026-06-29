@@ -1,0 +1,84 @@
+{
+  "generatedAt": "2026-06-29T11:57:11.188579+00:00",
+  "database": "database\\indicadores.sqlite",
+  "databaseSha256": "a5b33db467e06452ea7290f23e357b9c591388ce21b63854fb7109e45d11cc6c",
+  "jsonFiles": {
+    "usuarios.json": null,
+    "planos.json": null,
+    "pilares.json": null,
+    "unidades.json": null,
+    "diretorias.json": null,
+    "indicadores.json": null,
+    "metas-mensais.json": null,
+    "regras-indicadores.json": null,
+    "lancamentos.json": null,
+    "homologacoes.json": null,
+    "historico.json": null
+  },
+  "counts": {
+    "json": {
+      "usuarios": 13,
+      "planos": 2,
+      "pilares": 6,
+      "unidades": 6,
+      "diretorias": 4,
+      "indicadores": 23,
+      "metas": 141,
+      "regrasIndicadores": 23,
+      "lancamentos": 276,
+      "homologacoes": 26,
+      "historico": 78
+    },
+    "sqlite": {
+      "usuarios": 13,
+      "indicadores": 23,
+      "lancamentos": 276,
+      "homologacoes": 26,
+      "auditoria": 79,
+      "configuracoes": 10
+    }
+  },
+  "checks": [
+    {
+      "name": "indicadores_ids",
+      "passed": true,
+      "expectedCount": 23,
+      "actualCount": 23,
+      "missing": [],
+      "extra": []
+    },
+    {
+      "name": "lancamentos_indicador_competencia",
+      "passed": true,
+      "expectedCount": 276,
+      "actualCount": 276,
+      "missing": [],
+      "extra": []
+    },
+    {
+      "name": "homologacoes_ids",
+      "passed": true,
+      "expectedCount": 26,
+      "actualCount": 26,
+      "missing": [],
+      "extra": []
+    },
+    {
+      "name": "auditoria_ids",
+      "passed": true,
+      "expectedCount": 78,
+      "actualCount": 78,
+      "missing": [],
+      "extra": []
+    },
+    {
+      "name": "usuarios_ids",
+      "passed": true,
+      "expectedCount": 13,
+      "actualCount": 13,
+      "missing": [],
+      "extra": []
+    }
+  ],
+  "status": "ok"
+}

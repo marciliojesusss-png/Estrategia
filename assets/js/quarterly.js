@@ -241,7 +241,7 @@
     const homologatedNames = monthlyComposition
       .filter((item) => item.status === STATUS_LANCAMENTO.HOMOLOGADO)
       .map((item) => item.nomeMes);
-    const meta = getReferenceMeta(regra, quarterLaunches, number, label);
+    let meta = getReferenceMeta(regra, quarterLaunches, number, label);
 
     if (!number || !months.length || homologatedCount === 0) {
       return {
@@ -282,6 +282,14 @@
       performance = officialPresentedResult !== null && meta ? officialPresentedResult / meta : null;
     }
 
+    if (["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(regra?.tipoCalculo) && validCalculation) {
+      meta = toNumber(validCalculation.metaCalculada2026);
+      calculatedQuarterResult = toNumber(validCalculation.realizado2026Periodo);
+      officialPresentedResult = calculatedQuarterResult;
+      result = calculatedQuarterResult;
+      performance = toNumber(validCalculation.percentualAtingidoAnual ?? validCalculation.percentualAtingidoMensal);
+    }
+
     if (
       result !== null &&
       meta !== null &&
@@ -305,6 +313,9 @@
       canaisAcumuladoTrimestre: regra?.tipoCalculo === "razao_pix" ? validCalculation?.canaisEletronicosAcumulado ?? null : null,
       canaisDigitaisAcumuladoTrimestre: regra?.tipoCalculo === "razao_canais_digitais" ? validCalculation?.canaisEletronicosAcumulado ?? null : null,
       produtosLoteriasAcumuladoTrimestre: regra?.tipoCalculo === "razao_canais_digitais" ? validCalculation?.produtosLoteriasAcumulado ?? null : null,
+      baseReferencia2025Trimestre: ["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(regra?.tipoCalculo) ? validCalculation?.baseReferencia2025Periodo ?? null : null,
+      indiceTrimestral: ["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(regra?.tipoCalculo) ? validCalculation?.indiceEmRelacaoA2025 ?? null : null,
+      crescimentoTrimestral: ["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(regra?.tipoCalculo) ? validCalculation?.crescimentoVs2025 ?? null : null,
       desempenhoTrimestral: performance,
       metaTrimestral: meta,
       situacaoTrimestral: getSituation(validCalculation, performance),

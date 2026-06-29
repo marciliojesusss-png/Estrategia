@@ -2,6 +2,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
+const { loadBootstrapData } = require("./helpers/bootstrap-data");
 
 function createLocalStorage() {
   const store = new Map();
@@ -24,13 +25,7 @@ function createLocalStorage() {
   };
 }
 
-async function createDataStore({ localLaunches, centralLaunches }) {
-  const writes = [];
-  const central = {
-    lancamentos: centralLaunches,
-    homologacoes: [],
-    historico: []
-  };
+async function createDataStore({ localLaunches }) {
   const localStorage = createLocalStorage();
   if (localLaunches) {
     localStorage.setItem("caixaLoterias:lancamentos", JSON.stringify(localLaunches));
@@ -49,22 +44,10 @@ async function createDataStore({ localLaunches, centralLaunches }) {
     },
     localStorage,
     window: {
-      location: { protocol: "http:" }
+      location: { protocol: "http:" },
+      CAIXA_LOTERIAS_BOOTSTRAP_DATA: loadBootstrapData(path.join(__dirname, ".."))
     },
-    fetch: async (url, options = {}) => {
-      if (url === "api/health") {
-        return { ok: true, json: async () => ({ ok: true }) };
-      }
-      const match = String(url).match(/^api\/data\/(.+)$/);
-      if (!match) throw new Error(`URL inesperada: ${url}`);
-      const key = decodeURIComponent(match[1]);
-      if (options.method === "PUT" || options.method === "POST") {
-        central[key] = JSON.parse(options.body);
-        writes.push({ key, value: central[key] });
-        return { ok: true, json: async () => ({ ok: true }) };
-      }
-      return { ok: true, json: async () => central[key] ?? [] };
-    }
+    fetch: async () => ({ ok: false, status: 404, json: async () => null })
   };
   context.window.CurrencyBR = context.CurrencyBR;
   context.window.localStorage = localStorage;
@@ -75,30 +58,54 @@ async function createDataStore({ localLaunches, centralLaunches }) {
     context
   );
 
-  return { DataStore: context.window.DataStore, localStorage, central, writes };
+  return { DataStore: context.window.DataStore, localStorage };
 }
 
 (async () => {
   const localLaunches = [{ id: 1, indicadorId: 1, ano: 2026, mes: 1, status: "Local correto" }];
-  const centralLaunches = [{ id: 1, indicadorId: 1, ano: 2026, mes: 1, status: "Central oficial" }];
-
-  const { DataStore, localStorage, central, writes } = await createDataStore({ localLaunches, centralLaunches });
+  const { DataStore, localStorage } = await createDataStore({ localLaunches });
   const loaded = await DataStore.loadJson("lancamentos");
 
-  assert.equal(loaded[0].status, "Central oficial", "A base central deve vencer o localStorage ao carregar.");
-  assert.equal(
-    JSON.parse(localStorage.getItem("caixaLoterias:localBackupBeforeCentral:lancamentos")).data[0].status,
-    "Local correto",
-    "O localStorage divergente deve ser preservado como backup."
+  assert.equal(loaded[0].status, "Local correto", "Sem servidor JSON, a base local do navegador deve ser preservada.");
+  assert.equal(localStorage.getItem("caixaLoterias:localBackupBeforeCentral:lancamentos"), null);
+  await assert.rejects(
+    () => DataStore.publicarDadosLocaisNaBaseCentral(),
+    /Publicacao em base JSON foi desativada/
   );
 
-  const publishResult = await DataStore.publicarDadosLocaisNaBaseCentral();
-  assert.deepEqual(Array.from(publishResult.keys), ["lancamentos"]);
-  assert.equal(central.lancamentos[0].status, "Local correto", "A publicação explícita deve promover o backup local para a base central.");
-  assert.equal(writes.some((item) => item.key === "lancamentos"), true);
-  assert.equal(localStorage.getItem("caixaLoterias:localBackupBeforeCentral:lancamentos"), null);
+  const launchesWithout23 = Array.from({ length: 12 }, (_, index) => ({
+    id: index + 1,
+    indicadorId: 1,
+    ano: 2026,
+    mes: index + 1,
+    status: "Existente"
+  }));
+  const completed = DataStore.completarLancamentosAusentes(
+    launchesWithout23,
+    [
+      { id: 1, indicador: "Indicador existente", ativo: true, unidadeApuradora: "SUCOL", diretoriaResponsavel: "DICOT" },
+      {
+        id: 23,
+        indicador: "Participação da Rede Lotérica nos Negócios",
+        ativo: true,
+        plano: "PN",
+        pilar: "Atuação em Ecossistema",
+        unidadeApuradora: "SUCOL",
+        diretoriaResponsavel: "DICOT",
+        metaAnualDescricao: "Resultado 2026 ≥ 102% da base 2025"
+      }
+    ],
+    [
+      { indicadorId: 23, ano: 2026, mes: 1, nomeMes: "Janeiro", metaMensal: 1.02 }
+    ]
+  );
+  const redeLotericaLaunches = completed.filter((item) => Number(item.indicadorId) === 23);
+  assert.equal(redeLotericaLaunches.length, 12, "Indicador 23 deve ganhar os 12 lançamentos mensais ausentes.");
+  assert.equal(redeLotericaLaunches[0].unidadeApuradora, "SUCOL");
+  assert.equal(redeLotericaLaunches[0].metaMensal, 1.02);
+  assert.equal(redeLotericaLaunches[0].status, "Não iniciado");
 
-  console.log("Testes de persistência central/localStorage OK");
+  console.log("Testes de persistência local/SQLite OK");
 })().catch((error) => {
   console.error(error);
   process.exit(1);

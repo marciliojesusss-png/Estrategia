@@ -2,6 +2,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
+const { loadBootstrapData } = require("./helpers/bootstrap-data");
 
 const root = path.resolve(__dirname, "..");
 const indicatorNames = [
@@ -38,9 +39,10 @@ const pillarNames = [
   "Atuação em Ecossistema"
 ];
 
-const indicators = JSON.parse(fs.readFileSync(path.join(root, "data", "indicadores.json"), "utf8"));
-const pillars = JSON.parse(fs.readFileSync(path.join(root, "data", "pilares.json"), "utf8"));
-const rules = JSON.parse(fs.readFileSync(path.join(root, "data", "regras-indicadores.json"), "utf8"));
+const bootstrap = loadBootstrapData(root);
+const indicators = bootstrap.indicadores;
+const pillars = bootstrap.pilares;
+const rules = bootstrap.regrasIndicadores;
 
 assert.deepEqual(indicators.map((item) => item.indicador), indicatorNames);
 assert.deepEqual(pillars.map((item) => item.nome), pillarNames);

@@ -23,6 +23,10 @@
       .replaceAll("'", "&#039;");
   }
 
+  function limparNomeIndicador(nome) {
+    return String(nome || "").replace(/^\s*\d+\.\s*/, "").trim();
+  }
+
   function badgeClass(value) {
     if (value === "Fechado" || value === "Atingido") return "ok";
     if (value === "Parcial" || value === "Abaixo da meta" || value === "Em andamento") return "warn";
@@ -110,7 +114,7 @@
       })));
     document.getElementById("quarterAlerts").innerHTML = alerts.slice(0, 12).map(({ indicator, quarter }) => `
       <div class="notice ${quarter.possuiMesDevolvido ? "danger" : "warning"}">
-        <strong>${escapeHtml(quarter.trimestre)} — ${escapeHtml(indicator.indicador)}</strong>
+        <strong>${escapeHtml(quarter.trimestre)} — ${escapeHtml(limparNomeIndicador(indicator.indicador))}</strong>
         <span>${escapeHtml(quarter.mensagem)}</span>
       </div>
     `).join("");
@@ -125,15 +129,22 @@
     `).join("");
   }
 
+  function quarterValueUnit(rule) {
+    return ["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(rule?.tipoCalculo) ? "moeda" : rule?.unidadeMedida;
+  }
+
   function quarterCells(row) {
+    const unit = quarterValueUnit(row.rule);
     return row.quarters.map((quarter) => `
-      <td>${Calculations.formatarValor(quarter.metaTrimestral, row.rule.unidadeMedida)}</td>
+      <td>${Calculations.formatarValor(quarter.metaTrimestral, unit)}</td>
       <td class="official-value">
-        ${Calculations.formatarValor(quarter.resultadoTrimestral, row.rule.unidadeMedida)}
+        ${Calculations.formatarValor(quarter.resultadoTrimestral, unit)}
         ${row.rule.tipoCalculo === "razao_pix" && quarter.resultadoCalculadoTrimestral != null
           ? `<small>Calculado: ${Calculations.formatarValor(quarter.resultadoCalculadoTrimestral, row.rule.unidadeMedida)}<br>PIX: ${Calculations.formatarMoedaBR(quarter.pixAcumuladoTrimestre)}<br>Canais: ${Calculations.formatarMoedaBR(quarter.canaisAcumuladoTrimestre)}</small>`
           : row.rule.tipoCalculo === "razao_canais_digitais" && quarter.resultadoCalculadoTrimestral != null
             ? `<small>Canais eletrônicos: ${Calculations.formatarMoedaBR(quarter.canaisDigitaisAcumuladoTrimestre)}<br>Produtos de loterias: ${Calculations.formatarMoedaBR(quarter.produtosLoteriasAcumuladoTrimestre)}</small>`
+          : ["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(row.rule.tipoCalculo) && quarter.baseReferencia2025Trimestre != null
+            ? `<small>Base 2025: ${Calculations.formatarMoedaBR(quarter.baseReferencia2025Trimestre)}<br>Indice: ${Calculations.formatarPercentual(quarter.indiceTrimestral)}<br>Crescimento: ${Calculations.formatarPercentual(quarter.crescimentoTrimestral)}</small>`
           : ""}
       </td>
       <td>
@@ -163,7 +174,7 @@
           <tbody>
             ${items.map((row) => `
               <tr>
-                <td class="indicator-name"><strong>${escapeHtml(row.indicator.numero)}.</strong> ${escapeHtml(row.indicator.indicador)}</td>
+                <td class="indicator-name">${escapeHtml(limparNomeIndicador(row.indicator.indicador))}</td>
                 ${quarterCells(row)}
                 <td><a class="secondary-action table-action dashboard-action" href="indicadores.html?indicadorId=${row.indicator.id}">Visualizar</a></td>
               </tr>

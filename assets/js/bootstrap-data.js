@@ -538,9 +538,9 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "plano": "PEI",
       "unidadeApuradora": "SUCOL",
       "diretoriaResponsavel": "DICOT",
-      "metaAnualDescricao": "≥ 10% em relação ao exercício de 2025",
-      "metrica": "(Arrecadação via ecossistema / Arrecadação total) × 100",
-      "tipoCalculo": "crescimento_relativo_participacao",
+      "metaAnualDescricao": "Resultado 2026 ≥ 110% da base 2025",
+      "metrica": "Arrecadação do ecossistema em 2026 / Arrecadação do ecossistema em 2025, sempre em período equivalente",
+      "tipoCalculo": "crescimento_comparado_base_2025",
       "unidadeMedida": "percentual",
       "ativo": true
     },
@@ -553,9 +553,9 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "plano": "PN",
       "unidadeApuradora": "SUCOL",
       "diretoriaResponsavel": "DICOT",
-      "metaAnualDescricao": "Alcançar 2% de incremento na arrecadação de loterias na Rede Lotérica",
-      "metrica": "(Resultado Arrecadação na Rede Lotérica 2026) / (Resultado Arrecadação Rede Lotérica 2025) x 100",
-      "tipoCalculo": "percentual_direto",
+      "metaAnualDescricao": "Resultado 2026 ≥ 102% da base 2025",
+      "metrica": "Arrecadação da Rede Lotérica em 2026 / Arrecadação da Rede Lotérica em 2025, sempre em período equivalente",
+      "tipoCalculo": "crescimento_rede_loterica_base_2025",
       "unidadeMedida": "percentual",
       "ativo": true
     }
@@ -1782,8 +1782,8 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "ano": 2026,
       "mes": 1,
       "nomeMes": "Janeiro",
-      "metaMensal": 0.1,
-      "fonte": "PEI_PN"
+      "metaMensal": 1.1,
+      "fonte": "meta_indice_110_base_2025"
     },
     {
       "id": 65,
@@ -1791,8 +1791,8 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "ano": 2026,
       "mes": 2,
       "nomeMes": "Fevereiro",
-      "metaMensal": 0.1,
-      "fonte": "PEI_PN"
+      "metaMensal": 1.1,
+      "fonte": "meta_indice_110_base_2025"
     },
     {
       "id": 66,
@@ -1800,8 +1800,8 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "ano": 2026,
       "mes": 3,
       "nomeMes": "Março",
-      "metaMensal": 0.1,
-      "fonte": "PEI_PN"
+      "metaMensal": 1.1,
+      "fonte": "meta_indice_110_base_2025"
     },
     {
       "id": 67,
@@ -1809,8 +1809,8 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "ano": 2026,
       "mes": 1,
       "nomeMes": "Janeiro",
-      "metaMensal": 0.005,
-      "fonte": "PEI_PN"
+      "metaMensal": 1.02,
+      "fonte": "meta_indice_102_base_2025"
     },
     {
       "id": 68,
@@ -1818,8 +1818,8 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "ano": 2026,
       "mes": 2,
       "nomeMes": "Fevereiro",
-      "metaMensal": 0.005,
-      "fonte": "PEI_PN"
+      "metaMensal": 1.02,
+      "fonte": "meta_indice_102_base_2025"
     },
     {
       "id": 69,
@@ -1827,8 +1827,8 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "ano": 2026,
       "mes": 3,
       "nomeMes": "Março",
-      "metaMensal": 0.005,
-      "fonte": "PEI_PN"
+      "metaMensal": 1.02,
+      "fonte": "meta_indice_102_base_2025"
     }
   ],
   "regrasIndicadores": [
@@ -3376,89 +3376,144 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
     {
       "indicadorId": 22,
       "nome": "Arrecadação Gerada com o Ecossistema",
-      "tipoCalculo": "crescimento_relativo_participacao",
-      "tipoConsolidacao": "razao_acumulada_no_ano",
+      "tipoCalculo": "crescimento_comparado_base_2025",
+      "tipoConsolidacao": "acumulado_periodo_equivalente",
       "metaRecorrente": false,
       "unidadeMedida": "percentual",
-      "metaAnualValor": null,
+      "metaAnualValor": 1.1,
       "parametrosCalculo": {
-        "campoNumerador": "arrecadacaoEcossistemaMes",
-        "campoDenominador": "arrecadacaoTotalMes",
-        "campoReferencia2025": "participacaoEcossistema2025",
-        "campoNumerador2025": "arrecadacaoEcossistema2025",
-        "campoDenominador2025": "arrecadacaoTotal2025",
-        "metaCrescimento": 0.1
+        "campoValor2026Mes": "arrecadacaoEcossistemaMes2026",
+        "campoValor2026Acumulado": "arrecadacaoEcossistemaAcumulada2026",
+        "campoBase2025PeriodoEquivalente": "arrecadacaoEcossistema2025PeriodoEquivalente",
+        "campoBase2025Acumulada": "arrecadacaoEcossistema2025Acumulada",
+        "campoNumerador": "arrecadacaoEcossistemaMes2026",
+        "campoNumeradorLegado": "arrecadacaoEcossistemaMes",
+        "campoNumerador2025": "arrecadacaoEcossistema2025PeriodoEquivalente",
+        "campoNumerador2025Legado": "arrecadacaoEcossistema2025",
+        "metaTipo": "crescimento_minimo",
+        "metaCrescimento": 0.1,
+        "metaIndice": 1.1,
+        "sentidoMeta": "quanto_maior_melhor"
       },
       "camposEntrada": [
         {
-          "nome": "arrecadacaoEcossistemaMes",
-          "rotulo": "Arrecadação via ecossistema no mês",
+          "nome": "arrecadacaoEcossistema2025PeriodoEquivalente",
+          "rotulo": "Base 2025 - período equivalente",
           "tipo": "moeda",
           "obrigatorio": true
         },
         {
-          "nome": "arrecadacaoTotalMes",
-          "rotulo": "Arrecadação total no mês",
+          "nome": "arrecadacaoEcossistemaMes2026",
+          "rotulo": "Arrecadação do ecossistema 2026 no mês",
           "tipo": "moeda",
           "obrigatorio": true
         },
         {
-          "nome": "participacaoEcossistema2025",
-          "rotulo": "Resultado referência 2025",
-          "tipo": "percentual",
-          "obrigatorio": false
-        },
-        {
-          "nome": "arrecadacaoEcossistema2025",
-          "rotulo": "Arrecadação via ecossistema em 2025",
+          "nome": "arrecadacaoEcossistemaAcumulada2026",
+          "rotulo": "Arrecadação do ecossistema 2026 acumulada até a competência",
           "tipo": "moeda",
           "obrigatorio": false
         },
         {
-          "nome": "arrecadacaoTotal2025",
-          "rotulo": "Arrecadação total em 2025",
-          "tipo": "moeda",
+          "nome": "descricaoComposicaoEcossistema",
+          "rotulo": "Descrição da composição do ecossistema",
+          "tipo": "texto",
+          "obrigatorio": false
+        },
+        {
+          "nome": "fonteEvidenciaEcossistema",
+          "rotulo": "Fonte/evidência",
+          "tipo": "texto",
+          "obrigatorio": false
+        },
+        {
+          "nome": "observacaoArea",
+          "rotulo": "Observação da área",
+          "tipo": "texto",
           "obrigatorio": false
         }
       ],
-      "campoResultadoPrincipal": "arrecadacaoEcossistemaMes",
+      "campoResultadoPrincipal": "indiceEmRelacaoA2025",
       "campoPercentualAtingido": "percentualAtingidoMensal",
       "exigeJustificativa": false,
       "exigeEvidencia": true,
-      "resultadoOficial": "participacao_acumulada_dezembro"
+      "resultadoOficial": "crescimento_acumulado_periodo_equivalente"
     },
     {
       "indicadorId": 23,
       "nome": "Participação da Rede Lotérica nos Negócios",
-      "tipoCalculo": "crescimento_relativo_valor",
-      "tipoConsolidacao": "comparacao_acumulada_ano_anterior",
+      "tipoCalculo": "crescimento_rede_loterica_base_2025",
+      "tipoConsolidacao": "acumulado_periodo_equivalente",
       "metaRecorrente": false,
       "unidadeMedida": "percentual",
-      "metaAnualValor": 0.02,
+      "metaAnualValor": 1.02,
       "parametrosCalculo": {
-        "campoAtual": "arrecadacaoRedeLotericaMes2026",
-        "campoAnterior": "arrecadacaoRedeLotericaMes2025",
-        "metaCrescimento": 0.02
+        "campoValor2026Mes": "arrecadacaoRedeLotericaMes2026",
+        "campoValor2026Acumulado": "arrecadacaoRedeLotericaAcumulada2026",
+        "campoValor2026PeriodoAtual": "arrecadacaoRedeLoterica2026PeriodoAtual",
+        "campoBase2025PeriodoEquivalente": "arrecadacaoRedeLoterica2025PeriodoEquivalente",
+        "campoBase2025Acumulada": "arrecadacaoRedeLoterica2025Acumulada",
+        "campoBase2025PeriodoAtual": "arrecadacaoRedeLoterica2025PeriodoEquivalente",
+        "campoNumerador": "arrecadacaoRedeLotericaMes2026",
+        "campoNumeradorLegado": "arrecadacaoRedeLotericaMes2026",
+        "campoNumerador2025": "arrecadacaoRedeLoterica2025PeriodoEquivalente",
+        "campoNumerador2025Legado": "arrecadacaoRedeLotericaMes2025",
+        "metaTipo": "incremento_minimo",
+        "metaCrescimento": 0.02,
+        "metaIndice": 1.02,
+        "sentidoMeta": "quanto_maior_melhor",
+        "mensagemBaseInsuficiente": "Dados insuficientes: informe a arrecadação da Rede Lotérica em 2025 para o período equivalente.",
+        "mensagemRealizadoInsuficiente": "Arrecadação da Rede Lotérica 2026 deve ser informada e não pode ser negativa."
       },
       "camposEntrada": [
         {
-          "nome": "arrecadacaoRedeLotericaMes2026",
-          "rotulo": "Arrecadação Rede Lotérica mês 2026",
+          "nome": "arrecadacaoRedeLoterica2025PeriodoEquivalente",
+          "rotulo": "Base 2025 - Rede Lotérica no período equivalente",
           "tipo": "moeda",
           "obrigatorio": true
         },
         {
-          "nome": "arrecadacaoRedeLotericaMes2025",
-          "rotulo": "Arrecadação Rede Lotérica mês 2025",
+          "nome": "arrecadacaoRedeLotericaMes2026",
+          "rotulo": "Arrecadação Rede Lotérica 2026 no mês",
           "tipo": "moeda",
           "obrigatorio": true
+        },
+        {
+          "nome": "arrecadacaoRedeLotericaAcumulada2026",
+          "rotulo": "Arrecadação Rede Lotérica 2026 acumulada até a competência",
+          "tipo": "moeda",
+          "obrigatorio": false
+        },
+        {
+          "nome": "arrecadacaoRedeLoterica2026PeriodoAtual",
+          "rotulo": "Arrecadação Rede Lotérica 2026 no período atual",
+          "tipo": "moeda",
+          "obrigatorio": false
+        },
+        {
+          "nome": "arrecadacaoTotalLoteriasPeriodo",
+          "rotulo": "Arrecadação total de loterias no período",
+          "tipo": "moeda",
+          "obrigatorio": false
+        },
+        {
+          "nome": "fonteEvidenciaRedeLoterica",
+          "rotulo": "Fonte/evidência da Rede Lotérica",
+          "tipo": "texto",
+          "obrigatorio": false
+        },
+        {
+          "nome": "observacaoArea",
+          "rotulo": "Observação da área",
+          "tipo": "texto",
+          "obrigatorio": false
         }
       ],
-      "campoResultadoPrincipal": "resultadoMensal",
+      "campoResultadoPrincipal": "indiceEmRelacaoA2025",
       "campoPercentualAtingido": "percentualAtingidoMensal",
       "exigeJustificativa": false,
       "exigeEvidencia": true,
-      "resultadoOficial": "comparacao_periodo_equivalente_2025"
+      "resultadoOficial": "crescimento_acumulado_periodo_equivalente"
     }
   ],
   "lancamentos": [
@@ -15044,8 +15099,8 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "pilar": "Atuação em Ecossistema",
       "unidadeApuradora": "SUCOL",
       "diretoriaResponsavel": "DICOT",
-      "metaMensal": 0.1,
-      "metaAnualDescricao": "≥ 10% em relação ao exercício de 2025",
+      "metaMensal": 1.1,
+      "metaAnualDescricao": "Resultado 2026 ≥ 110% da base 2025",
       "status": "Não iniciado",
       "camposEntrada": {},
       "realizado": null,
@@ -15088,8 +15143,8 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "pilar": "Atuação em Ecossistema",
       "unidadeApuradora": "SUCOL",
       "diretoriaResponsavel": "DICOT",
-      "metaMensal": 0.1,
-      "metaAnualDescricao": "≥ 10% em relação ao exercício de 2025",
+      "metaMensal": 1.1,
+      "metaAnualDescricao": "Resultado 2026 ≥ 110% da base 2025",
       "status": "Não iniciado",
       "camposEntrada": {},
       "realizado": null,
@@ -15132,8 +15187,8 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "pilar": "Atuação em Ecossistema",
       "unidadeApuradora": "SUCOL",
       "diretoriaResponsavel": "DICOT",
-      "metaMensal": 0.1,
-      "metaAnualDescricao": "≥ 10% em relação ao exercício de 2025",
+      "metaMensal": 1.1,
+      "metaAnualDescricao": "Resultado 2026 ≥ 110% da base 2025",
       "status": "Não iniciado",
       "camposEntrada": {},
       "realizado": null,
@@ -15177,7 +15232,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "unidadeApuradora": "SUCOL",
       "diretoriaResponsavel": "DICOT",
       "metaMensal": null,
-      "metaAnualDescricao": "≥ 10% em relação ao exercício de 2025",
+      "metaAnualDescricao": "Resultado 2026 ≥ 110% da base 2025",
       "status": "Não iniciado",
       "camposEntrada": {},
       "realizado": null,
@@ -15221,7 +15276,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "unidadeApuradora": "SUCOL",
       "diretoriaResponsavel": "DICOT",
       "metaMensal": null,
-      "metaAnualDescricao": "≥ 10% em relação ao exercício de 2025",
+      "metaAnualDescricao": "Resultado 2026 ≥ 110% da base 2025",
       "status": "Não iniciado",
       "camposEntrada": {},
       "realizado": null,
@@ -15265,7 +15320,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "unidadeApuradora": "SUCOL",
       "diretoriaResponsavel": "DICOT",
       "metaMensal": null,
-      "metaAnualDescricao": "≥ 10% em relação ao exercício de 2025",
+      "metaAnualDescricao": "Resultado 2026 ≥ 110% da base 2025",
       "status": "Não iniciado",
       "camposEntrada": {},
       "realizado": null,
@@ -15309,7 +15364,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "unidadeApuradora": "SUCOL",
       "diretoriaResponsavel": "DICOT",
       "metaMensal": null,
-      "metaAnualDescricao": "≥ 10% em relação ao exercício de 2025",
+      "metaAnualDescricao": "Resultado 2026 ≥ 110% da base 2025",
       "status": "Não iniciado",
       "camposEntrada": {},
       "realizado": null,
@@ -15353,7 +15408,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "unidadeApuradora": "SUCOL",
       "diretoriaResponsavel": "DICOT",
       "metaMensal": null,
-      "metaAnualDescricao": "≥ 10% em relação ao exercício de 2025",
+      "metaAnualDescricao": "Resultado 2026 ≥ 110% da base 2025",
       "status": "Não iniciado",
       "camposEntrada": {},
       "realizado": null,
@@ -15397,7 +15452,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "unidadeApuradora": "SUCOL",
       "diretoriaResponsavel": "DICOT",
       "metaMensal": null,
-      "metaAnualDescricao": "≥ 10% em relação ao exercício de 2025",
+      "metaAnualDescricao": "Resultado 2026 ≥ 110% da base 2025",
       "status": "Não iniciado",
       "camposEntrada": {},
       "realizado": null,
@@ -15441,7 +15496,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "unidadeApuradora": "SUCOL",
       "diretoriaResponsavel": "DICOT",
       "metaMensal": null,
-      "metaAnualDescricao": "≥ 10% em relação ao exercício de 2025",
+      "metaAnualDescricao": "Resultado 2026 ≥ 110% da base 2025",
       "status": "Não iniciado",
       "camposEntrada": {},
       "realizado": null,
@@ -15485,7 +15540,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "unidadeApuradora": "SUCOL",
       "diretoriaResponsavel": "DICOT",
       "metaMensal": null,
-      "metaAnualDescricao": "≥ 10% em relação ao exercício de 2025",
+      "metaAnualDescricao": "Resultado 2026 ≥ 110% da base 2025",
       "status": "Não iniciado",
       "camposEntrada": {},
       "realizado": null,
@@ -15529,7 +15584,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "unidadeApuradora": "SUCOL",
       "diretoriaResponsavel": "DICOT",
       "metaMensal": null,
-      "metaAnualDescricao": "≥ 10% em relação ao exercício de 2025",
+      "metaAnualDescricao": "Resultado 2026 ≥ 110% da base 2025",
       "status": "Não iniciado",
       "camposEntrada": {},
       "realizado": null,
@@ -15572,8 +15627,8 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "pilar": "Atuação em Ecossistema",
       "unidadeApuradora": "SUCOL",
       "diretoriaResponsavel": "DICOT",
-      "metaMensal": 0.005,
-      "metaAnualDescricao": "Alcançar 2% de incremento na arrecadação de loterias na Rede Lotérica",
+      "metaMensal": 1.02,
+      "metaAnualDescricao": "Resultado 2026 ≥ 102% da base 2025",
       "status": "Não iniciado",
       "camposEntrada": {},
       "realizado": null,
@@ -15616,8 +15671,8 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "pilar": "Atuação em Ecossistema",
       "unidadeApuradora": "SUCOL",
       "diretoriaResponsavel": "DICOT",
-      "metaMensal": 0.005,
-      "metaAnualDescricao": "Alcançar 2% de incremento na arrecadação de loterias na Rede Lotérica",
+      "metaMensal": 1.02,
+      "metaAnualDescricao": "Resultado 2026 ≥ 102% da base 2025",
       "status": "Não iniciado",
       "camposEntrada": {},
       "realizado": null,
@@ -15660,8 +15715,8 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "pilar": "Atuação em Ecossistema",
       "unidadeApuradora": "SUCOL",
       "diretoriaResponsavel": "DICOT",
-      "metaMensal": 0.005,
-      "metaAnualDescricao": "Alcançar 2% de incremento na arrecadação de loterias na Rede Lotérica",
+      "metaMensal": 1.02,
+      "metaAnualDescricao": "Resultado 2026 ≥ 102% da base 2025",
       "status": "Não iniciado",
       "camposEntrada": {},
       "realizado": null,
@@ -15705,7 +15760,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "unidadeApuradora": "SUCOL",
       "diretoriaResponsavel": "DICOT",
       "metaMensal": null,
-      "metaAnualDescricao": "Alcançar 2% de incremento na arrecadação de loterias na Rede Lotérica",
+      "metaAnualDescricao": "Resultado 2026 ≥ 102% da base 2025",
       "status": "Não iniciado",
       "camposEntrada": {},
       "realizado": null,
@@ -15749,7 +15804,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "unidadeApuradora": "SUCOL",
       "diretoriaResponsavel": "DICOT",
       "metaMensal": null,
-      "metaAnualDescricao": "Alcançar 2% de incremento na arrecadação de loterias na Rede Lotérica",
+      "metaAnualDescricao": "Resultado 2026 ≥ 102% da base 2025",
       "status": "Não iniciado",
       "camposEntrada": {},
       "realizado": null,
@@ -15793,7 +15848,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "unidadeApuradora": "SUCOL",
       "diretoriaResponsavel": "DICOT",
       "metaMensal": null,
-      "metaAnualDescricao": "Alcançar 2% de incremento na arrecadação de loterias na Rede Lotérica",
+      "metaAnualDescricao": "Resultado 2026 ≥ 102% da base 2025",
       "status": "Não iniciado",
       "camposEntrada": {},
       "realizado": null,
@@ -15837,7 +15892,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "unidadeApuradora": "SUCOL",
       "diretoriaResponsavel": "DICOT",
       "metaMensal": null,
-      "metaAnualDescricao": "Alcançar 2% de incremento na arrecadação de loterias na Rede Lotérica",
+      "metaAnualDescricao": "Resultado 2026 ≥ 102% da base 2025",
       "status": "Não iniciado",
       "camposEntrada": {},
       "realizado": null,
@@ -15881,7 +15936,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "unidadeApuradora": "SUCOL",
       "diretoriaResponsavel": "DICOT",
       "metaMensal": null,
-      "metaAnualDescricao": "Alcançar 2% de incremento na arrecadação de loterias na Rede Lotérica",
+      "metaAnualDescricao": "Resultado 2026 ≥ 102% da base 2025",
       "status": "Não iniciado",
       "camposEntrada": {},
       "realizado": null,
@@ -15925,7 +15980,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "unidadeApuradora": "SUCOL",
       "diretoriaResponsavel": "DICOT",
       "metaMensal": null,
-      "metaAnualDescricao": "Alcançar 2% de incremento na arrecadação de loterias na Rede Lotérica",
+      "metaAnualDescricao": "Resultado 2026 ≥ 102% da base 2025",
       "status": "Não iniciado",
       "camposEntrada": {},
       "realizado": null,
@@ -15969,7 +16024,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "unidadeApuradora": "SUCOL",
       "diretoriaResponsavel": "DICOT",
       "metaMensal": null,
-      "metaAnualDescricao": "Alcançar 2% de incremento na arrecadação de loterias na Rede Lotérica",
+      "metaAnualDescricao": "Resultado 2026 ≥ 102% da base 2025",
       "status": "Não iniciado",
       "camposEntrada": {},
       "realizado": null,
@@ -16013,7 +16068,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "unidadeApuradora": "SUCOL",
       "diretoriaResponsavel": "DICOT",
       "metaMensal": null,
-      "metaAnualDescricao": "Alcançar 2% de incremento na arrecadação de loterias na Rede Lotérica",
+      "metaAnualDescricao": "Resultado 2026 ≥ 102% da base 2025",
       "status": "Não iniciado",
       "camposEntrada": {},
       "realizado": null,
@@ -16057,7 +16112,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "unidadeApuradora": "SUCOL",
       "diretoriaResponsavel": "DICOT",
       "metaMensal": null,
-      "metaAnualDescricao": "Alcançar 2% de incremento na arrecadação de loterias na Rede Lotérica",
+      "metaAnualDescricao": "Resultado 2026 ≥ 102% da base 2025",
       "status": "Não iniciado",
       "camposEntrada": {},
       "realizado": null,

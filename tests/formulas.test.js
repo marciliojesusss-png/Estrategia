@@ -1,6 +1,7 @@
 ﻿const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const formulas = require("../assets/js/formulas.js");
+const { loadBootstrapData } = require("./helpers/bootstrap-data");
 
 function closeTo(actual, expected, tolerance = 0.0001) {
   assert.ok(Math.abs(actual - expected) <= tolerance, `expected ${actual} to be close to ${expected}`);
@@ -656,56 +657,126 @@ assert.equal(ieoSemDenominador.mensagem, "Dados insuficientes para cálculo.");
 
 const regraEcossistema = {
   indicadorId: 22,
-  tipoCalculo: "crescimento_relativo_participacao",
-  tipoConsolidacao: "razao_acumulada_no_ano",
+  tipoCalculo: "crescimento_comparado_base_2025",
+  tipoConsolidacao: "acumulado_periodo_equivalente",
   unidadeMedida: "percentual",
-  metaAnualValor: null,
+  metaAnualValor: 1.1,
   parametrosCalculo: {
-    campoNumerador: "arrecadacaoEcossistemaMes",
-    campoDenominador: "arrecadacaoTotalMes",
-    campoReferencia2025: "participacaoEcossistema2025",
-    campoNumerador2025: "arrecadacaoEcossistema2025",
-    campoDenominador2025: "arrecadacaoTotal2025",
-    metaCrescimento: 0.1
+    campoValor2026Mes: "arrecadacaoEcossistemaMes2026",
+    campoValor2026Acumulado: "arrecadacaoEcossistemaAcumulada2026",
+    campoBase2025PeriodoEquivalente: "arrecadacaoEcossistema2025PeriodoEquivalente",
+    campoBase2025Acumulada: "arrecadacaoEcossistema2025Acumulada",
+    campoNumerador: "arrecadacaoEcossistemaMes2026",
+    campoNumerador2025: "arrecadacaoEcossistema2025PeriodoEquivalente",
+    metaCrescimento: 0.1,
+    metaIndice: 1.1
   },
   camposEntrada: [
-    { nome: "arrecadacaoEcossistemaMes", obrigatorio: true },
-    { nome: "arrecadacaoTotalMes", obrigatorio: true },
-    { nome: "participacaoEcossistema2025", obrigatorio: false }
+    { nome: "arrecadacaoEcossistema2025PeriodoEquivalente", obrigatorio: true },
+    { nome: "arrecadacaoEcossistemaMes2026", obrigatorio: true },
+    { nome: "arrecadacaoEcossistemaAcumulada2026", obrigatorio: false },
+    { nome: "descricaoComposicaoEcossistema", obrigatorio: false },
+    { nome: "fonteEvidenciaEcossistema", obrigatorio: false },
+    { nome: "observacaoArea", obrigatorio: false }
   ]
 };
 
+const lancamentosEcossistema = [
+  { mes: 1, status: "Homologado", camposEntrada: { arrecadacaoEcossistema2025PeriodoEquivalente: 10000000, arrecadacaoEcossistemaMes2026: 12000000 } },
+  { mes: 2, status: "Homologado", camposEntrada: { arrecadacaoEcossistema2025PeriodoEquivalente: 12000000, arrecadacaoEcossistemaMes2026: 13000000 } },
+  { mes: 3, status: "Homologado", camposEntrada: { arrecadacaoEcossistema2025PeriodoEquivalente: 13000000, arrecadacaoEcossistemaMes2026: 14000000 } }
+];
 const ecossistema = formulas.calcularIndicador(
   indicador(22, "Arrecadação Gerada com o Ecossistema"),
   regraEcossistema,
-  { mes: 1, camposEntrada: { arrecadacaoEcossistemaMes: 1000000, arrecadacaoTotalMes: 10000000, participacaoEcossistema2025: 0.08 } },
-  [{ mes: 1, camposEntrada: { arrecadacaoEcossistemaMes: 1000000, arrecadacaoTotalMes: 10000000, participacaoEcossistema2025: 0.08 } }]
+  lancamentosEcossistema[2],
+  lancamentosEcossistema
 );
-closeTo(ecossistema.resultadoMensal, 0.1);
-closeTo(ecossistema.resultadoOficialAnual, 0.1);
-closeTo(ecossistema.resultadoReferencia2025, 0.08);
-closeTo(ecossistema.metaCalculada2026, 0.088);
-closeTo(ecossistema.crescimentoVs2025, 0.25);
-closeTo(ecossistema.percentualAtingidoMensal, 1.1363636364);
-assert.equal(ecossistema.percentualAtingidoMensalFormatado, "113,64%");
-
-const ecossistemaReferenciaPercentualInteiro = formulas.calcularIndicador(
-  indicador(22, "Arrecadação Gerada com o Ecossistema"),
-  regraEcossistema,
-  { mes: 1, camposEntrada: { arrecadacaoEcossistemaMes: 1000000, arrecadacaoTotalMes: 10000000, participacaoEcossistema2025: 8 } },
-  [{ mes: 1, camposEntrada: { arrecadacaoEcossistemaMes: 1000000, arrecadacaoTotalMes: 10000000, participacaoEcossistema2025: 8 } }]
-);
-closeTo(ecossistemaReferenciaPercentualInteiro.resultadoReferencia2025, 0.08);
-closeTo(ecossistemaReferenciaPercentualInteiro.percentualAtingidoMensal, 1.1363636364);
+closeTo(ecossistema.baseReferencia2025Periodo, 35000000);
+closeTo(ecossistema.realizado2026Periodo, 39000000);
+closeTo(ecossistema.metaCalculada2026, 38500000);
+closeTo(ecossistema.indiceEmRelacaoA2025, 39000000 / 35000000);
+closeTo(ecossistema.resultadoMensal, 39000000 / 35000000);
+closeTo(ecossistema.resultadoOficialAnual, 39000000 / 35000000);
+closeTo(ecossistema.crescimentoVs2025, (39000000 / 35000000) - 1);
+closeTo(ecossistema.percentualAtingidoMensal, 39000000 / 38500000);
+assert.equal(ecossistema.situacao, "Atingido");
+assert.equal(ecossistema.realizado2026PeriodoFormatado.replace(/\u00a0/g, " "), "R$ 39.000.000,00");
 
 const ecossistemaSemReferencia = formulas.calcularIndicador(
   indicador(22, "Arrecadação Gerada com o Ecossistema"),
   regraEcossistema,
-  { mes: 1, camposEntrada: { arrecadacaoEcossistemaMes: 1000000, arrecadacaoTotalMes: 10000000 } },
-  [{ mes: 1, camposEntrada: { arrecadacaoEcossistemaMes: 1000000, arrecadacaoTotalMes: 10000000 } }]
+  { mes: 1, camposEntrada: { arrecadacaoEcossistemaMes2026: 1000000 } },
+  [{ mes: 1, camposEntrada: { arrecadacaoEcossistemaMes2026: 1000000 } }]
 );
 assert.equal(ecossistemaSemReferencia.erro, true);
-assert.equal(ecossistemaSemReferencia.mensagem, "Resultado referência de 2025 não informado. Não é possível calcular a meta 2026.");
+assert.equal(ecossistemaSemReferencia.mensagem, "Preencha os campos obrigatórios: arrecadacaoEcossistema2025PeriodoEquivalente.");
+
+const ecossistemaBaseZero = formulas.calcularIndicador(
+  indicador(22, "Arrecadação Gerada com o Ecossistema"),
+  regraEcossistema,
+  { mes: 1, camposEntrada: { arrecadacaoEcossistema2025PeriodoEquivalente: 0, arrecadacaoEcossistemaMes2026: 1000000 } },
+  [{ mes: 1, camposEntrada: { arrecadacaoEcossistema2025PeriodoEquivalente: 0, arrecadacaoEcossistemaMes2026: 1000000 } }]
+);
+assert.equal(ecossistemaBaseZero.erro, true);
+assert.equal(ecossistemaBaseZero.mensagem, "Dados insuficientes: informe a base de referência de 2025 para o período equivalente.");
+
+const regraRedeLoterica = {
+  indicadorId: 23,
+  tipoCalculo: "crescimento_rede_loterica_base_2025",
+  tipoConsolidacao: "acumulado_periodo_equivalente",
+  unidadeMedida: "percentual",
+  metaAnualValor: 1.02,
+  parametrosCalculo: {
+    campoValor2026Mes: "arrecadacaoRedeLotericaMes2026",
+    campoValor2026Acumulado: "arrecadacaoRedeLotericaAcumulada2026",
+    campoBase2025PeriodoEquivalente: "arrecadacaoRedeLoterica2025PeriodoEquivalente",
+    campoBase2025Acumulada: "arrecadacaoRedeLoterica2025Acumulada",
+    campoValor2026PeriodoAtual: "arrecadacaoRedeLoterica2026PeriodoAtual",
+    campoNumerador: "arrecadacaoRedeLotericaMes2026",
+    campoNumerador2025: "arrecadacaoRedeLoterica2025PeriodoEquivalente",
+    metaCrescimento: 0.02,
+    metaIndice: 1.02,
+    mensagemBaseInsuficiente: "Dados insuficientes: informe a arrecadação da Rede Lotérica em 2025 para o período equivalente."
+  },
+  camposEntrada: [
+    { nome: "arrecadacaoRedeLoterica2025PeriodoEquivalente", obrigatorio: true },
+    { nome: "arrecadacaoRedeLotericaMes2026", obrigatorio: true },
+    { nome: "arrecadacaoRedeLotericaAcumulada2026", obrigatorio: false },
+    { nome: "arrecadacaoRedeLoterica2026PeriodoAtual", obrigatorio: false },
+    { nome: "arrecadacaoTotalLoteriasPeriodo", obrigatorio: false },
+    { nome: "fonteEvidenciaRedeLoterica", obrigatorio: false },
+    { nome: "observacaoArea", obrigatorio: false }
+  ]
+};
+
+const lancamentosRedeLoterica = [
+  { mes: 1, status: "Homologado", camposEntrada: { arrecadacaoRedeLoterica2025PeriodoEquivalente: 1000000000, arrecadacaoRedeLotericaMes2026: 1030000000 } },
+  { mes: 2, status: "Homologado", camposEntrada: { arrecadacaoRedeLoterica2025PeriodoEquivalente: 950000000, arrecadacaoRedeLotericaMes2026: 980000000 } },
+  { mes: 3, status: "Homologado", camposEntrada: { arrecadacaoRedeLoterica2025PeriodoEquivalente: 1050000000, arrecadacaoRedeLotericaMes2026: 1080000000 } }
+];
+const redeLoterica = formulas.calcularIndicador(
+  indicador(23, "Participação da Rede Lotérica nos Negócios"),
+  regraRedeLoterica,
+  lancamentosRedeLoterica[2],
+  lancamentosRedeLoterica
+);
+closeTo(redeLoterica.baseReferencia2025Periodo, 3000000000);
+closeTo(redeLoterica.realizado2026Periodo, 3090000000);
+closeTo(redeLoterica.metaCalculada2026, 3060000000);
+closeTo(redeLoterica.indiceEmRelacaoA2025, 1.03);
+closeTo(redeLoterica.crescimentoVs2025, 0.03);
+closeTo(redeLoterica.percentualAtingidoMensal, 3090000000 / 3060000000);
+assert.equal(redeLoterica.situacao, "Atingido");
+
+const redeLotericaBaseZero = formulas.calcularIndicador(
+  indicador(23, "Participação da Rede Lotérica nos Negócios"),
+  regraRedeLoterica,
+  { mes: 1, camposEntrada: { arrecadacaoRedeLoterica2025PeriodoEquivalente: 0, arrecadacaoRedeLotericaMes2026: 1000000 } },
+  [{ mes: 1, camposEntrada: { arrecadacaoRedeLoterica2025PeriodoEquivalente: 0, arrecadacaoRedeLotericaMes2026: 1000000 } }]
+);
+assert.equal(redeLotericaBaseZero.erro, true);
+assert.equal(redeLotericaBaseZero.mensagem, "Dados insuficientes: informe a arrecadação da Rede Lotérica em 2025 para o período equivalente.");
 
 const regraRepasseSocial = {
   indicadorId: 17,
@@ -1145,7 +1216,7 @@ assert.equal(jogoResponsavel1Tri.percentualAtingidoMensal, 1);
 assert.equal(jogoResponsavel1Tri.quantidadeMinimaIniciativasJR, 1);
 assert.equal(jogoResponsavel1Tri.situacao, "Atingido");
 
-const regras = JSON.parse(fs.readFileSync("data/regras-indicadores.json", "utf8"));
+const regras = loadBootstrapData().regrasIndicadores;
 const amostras = {
   1: { baseClientesAtivosCompetencia: 1000, clientesUnicosComOfertaPersonalizadaCompetencia: 100 },
   2: { tipoPosicaoNPS: "Fechamento anual", metaReferenciaCompetenciaNPS: 58, npsApurado: 58, dataBasePesquisaNPS: "2026-12-31", fontePesquisaNPS: "Relatorio oficial" },
@@ -1168,8 +1239,8 @@ const amostras = {
   19: { nomeProjetoIncentivoSocioambiental: "Projeto apoiado", statusProjetoIncentivoSocioambiental: "Investimento realizado", valorInvestidoAcumuladoCompetencia: 4307900, evidenciaIncentivoSocioambiental: "Documento" },
   20: { acaoPropostaVisibilidade: "campanha_repasses_sociais", statusAcaoVisibilidade: "Publicada/realizada" },
   21: { publicoAlvoElegivelJR: 1000, empregadosCapacitadosJR: 900, quantidadeMinimaIniciativasJR: 2, iniciativasConsideradasJR: "Duas iniciativas concluídas" },
-  22: { arrecadacaoEcossistemaMes: 10, arrecadacaoTotalMes: 100, participacaoEcossistema2025: 0.08 },
-  23: { arrecadacaoRedeLotericaMes2026: 102, arrecadacaoRedeLotericaMes2025: 100 }
+  22: { arrecadacaoEcossistema2025PeriodoEquivalente: 10000000, arrecadacaoEcossistemaMes2026: 12000000 },
+  23: { arrecadacaoRedeLoterica2025PeriodoEquivalente: 1000000000, arrecadacaoRedeLotericaMes2026: 1030000000 }
 };
 
 assert.equal(regras.length, 23);

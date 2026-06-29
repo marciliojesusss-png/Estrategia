@@ -102,6 +102,41 @@
     )).join("");
   }
 
+  function renderConfigurationInfo() {
+    const target = document.getElementById("configurationLocalInfo");
+    if (!target) return;
+    const allowedPages = Auth.getAllowedPages(state.user)
+      .filter((page) => page !== "dashboard")
+      .map((page) => ({
+        resumoExecutivo: "Resumo Executivo",
+        visaoTrimestral: "Visão Trimestral",
+        indicadores: "Indicadores",
+        lancamentos: "Lançamentos",
+        homologacao: "Homologação",
+        relatorios: "Relatórios",
+        administracao: "Configurações"
+      }[page] || page));
+    const modeLabel = state.storageInfo?.mode === "validacao_local"
+      ? "Validação local"
+      : state.storageInfo?.mode === "central"
+        ? "SQL local"
+        : "Navegador local";
+
+    target.innerHTML = [
+      ["Modo de armazenamento", modeLabel],
+      ["Perfil atual", state.user?.perfil || "-"],
+      ["Usuário simulado", state.user?.nome || "-"],
+      ["Escopo", state.user?.unidadeApuradora || state.user?.diretoriaResponsavel || "Geral"],
+      ["Permissões", allowedPages.join(", ") || "-"],
+      ["Chave da base local", DataStore.VALIDATION_BASE_KEY]
+    ].map(([label, value]) => `
+      <article class="detail-item">
+        <span>${escapeHtml(label)}</span>
+        <p>${escapeHtml(value)}</p>
+      </article>
+    `).join("");
+  }
+
   function setModule(module) {
     state.module = module;
     state.editingId = null;
@@ -452,23 +487,6 @@
     renderModule();
   }
 
-  async function publishLocalDataToCentral() {
-    try {
-      const result = await DataStore.publicarDadosLocaisNaBaseCentral();
-      state.data = await DataStore.loadAll();
-      showMessage(
-        result.published
-          ? `Dados locais publicados na base central: ${result.keys.join(", ")}.`
-          : "Nenhum dado local operacional encontrado para publicar.",
-        result.published ? "info" : "warning"
-      );
-      renderCards();
-      renderModule();
-    } catch (error) {
-      showMessage(error.message, "danger");
-    }
-  }
-
   function renderHistorico() {
     const rows = [...state.data.historico].reverse().slice(0, 200).map((item) => `
       <tr>
@@ -513,13 +531,6 @@
       if (confirmed) resetOperationalData();
     });
 
-    const publishButton = document.getElementById("publishLocalDataButton");
-    publishButton.hidden = !state.storageInfo?.centralAvailable;
-    publishButton.addEventListener("click", () => {
-      const confirmed = window.confirm("Publicar os dados operacionais locais deste navegador na base JSON central? Use esta opção apenas no perfil do Chrome que possui as informações corretas.");
-      if (confirmed) publishLocalDataToCentral();
-    });
-
     document.getElementById("adminForm").addEventListener("submit", (event) => {
       if (state.module === "metas") {
         saveMetaForm(event);
@@ -562,6 +573,7 @@
   async function init({ data, user }) {
     const storageInfo = await DataStore.getStorageInfo();
     state = { data, user, storageInfo, module: "usuarios", editingId: null };
+    renderConfigurationInfo();
     renderCards();
     bindEvents();
     setModule("usuarios");

@@ -1252,37 +1252,75 @@
     const required = validarObrigatorios(regra, lancamentoAtual);
     if (required) return erro(required, regra.unidadeMedida);
 
-    let base = campo(lancamentoAtual, regra.parametrosCalculo?.campoReferencia2025 || "participacaoEcossistema2025");
-    if (base !== null && base > 1 && base <= 100) {
-      base /= 100;
-    }
-    if (base === null) {
-      const numerador2025 = campo(lancamentoAtual, regra.parametrosCalculo?.campoNumerador2025 || "arrecadacaoEcossistema2025");
-      const denominador2025 = campo(lancamentoAtual, regra.parametrosCalculo?.campoDenominador2025 || "arrecadacaoTotal2025");
-      if (numerador2025 !== null || denominador2025 !== null) {
-        if (!denominador2025 || denominador2025 <= 0) return erro("Arrecadação total de 2025 deve ser maior que zero.", regra.unidadeMedida);
-        if (numerador2025 < 0 || numerador2025 > denominador2025) return erro("Arrecadação via ecossistema em 2025 deve estar entre zero e a arrecadação total de 2025.", regra.unidadeMedida);
-        base = numerador2025 / denominador2025;
-      }
-    }
-
-    const crescimentoMeta = toNumber(regra.parametrosCalculo?.metaCrescimento ?? 0.1);
-    if (base === null || base <= 0) return erro("Resultado referência de 2025 não informado. Não é possível calcular a meta 2026.", regra.unidadeMedida);
-
+    const params = regra.parametrosCalculo || {};
+    const campo2026Mes = params.campoValor2026Mes || params.campoNumerador || "arrecadacaoEcossistemaMes2026";
+    const campo2026Acumulado = params.campoValor2026Acumulado || "arrecadacaoEcossistemaAcumulada2026";
+    const campoBase2025 = params.campoBase2025PeriodoEquivalente || params.campoNumerador2025 || "arrecadacaoEcossistema2025PeriodoEquivalente";
+    const campoBase2025Acumulada = params.campoBase2025Acumulada || "arrecadacaoEcossistema2025Acumulada";
+    const campoLegado2026 = params.campoNumeradorLegado || "arrecadacaoEcossistemaMes";
+    const campoLegadoBase2025 = params.campoNumerador2025Legado || "arrecadacaoEcossistema2025";
+    const crescimentoMeta = toNumber(params.metaCrescimento ?? 0.1) ?? 0.1;
+    const metaIndice = 1 + crescimentoMeta;
+    const mensagemBaseInsuficiente = params.mensagemBaseInsuficiente || "Dados insuficientes: informe a base de referência de 2025 para o período equivalente.";
+    const mensagemRealizadoInsuficiente = params.mensagemRealizadoInsuficiente || "Arrecadação 2026 deve ser informada e não pode ser negativa.";
+    const fallbackBase2025Periodo = params.campoBase2025PeriodoAtual || "arrecadacaoEcossistema2025PeriodoEquivalente";
+    const fallback2026Periodo = params.campoValor2026PeriodoAtual || "arrecadacaoEcossistema2026PeriodoAtual";
     const ateMes = lancamentosAteMes(lancamentoAtual, lancamentosDoAno);
-    const numerador = somaCampo(ateMes, regra.parametrosCalculo?.campoNumerador);
-    const denominador = somaCampo(ateMes, regra.parametrosCalculo?.campoDenominador);
-    if (denominador <= 0) return erro("Não foi possível calcular o indicador, pois o denominador informado é zero.", regra.unidadeMedida);
-    if (numerador < 0 || numerador > denominador) return erro("Arrecadação via ecossistema em 2026 deve estar entre zero e a arrecadação total de 2026.", regra.unidadeMedida);
 
-    const participacao = numerador / denominador;
-    const metaCalculada2026 = base * (1 + crescimentoMeta);
-    const crescimentoVs2025 = (participacao - base) / base;
-    const percentualAtingido = participacao / metaCalculada2026;
-    return ok(participacao, participacao, percentualAtingido, percentualAtingido, regra.unidadeMedida, "Crescimento relativo da participação calculado.", {
-      resultadoReferencia2025: base,
+    const valorCampoComFallback = (item, principal, legado) => {
+      const principalValor = campo(item, principal);
+      return principalValor !== null ? principalValor : campo(item, legado);
+    };
+
+    let realizado2026 = ateMes
+      .map((item) => valorCampoComFallback(item, campo2026Mes, campoLegado2026))
+      .filter((value) => value !== null)
+      .reduce((sum, value) => sum + value, 0);
+    if (realizado2026 <= 0) {
+      realizado2026 = campo(lancamentoAtual, campo2026Acumulado) ?? campo(lancamentoAtual, fallback2026Periodo);
+    }
+
+    let base2025 = ateMes
+      .map((item) => valorCampoComFallback(item, campoBase2025, campoLegadoBase2025))
+      .filter((value) => value !== null)
+      .reduce((sum, value) => sum + value, 0);
+    if (base2025 <= 0) {
+      base2025 = campo(lancamentoAtual, campoBase2025Acumulada) ?? campo(lancamentoAtual, fallbackBase2025Periodo);
+    }
+
+    if (base2025 === null || base2025 <= 0) {
+      return erro(mensagemBaseInsuficiente, regra.unidadeMedida);
+    }
+    if (realizado2026 === null || realizado2026 < 0) {
+      return erro(mensagemRealizadoInsuficiente, regra.unidadeMedida);
+    }
+
+    const metaCalculada2026 = base2025 * metaIndice;
+    const indiceEmRelacaoA2025 = realizado2026 / base2025;
+    const crescimentoVs2025 = indiceEmRelacaoA2025 - 1;
+    const percentualAtingido = realizado2026 / metaCalculada2026;
+    const situacao = indiceEmRelacaoA2025 >= metaIndice
+      ? "Atingido"
+      : indiceEmRelacaoA2025 >= metaIndice * 0.8
+        ? "Abaixo da meta"
+        : "Crítico";
+
+    return ok(indiceEmRelacaoA2025, indiceEmRelacaoA2025, percentualAtingido, percentualAtingido, regra.unidadeMedida, "Crescimento comparado com base equivalente de 2025 calculado.", {
+      resultadoReferencia2025: base2025,
+      baseReferencia2025Periodo: base2025,
+      arrecadacaoEcossistema2025PeriodoEquivalente: base2025,
+      arrecadacaoEcossistema2026Periodo: realizado2026,
+      arrecadacaoRedeLoterica2025PeriodoEquivalente: base2025,
+      arrecadacaoRedeLoterica2026Periodo: realizado2026,
+      realizado2026Periodo: realizado2026,
+      realizado2026PeriodoFormatado: currency.formatarMoedaBR(realizado2026),
       metaCalculada2026,
-      crescimentoVs2025
+      metaCalculadaUnidadeMedida: "moeda",
+      metaIndiceCrescimento: metaIndice,
+      indiceEmRelacaoA2025,
+      crescimentoVs2025,
+      crescimentoPercentual: crescimentoVs2025,
+      situacao
     });
   }
 
@@ -1370,6 +1408,8 @@
       case "percentual_execucao_plano_acao":
         return calcularPercentualExecucaoPlanoAcao(indicador, regra, lancamentoAtual, lancamentosDoAno);
       case "crescimento_relativo_participacao":
+      case "crescimento_comparado_base_2025":
+      case "crescimento_rede_loterica_base_2025":
         return calcularCrescimentoRelativoParticipacao(indicador, regra, lancamentoAtual, lancamentosDoAno);
       case "crescimento_relativo_valor":
         return calcularCrescimentoRelativoValor(indicador, regra, lancamentoAtual, lancamentosDoAno);

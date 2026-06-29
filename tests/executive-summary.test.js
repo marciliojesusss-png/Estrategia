@@ -2,6 +2,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
+const { loadBootstrapData } = require("./helpers/bootstrap-data");
 
 const root = path.resolve(__dirname, "..");
 const context = {
@@ -35,9 +36,10 @@ vm.runInNewContext(
   { filename: "dashboard.js" }
 );
 
-const indicators = JSON.parse(fs.readFileSync(path.join(root, "data", "indicadores.json"), "utf8"));
-const launches = JSON.parse(fs.readFileSync(path.join(root, "data", "lancamentos.json"), "utf8"));
-const rules = JSON.parse(fs.readFileSync(path.join(root, "data", "regras-indicadores.json"), "utf8"));
+const bootstrap = loadBootstrapData(root);
+const indicators = bootstrap.indicadores;
+const launches = bootstrap.lancamentos;
+const rules = bootstrap.regrasIndicadores;
 const results = context.window.StrategicResults.calcularDashboard({
   indicadores: indicators,
   lancamentos: launches,

@@ -87,6 +87,8 @@
   }
 
   function getMetaLabel(regra) {
+    if (regra?.tipoCalculo === "crescimento_comparado_base_2025") return "Meta em indice (110% da base 2025)";
+    if (regra?.tipoCalculo === "crescimento_rede_loterica_base_2025") return "Meta em indice (102% da base 2025)";
     if (isIeoRule(regra)) return "Meta de referência da competência";
     if (regra?.parametrosCalculo?.metaTipo === "curva_acumulada_por_competencia") {
       return "Meta acumulada de referencia";
@@ -189,6 +191,7 @@
 
   function shouldHideGoalAchievementFields(indicador, regra) {
     if (isIeoRule(regra)) return false;
+    if (["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(regra?.tipoCalculo)) return false;
     if (isOfertasPersonalizadasIndicator(indicador, regra)) return false;
     return usesAutomaticCalculation(indicador, regra) && regra && (regra.unidadeMedida === "percentual" || regra.parametrosCalculo?.quantoMenorMelhor);
   }
@@ -314,14 +317,20 @@
 
     document.getElementById("launchResultadoMensalLabel").textContent = isIeoRule(regra)
       ? "IEO calculado da competência"
+      : ["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(regra?.tipoCalculo)
+        ? "Indice 2026/2025"
       : isOfertasPersonalizadasIndicator(indicador, regra)
         ? "Resultado da competência"
       : "Resultado mensal";
     document.getElementById("launchPercentualCalculadoLabel").textContent = isIeoRule(regra)
       ? "% atingido"
+      : ["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(regra?.tipoCalculo)
+        ? "% atingido da meta"
       : "% da meta atingida mensal";
     document.getElementById("launchResultadoAcumuladoLabel").textContent = isIeoRule(regra)
       ? "Posição acumulada até a competência"
+      : ["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(regra?.tipoCalculo)
+        ? "Indice acumulado 2026/2025"
       : isOfertasPersonalizadasIndicator(indicador, regra)
         ? "Resultado oficial do indicador"
       : "Resultado oficial anual";
@@ -416,11 +425,19 @@
     const target = document.getElementById("formulaDetails");
     const details = [];
 
-    if (resultado.resultadoReferencia2025 !== undefined) {
+    if (resultado.baseReferencia2025Periodo !== undefined) {
+      details.push(["Base 2025 equivalente", Calculations.formatarValor(resultado.baseReferencia2025Periodo, "moeda")]);
+    } else if (resultado.resultadoReferencia2025 !== undefined) {
       details.push(["Resultado referência 2025", Calculations.formatarPercentual(resultado.resultadoReferencia2025)]);
     }
+    if (resultado.realizado2026Periodo !== undefined) {
+      details.push(["Arrecadação 2026 no período", Calculations.formatarValor(resultado.realizado2026Periodo, "moeda")]);
+    }
     if (resultado.metaCalculada2026 !== undefined) {
-      details.push(["Meta calculada 2026", Calculations.formatarPercentual(resultado.metaCalculada2026)]);
+      details.push(["Meta calculada 2026", Calculations.formatarValor(resultado.metaCalculada2026, resultado.metaCalculadaUnidadeMedida || "percentual")]);
+    }
+    if (resultado.indiceEmRelacaoA2025 !== undefined) {
+      details.push(["Índice 2026/2025", Calculations.formatarPercentual(resultado.indiceEmRelacaoA2025)]);
     }
     if (resultado.crescimentoVs2025 !== undefined) {
       details.push(["Crescimento em relação a 2025", Calculations.formatarPercentual(resultado.crescimentoVs2025)]);

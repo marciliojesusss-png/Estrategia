@@ -250,6 +250,16 @@
         "Observacao de acompanhamento",
         "Este indicador acompanha a execucao de acoes institucionais de comunicacao e transparencia voltadas a visibilidade dos repasses sociais das Loterias CAIXA. Em 2026, as acoes propostas sao a publicacao do relatorio A Sorte em Numeros - 2025 e a realizacao de campanha publicitaria exclusiva sobre repasse social. No 1TRI, nao ha meta de publicacao, pois o relatorio encontra-se em elaboracao/homologacao. Apenas acoes com status Publicada/realizada contam para o indicador.",
         true
+      ]] : []),
+      ...(Number(indicador.id) === 22 ? [[
+        "Observacao de acompanhamento",
+        "Este indicador compara a arrecadacao gerada com o ecossistema em 2026 com a base equivalente de 2025. A meta e atingir ao menos 110% da base 2025 no mesmo periodo, sempre considerando competencias homologadas.",
+        true
+      ]] : []),
+      ...(Number(indicador.id) === 23 ? [[
+        "Observacao de acompanhamento",
+        "Este indicador acompanha a arrecadacao gerada pela Rede Loterica em 2026, comparando o resultado com a base equivalente de 2025. A meta e obter incremento minimo de 2%, ou seja, alcancar pelo menos 102% da arrecadacao registrada no mesmo periodo do exercicio anterior. A comparacao deve sempre considerar periodos equivalentes.",
+        true
       ]] : [])
     ].map(([label, value, full]) => `
       <article class="detail-item ${full ? "full-span" : ""}">
@@ -295,6 +305,9 @@
     const isIncentivoSocioambiental = Number(indicador.id) === 19;
     const isVisibilidadeRepasses = Number(indicador.id) === 20;
     const isDigitalChannels = Number(indicador.id) === 8;
+    const isEcossistema = Number(indicador.id) === 22;
+    const isRedeLoterica = Number(indicador.id) === 23;
+    const isBase2025Growth = isEcossistema || isRedeLoterica;
     const isGgrFormula = regra?.tipoCalculo === "ggr_formula";
     const isIeoInverse = regra?.tipoCalculo === "indice_inverso";
     const isRepasseSocial = Number(indicador.id) === 17;
@@ -508,6 +521,17 @@
       <th>Resultado mensal</th>
       <th>Status mensal</th>
       <th>AÃ§Ã£o</th>
+    ` : isBase2025Growth ? `
+      <th>Competencia</th>
+      <th>Base 2025 equivalente</th>
+      <th>${isRedeLoterica ? "Arrecadacao Rede Loterica 2026" : "Arrecadacao 2026"}</th>
+      <th>Meta 2026 calculada</th>
+      <th>Indice 2026/2025</th>
+      <th>Crescimento</th>
+      <th>% atingido</th>
+      <th>Situacao</th>
+      <th>Status</th>
+      <th>Acao</th>
     ` : isAccumulatedGoalCurve ? `
       <th>Mes</th>
       <th>Meta acumulada de referencia</th>
@@ -856,6 +880,46 @@
           </tr>
         `;
       }
+      if (isBase2025Growth) {
+        const calculationScope = launches.filter((item) => Number(item.mes) <= month && item.status === "Homologado");
+        const calculated = launch && launch.status === "Homologado"
+          ? IndicatorFormulas.calcularIndicador(indicador, regra, launch, calculationScope)
+          : null;
+        const base2025Field = isRedeLoterica
+          ? "arrecadacaoRedeLoterica2025PeriodoEquivalente"
+          : "arrecadacaoEcossistema2025PeriodoEquivalente";
+        const legacyBase2025Field = isRedeLoterica
+          ? "arrecadacaoRedeLotericaMes2025"
+          : "arrecadacaoEcossistema2025";
+        const realized2026Field = isRedeLoterica
+          ? "arrecadacaoRedeLotericaMes2026"
+          : "arrecadacaoEcossistemaMes2026";
+        const legacyRealized2026Field = isRedeLoterica
+          ? "arrecadacaoRedeLoterica2026PeriodoAtual"
+          : "arrecadacaoEcossistemaMes";
+        const base2025 = calculated?.baseReferencia2025Periodo ??
+          launch?.camposEntrada?.[base2025Field] ??
+          launch?.camposEntrada?.[legacyBase2025Field];
+        const realizado2026 = calculated?.realizado2026Periodo ??
+          launch?.camposEntrada?.[realized2026Field] ??
+          launch?.camposEntrada?.[legacyRealized2026Field];
+        const percent = calculated?.percentualAtingidoMensal ?? calculated?.percentualAtingidoAnual ?? null;
+        const situation = calculated?.situacao || (calculated?.erro ? "Dados insuficientes" : Calculations.calcularStatusDesempenho(percent));
+        return `
+          <tr>
+            <td>${name}/2026</td>
+            <td>${Calculations.formatarValor(base2025, "moeda")}</td>
+            <td>${Calculations.formatarValor(realizado2026, "moeda")}</td>
+            <td>${Calculations.formatarValor(calculated?.metaCalculada2026, "moeda")}</td>
+            <td>${Calculations.formatarValor(calculated?.indiceEmRelacaoA2025 ?? calculated?.resultadoMensal, "percentual")}</td>
+            <td>${Calculations.formatarPercentual(calculated?.crescimentoVs2025)}</td>
+            <td>${Calculations.formatarPercentual(percent)}</td>
+            <td>${escapeHtml(situation)}</td>
+            <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologação" ? "warn" : "info"}">${escapeHtml(launch?.status || "Não iniciado")}</span></td>
+            <td>${monthlyAction(launch)}</td>
+          </tr>
+        `;
+      }
       const result = isDigitalChannels
         ? digitalDenominator > 0 && digitalNumerator !== null ? digitalNumerator / digitalDenominator : null
         : launch?.resultadoMensal ?? launch?.realizadoMensal;
@@ -901,6 +965,7 @@
     }).join("");
 
     const quarters = QuarterlyConsolidation.consolidarAno(indicador, regra, launches, 2026);
+    const quarterlyUnit = isBase2025Growth ? "moeda" : isVisibilidadeRepasses ? "quantidade" : regra.unidadeMedida;
     document.getElementById("indicatorQuarterlyComposition").innerHTML = quarters.map((quarter) => `
       <tr>
         <td>
@@ -908,18 +973,20 @@
           <small class="quarter-message">${escapeHtml(quarter.mensagem)}</small>
         </td>
         <td>${quarter.mesesHomologados} de ${quarter.mesesEsperados}</td>
-        <td>${Calculations.formatarValor(quarter.metaTrimestral, isVisibilidadeRepasses ? "quantidade" : regra.unidadeMedida)}</td>
+        <td>${Calculations.formatarValor(quarter.metaTrimestral, quarterlyUnit)}</td>
         <td>
-          ${Calculations.formatarValor(quarter.resultadoCalculadoTrimestral, isVisibilidadeRepasses ? "quantidade" : regra.unidadeMedida)}
+          ${Calculations.formatarValor(quarter.resultadoCalculadoTrimestral, quarterlyUnit)}
           ${isPix && quarter.pixAcumuladoTrimestre != null
             ? `<small class="quarter-message">PIX: ${Calculations.formatarMoedaBR(quarter.pixAcumuladoTrimestre)}<br>Canais: ${Calculations.formatarMoedaBR(quarter.canaisAcumuladoTrimestre)}</small>`
             : isDigitalChannels && quarter.canaisDigitaisAcumuladoTrimestre != null
               ? `<small class="quarter-message">Canais eletrÃ´nicos: ${Calculations.formatarMoedaBR(quarter.canaisDigitaisAcumuladoTrimestre)}<br>Produtos de loterias: ${Calculations.formatarMoedaBR(quarter.produtosLoteriasAcumuladoTrimestre)}</small>`
               : isVisibilidadeRepasses && quarter.dadosCalculados?.resultadoPercentualVisibilidade != null
                 ? `<small class="quarter-message">Resultado: ${Calculations.formatarPercentual(quarter.dadosCalculados.resultadoPercentualVisibilidade)}</small>`
+              : isBase2025Growth && quarter.baseReferencia2025Trimestre != null
+                ? `<small class="quarter-message">Base 2025: ${Calculations.formatarMoedaBR(quarter.baseReferencia2025Trimestre)}<br>Indice: ${Calculations.formatarPercentual(quarter.indiceTrimestral)}<br>Crescimento: ${Calculations.formatarPercentual(quarter.crescimentoTrimestral)}</small>`
               : ""}
         </td>
-        <td>${Calculations.formatarValor(quarter.resultadoOficialApresentado, isVisibilidadeRepasses ? "quantidade" : regra.unidadeMedida)}</td>
+        <td>${Calculations.formatarValor(quarter.resultadoOficialApresentado, quarterlyUnit)}</td>
         <td>${formatPerformance(quarter.desempenhoTrimestral, regra)}</td>
         <td>${escapeHtml(quarter.situacaoTrimestral)}</td>
         <td><span class="badge ${quarter.statusTrimestre === "Fechado" ? "ok" : quarter.statusTrimestre === "Parcial" ? "warn" : "info"}">${quarter.statusTrimestre}</span></td>

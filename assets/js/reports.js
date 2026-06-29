@@ -34,6 +34,10 @@
       .replaceAll("'", "&#039;");
   }
 
+  function limparNomeIndicador(nome) {
+    return String(nome || "").replace(/^\s*\d+\.\s*/, "").trim();
+  }
+
   function average(values) {
     const valid = values
       .filter((value) => value !== null && value !== undefined && value !== "")
@@ -81,7 +85,7 @@
       unidade: ["Todos", ...unique(state.indicadores.map((item) => item.unidadeApuradora))],
       diretoria: ["Todos", ...unique(state.indicadores.map((item) => item.diretoriaResponsavel))],
       status: ["Todos", ...unique(state.lancamentos.map((item) => item.status))],
-      indicador: ["Todos", ...state.indicadores.map((item) => `${item.numero} - ${item.indicador}`)]
+      indicador: ["Todos", ...state.indicadores.map((item) => `${item.numero} - ${limparNomeIndicador(item.indicador)}`)]
     };
 
     document.querySelectorAll("[data-filter]").forEach((select) => {
@@ -131,7 +135,7 @@
   function baseIndicatorRow(indicador) {
     return {
       numero: indicador.numero,
-      indicador: indicador.indicador,
+      indicador: limparNomeIndicador(indicador.indicador),
       plano: indicador.plano,
       pilar: indicador.pilar,
       periodicidade: indicador.periodicidade,
@@ -182,7 +186,7 @@
       const indicador = porId[lancamento.indicadorId];
       return {
         numero: indicador ? indicador.numero : lancamento.indicadorId,
-        indicador: indicador ? indicador.indicador : lancamento.indicadorId,
+        indicador: indicador ? limparNomeIndicador(indicador.indicador) : lancamento.indicadorId,
         plano: indicador ? indicador.plano : "-",
         pilar: indicador ? indicador.pilar : "-",
         unidadeApuradora: indicador && indicador.unidadeApuradora ? indicador.unidadeApuradora : "Não informado",
@@ -353,30 +357,11 @@
     `).join("");
   }
 
-  function csvValue(value) {
-    return `"${String(value ?? "").replaceAll('"', '""')}"`;
-  }
-
-  function exportCsv() {
-    const header = state.currentColumns.map(([, label]) => label);
-    const rows = state.currentRows.map((row) => (
-      state.currentColumns.map(([key, , type]) => csvValue(formatValue(row[key], type))).join(";")
-    ));
-    const csv = [[...header].map(csvValue).join(";"), ...rows].join("\n");
-    const blob = new Blob([`\ufeff${csv}`], { type: "text/csv;charset=utf-8" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `${document.getElementById("reportType").value}.csv`;
-    link.click();
-    URL.revokeObjectURL(link.href);
-  }
-
   function bindEvents() {
     document.getElementById("reportType").addEventListener("change", renderReport);
     document.querySelectorAll("[data-filter]").forEach((select) => {
       select.addEventListener("change", renderReport);
     });
-    document.getElementById("exportCsvButton").addEventListener("click", exportCsv);
   }
 
   async function init({ data, user }) {

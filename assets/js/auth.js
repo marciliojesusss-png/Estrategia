@@ -1,15 +1,16 @@
 (function () {
-  const SESSION_KEY = "caixaLoterias:usuarioAtual";
+  const SESSION_KEY = "central_indicadores_usuario_atual";
+  const PROFILE_KEY = "central_indicadores_perfil_atual";
+  const PERMISSIONS_KEY = "central_indicadores_permissoes_atual";
   const FLASH_KEY = "caixaLoterias:mensagemSistema";
 
   const PAGE_ACCESS = {
     resumoExecutivo: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consulta/Gestão", "Usuário Companhia"],
     visaoTrimestral: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consulta/Gestão", "Usuário Companhia"],
-    dashboard: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consulta/Gestão", "Usuário Companhia"],
     indicadores: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consulta/Gestão", "Usuário Companhia"],
     lancamentos: ["Administrador", "Unidade Apuradora"],
     homologacao: ["Administrador", "Diretoria Homologadora"],
-    relatorios: ["Administrador", "Consulta/Gestão", "Usuário Companhia"],
+    relatorios: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consulta/Gestão", "Usuário Companhia"],
     administracao: ["Administrador"]
   };
 
@@ -20,10 +21,14 @@
 
   function login(user) {
     localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+    localStorage.setItem(PROFILE_KEY, user.perfil || "");
+    localStorage.setItem(PERMISSIONS_KEY, JSON.stringify(getAllowedPages(user)));
   }
 
   function logout() {
     localStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(PROFILE_KEY);
+    localStorage.removeItem(PERMISSIONS_KEY);
     window.location.href = "index.html";
   }
 
@@ -106,7 +111,7 @@
       lancamentos: "Lançamento Mensal",
       homologacao: "Homologação",
       relatorios: "Relatórios",
-      administracao: "Administração"
+      administracao: "Configurações"
     };
     return `${user.perfil} não possui acesso à tela ${labels[page] || page}.`;
   }

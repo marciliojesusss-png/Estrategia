@@ -2,29 +2,45 @@
   const NAV_ITEMS = [
     ["resumo-executivo.html", "Resumo Executivo", "resumoExecutivo"],
     ["visao-trimestral.html", "Visão Trimestral", "visaoTrimestral"],
-    ["dashboard.html", "Dashboard", "dashboard"],
     ["indicadores.html", "Indicadores", "indicadores"],
     ["lancamentos.html", "Lançamentos", "lancamentos"],
     ["homologacao.html", "Homologação", "homologacao"],
     ["relatorios.html", "Relatórios", "relatorios"],
-    ["administracao.html", "Administração", "administracao"]
+    ["administracao.html", "Configurações", "administracao"]
   ];
 
   function storageMessages(storageInfo) {
     if (!storageInfo) return [];
     const messages = [];
+    if (storageInfo.mode === "validacao_local" || storageInfo.mode === "browser") {
+      messages.push(`
+        <details class="notice info storage-notice">
+          <summary>
+            <strong>Modo validação local ativo.</strong>
+            <span>Dados salvos neste perfil do navegador.</span>
+          </summary>
+          <p>Contas/perfis diferentes do Google Chrome possuem armazenamentos locais separados. A base SQL versionada fica no arquivo <code>/database/indicadores.sqlite</code>.</p>
+        </details>
+      `);
+    }
     if (storageInfo.mode === "browser") {
       messages.push(`
-        <div class="notice info">
-          <strong>Banco JSON local ativo.</strong>
+        <div class="notice info compact-notice">
+          <strong>Armazenamento local do navegador ativo.</strong>
           As informacoes ficam salvas neste navegador automaticamente, sem iniciar servidor ou arquivo .bat.
         </div>
       `);
     }
+    messages.push(`
+      <div class="notice muted compact-notice sql-local-notice">
+        <strong>Modo SQL local ativo.</strong>
+        A base versionavel fica em <code>/database/indicadores.sqlite</code> e nao substitui o banco corporativo multiusuario.
+      </div>
+    `);
     if (storageInfo.hasPendingLocalBackup) {
       messages.push(`
         <div class="notice warning">
-          Existem dados locais antigos diferentes da base central. Eles foram preservados como backup neste navegador, mas a base JSON central foi mantida como fonte oficial.
+          Existem dados locais antigos diferentes da base de validacao preservados neste navegador.
         </div>
       `);
     }
@@ -72,6 +88,12 @@
     const header = document.getElementById("appHeader");
     const nav = document.getElementById("appNav");
     const scope = Auth.getScopeDescription(user);
+    const navLinks = NAV_ITEMS
+      .filter(([, , key]) => Auth.canAccess(key, user))
+      .map(([href, label, key]) => (
+        `<a class="nav-link ${key === page ? "active" : ""}" href="${href}">${label}</a>`
+      ))
+      .join("");
 
     header.innerHTML = `
       <div class="brand-block">
@@ -81,6 +103,11 @@
           <strong>Indicadores Estratégicos</strong>
         </div>
       </div>
+      <button class="topbar-menu-toggle" type="button" aria-expanded="false" aria-controls="topbarNav">Menu</button>
+      <nav id="topbarNav" class="topbar-nav" aria-label="Navegação principal">
+        ${navLinks}
+        <button class="secondary-action logout-button" type="button">Sair</button>
+      </nav>
       <div class="user-chip">
         <span>${user.nome}</span>
         <span>${user.perfil}</span>
@@ -88,14 +115,19 @@
       </div>
     `;
 
-    nav.innerHTML = NAV_ITEMS
-      .filter(([, , key]) => Auth.canAccess(key, user))
-      .map(([href, label, key]) => (
-        `<a class="nav-link ${key === page ? "active" : ""}" href="${href}">${label}</a>`
-      ))
-      .join("") + '<button class="secondary-action logout-button" type="button">Sair</button>';
+    if (nav) {
+      nav.hidden = true;
+      nav.innerHTML = "";
+    }
 
-    nav.querySelector(".logout-button").addEventListener("click", Auth.logout);
+    header.querySelector(".logout-button").addEventListener("click", Auth.logout);
+    const menuToggle = header.querySelector(".topbar-menu-toggle");
+    const topbarNav = header.querySelector("#topbarNav");
+    menuToggle.addEventListener("click", () => {
+      const expanded = menuToggle.getAttribute("aria-expanded") === "true";
+      menuToggle.setAttribute("aria-expanded", String(!expanded));
+      topbarNav.classList.toggle("is-open", !expanded);
+    });
 
     const content = document.querySelector(".content");
     if (content) {
@@ -124,7 +156,7 @@
 
     if (!Auth.canAccess(page, user)) {
       Auth.setFlashMessage(Auth.getDeniedMessage(page, user), "warning");
-      window.location.href = "dashboard.html";
+      window.location.href = "resumo-executivo.html";
       return;
     }
 
@@ -134,6 +166,9 @@
     if (module) {
       const data = await DataStore.loadAll();
       await module.init({ data, user });
+    }
+    if (window.DataService?.initBaseValidacaoLocal) {
+      window.DataService.initBaseValidacaoLocal();
     }
   }
 

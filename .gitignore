@@ -1,0 +1,6 @@
+# Banco SQLite local de validacao versionado no projeto.
+!/database/indicadores.sqlite
+!/database/schema.sql
+
+# Backups locais gerados pelo script de migracao podem ser recriados.
+database/backups/*.sqlite

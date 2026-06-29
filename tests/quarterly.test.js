@@ -781,6 +781,84 @@ assert.ok(Math.abs(lucroQuarter.metaTrimestral - 268666666.67) < 0.0001);
 assert.ok(Math.abs(lucroQuarter.resultadoTrimestral - 336321887.69) < 0.0001);
 assert.ok(Math.abs(lucroQuarter.desempenhoTrimestral - (336321887.69 / 268666666.67)) < 0.000001);
 assert.equal(lucroQuarter.situacaoTrimestral, "Atingido");
+
+const ecossistemaQuarter = consolidarTrimestre(
+  { id: 22, indicador: "Arrecadação Gerada com o Ecossistema", unidadeMedida: "percentual" },
+  {
+    indicadorId: 22,
+    tipoCalculo: "crescimento_comparado_base_2025",
+    tipoConsolidacao: "acumulado_periodo_equivalente",
+    unidadeMedida: "percentual",
+    metaAnualValor: 1.1,
+    parametrosCalculo: {
+      campoValor2026Mes: "arrecadacaoEcossistemaMes2026",
+      campoBase2025PeriodoEquivalente: "arrecadacaoEcossistema2025PeriodoEquivalente",
+      metaCrescimento: 0.1,
+      metaIndice: 1.1
+    },
+    camposEntrada: [
+      { nome: "arrecadacaoEcossistema2025PeriodoEquivalente", obrigatorio: true },
+      { nome: "arrecadacaoEcossistemaMes2026", obrigatorio: true }
+    ]
+  },
+  [
+    { ano: 2026, mes: 1, status: "Homologado", competencia: "2026-01", trimestre: "1TRI/2026", camposEntrada: { arrecadacaoEcossistema2025PeriodoEquivalente: 10000000, arrecadacaoEcossistemaMes2026: 12000000 } },
+    { ano: 2026, mes: 2, status: "Homologado", competencia: "2026-02", trimestre: "1TRI/2026", camposEntrada: { arrecadacaoEcossistema2025PeriodoEquivalente: 12000000, arrecadacaoEcossistemaMes2026: 13000000 } },
+    { ano: 2026, mes: 3, status: "Homologado", competencia: "2026-03", trimestre: "1TRI/2026", camposEntrada: { arrecadacaoEcossistema2025PeriodoEquivalente: 13000000, arrecadacaoEcossistemaMes2026: 14000000 } }
+  ],
+  "1TRI/2026"
+);
+assert.equal(ecossistemaQuarter.statusTrimestre, "Fechado");
+assert.equal(ecossistemaQuarter.metaTrimestral, 38500000);
+assert.equal(ecossistemaQuarter.resultadoTrimestral, 39000000);
+assert.equal(ecossistemaQuarter.resultadoCalculadoTrimestral, 39000000);
+assert.equal(ecossistemaQuarter.resultadoOficialApresentado, 39000000);
+assert.ok(Math.abs(ecossistemaQuarter.desempenhoTrimestral - (39000000 / 38500000)) < 0.000001);
+assert.equal(ecossistemaQuarter.baseReferencia2025Trimestre, 35000000);
+assert.ok(Math.abs(ecossistemaQuarter.indiceTrimestral - (39000000 / 35000000)) < 0.000001);
+assert.ok(Math.abs(ecossistemaQuarter.crescimentoTrimestral - ((39000000 / 35000000) - 1)) < 0.000001);
+assert.equal(ecossistemaQuarter.situacaoTrimestral, "Atingido");
+
+const redeLotericaQuarter = consolidarTrimestre(
+  { id: 23, indicador: "Participação da Rede Lotérica nos Negócios", unidadeMedida: "percentual" },
+  {
+    indicadorId: 23,
+    tipoCalculo: "crescimento_rede_loterica_base_2025",
+    tipoConsolidacao: "acumulado_periodo_equivalente",
+    unidadeMedida: "percentual",
+    metaAnualValor: 1.02,
+    parametrosCalculo: {
+      campoValor2026Mes: "arrecadacaoRedeLotericaMes2026",
+      campoBase2025PeriodoEquivalente: "arrecadacaoRedeLoterica2025PeriodoEquivalente",
+      metaCrescimento: 0.02,
+      metaIndice: 1.02,
+      mensagemBaseInsuficiente: "Dados insuficientes: informe a arrecadação da Rede Lotérica em 2025 para o período equivalente."
+    },
+    camposEntrada: [
+      { nome: "arrecadacaoRedeLoterica2025PeriodoEquivalente", obrigatorio: true },
+      { nome: "arrecadacaoRedeLotericaMes2026", obrigatorio: true },
+      { nome: "arrecadacaoRedeLotericaAcumulada2026", obrigatorio: false },
+      { nome: "arrecadacaoRedeLoterica2026PeriodoAtual", obrigatorio: false },
+      { nome: "arrecadacaoTotalLoteriasPeriodo", obrigatorio: false },
+      { nome: "fonteEvidenciaRedeLoterica", obrigatorio: false },
+      { nome: "observacaoArea", obrigatorio: false }
+    ]
+  },
+  [
+    { ano: 2026, mes: 1, status: "Homologado", competencia: "2026-01", trimestre: "1TRI/2026", camposEntrada: { arrecadacaoRedeLoterica2025PeriodoEquivalente: 1000000000, arrecadacaoRedeLotericaMes2026: 1030000000 } },
+    { ano: 2026, mes: 2, status: "Homologado", competencia: "2026-02", trimestre: "1TRI/2026", camposEntrada: { arrecadacaoRedeLoterica2025PeriodoEquivalente: 950000000, arrecadacaoRedeLotericaMes2026: 980000000 } },
+    { ano: 2026, mes: 3, status: "Homologado", competencia: "2026-03", trimestre: "1TRI/2026", camposEntrada: { arrecadacaoRedeLoterica2025PeriodoEquivalente: 1050000000, arrecadacaoRedeLotericaMes2026: 1080000000 } }
+  ],
+  "1TRI/2026"
+);
+assert.equal(redeLotericaQuarter.statusTrimestre, "Fechado");
+assert.equal(redeLotericaQuarter.metaTrimestral, 3060000000);
+assert.equal(redeLotericaQuarter.resultadoTrimestral, 3090000000);
+assert.ok(Math.abs(redeLotericaQuarter.desempenhoTrimestral - (3090000000 / 3060000000)) < 0.000001);
+assert.equal(redeLotericaQuarter.baseReferencia2025Trimestre, 3000000000);
+assert.ok(Math.abs(redeLotericaQuarter.indiceTrimestral - 1.03) < 0.000001);
+assert.ok(Math.abs(redeLotericaQuarter.crescimentoTrimestral - 0.03) < 0.000001);
+assert.equal(redeLotericaQuarter.situacaoTrimestral, "Atingido");
 console.log("Testes trimestrais OK");
 
 
