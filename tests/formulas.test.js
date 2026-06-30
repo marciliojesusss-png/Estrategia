@@ -721,6 +721,69 @@ const ecossistemaBaseZero = formulas.calcularIndicador(
 assert.equal(ecossistemaBaseZero.erro, true);
 assert.equal(ecossistemaBaseZero.mensagem, "Dados insuficientes: informe a base de referência de 2025 para o período equivalente.");
 
+const regraEcossistemaCenarios = {
+  indicadorId: 22,
+  tipoCalculo: "participacao_ecossistema_com_cenarios",
+  tipoConsolidacao: "ultima_posicao",
+  unidadeMedida: "percentual",
+  metaAnualValor: 0.10,
+  parametrosCalculo: {
+    campoCenario: "cenarioApuracaoEcossistema",
+    campoNumerador: "arrecadacaoViaEcossistema",
+    campoDenominador: "arrecadacaoTotal",
+    cenarioOficialResumoExecutivo: "lotex_marketplace",
+    cenarios: [
+      { value: "lotex", label: "Lotex" },
+      { value: "lotex_marketplace", label: "Lotex + Marketplace" }
+    ],
+    curvasCenarios: {
+      lotex: {
+        "1TRI": { referencia2025: 0.90, meta2026: 0.99 },
+        "2TRI": { referencia2025: 0.78, meta2026: 0.86 },
+        "3TRI": { referencia2025: 0.74, meta2026: 0.81 },
+        "4TRI": { referencia2025: 0.65, meta2026: 0.72 }
+      },
+      lotex_marketplace: {
+        "1TRI": { referencia2025: 3.42, meta2026: 3.76 },
+        "2TRI": { referencia2025: 3.27, meta2026: 3.60 },
+        "3TRI": { referencia2025: 3.32, meta2026: 3.65 },
+        "4TRI": { referencia2025: 3.46, meta2026: 3.80 }
+      }
+    }
+  },
+  camposEntrada: [
+    { nome: "cenarioApuracaoEcossistema", obrigatorio: true },
+    { nome: "arrecadacaoViaEcossistema", obrigatorio: true },
+    { nome: "arrecadacaoTotal", obrigatorio: true }
+  ]
+};
+
+const ecossistemaLotex1Tri = formulas.calcularIndicador(
+  indicador(22, "Arrecadação Gerada com o Ecossistema"),
+  regraEcossistemaCenarios,
+  { ano: 2026, mes: 3, trimestre: "1TRI/2026", camposEntrada: { cenarioApuracaoEcossistema: "lotex", arrecadacaoViaEcossistema: 39800000, arrecadacaoTotal: 5966900000 } },
+  []
+);
+closeTo(ecossistemaLotex1Tri.referencia2025Trimestre, 0.009);
+closeTo(ecossistemaLotex1Tri.metaTrimestral2026, 0.0099);
+closeTo(ecossistemaLotex1Tri.resultadoCalculado, 39800000 / 5966900000);
+closeTo(ecossistemaLotex1Tri.percentualAtingidoMensal, (39800000 / 5966900000) / 0.0099);
+assert.equal(ecossistemaLotex1Tri.cenarioApuracaoEcossistemaLabel, "Lotex");
+assert.equal(ecossistemaLotex1Tri.situacao, "Crítico");
+
+const ecossistemaMarketplace1Tri = formulas.calcularIndicador(
+  indicador(22, "Arrecadação Gerada com o Ecossistema"),
+  regraEcossistemaCenarios,
+  { ano: 2026, mes: 3, trimestre: "1TRI/2026", camposEntrada: { cenarioApuracaoEcossistema: "lotex_marketplace", arrecadacaoViaEcossistema: 242300000, arrecadacaoTotal: 5966900000 } },
+  []
+);
+closeTo(ecossistemaMarketplace1Tri.referencia2025Trimestre, 0.0342);
+closeTo(ecossistemaMarketplace1Tri.metaTrimestral2026, 0.0376);
+closeTo(ecossistemaMarketplace1Tri.resultadoCalculado, 242300000 / 5966900000);
+closeTo(ecossistemaMarketplace1Tri.percentualAtingidoMensal, (242300000 / 5966900000) / 0.0376);
+assert.equal(ecossistemaMarketplace1Tri.cenarioApuracaoEcossistemaLabel, "Lotex + Marketplace");
+assert.equal(ecossistemaMarketplace1Tri.situacao, "Atingido");
+
 const regraRedeLoterica = {
   indicadorId: 23,
   tipoCalculo: "crescimento_rede_loterica_base_2025",
@@ -777,6 +840,64 @@ const redeLotericaBaseZero = formulas.calcularIndicador(
 );
 assert.equal(redeLotericaBaseZero.erro, true);
 assert.equal(redeLotericaBaseZero.mensagem, "Dados insuficientes: informe a arrecadação da Rede Lotérica em 2025 para o período equivalente.");
+
+const regraRedeLotericaIncremento = {
+  indicadorId: 23,
+  tipoCalculo: "incremento_rede_loterica_base_2025",
+  tipoConsolidacao: "ultima_posicao",
+  unidadeMedida: "percentual",
+  metaAnualValor: 0.02,
+  parametrosCalculo: {
+    campoValor2026: "arrecadacaoRedeLoterica2026",
+    campoBase2025: "arrecadacaoRedeLoterica2025",
+    metaTipo: "curva_trimestral_incremento",
+    curvaIncrementoTrimestral: {
+      "1TRI": { metaIncremento: 0.50 },
+      "2TRI": { metaIncremento: 1.00 },
+      "3TRI": { metaIncremento: 1.50 },
+      "4TRI": { metaIncremento: 2.00 }
+    },
+    mensagemBaseInsuficiente: "Dados insuficientes: informe a arrecadação da Rede Lotérica em 2025 para o período equivalente."
+  },
+  camposEntrada: [
+    { nome: "arrecadacaoRedeLoterica2025", obrigatorio: true },
+    { nome: "arrecadacaoRedeLoterica2026", obrigatorio: true },
+    { nome: "metaTrimestral", obrigatorio: false }
+  ]
+};
+
+const redeLotericaIncremento1Tri = formulas.calcularIndicador(
+  indicador(23, "Participação da Rede Lotérica nos Negócios da CAIXA Loterias"),
+  regraRedeLotericaIncremento,
+  { ano: 2026, mes: 3, trimestre: "1TRI/2026", camposEntrada: { arrecadacaoRedeLoterica2025: 3000000000, arrecadacaoRedeLoterica2026: 3017079000 } },
+  []
+);
+closeTo(redeLotericaIncremento1Tri.indiceRedeLoterica, 1.005693);
+closeTo(redeLotericaIncremento1Tri.incrementoRedeLoterica, 0.005693);
+closeTo(redeLotericaIncremento1Tri.resultadoMensal, 0.005693);
+closeTo(redeLotericaIncremento1Tri.metaTrimestral, 0.005);
+closeTo(redeLotericaIncremento1Tri.percentualAtingidoMensal, 1.1386);
+assert.equal(redeLotericaIncremento1Tri.situacao, "Atingido");
+
+const redeLotericaIncrementoAbaixo = formulas.calcularIndicador(
+  indicador(23, "Participação da Rede Lotérica nos Negócios da CAIXA Loterias"),
+  regraRedeLotericaIncremento,
+  { ano: 2026, mes: 3, trimestre: "1TRI/2026", camposEntrada: { arrecadacaoRedeLoterica2025: 3000000000, arrecadacaoRedeLoterica2026: 3012000000 } },
+  []
+);
+closeTo(redeLotericaIncrementoAbaixo.incrementoRedeLoterica, 0.004);
+closeTo(redeLotericaIncrementoAbaixo.percentualAtingidoMensal, 0.8);
+assert.equal(redeLotericaIncrementoAbaixo.situacao, "Abaixo da meta");
+
+const redeLotericaIncrementoCritico = formulas.calcularIndicador(
+  indicador(23, "Participação da Rede Lotérica nos Negócios da CAIXA Loterias"),
+  regraRedeLotericaIncremento,
+  { ano: 2026, mes: 3, trimestre: "1TRI/2026", camposEntrada: { arrecadacaoRedeLoterica2025: 3000000000, arrecadacaoRedeLoterica2026: 3006000000 } },
+  []
+);
+closeTo(redeLotericaIncrementoCritico.incrementoRedeLoterica, 0.002);
+closeTo(redeLotericaIncrementoCritico.percentualAtingidoMensal, 0.4);
+assert.equal(redeLotericaIncrementoCritico.situacao, "Crítico");
 
 const regraRepasseSocial = {
   indicadorId: 17,

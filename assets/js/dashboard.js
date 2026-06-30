@@ -175,6 +175,23 @@
       const trimestre = lancamento?.trimestre || `${Math.ceil(Number(lancamento?.mes) / 3)}TRI/${lancamento?.ano || 2026}`;
       return toFiniteNumber(regra.parametrosCalculo.curvaJogoResponsavel2026?.[trimestre]?.metaCobertura ?? regra.parametrosCalculo.metaCobertura ?? regra.metaAnualValor);
     }
+    if (regra?.tipoCalculo === "participacao_ecossistema_com_cenarios") {
+      const quarterMatch = String(lancamento?.trimestre || `${Math.ceil(Number(lancamento?.mes || 1) / 3)}TRI/${lancamento?.ano || 2026}`).match(/([1-4])\s*TRI/i);
+      const quarterKey = quarterMatch ? `${quarterMatch[1]}TRI` : "1TRI";
+      const rawScenario = lancamento?.camposEntrada?.cenarioApuracaoEcossistema || regra?.parametrosCalculo?.cenarioOficialResumoExecutivo || "lotex_marketplace";
+      const scenarioText = String(rawScenario).toLocaleLowerCase("pt-BR");
+      const scenario = scenarioText.includes("lotex") && scenarioText.includes("marketplace")
+        ? "lotex_marketplace"
+        : scenarioText === "lotex" ? "lotex" : regra?.parametrosCalculo?.cenarioOficialResumoExecutivo || "lotex_marketplace";
+      const metaPontosPercentuais = regra?.parametrosCalculo?.curvasCenarios?.[scenario]?.[quarterKey]?.meta2026;
+      return metaPontosPercentuais === undefined ? null : metaPontosPercentuais / 100;
+    }
+    if (regra?.tipoCalculo === "incremento_rede_loterica_base_2025") {
+      const quarterMatch = String(lancamento?.trimestre || `${Math.ceil(Number(lancamento?.mes || 1) / 3)}TRI/${lancamento?.ano || 2026}`).match(/([1-4])\s*TRI/i);
+      const quarterKey = quarterMatch ? `${quarterMatch[1]}TRI` : "1TRI";
+      const metaPontosPercentuais = regra?.parametrosCalculo?.curvaIncrementoTrimestral?.[quarterKey]?.metaIncremento;
+      return metaPontosPercentuais === undefined ? null : metaPontosPercentuais / 100;
+    }
     if (["baseline_com_meta_anual", "baseline_com_meta_anual_corrigida"].includes(regra?.parametrosCalculo?.metaTipo)) {
       const key = lancamento?.competencia || `${lancamento?.ano}-${String(lancamento?.mes).padStart(2, "0")}`;
       const referencias = regra.parametrosCalculo.referenciasPorCompetencia || {};
@@ -243,7 +260,7 @@
   }
 
   function obterResultadoDashboard(indicador, regra, lancamentosDoIndicador) {
-    const homologatedOnlyTypes = new Set(["razao_canais_digitais", "crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"]);
+    const homologatedOnlyTypes = new Set(["razao_canais_digitais", "participacao_ecossistema_com_cenarios", "incremento_rede_loterica_base_2025", "crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"]);
     const validSource = homologatedOnlyTypes.has(regra?.tipoCalculo)
       ? (lancamentosDoIndicador || []).filter((item) => item.status === "Homologado")
       : (lancamentosDoIndicador || []);

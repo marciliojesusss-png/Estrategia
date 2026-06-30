@@ -124,6 +124,22 @@
 
   function getReferenceMeta(rule, quarterLaunches, quarterNumberValue, quarterLabel) {
     const params = rule?.parametrosCalculo || {};
+    if (rule?.tipoCalculo === "participacao_ecossistema_com_cenarios") {
+      const referenceLaunch = lastByMonth((quarterLaunches || []).filter((item) => item.status === STATUS_LANCAMENTO.HOMOLOGADO)) || lastByMonth(quarterLaunches || []);
+      const rawScenario = referenceLaunch?.camposEntrada?.cenarioApuracaoEcossistema || params.cenarioOficialResumoExecutivo || "lotex_marketplace";
+      const normalizedScenario = String(rawScenario).toLocaleLowerCase("pt-BR");
+      const scenario = normalizedScenario.includes("lotex") && normalizedScenario.includes("marketplace")
+        ? "lotex_marketplace"
+        : normalizedScenario === "lotex" ? "lotex" : params.cenarioOficialResumoExecutivo || "lotex_marketplace";
+      const quarterKey = quarterNumberValue ? `${quarterNumberValue}TRI` : String(quarterLabel || "").match(/([1-4])\s*TRI/i)?.[0];
+      const metaPontosPercentuais = params.curvasCenarios?.[scenario]?.[quarterKey]?.meta2026;
+      return metaPontosPercentuais === undefined ? null : metaPontosPercentuais / 100;
+    }
+    if (rule?.tipoCalculo === "incremento_rede_loterica_base_2025") {
+      const quarterKey = quarterNumberValue ? `${quarterNumberValue}TRI` : String(quarterLabel || "").match(/([1-4])\s*TRI/i)?.[0];
+      const metaPontosPercentuais = params.curvaIncrementoTrimestral?.[quarterKey]?.metaIncremento;
+      return metaPontosPercentuais === undefined ? null : metaPontosPercentuais / 100;
+    }
     if (rule?.tipoCalculo === "ggr_formula" && quarterNumberValue && quarterLabel) {
       const year = getYear(quarterLabel);
       const quarterEnd = QUARTERS.find((item) => item.number === quarterNumberValue)?.months.at(-1);
@@ -313,6 +329,15 @@
       canaisAcumuladoTrimestre: regra?.tipoCalculo === "razao_pix" ? validCalculation?.canaisEletronicosAcumulado ?? null : null,
       canaisDigitaisAcumuladoTrimestre: regra?.tipoCalculo === "razao_canais_digitais" ? validCalculation?.canaisEletronicosAcumulado ?? null : null,
       produtosLoteriasAcumuladoTrimestre: regra?.tipoCalculo === "razao_canais_digitais" ? validCalculation?.produtosLoteriasAcumulado ?? null : null,
+      cenarioEcossistema: regra?.tipoCalculo === "participacao_ecossistema_com_cenarios" ? validCalculation?.cenarioApuracaoEcossistema ?? null : null,
+      cenarioEcossistemaLabel: regra?.tipoCalculo === "participacao_ecossistema_com_cenarios" ? validCalculation?.cenarioApuracaoEcossistemaLabel ?? null : null,
+      referencia2025EcossistemaTrimestre: regra?.tipoCalculo === "participacao_ecossistema_com_cenarios" ? validCalculation?.referencia2025Trimestre ?? null : null,
+      arrecadacaoViaEcossistemaTrimestre: regra?.tipoCalculo === "participacao_ecossistema_com_cenarios" ? validCalculation?.arrecadacaoViaEcossistema ?? null : null,
+      arrecadacaoTotalEcossistemaTrimestre: regra?.tipoCalculo === "participacao_ecossistema_com_cenarios" ? validCalculation?.arrecadacaoTotal ?? null : null,
+      baseReferenciaRedeLotericaTrimestre: regra?.tipoCalculo === "incremento_rede_loterica_base_2025" ? validCalculation?.arrecadacaoRedeLoterica2025 ?? null : null,
+      arrecadacaoRedeLoterica2026Trimestre: regra?.tipoCalculo === "incremento_rede_loterica_base_2025" ? validCalculation?.arrecadacaoRedeLoterica2026 ?? null : null,
+      indiceRedeLotericaTrimestre: regra?.tipoCalculo === "incremento_rede_loterica_base_2025" ? validCalculation?.indiceRedeLoterica ?? null : null,
+      incrementoRedeLotericaTrimestre: regra?.tipoCalculo === "incremento_rede_loterica_base_2025" ? validCalculation?.incrementoRedeLoterica ?? null : null,
       baseReferencia2025Trimestre: ["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(regra?.tipoCalculo) ? validCalculation?.baseReferencia2025Periodo ?? null : null,
       indiceTrimestral: ["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(regra?.tipoCalculo) ? validCalculation?.indiceEmRelacaoA2025 ?? null : null,
       crescimentoTrimestral: ["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(regra?.tipoCalculo) ? validCalculation?.crescimentoVs2025 ?? null : null,

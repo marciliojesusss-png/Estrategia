@@ -548,7 +548,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "id": 23,
       "numero": 23,
       "pilar": "Atuação em Ecossistema",
-      "indicador": "Participação da Rede Lotérica nos Negócios",
+      "indicador": "Participação da Rede Lotérica nos Negócios da CAIXA Loterias",
       "periodicidade": "Não especificada",
       "plano": "PN",
       "unidadeApuradora": "SUCOL",
@@ -3441,7 +3441,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
     },
     {
       "indicadorId": 23,
-      "nome": "Participação da Rede Lotérica nos Negócios",
+      "nome": "Participação da Rede Lotérica nos Negócios da CAIXA Loterias",
       "tipoCalculo": "crescimento_rede_loterica_base_2025",
       "tipoConsolidacao": "acumulado_periodo_equivalente",
       "metaRecorrente": false,

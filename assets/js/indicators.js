@@ -60,7 +60,7 @@
   function fillOptions(select, values, selectedValue, includeEmpty = false) {
     const options = includeEmpty ? ["", ...values] : values;
     select.innerHTML = options.map((value) => {
-      const label = value || "NÃ£o informado";
+      const label = value || "Não informado";
       return `<option value="${escapeHtml(value)}">${escapeHtml(label)}</option>`;
     }).join("");
     select.value = selectedValue || "";
@@ -120,8 +120,8 @@
         <td><strong>${escapeHtml(item.indicador)}</strong><br><small>${escapeHtml(item.metaAnualDescricao)}</small></td>
         <td>${escapeHtml(item.plano)}</td>
         <td>${escapeHtml(item.pilar)}</td>
-        <td>${escapeHtml(item.unidadeApuradora || "NÃ£o informado")}</td>
-        <td>${escapeHtml(item.diretoriaResponsavel || "NÃ£o informado")}</td>
+        <td>${escapeHtml(item.unidadeApuradora || "Não informado")}</td>
+        <td>${escapeHtml(item.diretoriaResponsavel || "Não informado")}</td>
         <td><span class="badge info">${escapeHtml(item.tipoCalculo)}</span></td>
         <td>
           <div class="row-actions">
@@ -157,16 +157,16 @@
     }
 
     readOnly.innerHTML = [
-      ["NÃºmero", indicador.numero],
+      ["Número", indicador.numero],
       ["Plano", indicador.plano],
-      ["Pilar estratÃ©gico", indicador.pilar],
+      ["Pilar estratégico", indicador.pilar],
       ["Periodicidade", indicador.periodicidade],
-      ["Unidade apuradora", indicador.unidadeApuradora || "NÃ£o informado"],
-      ["Diretoria responsÃ¡vel", indicador.diretoriaResponsavel || "NÃ£o informado"],
-      ["Tipo de cÃ¡lculo", indicador.tipoCalculo],
+      ["Unidade apuradora", indicador.unidadeApuradora || "Não informado"],
+      ["Diretoria responsável", indicador.diretoriaResponsavel || "Não informado"],
+      ["Tipo de cálculo", indicador.tipoCalculo],
       ["Unidade de medida", indicador.unidadeMedida],
       ["Meta anual", indicador.metaAnualDescricao, true],
-      ["MÃ©trica/FÃ³rmula de referÃªncia", indicador.metrica, true],
+      ["Métrica/Fórmula de referência", indicador.metrica, true],
       ...(Number(indicador.id) === 1 ? [[
         "Observacao de acompanhamento",
         "Este indicador mede a proporcao de clientes ativos identificaveis em canais eletronicos que receberam ofertas ou interacoes personalizadas. A unidade responsavel deve informar a base de clientes ativos identificaveis e a quantidade de clientes unicos alcancados por ofertas personalizadas ate a competencia. O sistema calcula automaticamente o percentual realizado.",
@@ -217,8 +217,8 @@
         "Este indicador possui regra inversa: quanto menor o indice, melhor o desempenho. A meta anual representa o limite maximo de eficiencia operacional recorrente. Assim, o indicador e considerado atingido quando o IEO realizado e menor ou igual a meta de referencia do periodo.",
         true
       ]] : []),      ...(Number(indicador.id) === 8 ? [[
-        "ObservaÃ§Ã£o de acompanhamento",
-        "A meta de 28,05% corresponde ao percentual de referÃªncia de 2025, de 23,05%, acrescido de 5 pontos percentuais, conforme informe de acompanhamento. O resultado mensal, trimestral e anual Ã© calculado pela razÃ£o entre a arrecadaÃ§Ã£o dos canais eletrÃ´nicos e a arrecadaÃ§Ã£o total dos produtos de loterias no perÃ­odo.",
+        "Observação de acompanhamento",
+        "A meta de 28,05% corresponde ao percentual de referência de 2025, de 23,05%, acrescido de 5 pontos percentuais, conforme informe de acompanhamento. O resultado mensal, trimestral e anual é calculado pela razão entre a arrecadação dos canais eletrônicos e a arrecadação total dos produtos de loterias no período.",
         true
       ]] : []),
       ...(Number(indicador.id) === 7 ? [[
@@ -282,7 +282,7 @@
 
   function monthlyAction(lancamento) {
     if (!lancamento) return "-";
-    const page = ["Enviado para homologaÃ§Ã£o", "Homologado"].includes(lancamento.status) &&
+    const page = ["Enviado para homologação", "Homologado"].includes(lancamento.status) &&
       ["Administrador", "Diretoria Homologadora"].includes(state.user.perfil)
       ? "homologacao.html"
       : "lancamentos.html";
@@ -307,7 +307,8 @@
     const isDigitalChannels = Number(indicador.id) === 8;
     const isEcossistema = Number(indicador.id) === 22;
     const isRedeLoterica = Number(indicador.id) === 23;
-    const isBase2025Growth = isEcossistema || isRedeLoterica;
+    const isRedeLotericaIncremento = regra?.tipoCalculo === "incremento_rede_loterica_base_2025";
+    const isBase2025Growth = false;
     const isGgrFormula = regra?.tipoCalculo === "ggr_formula";
     const isIeoInverse = regra?.tipoCalculo === "indice_inverso";
     const isRepasseSocial = Number(indicador.id) === 17;
@@ -345,12 +346,12 @@
     }
 
     document.getElementById("indicatorMonthlyHeader").innerHTML = isPix ? `
-      <th>MÃªs</th>
-      <th>ArrecadaÃ§Ã£o com PIX no mÃªs</th>
-      <th>ArrecadaÃ§Ã£o total nos canais eletrÃ´nicos</th>
+      <th>Mês</th>
+      <th>Arrecadação com PIX no mês</th>
+      <th>Arrecadação total nos canais eletrônicos</th>
       <th>Resultado mensal</th>
       <th>Status mensal</th>
-      <th>AÃ§Ã£o</th>
+      <th>Ação</th>
     ` : isOfertasPersonalizadas ? `
       <th>Competência</th>
       <th>Base de clientes ativos identificáveis</th>
@@ -515,12 +516,35 @@
       <th>Status mensal</th>
       <th>Ação</th>
     ` : isDigitalChannels ? `
-      <th>MÃªs</th>
-      <th>ArrecadaÃ§Ã£o total nos canais eletrÃ´nicos</th>
-      <th>ArrecadaÃ§Ã£o total dos produtos de loterias</th>
+      <th>Mês</th>
+      <th>Arrecadação total nos canais eletrônicos</th>
+      <th>Arrecadação total dos produtos de loterias</th>
       <th>Resultado mensal</th>
       <th>Status mensal</th>
-      <th>AÃ§Ã£o</th>
+      <th>Ação</th>
+    ` : isEcossistema ? `
+      <th>Competencia</th>
+      <th>Cenario</th>
+      <th>Referencia 2025</th>
+      <th>Meta trimestral</th>
+      <th>Arrecadacao via ecossistema</th>
+      <th>Arrecadacao total</th>
+      <th>Resultado</th>
+      <th>% atingido</th>
+      <th>Situacao</th>
+      <th>Status</th>
+      <th>Acao</th>
+    ` : isRedeLotericaIncremento ? `
+      <th>Competencia</th>
+      <th>Base 2025 equivalente</th>
+      <th>Arrecadacao Rede Loterica 2026</th>
+      <th>Meta de incremento</th>
+      <th>Indice 2026/2025</th>
+      <th>Incremento</th>
+      <th>% atingido</th>
+      <th>Situacao</th>
+      <th>Status</th>
+      <th>Acao</th>
     ` : isBase2025Growth ? `
       <th>Competencia</th>
       <th>Base 2025 equivalente</th>
@@ -541,12 +565,12 @@
       <th>Status mensal</th>
       <th>Acao</th>
     ` : `
-      <th>MÃªs</th>
-      <th>Meta mensal/referÃªncia</th>
+      <th>Mês</th>
+      <th>Meta mensal/referência</th>
       <th>Realizado mensal</th>
       <th>Resultado mensal</th>
       <th>Status mensal</th>
-      <th>AÃ§Ã£o</th>
+      <th>Ação</th>
     `;
 
     document.getElementById("indicatorMonthlyComposition").innerHTML = QuarterlyConsolidation.MONTHS.map(([month, name]) => {
@@ -568,7 +592,7 @@
             <td>${Calculations.formatarValor(calculated?.resultadoMensal, "percentual")}</td>
             <td>${Calculations.formatarPercentual(percent)}</td>
             <td>${escapeHtml(situation)}</td>
-            <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologaÃ§Ã£o" ? "warn" : "info"}">${escapeHtml(launch?.status || "NÃ£o iniciado")}</span></td>
+            <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologação" ? "warn" : "info"}">${escapeHtml(launch?.status || "Não iniciado")}</span></td>
             <td>${monthlyAction(launch)}</td>
           </tr>
         `;
@@ -591,7 +615,7 @@
             <td>${escapeHtml(launch?.camposEntrada?.fontePesquisaNPS || "-")}</td>
             <td>${Calculations.formatarPercentual(percent)}</td>
             <td>${escapeHtml(situation)}</td>
-            <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologaÃ§Ã£o" ? "warn" : "info"}">${escapeHtml(launch?.status || "NÃ£o iniciado")}</span></td>
+            <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologação" ? "warn" : "info"}">${escapeHtml(launch?.status || "Não iniciado")}</span></td>
             <td>${escapeHtml(launch?.camposEntrada?.observacaoArea || launch?.observacaoArea || "-")}</td>
             <td>${monthlyAction(launch)}</td>
           </tr>
@@ -648,7 +672,7 @@
             <td>${escapeHtml(situation)}</td>
             <td>${escapeHtml(launch?.camposEntrada?.[campoDataBase] || "-")}</td>
             <td>${escapeHtml(launch?.camposEntrada?.[campoFonte] || "-")}</td>
-            <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologaÃ§Ã£o" ? "warn" : "info"}">${escapeHtml(launch?.status || "NÃ£o iniciado")}</span></td>
+            <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologação" ? "warn" : "info"}">${escapeHtml(launch?.status || "Não iniciado")}</span></td>
             <td>${monthlyAction(launch)}</td>
           </tr>
         `;
@@ -670,7 +694,7 @@
             <td>${Calculations.formatarValor(calculated?.resultadoMensal, "percentual")}</td>
             <td>${Calculations.formatarPercentual(percent)}</td>
             <td>${escapeHtml(situation)}</td>
-            <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologaÃ§Ã£o" ? "warn" : "info"}">${escapeHtml(launch?.status || "NÃ£o iniciado")}</span></td>
+            <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologação" ? "warn" : "info"}">${escapeHtml(launch?.status || "Não iniciado")}</span></td>
             <td>${monthlyAction(launch)}</td>
           </tr>
         `;
@@ -694,7 +718,7 @@
             <td>${escapeHtml(launch?.camposEntrada?.descricaoAndamentoTIC || "-")}</td>
             <td>${escapeHtml(launch?.camposEntrada?.evidenciaTIC || "-")}</td>
             <td>${escapeHtml(situation)}</td>
-            <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologaÃ§Ã£o" ? "warn" : "info"}">${escapeHtml(launch?.status || "NÃ£o iniciado")}</span></td>
+            <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologação" ? "warn" : "info"}">${escapeHtml(launch?.status || "Não iniciado")}</span></td>
             <td>${monthlyAction(launch)}</td>
           </tr>
         `;
@@ -709,7 +733,7 @@
             <td>${escapeHtml(launch?.camposEntrada?.descricaoAndamentoPlataformaJogos || "-")}</td>
             <td>${escapeHtml(launch?.camposEntrada?.evidenciaPlataformaJogos || "-")}</td>
             <td>${escapeHtml(launch?.camposEntrada?.observacaoArea || launch?.observacaoArea || "-")}</td>
-            <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologaÃ§Ã£o" ? "warn" : "info"}">${escapeHtml(launch?.status || "NÃ£o iniciado")}</span></td>
+            <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologação" ? "warn" : "info"}">${escapeHtml(launch?.status || "Não iniciado")}</span></td>
             <td>${monthlyAction(launch)}</td>
           </tr>
         `;
@@ -729,7 +753,7 @@
             <td>${escapeHtml(launch?.camposEntrada?.dataConclusao || "-")}</td>
             <td>${counts ? "Sim" : "Não"}</td>
             <td>${escapeHtml(launch?.camposEntrada?.evidenciaAcao || "-")}</td>
-            <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologaÃ§Ã£o" ? "warn" : "info"}">${escapeHtml(launch?.status || "NÃ£o iniciado")}</span></td>
+            <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologação" ? "warn" : "info"}">${escapeHtml(launch?.status || "Não iniciado")}</span></td>
             <td>${monthlyAction(launch)}</td>
           </tr>
         `;
@@ -749,7 +773,7 @@
             <td>${escapeHtml(launch?.camposEntrada?.dataApoioIniciativa || "-")}</td>
             <td>${counts ? "Sim" : "Não"}</td>
             <td>${escapeHtml(launch?.camposEntrada?.evidenciaIniciativaSocioambiental || "-")}</td>
-            <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologaÃ§Ã£o" ? "warn" : "info"}">${escapeHtml(launch?.status || "NÃ£o iniciado")}</span></td>
+            <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologação" ? "warn" : "info"}">${escapeHtml(launch?.status || "Não iniciado")}</span></td>
             <td>${monthlyAction(launch)}</td>
           </tr>
         `;
@@ -776,7 +800,7 @@
             <td>${counts ? "Sim" : "Não"}</td>
             <td>${escapeHtml(situation)}</td>
             <td>${escapeHtml(launch?.camposEntrada?.evidenciaIncentivoSocioambiental || "-")}</td>
-            <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologaÃ§Ã£o" ? "warn" : "info"}">${escapeHtml(launch?.status || "NÃ£o iniciado")}</span></td>
+            <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologação" ? "warn" : "info"}">${escapeHtml(launch?.status || "Não iniciado")}</span></td>
             <td>${monthlyAction(launch)}</td>
           </tr>
         `;
@@ -807,7 +831,7 @@
             <td>${escapeHtml(situation)}</td>
             <td>${escapeHtml(launch?.camposEntrada?.dataConclusaoVisibilidade || "-")}</td>
             <td>${escapeHtml(launch?.camposEntrada?.evidenciaVisibilidade || "-")}${counts ? "" : ""}</td>
-            <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologaÃ§Ã£o" ? "warn" : "info"}">${escapeHtml(launch?.status || "NÃ£o iniciado")}</span></td>
+            <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologação" ? "warn" : "info"}">${escapeHtml(launch?.status || "Não iniciado")}</span></td>
             <td>${monthlyAction(launch)}</td>
           </tr>
         `;
@@ -831,7 +855,7 @@
             <td>${Calculations.formatarValor(calculated?.ggrAcumuladoAteCompetencia ?? calculated?.resultadoOficialAnual, "moeda")}</td>
             <td>${Calculations.formatarPercentual(percent)}</td>
             <td>${escapeHtml(situation)}</td>
-            <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologaÃ§Ã£o" ? "warn" : "info"}">${escapeHtml(launch?.status || "NÃ£o iniciado")}</span></td>
+            <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologação" ? "warn" : "info"}">${escapeHtml(launch?.status || "Não iniciado")}</span></td>
             <td>${monthlyAction(launch)}</td>
           </tr>
         `;
@@ -855,7 +879,7 @@
             <td>${Calculations.formatarValor(calculated?.ieoRealizadoMes ?? calculated?.resultadoMensal, "percentual")}</td>
             <td>${escapeHtml(percentLabel)}</td>
             <td>${escapeHtml(situation)}</td>
-            <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologaÃ§Ã£o" ? "warn" : "info"}">${escapeHtml(launch?.status || "NÃ£o iniciado")}</span></td>
+            <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologação" ? "warn" : "info"}">${escapeHtml(launch?.status || "Não iniciado")}</span></td>
             <td>${monthlyAction(launch)}</td>
           </tr>
         `;
@@ -875,7 +899,60 @@
             <td>${Calculations.formatarValor(calculated?.realizadoAcumulado ?? calculated?.resultadoOficialAnual, "moeda")}</td>
             <td>${Calculations.formatarPercentual(percent)}</td>
             <td>${escapeHtml(situation)}</td>
-            <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologaÃ§Ã£o" ? "warn" : "info"}">${escapeHtml(launch?.status || "NÃ£o iniciado")}</span></td>
+            <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologação" ? "warn" : "info"}">${escapeHtml(launch?.status || "Não iniciado")}</span></td>
+            <td>${monthlyAction(launch)}</td>
+          </tr>
+        `;
+      }
+      if (isEcossistema) {
+        const calculationScope = launches.filter((item) => Number(item.mes) <= month && item.status === "Homologado");
+        const calculated = launch && launch.status === "Homologado"
+          ? IndicatorFormulas.calcularIndicador(indicador, regra, launch, calculationScope)
+          : null;
+        const percent = calculated?.percentualAtingidoMensal ?? calculated?.percentualAtingidoAnual ?? launch?.percentualAtingidoMensal ?? null;
+        const situation = calculated?.situacao || launch?.situacaoCalculada || (calculated?.erro ? "Dados insuficientes" : Calculations.calcularStatusDesempenho(percent));
+        const scenario = calculated?.cenarioApuracaoEcossistemaLabel ||
+          (launch?.camposEntrada?.cenarioApuracaoEcossistema === "lotex" ? "Lotex" : launch?.camposEntrada?.cenarioApuracaoEcossistema ? "Lotex + Marketplace" : "-");
+        return `
+          <tr>
+            <td>${name}/2026</td>
+            <td>${escapeHtml(scenario)}</td>
+            <td>${Calculations.formatarPercentual(calculated?.referencia2025Trimestre)}</td>
+            <td>${Calculations.formatarPercentual(calculated?.metaTrimestral2026 ?? launch?.metaMensal)}</td>
+            <td>${Calculations.formatarValor(calculated?.arrecadacaoViaEcossistema ?? launch?.camposEntrada?.arrecadacaoViaEcossistema, "moeda")}</td>
+            <td>${Calculations.formatarValor(calculated?.arrecadacaoTotal ?? launch?.camposEntrada?.arrecadacaoTotal, "moeda")}</td>
+            <td>${Calculations.formatarValor(calculated?.resultadoCalculado ?? calculated?.resultadoMensal ?? launch?.resultadoMensal, "percentual")}</td>
+            <td>${Calculations.formatarPercentual(percent)}</td>
+            <td>${escapeHtml(situation)}</td>
+            <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologação" ? "warn" : "info"}">${escapeHtml(launch?.status || "Não iniciado")}</span></td>
+            <td>${monthlyAction(launch)}</td>
+          </tr>
+        `;
+      }
+      if (isRedeLotericaIncremento) {
+        const calculationScope = launches.filter((item) => Number(item.mes) <= month && item.status === "Homologado");
+        const calculated = launch && launch.status === "Homologado"
+          ? IndicatorFormulas.calcularIndicador(indicador, regra, launch, calculationScope)
+          : null;
+        const base2025 = calculated?.arrecadacaoRedeLoterica2025 ??
+          launch?.camposEntrada?.arrecadacaoRedeLoterica2025 ??
+          launch?.camposEntrada?.arrecadacaoRedeLoterica2025PeriodoEquivalente;
+        const realizado2026 = calculated?.arrecadacaoRedeLoterica2026 ??
+          launch?.camposEntrada?.arrecadacaoRedeLoterica2026 ??
+          launch?.camposEntrada?.arrecadacaoRedeLotericaMes2026;
+        const percent = calculated?.percentualAtingidoMensal ?? calculated?.percentualAtingidoAnual ?? null;
+        const situation = calculated?.situacao || (calculated?.erro ? "Dados insuficientes" : Calculations.calcularStatusDesempenho(percent));
+        return `
+          <tr>
+            <td>${name}/2026</td>
+            <td>${Calculations.formatarValor(base2025, "moeda")}</td>
+            <td>${Calculations.formatarValor(realizado2026, "moeda")}</td>
+            <td>${Calculations.formatarPercentual(calculated?.metaTrimestral ?? launch?.metaMensal)}</td>
+            <td>${Calculations.formatarPercentual(calculated?.indiceRedeLoterica)}</td>
+            <td>${Calculations.formatarPercentual(calculated?.incrementoRedeLoterica ?? calculated?.resultadoMensal ?? launch?.resultadoMensal)}</td>
+            <td>${Calculations.formatarPercentual(percent)}</td>
+            <td>${escapeHtml(situation)}</td>
+            <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologação" ? "warn" : "info"}">${escapeHtml(launch?.status || "Não iniciado")}</span></td>
             <td>${monthlyAction(launch)}</td>
           </tr>
         `;
@@ -939,7 +1016,7 @@
             <td>${Calculations.formatarValor(accumulatedResult, regra.unidadeMedida)}</td>
             <td>${Calculations.formatarPercentual(percent)}</td>
             <td>${escapeHtml(situation)}</td>
-            <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologaÃ§Ã£o" ? "warn" : "info"}">${escapeHtml(launch?.status || "NÃ£o iniciado")}</span></td>
+            <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologação" ? "warn" : "info"}">${escapeHtml(launch?.status || "Não iniciado")}</span></td>
             <td>${monthlyAction(launch)}</td>
           </tr>
         `;
@@ -958,7 +1035,7 @@
               ? Calculations.formatarValor(launch?.camposEntrada?.arrecadacaoTotalProdutosLoteriasMes, "moeda")
               : Calculations.formatarValor(launch?.realizadoMensal, regra.unidadeMedida)}</td>
           <td>${Calculations.formatarValor(result, regra.unidadeMedida)}</td>
-          <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologaÃ§Ã£o" ? "warn" : "info"}">${escapeHtml(launch?.status || "NÃ£o iniciado")}</span></td>
+          <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologação" ? "warn" : "info"}">${escapeHtml(launch?.status || "Não iniciado")}</span></td>
           <td>${monthlyAction(launch)}</td>
         </tr>
       `;
@@ -979,9 +1056,13 @@
           ${isPix && quarter.pixAcumuladoTrimestre != null
             ? `<small class="quarter-message">PIX: ${Calculations.formatarMoedaBR(quarter.pixAcumuladoTrimestre)}<br>Canais: ${Calculations.formatarMoedaBR(quarter.canaisAcumuladoTrimestre)}</small>`
             : isDigitalChannels && quarter.canaisDigitaisAcumuladoTrimestre != null
-              ? `<small class="quarter-message">Canais eletrÃ´nicos: ${Calculations.formatarMoedaBR(quarter.canaisDigitaisAcumuladoTrimestre)}<br>Produtos de loterias: ${Calculations.formatarMoedaBR(quarter.produtosLoteriasAcumuladoTrimestre)}</small>`
+              ? `<small class="quarter-message">Canais eletrônicos: ${Calculations.formatarMoedaBR(quarter.canaisDigitaisAcumuladoTrimestre)}<br>Produtos de loterias: ${Calculations.formatarMoedaBR(quarter.produtosLoteriasAcumuladoTrimestre)}</small>`
               : isVisibilidadeRepasses && quarter.dadosCalculados?.resultadoPercentualVisibilidade != null
                 ? `<small class="quarter-message">Resultado: ${Calculations.formatarPercentual(quarter.dadosCalculados.resultadoPercentualVisibilidade)}</small>`
+              : isEcossistema && quarter.dadosCalculados
+                ? `<small class="quarter-message">Cenário: ${escapeHtml(quarter.cenarioEcossistemaLabel || "-")}<br>Referência 2025: ${Calculations.formatarPercentual(quarter.referencia2025EcossistemaTrimestre)}<br>Via ecossistema: ${Calculations.formatarMoedaBR(quarter.arrecadacaoViaEcossistemaTrimestre)}<br>Total: ${Calculations.formatarMoedaBR(quarter.arrecadacaoTotalEcossistemaTrimestre)}</small>`
+              : isRedeLotericaIncremento && quarter.dadosCalculados
+                ? `<small class="quarter-message">Base 2025: ${Calculations.formatarMoedaBR(quarter.baseReferenciaRedeLotericaTrimestre)}<br>Rede 2026: ${Calculations.formatarMoedaBR(quarter.arrecadacaoRedeLoterica2026Trimestre)}<br>Índice: ${Calculations.formatarPercentual(quarter.indiceRedeLotericaTrimestre)}</small>`
               : isBase2025Growth && quarter.baseReferencia2025Trimestre != null
                 ? `<small class="quarter-message">Base 2025: ${Calculations.formatarMoedaBR(quarter.baseReferencia2025Trimestre)}<br>Indice: ${Calculations.formatarPercentual(quarter.indiceTrimestral)}<br>Crescimento: ${Calculations.formatarPercentual(quarter.crescimentoTrimestral)}</small>`
               : ""}
@@ -1041,7 +1122,7 @@
     const numero = Number(document.getElementById("fieldNumero").value);
     const duplicate = state.indicadores.find((item) => item.id !== id && Number(item.numero) === numero);
     if (duplicate) {
-      showMessage(`JÃ¡ existe indicador com o nÃºmero ${numero}.`, "warning");
+      showMessage(`Já existe indicador com o número ${numero}.`, "warning");
       return;
     }
 
@@ -1099,7 +1180,7 @@
     });
 
     document.getElementById("resetIndicatorData").addEventListener("click", () => {
-      const confirmed = window.confirm("Restaurar os indicadores originais da planilha? AlteraÃ§Ãµes locais de cadastro serÃ£o descartadas.");
+      const confirmed = window.confirm("Restaurar os indicadores originais da planilha? Alterações locais de cadastro serão descartadas.");
       if (!confirmed) return;
       localStorage.removeItem("caixaLoterias:indicadores");
       window.location.reload();

@@ -5,12 +5,12 @@
   const FLASH_KEY = "caixaLoterias:mensagemSistema";
 
   const PAGE_ACCESS = {
-    resumoExecutivo: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consulta/Gestão", "Usuário Companhia"],
-    visaoTrimestral: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consulta/Gestão", "Usuário Companhia"],
-    indicadores: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consulta/Gestão", "Usuário Companhia"],
+    resumoExecutivo: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consulta/Gestao", "Consulta/Gest\u00e3o", "Usuario Companhia", "Usu\u00e1rio Companhia"],
+    visaoTrimestral: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consulta/Gestao", "Consulta/Gest\u00e3o", "Usuario Companhia", "Usu\u00e1rio Companhia"],
+    indicadores: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consulta/Gestao", "Consulta/Gest\u00e3o", "Usuario Companhia", "Usu\u00e1rio Companhia"],
     lancamentos: ["Administrador", "Unidade Apuradora"],
     homologacao: ["Administrador", "Diretoria Homologadora"],
-    relatorios: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consulta/Gestão", "Usuário Companhia"],
+    relatorios: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consulta/Gestao", "Consulta/Gest\u00e3o", "Usuario Companhia", "Usu\u00e1rio Companhia"],
     administracao: ["Administrador"]
   };
 
@@ -64,17 +64,47 @@
     return JSON.parse(raw);
   }
 
+  function normalizeScopeValue(value) {
+    return String(value || "")
+      .replace(/^Unidade\s+/i, "")
+      .replace(/^Diretoria\s+/i, "")
+      .trim()
+      .toUpperCase();
+  }
+
+  function isBroadProfile(profile) {
+    return ["Administrador", "Consulta/Gestao", "Consulta/Gest\u00e3o", "Usuario Companhia", "Usu\u00e1rio Companhia"].includes(profile);
+  }
+
+  function indicatorUnit(indicator) {
+    return indicator?.unidadeApuradora ?? indicator?.unidade_apuradora ?? "";
+  }
+
+  function indicatorDirectory(indicator) {
+    return indicator?.diretoriaResponsavel ?? indicator?.diretoria_responsavel ?? "";
+  }
+
+  function userUnit(user) {
+    return user?.unidadeApuradora ?? user?.unidade ?? user?.unidade_apuradora ?? "";
+  }
+
+  function userDirectory(user) {
+    return user?.diretoriaResponsavel ?? user?.diretoria ?? user?.diretoria_responsavel ?? "";
+  }
+
   function filterIndicatorsByUser(indicadores, user) {
-    if (!user || ["Administrador", "Consulta/Gestão", "Usuário Companhia"].includes(user.perfil)) {
+    if (!user || isBroadProfile(user.perfil)) {
       return indicadores;
     }
 
     if (user.perfil === "Unidade Apuradora") {
-      return indicadores.filter((item) => item.unidadeApuradora === user.unidadeApuradora);
+      const unidade = normalizeScopeValue(userUnit(user));
+      return indicadores.filter((item) => normalizeScopeValue(indicatorUnit(item)) === unidade);
     }
 
     if (user.perfil === "Diretoria Homologadora") {
-      return indicadores.filter((item) => item.diretoriaResponsavel === user.diretoriaResponsavel);
+      const diretoria = normalizeScopeValue(userDirectory(user));
+      return indicadores.filter((item) => normalizeScopeValue(indicatorDirectory(item)) === diretoria);
     }
 
     return indicadores;
@@ -82,38 +112,38 @@
 
   function filterLaunchesByUser(lancamentos, indicadores, user) {
     const scopedIndicators = filterIndicatorsByUser(indicadores, user);
-    const indicatorIds = new Set(scopedIndicators.map((item) => item.id));
-    return lancamentos.filter((item) => indicatorIds.has(item.indicadorId));
+    const indicatorIds = new Set(scopedIndicators.map((item) => String(item.id)));
+    return lancamentos.filter((item) => indicatorIds.has(String(item.indicadorId)));
   }
 
   function getScopeDescription(user) {
     if (!user) return "";
     if (user.perfil === "Administrador") {
-      return "Perfil administrador: visualização completa dos indicadores e parâmetros.";
+      return "Perfil administrador: visualiza\u00e7\u00e3o completa dos indicadores e par\u00e2metros.";
     }
-    if (user.perfil === "Consulta/Gestão") {
-      return "Perfil consulta/gestão: visualização geral sem ações de edição ou homologação.";
+    if (["Consulta/Gestao", "Consulta/Gest\u00e3o"].includes(user.perfil)) {
+      return "Perfil consulta/gest\u00e3o: visualiza\u00e7\u00e3o geral sem a\u00e7\u00f5es de edi\u00e7\u00e3o ou homologa\u00e7\u00e3o.";
     }
-    if (user.perfil === "Usuário Companhia") {
-      return "Perfil usuário da companhia: consulta institucional, sem preenchimento, homologação ou administração.";
+    if (["Usuario Companhia", "Usu\u00e1rio Companhia"].includes(user.perfil)) {
+      return "Perfil usu\u00e1rio da companhia: consulta institucional, sem preenchimento, homologa\u00e7\u00e3o ou administra\u00e7\u00e3o.";
     }
     if (user.perfil === "Unidade Apuradora") {
-      return `Perfil unidade apuradora: dados restritos à unidade ${user.unidadeApuradora || "não informada"}.`;
+      return `Perfil unidade apuradora: dados restritos \u00e0 unidade ${normalizeScopeValue(userUnit(user)) || "n\u00e3o informada"}.`;
     }
     if (user.perfil === "Diretoria Homologadora") {
-      return `Perfil diretoria homologadora: dados restritos à diretoria ${user.diretoriaResponsavel || "não informada"}.`;
+      return `Perfil diretoria homologadora: dados restritos \u00e0 diretoria ${normalizeScopeValue(userDirectory(user)) || "n\u00e3o informada"}.`;
     }
     return "Perfil sem escopo definido.";
   }
 
   function getDeniedMessage(page, user) {
     const labels = {
-      lancamentos: "Lançamento Mensal",
-      homologacao: "Homologação",
-      relatorios: "Relatórios",
-      administracao: "Configurações"
+      lancamentos: "Lancamento Mensal",
+      homologacao: "Homologa\u00e7\u00e3o",
+      relatorios: "Relat\u00f3rios",
+      administracao: "Configura\u00e7\u00f5es"
     };
-    return `${user.perfil} não possui acesso à tela ${labels[page] || page}.`;
+    return `${user.perfil} n\u00e3o possui acesso \u00e0 tela ${labels[page] || page}.`;
   }
 
   window.Auth = {

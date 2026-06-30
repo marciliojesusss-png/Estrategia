@@ -55,7 +55,7 @@
     "Visibilidade dos Repasses Sociais das Loterias CAIXA",
     "Jogo Responsável 2026 (Capacitação e Disseminação)",
     "Arrecadação Gerada com o Ecossistema",
-    "Participação da Rede Lotérica nos Negócios"
+    "Participação da Rede Lotérica nos Negócios da CAIXA Loterias"
   ];
   const PILLAR_NAMES = [
     "Cliente no Centro",
@@ -66,6 +66,30 @@
     "Atuação em Ecossistema"
   ];
   const PIX_QUARTER_TARGETS = [0.61, 0.62, 0.63, 0.65];
+  const ECOSSISTEMA_CURVAS_2026 = {
+    lotex: {
+      "1TRI": { referencia2025: 0.90, meta2026: 0.99 },
+      "2TRI": { referencia2025: 0.78, meta2026: 0.86 },
+      "3TRI": { referencia2025: 0.74, meta2026: 0.81 },
+      "4TRI": { referencia2025: 0.65, meta2026: 0.72 }
+    },
+    lotex_marketplace: {
+      "1TRI": { referencia2025: 3.42, meta2026: 3.76 },
+      "2TRI": { referencia2025: 3.27, meta2026: 3.60 },
+      "3TRI": { referencia2025: 3.32, meta2026: 3.65 },
+      "4TRI": { referencia2025: 3.46, meta2026: 3.80 }
+    }
+  };
+  const ECOSSISTEMA_CENARIOS = [
+    { value: "lotex", label: "Lotex" },
+    { value: "lotex_marketplace", label: "Lotex + Marketplace" }
+  ];
+  const REDE_LOTERICA_CURVA_INCREMENTO_2026 = {
+    "1TRI": { metaIncremento: 0.50 },
+    "2TRI": { metaIncremento: 1.00 },
+    "3TRI": { metaIncremento: 1.50 },
+    "4TRI": { metaIncremento: 2.00 }
+  };
   const APRIMORAMENTO_CURVA_TRIMESTRAL_2026 = {
     "1TRI/2026": { metaPercentual: 0.0454, metaQuantidadeAcumulada: 1 },
     "2TRI/2026": { metaPercentual: 0.1364, metaQuantidadeAcumulada: 3 },
@@ -296,11 +320,11 @@
     "arrecadacaoTotalLoteriasPeriodo"
   ]);
   const CP1252_BYTES = {
-    "â‚¬": 0x80, "â€š": 0x82, "Æ’": 0x83, "â€ž": 0x84, "â€¦": 0x85,
-    "â€ ": 0x86, "â€¡": 0x87, "Ë†": 0x88, "â€°": 0x89, "Å ": 0x8a,
-    "â€¹": 0x8b, "Å’": 0x8c, "Å½": 0x8e, "â€˜": 0x91, "â€™": 0x92,
-    "â€œ": 0x93, "â€": 0x94, "â€¢": 0x95, "â€“": 0x96, "â€”": 0x97,
-    "Ëœ": 0x98, "â„¢": 0x99, "Å¡": 0x9a, "â€º": 0x9b, "Å“": 0x9c,
+    "€": 0x80, "‚": 0x82, "Æ’": 0x83, "„": 0x84, "…": 0x85,
+    "†": 0x86, "‡": 0x87, "Ë†": 0x88, "‰": 0x89, "Å ": 0x8a,
+    "‹": 0x8b, "Å’": 0x8c, "Å½": 0x8e, "‘": 0x91, "’": 0x92,
+    "“": 0x93, "”": 0x94, "•": 0x95, "–": 0x96, "—": 0x97,
+    "Ëœ": 0x98, "™": 0x99, "Å¡": 0x9a, "›": 0x9b, "Å“": 0x9c,
     "Å¾": 0x9e, "Å¸": 0x9f
   };
   const TEXT_REPLACEMENTS = [
@@ -313,7 +337,7 @@
     ["execu\u003fo", "execução"], ["Evid\u003fncia", "Evidência"], ["N\u003fmero", "Número"],
     ["M\u003fdia", "Média"], ["Refer\u003fncia", "Referência"], ["Gest\u003fo", "Gestão"],
     ["N\u003fo", "Não"], ["n\u003fo", "não"], ["m\u003fs", "mês"], ["M\u003fs", "Mês"],
-    ["â‰¥", "≥"], ["â‰¤", "≤"]
+    ["≥", "≥"], ["≤", "≤"]
   ];
   const OPERATIONAL_NULL_FIELDS = [
     "realizado",
@@ -643,7 +667,7 @@
   }
 
   function mojibakeScore(value) {
-    return (String(value).match(/[ÃƒÃ‚Ã¢ï¿½]/g) || []).length;
+    return (String(value).match(/[\u00c3\u00c2\u00e2\ufffd]/g) || []).length;
   }
 
   function decodeCp1252Token(value) {
@@ -824,6 +848,18 @@
     return VISIBILIDADE_REPASSES_CURVA_2026[trimestre]?.metaAcoesRealizadasAcumuladas ?? null;
   }
 
+  function getEcossistemaMetaTrimestral(ano, mes, cenario = "lotex_marketplace") {
+    const trimestre = `${Math.ceil(Number(mes) / 3)}TRI`;
+    const metaPontosPercentuais = ECOSSISTEMA_CURVAS_2026[cenario]?.[trimestre]?.meta2026;
+    return metaPontosPercentuais === undefined ? null : metaPontosPercentuais / 100;
+  }
+
+  function getRedeLotericaMetaIncrementoTrimestral(ano, mes) {
+    const trimestre = `${Math.ceil(Number(mes) / 3)}TRI`;
+    const metaPontosPercentuais = REDE_LOTERICA_CURVA_INCREMENTO_2026[trimestre]?.metaIncremento;
+    return metaPontosPercentuais === undefined ? null : metaPontosPercentuais / 100;
+  }
+
   function migrarCampoGgrLegado(launch) {
     if (Number(launch?.indicadorId) !== 5) return launch;
     const camposEntrada = { ...(launch.camposEntrada || {}) };
@@ -853,6 +889,12 @@
       camposEntrada.arrecadacaoEcossistemaMesMigrado = camposEntrada.arrecadacaoEcossistemaMes;
       delete camposEntrada.arrecadacaoEcossistemaMes;
     }
+    if (camposEntrada.arrecadacaoViaEcossistema === undefined && camposEntrada.arrecadacaoEcossistemaMes2026 !== undefined) {
+      camposEntrada.arrecadacaoViaEcossistema = camposEntrada.arrecadacaoEcossistemaMes2026;
+    }
+    if (camposEntrada.cenarioApuracaoEcossistema === undefined) {
+      camposEntrada.cenarioApuracaoEcossistema = "lotex_marketplace";
+    }
     if (camposEntrada.arrecadacaoEcossistema2025 !== undefined && camposEntrada.arrecadacaoEcossistema2025PeriodoEquivalente === undefined) {
       camposEntrada.arrecadacaoEcossistema2025PeriodoEquivalente = camposEntrada.arrecadacaoEcossistema2025;
       camposEntrada.arrecadacaoEcossistema2025Migrado = camposEntrada.arrecadacaoEcossistema2025;
@@ -874,9 +916,18 @@
       camposEntrada.arrecadacaoRedeLotericaMes2025Migrado = camposEntrada.arrecadacaoRedeLotericaMes2025;
       delete camposEntrada.arrecadacaoRedeLotericaMes2025;
     }
+    if (camposEntrada.arrecadacaoRedeLoterica2025 === undefined && camposEntrada.arrecadacaoRedeLoterica2025PeriodoEquivalente !== undefined) {
+      camposEntrada.arrecadacaoRedeLoterica2025 = camposEntrada.arrecadacaoRedeLoterica2025PeriodoEquivalente;
+    }
+    if (camposEntrada.arrecadacaoRedeLoterica2026 === undefined && camposEntrada.arrecadacaoRedeLotericaMes2026 !== undefined) {
+      camposEntrada.arrecadacaoRedeLoterica2026 = camposEntrada.arrecadacaoRedeLotericaMes2026;
+    }
     if (camposEntrada.arrecadacaoRedeLoterica2026PeriodoAtual !== undefined && camposEntrada.arrecadacaoRedeLotericaAcumulada2026 === undefined) {
       camposEntrada.arrecadacaoRedeLotericaAcumulada2026 = camposEntrada.arrecadacaoRedeLoterica2026PeriodoAtual;
       camposEntrada.arrecadacaoRedeLoterica2026PeriodoAtualMigrado = camposEntrada.arrecadacaoRedeLoterica2026PeriodoAtual;
+    }
+    if (camposEntrada.arrecadacaoRedeLoterica2026 === undefined && camposEntrada.arrecadacaoRedeLoterica2026PeriodoAtual !== undefined) {
+      camposEntrada.arrecadacaoRedeLoterica2026 = camposEntrada.arrecadacaoRedeLoterica2026PeriodoAtual;
     }
     return { ...launch, camposEntrada };
   }
@@ -1527,19 +1578,25 @@
         if (Number(indicator.id) === 22) {
           return {
             ...normalized,
-            tipoCalculo: "crescimento_comparado_base_2025",
+            tipoCalculo: "participacao_ecossistema_com_cenarios",
             unidadeMedida: "percentual",
-            metaAnualDescricao: "Resultado 2026 ≥ 110% da base 2025",
-            metrica: "Arrecadação do ecossistema em 2026 / Arrecadação do ecossistema em 2025, sempre em período equivalente"
+            metaAnualDescricao: "Ano 2026: ≥ 10% em relação ao exercício de 2025",
+            metrica: "(Arrecadação via ecossistema / Arrecadação total) × 100",
+            conceito: "Este indicador mede a proporção da arrecadação total obtida por meio de soluções ou produtos desenvolvidos e/ou distribuídos através de plataformas contratadas, parcerias estratégicas, parcerias do mercado, parcerias com empresas do Conglomerado, startups, CPSI, novos canais de distribuição e demais iniciativas aderentes ao pilar Atuação em Ecossistema.",
+            observacaoMetodologica: "A projeção de 2026 considerou inicialmente a parceria para comercialização da Lotex e inclui Apostas de Quota Fixa a partir de 2026. O informe do 1TRI26 também apresenta cenário complementar com a ferramenta Marketplace, aderente ao pilar Atuação em Ecossistema.",
+            cenarioOficialResumoExecutivo: "lotex_marketplace"
           };
         }
         if (Number(indicator.id) === 23) {
           return {
             ...normalized,
-            tipoCalculo: "crescimento_rede_loterica_base_2025",
+            indicador: INDICATOR_NAMES[22],
+            tipoCalculo: "incremento_rede_loterica_base_2025",
             unidadeMedida: "percentual",
-            metaAnualDescricao: "Resultado 2026 ≥ 102% da base 2025",
-            metrica: "Arrecadação da Rede Lotérica em 2026 / Arrecadação da Rede Lotérica em 2025, sempre em período equivalente"
+            metaAnualDescricao: "Meta anual: 2,00% de incremento",
+            metrica: "Fórmula oficial: Arrecadação Rede Lotérica 2026 / Arrecadação Rede Lotérica 2025 × 100. Resultado exibido: incremento percentual (índice 2026/2025 menos 100).",
+            conceito: "Este indicador tem o objetivo de mensurar o crescimento da arrecadação de loterias na Rede Lotérica.",
+            observacaoMetodologica: "Embora a fórmula oficial calcule a razão entre a arrecadação de 2026 e a arrecadação de 2025, a apresentação do indicador deve considerar o incremento percentual, ou seja, o índice 2026/2025 menos 100."
           };
         }
         return Number(indicator.id) === 9 ? {
@@ -1977,75 +2034,70 @@
           return {
             ...rule,
             nome: INDICATOR_NAMES[21],
-            tipoCalculo: "crescimento_comparado_base_2025",
-            tipoConsolidacao: "acumulado_periodo_equivalente",
+            tipoCalculo: "participacao_ecossistema_com_cenarios",
+            tipoConsolidacao: "ultima_posicao",
             unidadeMedida: "percentual",
-            metaAnualValor: 1.1,
+            metaAnualValor: 0.10,
             parametrosCalculo: {
-              campoValor2026Mes: "arrecadacaoEcossistemaMes2026",
-              campoValor2026Acumulado: "arrecadacaoEcossistemaAcumulada2026",
-              campoBase2025PeriodoEquivalente: "arrecadacaoEcossistema2025PeriodoEquivalente",
-              campoBase2025Acumulada: "arrecadacaoEcossistema2025Acumulada",
-              campoNumerador: "arrecadacaoEcossistemaMes2026",
-              campoNumeradorLegado: "arrecadacaoEcossistemaMes",
-              campoNumerador2025: "arrecadacaoEcossistema2025PeriodoEquivalente",
-              campoNumerador2025Legado: "arrecadacaoEcossistema2025",
-              metaTipo: "crescimento_minimo",
-              metaCrescimento: 0.1,
-              metaIndice: 1.1,
-              sentidoMeta: "quanto_maior_melhor"
+              campoCenario: "cenarioApuracaoEcossistema",
+              campoNumerador: "arrecadacaoViaEcossistema",
+              campoNumeradorLegado: "arrecadacaoEcossistemaMes2026",
+              campoDenominador: "arrecadacaoTotal",
+              metaTipo: "curva_trimestral_cenario",
+              sentidoMeta: "quanto_maior_melhor",
+              cenarioOficialResumoExecutivo: "lotex_marketplace",
+              cenarios: ECOSSISTEMA_CENARIOS,
+              curvasCenarios: ECOSSISTEMA_CURVAS_2026
             },
             camposEntrada: [
-              { nome: "arrecadacaoEcossistema2025PeriodoEquivalente", rotulo: "Base 2025 - período equivalente", tipo: "moeda", obrigatorio: true },
-              { nome: "arrecadacaoEcossistemaMes2026", rotulo: "Arrecadação do ecossistema 2026 no mês", tipo: "moeda", obrigatorio: true },
-              { nome: "arrecadacaoEcossistemaAcumulada2026", rotulo: "Arrecadação do ecossistema 2026 acumulada até a competência", tipo: "moeda", obrigatorio: false },
-              { nome: "descricaoComposicaoEcossistema", rotulo: "Descrição da composição do ecossistema", tipo: "texto", obrigatorio: false },
-              { nome: "fonteEvidenciaEcossistema", rotulo: "Fonte/evidência", tipo: "texto", obrigatorio: false },
-              { nome: "observacaoArea", rotulo: "Observação da área", tipo: "texto", obrigatorio: false }
+              { nome: "cenarioApuracaoEcossistema", rotulo: "Cenário de apuração", tipo: "selecao", obrigatorio: true, opcoes: ECOSSISTEMA_CENARIOS },
+              { nome: "arrecadacaoViaEcossistema", rotulo: "Arrecadação via ecossistema no período", tipo: "moeda", obrigatorio: true },
+              { nome: "arrecadacaoTotal", rotulo: "Arrecadação total no período", tipo: "moeda", obrigatorio: true },
+              { nome: "referencia2025Trimestre", rotulo: "Referência 2025 do trimestre (%)", tipo: "numero", obrigatorio: false, somenteLeitura: true },
+              { nome: "metaTrimestral2026", rotulo: "Meta trimestral 2026 (%)", tipo: "numero", obrigatorio: false, somenteLeitura: true }
             ],
-            campoResultadoPrincipal: "indiceEmRelacaoA2025",
+            campoResultadoPrincipal: "resultadoCalculado",
             campoPercentualAtingido: "percentualAtingidoMensal",
-            resultadoOficial: "crescimento_acumulado_periodo_equivalente"
+            resultadoOficial: "ultima_posicao_homologada"
           };
         }
         if (Number(rule.indicadorId) === 23) {
           return {
             ...rule,
             nome: INDICATOR_NAMES[22],
-            tipoCalculo: "crescimento_rede_loterica_base_2025",
-            tipoConsolidacao: "acumulado_periodo_equivalente",
+            tipoCalculo: "incremento_rede_loterica_base_2025",
+            tipoConsolidacao: "ultima_posicao",
             unidadeMedida: "percentual",
-            metaAnualValor: 1.02,
+            metaAnualValor: 0.02,
             parametrosCalculo: {
+              campoValor2026: "arrecadacaoRedeLoterica2026",
               campoValor2026Mes: "arrecadacaoRedeLotericaMes2026",
               campoValor2026Acumulado: "arrecadacaoRedeLotericaAcumulada2026",
               campoValor2026PeriodoAtual: "arrecadacaoRedeLoterica2026PeriodoAtual",
+              campoBase2025: "arrecadacaoRedeLoterica2025",
               campoBase2025PeriodoEquivalente: "arrecadacaoRedeLoterica2025PeriodoEquivalente",
               campoBase2025Acumulada: "arrecadacaoRedeLoterica2025Acumulada",
               campoBase2025PeriodoAtual: "arrecadacaoRedeLoterica2025PeriodoEquivalente",
-              campoNumerador: "arrecadacaoRedeLotericaMes2026",
+              campoNumerador: "arrecadacaoRedeLoterica2026",
               campoNumeradorLegado: "arrecadacaoRedeLotericaMes2026",
-              campoNumerador2025: "arrecadacaoRedeLoterica2025PeriodoEquivalente",
+              campoNumerador2025: "arrecadacaoRedeLoterica2025",
               campoNumerador2025Legado: "arrecadacaoRedeLotericaMes2025",
-              metaTipo: "incremento_minimo",
-              metaCrescimento: 0.02,
-              metaIndice: 1.02,
+              metaTipo: "curva_trimestral_incremento",
+              curvaIncrementoTrimestral: REDE_LOTERICA_CURVA_INCREMENTO_2026,
+              metaIncrementoAnual: 0.02,
+              indiceAnualEquivalente: 1.02,
               sentidoMeta: "quanto_maior_melhor",
               mensagemBaseInsuficiente: "Dados insuficientes: informe a arrecadação da Rede Lotérica em 2025 para o período equivalente.",
               mensagemRealizadoInsuficiente: "Arrecadação da Rede Lotérica 2026 deve ser informada e não pode ser negativa."
             },
             camposEntrada: [
-              { nome: "arrecadacaoRedeLoterica2025PeriodoEquivalente", rotulo: "Base 2025 - Rede Lotérica no período equivalente", tipo: "moeda", obrigatorio: true },
-              { nome: "arrecadacaoRedeLotericaMes2026", rotulo: "Arrecadação Rede Lotérica 2026 no mês", tipo: "moeda", obrigatorio: true },
-              { nome: "arrecadacaoRedeLotericaAcumulada2026", rotulo: "Arrecadação Rede Lotérica 2026 acumulada até a competência", tipo: "moeda", obrigatorio: false },
-              { nome: "arrecadacaoRedeLoterica2026PeriodoAtual", rotulo: "Arrecadação Rede Lotérica 2026 no período atual", tipo: "moeda", obrigatorio: false },
-              { nome: "arrecadacaoTotalLoteriasPeriodo", rotulo: "Arrecadação total de loterias no período", tipo: "moeda", obrigatorio: false },
-              { nome: "fonteEvidenciaRedeLoterica", rotulo: "Fonte/evidência da Rede Lotérica", tipo: "texto", obrigatorio: false },
-              { nome: "observacaoArea", rotulo: "Observação da área", tipo: "texto", obrigatorio: false }
+              { nome: "arrecadacaoRedeLoterica2025", rotulo: "Arrecadação da Rede Lotérica em 2025 no período equivalente", tipo: "moeda", obrigatorio: true },
+              { nome: "arrecadacaoRedeLoterica2026", rotulo: "Arrecadação da Rede Lotérica em 2026 no período", tipo: "moeda", obrigatorio: true },
+              { nome: "metaTrimestral", rotulo: "Meta trimestral de incremento (%)", tipo: "numero", obrigatorio: false, somenteLeitura: true }
             ],
-            campoResultadoPrincipal: "indiceEmRelacaoA2025",
+            campoResultadoPrincipal: "incrementoRedeLoterica",
             campoPercentualAtingido: "percentualAtingidoMensal",
-            resultadoOficial: "crescimento_acumulado_periodo_equivalente"
+            resultadoOficial: "ultima_posicao_homologada"
           };
         }
         if (Number(rule.indicadorId) === 19) {
@@ -2225,12 +2277,12 @@
         fonte: "curva_trimestral_jogo_responsavel_capacitacao_2026"
       } : Number(meta.indicadorId) === 22 ? {
         ...meta,
-        metaMensal: 1.1,
-        fonte: "crescimento_minimo_ecossistema_base_2025"
+        metaMensal: getEcossistemaMetaTrimestral(meta.ano, meta.mes),
+        fonte: "curva_trimestral_ecossistema_lotex_marketplace_2026"
       } : Number(meta.indicadorId) === 23 ? {
         ...meta,
-        metaMensal: 1.02,
-        fonte: "crescimento_minimo_rede_loterica_base_2025"
+        metaMensal: getRedeLotericaMetaIncrementoTrimestral(meta.ano, meta.mes),
+        fonte: "curva_trimestral_incremento_rede_loterica_2026"
       } : Number(meta.indicadorId) === 5 ? {
         ...meta,
         metaMensal: getGgrMetaAcumulada(meta.ano, meta.mes),
@@ -2347,12 +2399,12 @@
           metaAnualDescricao: "≥ 90% do público-alvo capacitado em pelo menos 2 iniciativas de Jogo Responsável"
         } : {}),
         ...(Number(launch.indicadorId) === 22 ? {
-          metaMensal: 1.1,
-          metaAnualDescricao: "Resultado 2026 ≥ 110% da base 2025"
+          metaMensal: getEcossistemaMetaTrimestral(launch.ano, launch.mes),
+          metaAnualDescricao: "Ano 2026: ≥ 10% em relação ao exercício de 2025"
         } : {}),
         ...(Number(launch.indicadorId) === 23 ? {
-          metaMensal: 1.02,
-          metaAnualDescricao: "Resultado 2026 ≥ 102% da base 2025"
+          metaMensal: getRedeLotericaMetaIncrementoTrimestral(launch.ano, launch.mes),
+          metaAnualDescricao: "Meta anual: 2,00% de incremento"
         } : {}),
         ...(Number(launch.indicadorId) === 8 ? {
           unidadeApuradora: "SUCOL",

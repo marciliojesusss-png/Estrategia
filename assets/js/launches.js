@@ -87,6 +87,8 @@
   }
 
   function getMetaLabel(regra) {
+    if (regra?.tipoCalculo === "participacao_ecossistema_com_cenarios") return "Meta trimestral 2026";
+    if (regra?.tipoCalculo === "incremento_rede_loterica_base_2025") return "Meta trimestral de incremento";
     if (regra?.tipoCalculo === "crescimento_comparado_base_2025") return "Meta em indice (110% da base 2025)";
     if (regra?.tipoCalculo === "crescimento_rede_loterica_base_2025") return "Meta em indice (102% da base 2025)";
     if (isIeoRule(regra)) return "Meta de referência da competência";
@@ -106,6 +108,14 @@
   }
 
   function getDisplayMeta(regra, lancamento) {
+    if (regra?.tipoCalculo === "participacao_ecossistema_com_cenarios") {
+      const curve = getEcossistemaCurveForLaunch(regra, lancamento, lancamento?.camposEntrada?.cenarioApuracaoEcossistema);
+      return curve ? curve.meta2026 / 100 : lancamento.metaMensal ?? regra?.metaAnualValor;
+    }
+    if (regra?.tipoCalculo === "incremento_rede_loterica_base_2025") {
+      const curve = getRedeLotericaCurveForLaunch(regra, lancamento);
+      return curve ? curve.metaIncremento / 100 : lancamento.metaMensal ?? regra?.metaAnualValor;
+    }
     if (regra?.parametrosCalculo?.metaTipo === "curva_acumulada_por_competencia") {
       const key = lancamento?.competencia || `${lancamento?.ano}-${String(lancamento?.mes).padStart(2, "0")}`;
       const curva = regra.parametrosCalculo.metasAcumuladasPorCompetencia || {};
@@ -126,13 +136,57 @@
     return typeof meta === "string" ? meta : Calculations.formatarValor(meta, regra && regra.unidadeMedida);
   }
 
+  function getQuarterKey(lancamento) {
+    const quarter = String(lancamento?.trimestre || "").match(/([1-4])\s*TRI/i);
+    if (quarter) return `${quarter[1]}TRI`;
+    return lancamento?.mes ? `${Math.ceil(Number(lancamento.mes) / 3)}TRI` : null;
+  }
+
+  function normalizeEcossistemaScenario(value, regra) {
+    const fallback = regra?.parametrosCalculo?.cenarioOficialResumoExecutivo || "lotex_marketplace";
+    const text = String(value || fallback)
+      .toLocaleLowerCase("pt-BR")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/\s+/g, "_")
+      .replace(/\+/g, "_")
+      .replace(/_+/g, "_");
+    if (text === "lotex") return "lotex";
+    if (["lotex_marketplace", "lotex_e_marketplace"].includes(text)) return "lotex_marketplace";
+    return fallback;
+  }
+
+  function getEcossistemaCurveForLaunch(regra, lancamento, scenarioValue) {
+    const scenario = normalizeEcossistemaScenario(scenarioValue, regra);
+    const quarter = getQuarterKey(lancamento);
+    return quarter ? regra?.parametrosCalculo?.curvasCenarios?.[scenario]?.[quarter] || null : null;
+  }
+
+  function getRedeLotericaCurveForLaunch(regra, lancamento) {
+    const quarter = getQuarterKey(lancamento);
+    return quarter ? regra?.parametrosCalculo?.curvaIncrementoTrimestral?.[quarter] || null : null;
+  }
+
   function getEntryValuesFromLaunch(lancamento, regra) {
     const saved = lancamento.camposEntrada || {};
-    return Object.fromEntries((regra.camposEntrada || []).map((field) => {
+    const values = Object.fromEntries((regra.camposEntrada || []).map((field) => {
       if (saved[field.nome] !== undefined) return [field.nome, saved[field.nome]];
       if (field.nome === "realizadoMensal" && !isOfertasPersonalizadasRule(regra)) return [field.nome, lancamento.realizadoMensal ?? ""];
       return [field.nome, ""];
     }));
+    if (regra?.tipoCalculo === "participacao_ecossistema_com_cenarios") {
+      values.cenarioApuracaoEcossistema = normalizeEcossistemaScenario(values.cenarioApuracaoEcossistema, regra);
+      const curve = getEcossistemaCurveForLaunch(regra, lancamento, values.cenarioApuracaoEcossistema);
+      if (curve) {
+        values.referencia2025Trimestre = curve.referencia2025;
+        values.metaTrimestral2026 = curve.meta2026;
+      }
+    }
+    if (regra?.tipoCalculo === "incremento_rede_loterica_base_2025") {
+      const curve = getRedeLotericaCurveForLaunch(regra, lancamento);
+      if (curve) values.metaTrimestral = curve.metaIncremento;
+    }
+    return values;
   }
 
   function formatEntryValue(field, value) {
@@ -154,7 +208,9 @@
           >
             ${options.map((option) => {
               const label = typeof option === "string" ? option : option.label;
-              return `<option value="${escapeHtml(label)}" ${String(value || "") === String(label) ? "selected" : ""}>${escapeHtml(label)}</option>`;
+              const optionValue = typeof option === "string" ? option : option.value ?? option.id ?? option.label;
+              const selected = [optionValue, label].some((candidate) => String(value || "") === String(candidate));
+              return `<option value="${escapeHtml(optionValue)}" ${selected ? "selected" : ""}>${escapeHtml(label)}</option>`;
             }).join("")}
           </select>
         </label>
@@ -170,6 +226,7 @@
           ${field.tipo === "moeda" ? "inputmode=\"decimal\" placeholder=\"0,00\"" : field.tipo === "texto" || field.tipo === "data" ? "" : "step=\"any\""}
           value="${escapeHtml(formatEntryValue(field, value))}"
           ${field.obrigatorio ? "required" : ""}
+          ${field.somenteLeitura ? "readonly" : ""}
           ${extra}
         >
       </label>
@@ -191,6 +248,8 @@
 
   function shouldHideGoalAchievementFields(indicador, regra) {
     if (isIeoRule(regra)) return false;
+    if (regra?.tipoCalculo === "participacao_ecossistema_com_cenarios") return false;
+    if (regra?.tipoCalculo === "incremento_rede_loterica_base_2025") return false;
     if (["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(regra?.tipoCalculo)) return false;
     if (isOfertasPersonalizadasIndicator(indicador, regra)) return false;
     return usesAutomaticCalculation(indicador, regra) && regra && (regra.unidadeMedida === "percentual" || regra.parametrosCalculo?.quantoMenorMelhor);
@@ -317,6 +376,8 @@
 
     document.getElementById("launchResultadoMensalLabel").textContent = isIeoRule(regra)
       ? "IEO calculado da competência"
+      : regra?.tipoCalculo === "incremento_rede_loterica_base_2025"
+        ? "Incremento percentual"
       : ["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(regra?.tipoCalculo)
         ? "Indice 2026/2025"
       : isOfertasPersonalizadasIndicator(indicador, regra)
@@ -324,11 +385,15 @@
       : "Resultado mensal";
     document.getElementById("launchPercentualCalculadoLabel").textContent = isIeoRule(regra)
       ? "% atingido"
+      : regra?.tipoCalculo === "incremento_rede_loterica_base_2025"
+        ? "% atingido"
       : ["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(regra?.tipoCalculo)
         ? "% atingido da meta"
       : "% da meta atingida mensal";
     document.getElementById("launchResultadoAcumuladoLabel").textContent = isIeoRule(regra)
       ? "Posição acumulada até a competência"
+      : regra?.tipoCalculo === "incremento_rede_loterica_base_2025"
+        ? "Incremento oficial do indicador"
       : ["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(regra?.tipoCalculo)
         ? "Indice acumulado 2026/2025"
       : isOfertasPersonalizadasIndicator(indicador, regra)
@@ -406,6 +471,29 @@
     document.getElementById("dynamicInputFields").innerHTML = (regra.camposEntrada || []).map((field) => `
       ${renderEntryInput(field, values[field.nome] ?? "")}
     `).join("");
+    updateEcossistemaCurveFields(regra, lancamento);
+    updateRedeLotericaCurveFields(regra, lancamento);
+  }
+
+  function updateEcossistemaCurveFields(regra, lancamento) {
+    if (regra?.tipoCalculo !== "participacao_ecossistema_com_cenarios") return;
+    const scenarioInput = document.querySelector('[data-entry-field="cenarioApuracaoEcossistema"]');
+    const referenceInput = document.querySelector('[data-entry-field="referencia2025Trimestre"]');
+    const targetInput = document.querySelector('[data-entry-field="metaTrimestral2026"]');
+    const curve = getEcossistemaCurveForLaunch(regra, lancamento, scenarioInput?.value);
+    if (referenceInput) referenceInput.value = curve?.referencia2025 ?? "";
+    if (targetInput) targetInput.value = curve?.meta2026 ?? "";
+    const metaInput = document.getElementById("launchMeta");
+    if (metaInput && curve) metaInput.value = Calculations.formatarValor(curve.meta2026 / 100, regra.unidadeMedida);
+  }
+
+  function updateRedeLotericaCurveFields(regra, lancamento) {
+    if (regra?.tipoCalculo !== "incremento_rede_loterica_base_2025") return;
+    const targetInput = document.querySelector('[data-entry-field="metaTrimestral"]');
+    const curve = getRedeLotericaCurveForLaunch(regra, lancamento);
+    if (targetInput) targetInput.value = curve?.metaIncremento ?? "";
+    const metaInput = document.getElementById("launchMeta");
+    if (metaInput && curve) metaInput.value = Calculations.formatarValor(curve.metaIncremento / 100, regra.unidadeMedida);
   }
 
   function updateIeoOptionalVisibility() {
@@ -425,6 +513,36 @@
     const target = document.getElementById("formulaDetails");
     const details = [];
 
+    if (resultado.cenarioApuracaoEcossistemaLabel !== undefined) {
+      details.push(["Cenário de apuração", resultado.cenarioApuracaoEcossistemaLabel]);
+    }
+    if (resultado.referencia2025Trimestre !== undefined) {
+      details.push(["Referência 2025 do trimestre", Calculations.formatarPercentual(resultado.referencia2025Trimestre)]);
+    }
+    if (resultado.metaTrimestral2026 !== undefined) {
+      details.push(["Meta trimestral 2026", Calculations.formatarPercentual(resultado.metaTrimestral2026)]);
+    }
+    if (resultado.arrecadacaoViaEcossistema !== undefined) {
+      details.push(["Arrecadação via ecossistema", Calculations.formatarValor(resultado.arrecadacaoViaEcossistema, "moeda")]);
+    }
+    if (resultado.arrecadacaoTotal !== undefined) {
+      details.push(["Arrecadação total", Calculations.formatarValor(resultado.arrecadacaoTotal, "moeda")]);
+    }
+    if (resultado.arrecadacaoRedeLoterica2025 !== undefined) {
+      details.push(["Arrecadação Rede Lotérica 2025", Calculations.formatarValor(resultado.arrecadacaoRedeLoterica2025, "moeda")]);
+    }
+    if (resultado.arrecadacaoRedeLoterica2026 !== undefined) {
+      details.push(["Arrecadação Rede Lotérica 2026", Calculations.formatarValor(resultado.arrecadacaoRedeLoterica2026, "moeda")]);
+    }
+    if (resultado.indiceRedeLoterica !== undefined) {
+      details.push(["Índice 2026/2025", Calculations.formatarPercentual(resultado.indiceRedeLoterica)]);
+    }
+    if (resultado.incrementoRedeLoterica !== undefined) {
+      details.push(["Incremento percentual", Calculations.formatarPercentual(resultado.incrementoRedeLoterica)]);
+    }
+    if (resultado.metaTrimestral !== undefined) {
+      details.push(["Meta trimestral de incremento", Calculations.formatarPercentual(resultado.metaTrimestral)]);
+    }
     if (resultado.baseReferencia2025Periodo !== undefined) {
       details.push(["Base 2025 equivalente", Calculations.formatarValor(resultado.baseReferencia2025Periodo, "moeda")]);
     } else if (resultado.resultadoReferencia2025 !== undefined) {
@@ -876,6 +994,13 @@
       if (event.target.id === "ieoDirectToggle") updateIeoOptionalVisibility();
       if (event.target.dataset.entryField === "marcoAlcancadoTIC") {
         updateCapacidadeTicPercentual(event.target.value);
+      }
+      const lancamento = getSelectedLaunch();
+      const indicador = lancamento && getIndicatorMap()[lancamento.indicadorId];
+      if (indicador) {
+        const regra = getRule(indicador);
+        updateEcossistemaCurveFields(regra, lancamento);
+        updateRedeLotericaCurveFields(regra, lancamento);
       }
       updateCalculatedPreview();
     });

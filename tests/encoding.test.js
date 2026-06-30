@@ -28,7 +28,7 @@ const indicatorNames = [
   "Visibilidade dos Repasses Sociais das Loterias CAIXA",
   "Jogo Responsável 2026 (Capacitação e Disseminação)",
   "Arrecadação Gerada com o Ecossistema",
-  "Participação da Rede Lotérica nos Negócios"
+  "Participação da Rede Lotérica nos Negócios da CAIXA Loterias"
 ];
 const pillarNames = [
   "Cliente no Centro",
@@ -65,7 +65,7 @@ fs.readdirSync(root)
   .forEach((name) => {
     const html = fs.readFileSync(path.join(root, name), "utf8");
     assert.match(html, /<meta charset="UTF-8">/);
-    assert.doesNotMatch(html, /[ÃÂ�]|â[€-™]/u);
+    assert.doesNotMatch(html, /[\u00c3\u00c2\ufffd]|\u00e2[\u20ac-\u2122]/u);
   });
 
 const storage = new Map([

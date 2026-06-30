@@ -143,6 +143,10 @@
           ? `<small>Calculado: ${Calculations.formatarValor(quarter.resultadoCalculadoTrimestral, row.rule.unidadeMedida)}<br>PIX: ${Calculations.formatarMoedaBR(quarter.pixAcumuladoTrimestre)}<br>Canais: ${Calculations.formatarMoedaBR(quarter.canaisAcumuladoTrimestre)}</small>`
           : row.rule.tipoCalculo === "razao_canais_digitais" && quarter.resultadoCalculadoTrimestral != null
             ? `<small>Canais eletrônicos: ${Calculations.formatarMoedaBR(quarter.canaisDigitaisAcumuladoTrimestre)}<br>Produtos de loterias: ${Calculations.formatarMoedaBR(quarter.produtosLoteriasAcumuladoTrimestre)}</small>`
+          : row.rule.tipoCalculo === "participacao_ecossistema_com_cenarios" && quarter.dadosCalculados
+            ? `<small>Cenário: ${escapeHtml(quarter.cenarioEcossistemaLabel || "-")}<br>Referência 2025: ${Calculations.formatarPercentual(quarter.referencia2025EcossistemaTrimestre)}<br>Via ecossistema: ${Calculations.formatarMoedaBR(quarter.arrecadacaoViaEcossistemaTrimestre)}<br>Total: ${Calculations.formatarMoedaBR(quarter.arrecadacaoTotalEcossistemaTrimestre)}</small>`
+          : row.rule.tipoCalculo === "incremento_rede_loterica_base_2025" && quarter.dadosCalculados
+            ? `<small>Base 2025: ${Calculations.formatarMoedaBR(quarter.baseReferenciaRedeLotericaTrimestre)}<br>Rede 2026: ${Calculations.formatarMoedaBR(quarter.arrecadacaoRedeLoterica2026Trimestre)}<br>Índice: ${Calculations.formatarPercentual(quarter.indiceRedeLotericaTrimestre)}</small>`
           : ["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(row.rule.tipoCalculo) && quarter.baseReferencia2025Trimestre != null
             ? `<small>Base 2025: ${Calculations.formatarMoedaBR(quarter.baseReferencia2025Trimestre)}<br>Indice: ${Calculations.formatarPercentual(quarter.indiceTrimestral)}<br>Crescimento: ${Calculations.formatarPercentual(quarter.crescimentoTrimestral)}</small>`
           : ""}

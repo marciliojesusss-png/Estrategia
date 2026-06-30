@@ -819,6 +819,47 @@ assert.ok(Math.abs(ecossistemaQuarter.indiceTrimestral - (39000000 / 35000000)) 
 assert.ok(Math.abs(ecossistemaQuarter.crescimentoTrimestral - ((39000000 / 35000000) - 1)) < 0.000001);
 assert.equal(ecossistemaQuarter.situacaoTrimestral, "Atingido");
 
+const ecossistemaCenariosQuarter = consolidarTrimestre(
+  { id: 22, indicador: "Arrecadação Gerada com o Ecossistema", unidadeMedida: "percentual" },
+  {
+    indicadorId: 22,
+    tipoCalculo: "participacao_ecossistema_com_cenarios",
+    tipoConsolidacao: "ultima_posicao",
+    unidadeMedida: "percentual",
+    metaAnualValor: 0.10,
+    parametrosCalculo: {
+      campoCenario: "cenarioApuracaoEcossistema",
+      campoNumerador: "arrecadacaoViaEcossistema",
+      campoDenominador: "arrecadacaoTotal",
+      cenarioOficialResumoExecutivo: "lotex_marketplace",
+      curvasCenarios: {
+        lotex: { "1TRI": { referencia2025: 0.90, meta2026: 0.99 } },
+        lotex_marketplace: { "1TRI": { referencia2025: 3.42, meta2026: 3.76 } }
+      },
+      cenarios: [
+        { value: "lotex", label: "Lotex" },
+        { value: "lotex_marketplace", label: "Lotex + Marketplace" }
+      ]
+    },
+    camposEntrada: [
+      { nome: "cenarioApuracaoEcossistema", obrigatorio: true },
+      { nome: "arrecadacaoViaEcossistema", obrigatorio: true },
+      { nome: "arrecadacaoTotal", obrigatorio: true }
+    ]
+  },
+  [
+    { ano: 2026, mes: 3, status: "Homologado", competencia: "2026-03", trimestre: "1TRI/2026", camposEntrada: { cenarioApuracaoEcossistema: "lotex_marketplace", arrecadacaoViaEcossistema: 242300000, arrecadacaoTotal: 5966900000 } }
+  ],
+  "1TRI/2026"
+);
+assert.equal(ecossistemaCenariosQuarter.statusTrimestre, "Parcial");
+assert.ok(Math.abs(ecossistemaCenariosQuarter.metaTrimestral - 0.0376) < 0.000001);
+assert.ok(Math.abs(ecossistemaCenariosQuarter.resultadoTrimestral - (242300000 / 5966900000)) < 0.000001);
+assert.ok(Math.abs(ecossistemaCenariosQuarter.desempenhoTrimestral - ((242300000 / 5966900000) / 0.0376)) < 0.000001);
+assert.equal(ecossistemaCenariosQuarter.cenarioEcossistemaLabel, "Lotex + Marketplace");
+assert.ok(Math.abs(ecossistemaCenariosQuarter.referencia2025EcossistemaTrimestre - 0.0342) < 0.000001);
+assert.equal(ecossistemaCenariosQuarter.situacaoTrimestral, "Atingido");
+
 const redeLotericaQuarter = consolidarTrimestre(
   { id: 23, indicador: "Participação da Rede Lotérica nos Negócios", unidadeMedida: "percentual" },
   {
@@ -859,6 +900,45 @@ assert.equal(redeLotericaQuarter.baseReferencia2025Trimestre, 3000000000);
 assert.ok(Math.abs(redeLotericaQuarter.indiceTrimestral - 1.03) < 0.000001);
 assert.ok(Math.abs(redeLotericaQuarter.crescimentoTrimestral - 0.03) < 0.000001);
 assert.equal(redeLotericaQuarter.situacaoTrimestral, "Atingido");
+
+const redeLotericaIncrementoQuarter = consolidarTrimestre(
+  { id: 23, indicador: "Participação da Rede Lotérica nos Negócios da CAIXA Loterias", unidadeMedida: "percentual" },
+  {
+    indicadorId: 23,
+    tipoCalculo: "incremento_rede_loterica_base_2025",
+    tipoConsolidacao: "ultima_posicao",
+    unidadeMedida: "percentual",
+    metaAnualValor: 0.02,
+    parametrosCalculo: {
+      campoValor2026: "arrecadacaoRedeLoterica2026",
+      campoBase2025: "arrecadacaoRedeLoterica2025",
+      metaTipo: "curva_trimestral_incremento",
+      curvaIncrementoTrimestral: {
+        "1TRI": { metaIncremento: 0.50 },
+        "2TRI": { metaIncremento: 1.00 },
+        "3TRI": { metaIncremento: 1.50 },
+        "4TRI": { metaIncremento: 2.00 }
+      }
+    },
+    camposEntrada: [
+      { nome: "arrecadacaoRedeLoterica2025", obrigatorio: true },
+      { nome: "arrecadacaoRedeLoterica2026", obrigatorio: true }
+    ]
+  },
+  [
+    { ano: 2026, mes: 1, status: "Homologado", competencia: "2026-01", trimestre: "1TRI/2026", camposEntrada: { arrecadacaoRedeLoterica2025: 1000000000, arrecadacaoRedeLoterica2026: 1005693000 } },
+    { ano: 2026, mes: 2, status: "Homologado", competencia: "2026-02", trimestre: "1TRI/2026", camposEntrada: { arrecadacaoRedeLoterica2025: 1000000000, arrecadacaoRedeLoterica2026: 1005693000 } },
+    { ano: 2026, mes: 3, status: "Homologado", competencia: "2026-03", trimestre: "1TRI/2026", camposEntrada: { arrecadacaoRedeLoterica2025: 1000000000, arrecadacaoRedeLoterica2026: 1005693000 } }
+  ],
+  "1TRI/2026"
+);
+assert.equal(redeLotericaIncrementoQuarter.statusTrimestre, "Fechado");
+assert.ok(Math.abs(redeLotericaIncrementoQuarter.metaTrimestral - 0.005) < 0.000001);
+assert.ok(Math.abs(redeLotericaIncrementoQuarter.resultadoTrimestral - 0.005693) < 0.000001);
+assert.ok(Math.abs(redeLotericaIncrementoQuarter.desempenhoTrimestral - 1.1386) < 0.000001);
+assert.ok(Math.abs(redeLotericaIncrementoQuarter.indiceRedeLotericaTrimestre - 1.005693) < 0.000001);
+assert.ok(Math.abs(redeLotericaIncrementoQuarter.incrementoRedeLotericaTrimestre - 0.005693) < 0.000001);
+assert.equal(redeLotericaIncrementoQuarter.situacaoTrimestral, "Atingido");
 console.log("Testes trimestrais OK");
 
 

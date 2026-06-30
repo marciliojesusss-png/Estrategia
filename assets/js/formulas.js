@@ -1324,6 +1324,181 @@
     });
   }
 
+  function trimestreKey(lancamento) {
+    const trimestre = String(lancamento?.trimestre || "").match(/([1-4])\s*TRI/i);
+    if (trimestre) return `${trimestre[1]}TRI`;
+    const mes = toNumber(lancamento?.mes);
+    return mes ? `${Math.ceil(mes / 3)}TRI` : null;
+  }
+
+  function normalizarCenarioEcossistema(value, params = {}) {
+    const rawValue = valorTextoOuId(value || params.cenarioOficialResumoExecutivo || "lotex_marketplace")
+      .toLocaleLowerCase("pt-BR")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/\s+/g, "_")
+      .replace(/\+/g, "_")
+      .replace(/_+/g, "_");
+    if (rawValue === "lotex") return "lotex";
+    if (["lotex_marketplace", "lotex_e_marketplace", "lotex_marketplace_de_boloes"].includes(rawValue)) return "lotex_marketplace";
+    return params.cenarioOficialResumoExecutivo || "lotex_marketplace";
+  }
+
+  function labelCenarioEcossistema(cenario, params = {}) {
+    const configured = (params.cenarios || []).find((item) => (
+      item.value === cenario || item.id === cenario || item.label === cenario
+    ));
+    if (configured?.label) return configured.label;
+    return cenario === "lotex" ? "Lotex" : "Lotex + Marketplace";
+  }
+
+  function curvaEcossistema(params, cenario, trimestre) {
+    return params.curvasCenarios?.[cenario]?.[trimestre] || null;
+  }
+
+  function pontosPercentuaisParaFracao(value) {
+    const number = toNumber(value);
+    return number === null ? null : number / 100;
+  }
+
+  function calcularParticipacaoEcossistemaComCenarios(indicador, regra, lancamentoAtual) {
+    const required = validarObrigatorios(regra, lancamentoAtual);
+    if (required) return erro(required, regra.unidadeMedida);
+
+    const params = regra.parametrosCalculo || {};
+    const campoCenario = params.campoCenario || "cenarioApuracaoEcossistema";
+    const campoNumerador = params.campoNumerador || "arrecadacaoViaEcossistema";
+    const campoNumeradorLegado = params.campoNumeradorLegado || "arrecadacaoEcossistemaMes2026";
+    const campoDenominador = params.campoDenominador || "arrecadacaoTotal";
+    const cenario = normalizarCenarioEcossistema(raw(lancamentoAtual, campoCenario), params);
+    const trimestre = trimestreKey(lancamentoAtual);
+    const curva = trimestre ? curvaEcossistema(params, cenario, trimestre) : null;
+    if (!curva) return erro("Curva trimestral do cenário de ecossistema não configurada para esta competência.", regra.unidadeMedida);
+
+    const arrecadacaoViaEcossistema = campo(lancamentoAtual, campoNumerador) ?? campo(lancamentoAtual, campoNumeradorLegado);
+    const arrecadacaoTotal = campo(lancamentoAtual, campoDenominador);
+    if (arrecadacaoViaEcossistema === null || arrecadacaoViaEcossistema < 0) {
+      return erro("Informe a arrecadação via ecossistema no período.", regra.unidadeMedida);
+    }
+    if (arrecadacaoTotal === null || arrecadacaoTotal <= 0) {
+      return erro("Arrecadação total no período deve ser maior que zero.", regra.unidadeMedida);
+    }
+
+    const referencia2025Trimestre = pontosPercentuaisParaFracao(curva.referencia2025);
+    const metaTrimestral2026 = pontosPercentuaisParaFracao(curva.meta2026);
+    if (!metaTrimestral2026) return erro("Meta trimestral do cenário de ecossistema não configurada.", regra.unidadeMedida);
+
+    const resultadoCalculado = arrecadacaoViaEcossistema / arrecadacaoTotal;
+    const percentualAtingido = resultadoCalculado / metaTrimestral2026;
+    const situacao = situacaoPorPercentual(percentualAtingido);
+
+    return ok(resultadoCalculado, resultadoCalculado, percentualAtingido, percentualAtingido, regra.unidadeMedida, "Participação da arrecadação via ecossistema calculada conforme curva trimestral oficial.", {
+      cenarioApuracaoEcossistema: cenario,
+      cenarioApuracaoEcossistemaLabel: labelCenarioEcossistema(cenario, params),
+      trimestreEcossistema: trimestre,
+      referencia2025Trimestre,
+      referencia2025TrimestrePontos: toNumber(curva.referencia2025),
+      metaTrimestral2026,
+      metaTrimestral2026Pontos: toNumber(curva.meta2026),
+      metaCalculada2026: metaTrimestral2026,
+      metaCalculadaUnidadeMedida: "percentual",
+      arrecadacaoViaEcossistema,
+      arrecadacaoTotal,
+      resultadoCalculado,
+      resultadoCalculadoPontos: resultadoCalculado * 100,
+      percentualAtingido,
+      situacao
+    });
+  }
+
+  function lancamentosMesmoTrimestre(lancamentoAtual, lancamentosDoAno) {
+    const trimestreAtual = trimestreKey(lancamentoAtual);
+    const anoAtual = Number(lancamentoAtual?.ano);
+    return (lancamentosDoAno || [])
+      .filter((item) => (
+        (!anoAtual || Number(item.ano) === anoAtual) &&
+        trimestreKey(item) === trimestreAtual &&
+        Number(item.mes) <= Number(lancamentoAtual.mes)
+      ))
+      .sort((a, b) => Number(a.mes) - Number(b.mes));
+  }
+
+  function calcularIncrementoRedeLotericaBase2025(indicador, regra, lancamentoAtual, lancamentosDoAno) {
+    const required = validarObrigatorios(regra, lancamentoAtual);
+    if (required) return erro(required, regra.unidadeMedida);
+
+    const params = regra.parametrosCalculo || {};
+    const campo2026 = params.campoValor2026 || params.campoNumerador || "arrecadacaoRedeLoterica2026";
+    const campo2026Legado = params.campoValor2026Mes || params.campoNumeradorLegado || "arrecadacaoRedeLotericaMes2026";
+    const campo2026Acumulado = params.campoValor2026Acumulado || "arrecadacaoRedeLotericaAcumulada2026";
+    const campo2026PeriodoAtual = params.campoValor2026PeriodoAtual || "arrecadacaoRedeLoterica2026PeriodoAtual";
+    const campoBase2025 = params.campoBase2025 || params.campoNumerador2025 || "arrecadacaoRedeLoterica2025";
+    const campoBase2025Legado = params.campoBase2025PeriodoEquivalente || params.campoNumerador2025Legado || "arrecadacaoRedeLoterica2025PeriodoEquivalente";
+    const campoBase2025Acumulada = params.campoBase2025Acumulada || "arrecadacaoRedeLoterica2025Acumulada";
+    const campoBase2025PeriodoAtual = params.campoBase2025PeriodoAtual || "arrecadacaoRedeLoterica2025PeriodoEquivalente";
+    const mensagemBaseInsuficiente = params.mensagemBaseInsuficiente || "Dados insuficientes: informe a arrecadação da Rede Lotérica em 2025 para o período equivalente.";
+    const mensagemRealizadoInsuficiente = params.mensagemRealizadoInsuficiente || "Arrecadação da Rede Lotérica 2026 deve ser informada e não pode ser negativa.";
+    const trimestre = trimestreKey(lancamentoAtual);
+    const curva = trimestre ? params.curvaIncrementoTrimestral?.[trimestre] : null;
+    const metaTrimestral = pontosPercentuaisParaFracao(curva?.metaIncremento ?? lancamentoAtual?.metaMensal ?? regra?.metaAnualValor);
+    if (!metaTrimestral) return erro("Meta trimestral de incremento da Rede Lotérica não configurada.", regra.unidadeMedida);
+
+    const valorCampoComFallback = (item, principal, legado) => {
+      const principalValor = campo(item, principal);
+      return principalValor !== null ? principalValor : campo(item, legado);
+    };
+    const mesmoTrimestre = lancamentosMesmoTrimestre(lancamentoAtual, lancamentosDoAno);
+    const escopo = mesmoTrimestre.length ? mesmoTrimestre : [lancamentoAtual];
+
+    let arrecadacaoRedeLoterica2026 = escopo
+      .map((item) => valorCampoComFallback(item, campo2026, campo2026Legado))
+      .filter((value) => value !== null)
+      .reduce((sum, value) => sum + value, 0);
+    if (arrecadacaoRedeLoterica2026 <= 0) {
+      arrecadacaoRedeLoterica2026 = campo(lancamentoAtual, campo2026Acumulado) ?? campo(lancamentoAtual, campo2026PeriodoAtual);
+    }
+
+    let arrecadacaoRedeLoterica2025 = escopo
+      .map((item) => valorCampoComFallback(item, campoBase2025, campoBase2025Legado))
+      .filter((value) => value !== null)
+      .reduce((sum, value) => sum + value, 0);
+    if (arrecadacaoRedeLoterica2025 <= 0) {
+      arrecadacaoRedeLoterica2025 = campo(lancamentoAtual, campoBase2025Acumulada) ?? campo(lancamentoAtual, campoBase2025PeriodoAtual);
+    }
+
+    if (arrecadacaoRedeLoterica2025 === null || arrecadacaoRedeLoterica2025 <= 0) {
+      return erro(mensagemBaseInsuficiente, regra.unidadeMedida);
+    }
+    if (arrecadacaoRedeLoterica2026 === null || arrecadacaoRedeLoterica2026 < 0) {
+      return erro(mensagemRealizadoInsuficiente, regra.unidadeMedida);
+    }
+
+    const indiceRedeLoterica = arrecadacaoRedeLoterica2026 / arrecadacaoRedeLoterica2025;
+    const incrementoRedeLoterica = indiceRedeLoterica - 1;
+    const percentualAtingido = incrementoRedeLoterica / metaTrimestral;
+    const situacao = situacaoPorPercentual(percentualAtingido);
+
+    return ok(incrementoRedeLoterica, incrementoRedeLoterica, percentualAtingido, percentualAtingido, regra.unidadeMedida, "Incremento da Rede Lotérica calculado a partir da razão 2026/2025.", {
+      arrecadacaoRedeLoterica2025,
+      arrecadacaoRedeLoterica2026,
+      baseReferencia2025Periodo: arrecadacaoRedeLoterica2025,
+      realizado2026Periodo: arrecadacaoRedeLoterica2026,
+      realizado2026PeriodoFormatado: currency.formatarMoedaBR(arrecadacaoRedeLoterica2026),
+      indiceRedeLoterica,
+      indiceRedeLotericaPontos: indiceRedeLoterica * 100,
+      indiceEmRelacaoA2025: indiceRedeLoterica,
+      incrementoRedeLoterica,
+      incrementoRedeLotericaPontos: incrementoRedeLoterica * 100,
+      crescimentoVs2025: incrementoRedeLoterica,
+      crescimentoPercentual: incrementoRedeLoterica,
+      metaTrimestral,
+      metaTrimestralPontos: metaTrimestral * 100,
+      metaCalculada2026: metaTrimestral,
+      metaCalculadaUnidadeMedida: "percentual",
+      situacao
+    });
+  }
+
   function calcularCrescimentoRelativoValor(indicador, regra, lancamentoAtual, lancamentosDoAno) {
     const required = validarObrigatorios(regra, lancamentoAtual);
     if (required) return erro(required, regra.unidadeMedida);
@@ -1407,6 +1582,10 @@
         return calcularExecucaoAcoesPropostas(indicador, regra, lancamentoAtual, lancamentosDoAno);
       case "percentual_execucao_plano_acao":
         return calcularPercentualExecucaoPlanoAcao(indicador, regra, lancamentoAtual, lancamentosDoAno);
+      case "participacao_ecossistema_com_cenarios":
+        return calcularParticipacaoEcossistemaComCenarios(indicador, regra, lancamentoAtual, lancamentosDoAno);
+      case "incremento_rede_loterica_base_2025":
+        return calcularIncrementoRedeLotericaBase2025(indicador, regra, lancamentoAtual, lancamentosDoAno);
       case "crescimento_relativo_participacao":
       case "crescimento_comparado_base_2025":
       case "crescimento_rede_loterica_base_2025":
@@ -1447,6 +1626,8 @@
     calcularInvestimentoPercentualLucro,
     calcularExecucaoAcoesPropostas,
     calcularPercentualExecucaoPlanoAcao,
+    calcularParticipacaoEcossistemaComCenarios,
+    calcularIncrementoRedeLotericaBase2025,
     calcularCrescimentoRelativoParticipacao,
     calcularCrescimentoRelativoValor
   };
