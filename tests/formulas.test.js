@@ -638,13 +638,13 @@ const ieoAbaixo = formulas.calcularIndicador(
 );
 assert.equal(ieoAbaixo.situacao, "Abaixo da meta");
 
-const ieoCritico = formulas.calcularIndicador(
+const ieoAbaixoMetaBaixo = formulas.calcularIndicador(
   indicador(6, "IEO Recorrente"),
   regraIeo,
   { ano: 2026, mes: 3, competencia: "2026-03", camposEntrada: { ieoApuradoInformado: 0.18 } },
   [{ ano: 2026, mes: 3, competencia: "2026-03", camposEntrada: { ieoApuradoInformado: 0.18 } }]
 );
-assert.equal(ieoCritico.situacao, "Crítico");
+assert.equal(ieoAbaixoMetaBaixo.situacao, "Abaixo da meta");
 
 const ieoSemDenominador = formulas.calcularIndicador(
   indicador(6, "IEO Recorrente"),
@@ -769,7 +769,7 @@ closeTo(ecossistemaLotex1Tri.metaTrimestral2026, 0.0099);
 closeTo(ecossistemaLotex1Tri.resultadoCalculado, 39800000 / 5966900000);
 closeTo(ecossistemaLotex1Tri.percentualAtingidoMensal, (39800000 / 5966900000) / 0.0099);
 assert.equal(ecossistemaLotex1Tri.cenarioApuracaoEcossistemaLabel, "Lotex");
-assert.equal(ecossistemaLotex1Tri.situacao, "Crítico");
+assert.equal(ecossistemaLotex1Tri.situacao, "Abaixo da meta");
 
 const ecossistemaMarketplace1Tri = formulas.calcularIndicador(
   indicador(22, "Arrecadação Gerada com o Ecossistema"),
@@ -889,15 +889,15 @@ closeTo(redeLotericaIncrementoAbaixo.incrementoRedeLoterica, 0.004);
 closeTo(redeLotericaIncrementoAbaixo.percentualAtingidoMensal, 0.8);
 assert.equal(redeLotericaIncrementoAbaixo.situacao, "Abaixo da meta");
 
-const redeLotericaIncrementoCritico = formulas.calcularIndicador(
+const redeLotericaIncrementoAbaixoMetaBaixo = formulas.calcularIndicador(
   indicador(23, "Participação da Rede Lotérica nos Negócios da CAIXA Loterias"),
   regraRedeLotericaIncremento,
   { ano: 2026, mes: 3, trimestre: "1TRI/2026", camposEntrada: { arrecadacaoRedeLoterica2025: 3000000000, arrecadacaoRedeLoterica2026: 3006000000 } },
   []
 );
-closeTo(redeLotericaIncrementoCritico.incrementoRedeLoterica, 0.002);
-closeTo(redeLotericaIncrementoCritico.percentualAtingidoMensal, 0.4);
-assert.equal(redeLotericaIncrementoCritico.situacao, "Crítico");
+closeTo(redeLotericaIncrementoAbaixoMetaBaixo.incrementoRedeLoterica, 0.002);
+closeTo(redeLotericaIncrementoAbaixoMetaBaixo.percentualAtingidoMensal, 0.4);
+assert.equal(redeLotericaIncrementoAbaixoMetaBaixo.situacao, "Abaixo da meta");
 
 const regraRepasseSocial = {
   indicadorId: 17,

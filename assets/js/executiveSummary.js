@@ -12,7 +12,7 @@
     [5, "Maio"], [6, "Junho"], [7, "Julho"], [8, "Agosto"],
     [9, "Setembro"], [10, "Outubro"], [11, "Novembro"], [12, "Dezembro"]
   ];
-  const SITUATIONS = ["Atingido", "Abaixo da meta", "Crítico", "Sem dados", "Em andamento", "Não atingido", "Sem cálculo"];
+  const SITUATIONS = ["Atingido", "Abaixo da meta", "Sem dados", "Em andamento", "Sem cálculo"];
   const PLAN_ORDER = { PEI: 1, PN: 2 };
   const HIGHLIGHT_LIMIT = 12;
   const HIGHLIGHT_INDICATORS = [
@@ -61,8 +61,9 @@
   }
 
   function badgeClass(value) {
+    value = Situations.normalizarSituacao(value);
     if (value === "Atingido" || value === "Homologado") return "ok";
-    if (value === "Crítico" || value === "Não atingido" || value === "Devolvido para ajuste") return "danger";
+    if (value === "Devolvido para ajuste") return "danger";
     if (value === "Abaixo da meta" || value === "Enviado para homologação") return "warn";
     return "info";
   }
@@ -73,7 +74,7 @@
   }
 
   function displaySituation(result) {
-    return StrategicResults.officialSituation(result);
+    return normalizeSituation(StrategicResults.officialSituation(result));
   }
 
   function normalizeText(value) {
@@ -85,18 +86,15 @@
   }
 
   function normalizeSituation(value) {
-    const normalized = normalizeText(value);
-    if (normalized === "atingido" || normalized === "atingida") return "Atingido";
-    if (normalized === "critico" || normalized === "nao atingido") return "Crítico";
+    const normalizedValue = Situations.normalizarSituacao(value);
+    const normalized = normalizeText(normalizedValue);
     if (normalized === "sem dados" || normalized === "sem calculo" || normalized === "nao iniciado" || normalized === "-") return "Sem dados";
-    if (normalized === "abaixo da meta") return "Abaixo da meta";
-    return value || "Sem dados";
+    return normalizedValue || "Sem dados";
   }
 
   function chartSituation(result) {
     const situation = normalizeSituation(displaySituation(result));
     if (situation === "Atingido") return "Atingido";
-    if (situation === "Crítico") return "Crítico";
     if (situation === "Sem dados") return "Sem dados";
     return "Abaixo da meta";
   }
@@ -160,10 +158,10 @@
 
   function highlightPriority(result) {
     const situation = normalizeSituation(displaySituation(result));
-    if (situation === "Crítico") return 0;
-    if (situation === "Abaixo da meta") return 1;
-    if (situation === "Sem dados") return 2;
-    if (normalizeText(displaySituation(result)) === "em acompanhamento") return 3;
+    if (situation === "Abaixo da meta") return 0;
+    if (situation === "Sem dados") return 1;
+    if (normalizeText(displaySituation(result)) === "em acompanhamento") return 2;
+    if (normalizeText(displaySituation(result)) === "em andamento") return 3;
     if (situation === "Atingido") return 4;
     return 5;
   }
@@ -273,7 +271,7 @@
         .map((indicator) => quarterlyResult(indicator, filters.competencia))
         .filter((result) => (
           (filters.status === "Todos" || displayStatus(result) === filters.status) &&
-          (filters.situacao === "Todas" || displaySituation(result) === filters.situacao)
+          (filters.situacao === "Todas" || displaySituation(result) === normalizeSituation(filters.situacao))
         ));
     }
 
@@ -293,18 +291,17 @@
 
     return summary.resultadosOficiais.filter((result) => (
       (filters.status === "Todos" || displayStatus(result) === filters.status) &&
-      (filters.situacao === "Todas" || displaySituation(result) === filters.situacao)
+      (filters.situacao === "Todas" || displaySituation(result) === normalizeSituation(filters.situacao))
     ));
   }
 
   function aggregate(results) {
-    const situations = results.map(displaySituation);
+    const situations = results.map((item) => normalizeSituation(displaySituation(item)));
     const statuses = results.map(displayStatus);
     return {
       total: results.length,
       achieved: situations.filter((item) => item === "Atingido").length,
       attention: situations.filter((item) => item === "Abaixo da meta").length,
-      critical: situations.filter((item) => item === "Crítico").length,
       noData: situations.filter((item) => item === "Sem dados").length,
       homologated: statuses.filter((item) => item === "Homologado" || item === "Fechado").length,
       pending: statuses.filter((item) => item === "Enviado para homologação" || item === "Parcial").length
@@ -317,7 +314,6 @@
       ["Total de indicadores", totals.total, "total"],
       ["Indicadores atingidos", totals.achieved, "ok"],
       ["Indicadores abaixo da meta", totals.attention, "warn"],
-      ["Indicadores críticos", totals.critical, "danger"],
       ["Indicadores sem dados", totals.noData, "neutral"],
       ["Indicadores homologados", totals.homologated, "info"],
       ["Pendentes de homologação", totals.pending, "pending"]
@@ -362,8 +358,8 @@
         </div>
         <div class="executive-pillar-metrics">
           <span><strong>${group.achieved}</strong> atingido${group.achieved === 1 ? "" : "s"}</span>
-          <span><strong>${group.attention + group.critical}</strong> em atenção/crítico</span>
-          <span><strong>${group.critical}</strong> crítico${group.critical === 1 ? "" : "s"}</span>
+          <span><strong>${group.attention}</strong> abaixo da meta</span>
+          <span><strong>${group.noData}</strong> sem dados</span>
         </div>
         <div class="executive-progress" aria-label="${(group.attainedPercent * 100).toFixed(0)}% atingidos">
           <span style="width:${Math.min(group.attainedPercent * 100, 100)}%"></span>
@@ -374,7 +370,7 @@
   }
 
   function renderInsights(results, groups) {
-    const criticalPillar = [...groups].sort((a, b) => b.critical - a.critical || b.total - a.total)[0];
+    const attentionPillar = [...groups].sort((a, b) => b.attention - a.attention || b.total - a.total)[0];
     const plans = unique(results.map((item) => item.indicador.plano)).map((plan) => {
       const items = results.filter((item) => item.indicador.plano === plan);
       const achieved = items.filter((item) => displaySituation(item) === "Atingido").length;
@@ -399,9 +395,9 @@
 
     document.getElementById("executiveInsights").innerHTML = `
       <article class="executive-insight-card">
-        <span>Pilar com mais indicadores críticos</span>
-        <strong>${criticalPillar && criticalPillar.critical ? escapeHtml(criticalPillar.pillar) : "Nenhum pilar crítico"}</strong>
-        <p>${criticalPillar && criticalPillar.critical ? `${criticalPillar.critical} indicador${criticalPillar.critical === 1 ? "" : "es"} crítico${criticalPillar.critical === 1 ? "" : "s"}` : "Não há indicadores críticos no recorte atual."}</p>
+        <span>Pilar com mais indicadores abaixo da meta</span>
+        <strong>${attentionPillar && attentionPillar.attention ? escapeHtml(attentionPillar.pillar) : "Nenhum pilar abaixo da meta"}</strong>
+        <p>${attentionPillar && attentionPillar.attention ? `${attentionPillar.attention} indicador${attentionPillar.attention === 1 ? "" : "es"} abaixo da meta` : "Não há indicadores abaixo da meta no recorte atual."}</p>
       </article>
       <article class="executive-insight-card">
         <span>Plano com melhor desempenho</span>
@@ -425,16 +421,14 @@
       pillar: group.pillar,
       achieved: group.items.filter((item) => chartSituation(item) === "Atingido").length,
       attention: group.items.filter((item) => chartSituation(item) === "Abaixo da meta").length,
-      critical: group.items.filter((item) => chartSituation(item) === "Crítico").length,
       noData: group.items.filter((item) => chartSituation(item) === "Sem dados").length
     }));
 
     if (!groups.length || !window.Chart) return;
     const chartSegments = [
-      { label: "Atingidos", situation: "Atingido", key: "achieved", color: "#2f7d32", muted: "rgba(47, 125, 50, 0.28)" },
-      { label: "Abaixo da meta", situation: "Abaixo da meta", key: "attention", color: "#c28b00", muted: "rgba(194, 139, 0, 0.28)" },
-      { label: "Críticos", situation: "Crítico", key: "critical", color: "#b3261e", muted: "rgba(179, 38, 30, 0.28)" },
-      { label: "Sem dados", situation: "Sem dados", key: "noData", color: "#9aa6b2", muted: "rgba(154, 166, 178, 0.32)" }
+      { label: "Atingidos", situation: "Atingido", key: "achieved", color: "#35d65b", muted: "rgba(53, 214, 91, 0.26)" },
+      { label: "Abaixo da meta", situation: "Abaixo da meta", key: "attention", color: "#ff9800", muted: "rgba(255, 152, 0, 0.28)" },
+      { label: "Sem dados", situation: "Sem dados", key: "noData", color: "#91a7bd", muted: "rgba(145, 167, 189, 0.32)" }
     ];
     const activeFilter = hasChartFilter();
     const isSelectedSegment = (row, situation) => (

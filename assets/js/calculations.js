@@ -95,8 +95,7 @@
     const valor = toNumber(percentual);
     if (valor === null) return "Sem cálculo";
     if (valor >= 1) return "Atingido";
-    if (valor >= 0.8) return "Abaixo da meta";
-    return "Crítico";
+    return "Abaixo da meta";
   }
 
   function formatarPercentual(valor) {
@@ -121,6 +120,7 @@
     calcularPercentual,
     calcularAcumulado,
     calcularStatusDesempenho,
+    normalizarSituacao: (value) => window.Situations ? Situations.normalizarSituacao(value) : value,
     formatarPercentual,
     formatarValor,
     parseMoedaBR: CurrencyBR.parseMoedaBR,

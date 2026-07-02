@@ -5230,7 +5230,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "dataDevolucao": null,
       "competencia": "2026-01",
       "trimestre": "1TRI/2026",
-      "situacaoCalculada": "Crítico"
+      "situacaoCalculada": "Abaixo da meta"
     },
     {
       "id": 38,
@@ -5277,7 +5277,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "dataDevolucao": null,
       "competencia": "2026-02",
       "trimestre": "1TRI/2026",
-      "situacaoCalculada": "Crítico"
+      "situacaoCalculada": "Abaixo da meta"
     },
     {
       "id": 39,
@@ -6911,7 +6911,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "dataDevolucao": "",
       "competencia": "2026-01",
       "trimestre": "1TRI/2026",
-      "situacaoCalculada": "Critico",
+      "situacaoCalculada": "Abaixo da meta",
       "statusCalculo": "calculado",
       "mensagemCalculo": "Cálculo realizado com sucesso.",
       "revisaoMoedaPendente": false
@@ -6961,7 +6961,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "dataDevolucao": "",
       "competencia": "2026-02",
       "trimestre": "1TRI/2026",
-      "situacaoCalculada": "Critico",
+      "situacaoCalculada": "Abaixo da meta",
       "statusCalculo": "calculado",
       "mensagemCalculo": "Cálculo realizado com sucesso.",
       "revisaoMoedaPendente": false
@@ -7011,7 +7011,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "dataDevolucao": "",
       "competencia": "2026-03",
       "trimestre": "1TRI/2026",
-      "situacaoCalculada": "Critico",
+      "situacaoCalculada": "Abaixo da meta",
       "statusCalculo": "calculado",
       "mensagemCalculo": "Cálculo realizado com sucesso.",
       "revisaoMoedaPendente": false
@@ -9105,7 +9105,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "dataDevolucao": null,
       "competencia": "2026-01",
       "trimestre": "1TRI/2026",
-      "situacaoCalculada": "Crítico"
+      "situacaoCalculada": "Abaixo da meta"
     },
     {
       "id": 122,
@@ -9153,7 +9153,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "dataDevolucao": null,
       "competencia": "2026-02",
       "trimestre": "1TRI/2026",
-      "situacaoCalculada": "Crítico"
+      "situacaoCalculada": "Abaixo da meta"
     },
     {
       "id": 123,
@@ -10198,7 +10198,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "dataDevolucao": "",
       "competencia": "2026-01",
       "trimestre": "1TRI/2026",
-      "situacaoCalculada": "Critico",
+      "situacaoCalculada": "Abaixo da meta",
       "statusCalculo": "calculado",
       "mensagemCalculo": "Cálculo realizado com sucesso.",
       "revisaoMoedaPendente": false
@@ -10750,7 +10750,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "dataDevolucao": "",
       "competencia": "2026-01",
       "trimestre": "1TRI/2026",
-      "situacaoCalculada": "Critico",
+      "situacaoCalculada": "Abaixo da meta",
       "statusCalculo": "calculado",
       "mensagemCalculo": "Cálculo realizado com sucesso.",
       "revisaoMoedaPendente": false
@@ -10802,7 +10802,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "dataDevolucao": "",
       "competencia": "2026-02",
       "trimestre": "1TRI/2026",
-      "situacaoCalculada": "Critico",
+      "situacaoCalculada": "Abaixo da meta",
       "statusCalculo": "calculado",
       "mensagemCalculo": "Cálculo realizado com sucesso.",
       "revisaoMoedaPendente": false
@@ -10854,7 +10854,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "dataDevolucao": "",
       "competencia": "2026-03",
       "trimestre": "1TRI/2026",
-      "situacaoCalculada": "Critico",
+      "situacaoCalculada": "Abaixo da meta",
       "statusCalculo": "calculado",
       "mensagemCalculo": "Cálculo realizado com sucesso.",
       "revisaoMoedaPendente": false
@@ -12939,7 +12939,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "dataDevolucao": null,
       "competencia": "2026-01",
       "trimestre": "1TRI/2026",
-      "situacaoCalculada": "Crítico"
+      "situacaoCalculada": "Abaixo da meta"
     },
     {
       "id": 206,
@@ -12988,7 +12988,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "dataDevolucao": null,
       "competencia": "2026-02",
       "trimestre": "1TRI/2026",
-      "situacaoCalculada": "Crítico"
+      "situacaoCalculada": "Abaixo da meta"
     },
     {
       "id": 207,
@@ -17552,7 +17552,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "dataDevolucao": null,
         "competencia": "2026-01",
         "trimestre": "1TRI/2026",
-        "situacaoCalculada": "Critico",
+        "situacaoCalculada": "Abaixo da meta",
         "statusCalculo": "calculado",
         "mensagemCalculo": "Cálculo realizado com sucesso.",
         "revisaoMoedaPendente": false
@@ -17654,7 +17654,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "dataDevolucao": null,
         "competencia": "2026-02",
         "trimestre": "1TRI/2026",
-        "situacaoCalculada": "Critico",
+        "situacaoCalculada": "Abaixo da meta",
         "statusCalculo": "calculado",
         "mensagemCalculo": "Cálculo realizado com sucesso.",
         "revisaoMoedaPendente": false
@@ -17756,7 +17756,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "dataDevolucao": null,
         "competencia": "2026-03",
         "trimestre": "1TRI/2026",
-        "situacaoCalculada": "Critico",
+        "situacaoCalculada": "Abaixo da meta",
         "statusCalculo": "calculado",
         "mensagemCalculo": "Cálculo realizado com sucesso.",
         "revisaoMoedaPendente": false
@@ -17814,7 +17814,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "dataDevolucao": null,
         "competencia": "2026-03",
         "trimestre": "1TRI/2026",
-        "situacaoCalculada": "Critico",
+        "situacaoCalculada": "Abaixo da meta",
         "statusCalculo": "calculado",
         "mensagemCalculo": "Cálculo realizado com sucesso.",
         "revisaoMoedaPendente": false
@@ -17864,7 +17864,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "dataDevolucao": null,
         "competencia": "2026-03",
         "trimestre": "1TRI/2026",
-        "situacaoCalculada": "Critico",
+        "situacaoCalculada": "Abaixo da meta",
         "statusCalculo": "calculado",
         "mensagemCalculo": "Cálculo realizado com sucesso.",
         "revisaoMoedaPendente": false
@@ -17922,7 +17922,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "dataDevolucao": null,
         "competencia": "2026-01",
         "trimestre": "1TRI/2026",
-        "situacaoCalculada": "Critico",
+        "situacaoCalculada": "Abaixo da meta",
         "statusCalculo": "calculado",
         "mensagemCalculo": "Cálculo realizado com sucesso.",
         "revisaoMoedaPendente": false
@@ -17972,7 +17972,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "dataDevolucao": null,
         "competencia": "2026-01",
         "trimestre": "1TRI/2026",
-        "situacaoCalculada": "Critico",
+        "situacaoCalculada": "Abaixo da meta",
         "statusCalculo": "calculado",
         "mensagemCalculo": "Cálculo realizado com sucesso.",
         "revisaoMoedaPendente": false
@@ -18030,7 +18030,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "dataDevolucao": null,
         "competencia": "2026-02",
         "trimestre": "1TRI/2026",
-        "situacaoCalculada": "Critico",
+        "situacaoCalculada": "Abaixo da meta",
         "statusCalculo": "calculado",
         "mensagemCalculo": "Cálculo realizado com sucesso.",
         "revisaoMoedaPendente": false
@@ -18080,7 +18080,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "dataDevolucao": null,
         "competencia": "2026-02",
         "trimestre": "1TRI/2026",
-        "situacaoCalculada": "Critico",
+        "situacaoCalculada": "Abaixo da meta",
         "statusCalculo": "calculado",
         "mensagemCalculo": "Cálculo realizado com sucesso.",
         "revisaoMoedaPendente": false
@@ -18138,7 +18138,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "dataDevolucao": null,
         "competencia": "2026-01",
         "trimestre": "1TRI/2026",
-        "situacaoCalculada": "Critico",
+        "situacaoCalculada": "Abaixo da meta",
         "statusCalculo": "calculado",
         "mensagemCalculo": "Cálculo realizado com sucesso.",
         "revisaoMoedaPendente": false
@@ -18188,7 +18188,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "dataDevolucao": "",
         "competencia": "2026-01",
         "trimestre": "1TRI/2026",
-        "situacaoCalculada": "Critico",
+        "situacaoCalculada": "Abaixo da meta",
         "statusCalculo": "calculado",
         "mensagemCalculo": "Cálculo realizado com sucesso.",
         "revisaoMoedaPendente": false
@@ -18246,7 +18246,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "dataDevolucao": null,
         "competencia": "2026-02",
         "trimestre": "1TRI/2026",
-        "situacaoCalculada": "Critico",
+        "situacaoCalculada": "Abaixo da meta",
         "statusCalculo": "calculado",
         "mensagemCalculo": "Cálculo realizado com sucesso.",
         "revisaoMoedaPendente": false
@@ -18296,7 +18296,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "dataDevolucao": "",
         "competencia": "2026-02",
         "trimestre": "1TRI/2026",
-        "situacaoCalculada": "Critico",
+        "situacaoCalculada": "Abaixo da meta",
         "statusCalculo": "calculado",
         "mensagemCalculo": "Cálculo realizado com sucesso.",
         "revisaoMoedaPendente": false
@@ -18354,7 +18354,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "dataDevolucao": null,
         "competencia": "2026-03",
         "trimestre": "1TRI/2026",
-        "situacaoCalculada": "Critico",
+        "situacaoCalculada": "Abaixo da meta",
         "statusCalculo": "calculado",
         "mensagemCalculo": "Cálculo realizado com sucesso.",
         "revisaoMoedaPendente": false
@@ -18404,7 +18404,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "dataDevolucao": "",
         "competencia": "2026-03",
         "trimestre": "1TRI/2026",
-        "situacaoCalculada": "Critico",
+        "situacaoCalculada": "Abaixo da meta",
         "statusCalculo": "calculado",
         "mensagemCalculo": "Cálculo realizado com sucesso.",
         "revisaoMoedaPendente": false
@@ -19147,7 +19147,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "dataDevolucao": null,
         "competencia": "2026-01",
         "trimestre": "1TRI/2026",
-        "situacaoCalculada": "Critico",
+        "situacaoCalculada": "Abaixo da meta",
         "statusCalculo": "calculado",
         "mensagemCalculo": "Cálculo realizado com sucesso.",
         "revisaoMoedaPendente": false
@@ -19459,7 +19459,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "dataDevolucao": null,
         "competencia": "2026-01",
         "trimestre": "1TRI/2026",
-        "situacaoCalculada": "Critico",
+        "situacaoCalculada": "Abaixo da meta",
         "statusCalculo": "calculado",
         "mensagemCalculo": "Cálculo realizado com sucesso.",
         "revisaoMoedaPendente": false
@@ -19563,7 +19563,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "dataDevolucao": null,
         "competencia": "2026-02",
         "trimestre": "1TRI/2026",
-        "situacaoCalculada": "Critico",
+        "situacaoCalculada": "Abaixo da meta",
         "statusCalculo": "calculado",
         "mensagemCalculo": "Cálculo realizado com sucesso.",
         "revisaoMoedaPendente": false
@@ -19667,7 +19667,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "dataDevolucao": null,
         "competencia": "2026-03",
         "trimestre": "1TRI/2026",
-        "situacaoCalculada": "Critico",
+        "situacaoCalculada": "Abaixo da meta",
         "statusCalculo": "calculado",
         "mensagemCalculo": "Cálculo realizado com sucesso.",
         "revisaoMoedaPendente": false
@@ -19727,7 +19727,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "dataDevolucao": null,
         "competencia": "2026-01",
         "trimestre": "1TRI/2026",
-        "situacaoCalculada": "Critico",
+        "situacaoCalculada": "Abaixo da meta",
         "statusCalculo": "calculado",
         "mensagemCalculo": "Cálculo realizado com sucesso.",
         "revisaoMoedaPendente": false
@@ -19779,7 +19779,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "dataDevolucao": "",
         "competencia": "2026-01",
         "trimestre": "1TRI/2026",
-        "situacaoCalculada": "Critico",
+        "situacaoCalculada": "Abaixo da meta",
         "statusCalculo": "calculado",
         "mensagemCalculo": "Cálculo realizado com sucesso.",
         "revisaoMoedaPendente": false
@@ -20063,7 +20063,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "dataDevolucao": null,
         "competencia": "2026-01",
         "trimestre": "1TRI/2026",
-        "situacaoCalculada": "Critico",
+        "situacaoCalculada": "Abaixo da meta",
         "statusCalculo": "calculado",
         "mensagemCalculo": "Cálculo realizado com sucesso.",
         "revisaoMoedaPendente": false
@@ -20115,7 +20115,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "dataDevolucao": "",
         "competencia": "2026-01",
         "trimestre": "1TRI/2026",
-        "situacaoCalculada": "Critico",
+        "situacaoCalculada": "Abaixo da meta",
         "statusCalculo": "calculado",
         "mensagemCalculo": "Cálculo realizado com sucesso.",
         "revisaoMoedaPendente": false
@@ -20175,7 +20175,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "dataDevolucao": null,
         "competencia": "2026-02",
         "trimestre": "1TRI/2026",
-        "situacaoCalculada": "Critico",
+        "situacaoCalculada": "Abaixo da meta",
         "statusCalculo": "calculado",
         "mensagemCalculo": "Cálculo realizado com sucesso.",
         "revisaoMoedaPendente": false
@@ -20227,7 +20227,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "dataDevolucao": "",
         "competencia": "2026-02",
         "trimestre": "1TRI/2026",
-        "situacaoCalculada": "Critico",
+        "situacaoCalculada": "Abaixo da meta",
         "statusCalculo": "calculado",
         "mensagemCalculo": "Cálculo realizado com sucesso.",
         "revisaoMoedaPendente": false
@@ -20287,7 +20287,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "dataDevolucao": null,
         "competencia": "2026-03",
         "trimestre": "1TRI/2026",
-        "situacaoCalculada": "Critico",
+        "situacaoCalculada": "Abaixo da meta",
         "statusCalculo": "calculado",
         "mensagemCalculo": "Cálculo realizado com sucesso.",
         "revisaoMoedaPendente": false
@@ -20339,7 +20339,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "dataDevolucao": "",
         "competencia": "2026-03",
         "trimestre": "1TRI/2026",
-        "situacaoCalculada": "Critico",
+        "situacaoCalculada": "Abaixo da meta",
         "statusCalculo": "calculado",
         "mensagemCalculo": "Cálculo realizado com sucesso.",
         "revisaoMoedaPendente": false

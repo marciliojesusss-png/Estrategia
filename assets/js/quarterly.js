@@ -204,12 +204,11 @@
 
   function getSituation(calculation, performance) {
     if (calculation?.situacao) {
-      return calculation.situacao === "Critico" ? "Crítico" : calculation.situacao;
+      return root.Situations ? root.Situations.normalizarSituacao(calculation.situacao) : calculation.situacao;
     }
     if (performance === null) return "Sem cálculo";
     if (performance >= 1) return "Atingido";
-    if (performance >= 0.8) return "Abaixo da meta";
-    return "Crítico";
+    return "Abaixo da meta";
   }
 
   function getCalculationScope(rule, allLaunches, quarterMonths, year, quarterEnd) {

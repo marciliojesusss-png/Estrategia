@@ -396,7 +396,7 @@
   }
 
   function palette(size) {
-    const colors = ["#0f5b99", "#2f7d32", "#168aad", "#c28b00", "#7c3aed", "#b3261e", "#4b5563", "#0f766e"];
+    const colors = ["#2094ff", "#35d65b", "#31c4ff", "#ff9800", "#f9c846", "#91a7bd", "#2ea8ff", "#0dd4a6"];
     return Array.from({ length: size }, (_, index) => colors[index % colors.length]);
   }
 
@@ -489,7 +489,7 @@
         datasets: [{
           label: "% atingimento oficial",
           data: desempenhoPilar.map((item) => Number((item.percentual * 100).toFixed(2))),
-          backgroundColor: "#2f7d32"
+          backgroundColor: "#35d65b"
         }]
       },
       options: { indexAxis: "y", plugins: { legend: { display: false } }, scales: { x: percentAxisOptions() } }
@@ -503,8 +503,8 @@
         datasets: [{
           label: "% atingimento oficial",
           data: evolucao.map((item) => Number((item.percentual * 100).toFixed(2))),
-          borderColor: "#168aad",
-          backgroundColor: "rgba(22, 138, 173, 0.16)",
+          borderColor: "#31c4ff",
+          backgroundColor: "rgba(49, 196, 255, 0.16)",
           fill: true,
           tension: 0.25
         }]
@@ -516,7 +516,7 @@
       type: "bar",
       data: {
         labels: Object.keys(statusData),
-        datasets: [{ label: "Lançamentos", data: Object.values(statusData), backgroundColor: "#c28b00" }]
+        datasets: [{ label: "Lançamentos", data: Object.values(statusData), backgroundColor: "#ff9800" }]
       },
       options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
     });
@@ -535,11 +535,12 @@
 
   function officialSituation(resultado) {
     if (!resultado || !resultado.lancamento) return "Sem dados";
-    if (resultado.situacaoCalculada) return resultado.situacaoCalculada;
+    if (resultado.situacaoCalculada) {
+      return window.Situations ? Situations.normalizarSituacao(resultado.situacaoCalculada) : resultado.situacaoCalculada;
+    }
     if (!hasOfficialPercent(resultado)) return "Em andamento";
     if (resultado.percentualAtingido >= 1) return "Atingido";
-    if (resultado.percentualAtingido >= 0.8) return "Abaixo da meta";
-    return "Crítico";
+    return "Abaixo da meta";
   }
 
   function formatOfficialResult(resultado) {
@@ -560,8 +561,9 @@
   }
 
   function badgeClass(status) {
+    status = window.Situations ? Situations.normalizarSituacao(status) : status;
     if (status === "Homologado" || status === "Atingido") return "ok";
-    if (status === "Devolvido para ajuste" || status === "Crítico") return "danger";
+    if (status === "Devolvido para ajuste") return "danger";
     if (status === "Enviado para homologação" || status === "Abaixo da meta") return "warn";
     return "info";
   }

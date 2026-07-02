@@ -122,8 +122,7 @@
   function situacaoPorPercentual(percentual) {
     if (percentual === null || percentual === undefined) return "Sem cálculo";
     if (percentual >= 1) return "Atingido";
-    if (percentual >= 0.8) return "Abaixo da meta";
-    return "Crítico";
+    return "Abaixo da meta";
   }
 
   function pendente(mensagem, unidadeMedida, extra = {}) {
@@ -271,9 +270,7 @@
     const percentualAtingido = cobertura >= metaCobertura ? 1 : percentualMatematico;
     const situacao = cobertura >= metaCobertura
       ? "Atingido"
-      : cobertura >= metaCobertura * 0.8
-        ? "Abaixo da meta"
-        : "Crítico";
+      : "Abaixo da meta";
 
     return ok(cobertura, cobertura, percentualAtingido, percentualAtingido, regra.unidadeMedida, "Cobertura de capacitação calculada por público-alvo elegível.", {
       publicoAlvoElegivelCapacitacao: publicoAlvo,
@@ -384,7 +381,7 @@
         });
       }
       const percentual = acumulado / metaAcumulada;
-      const situacao = percentual >= 1 ? "Atingido" : percentual >= 0.8 ? "Abaixo da meta" : "Crítico";
+      const situacao = percentual >= 1 ? "Atingido" : "Abaixo da meta";
       return ok(
         resultadoMensal,
         acumulado,
@@ -412,7 +409,7 @@
       const metaAcumulada = metaMensalFixa * numeroMes;
       const percentualMensal = resultadoMensal / metaMensalFixa;
       const percentualAcumulado = acumulado / metaAcumulada;
-      const situacao = percentualAcumulado >= 1 ? "Atingido" : percentualAcumulado >= 0.8 ? "Abaixo da meta" : "Crítico";
+      const situacao = percentualAcumulado >= 1 ? "Atingido" : "Abaixo da meta";
       return ok(
         resultadoMensal,
         acumulado,
@@ -536,8 +533,7 @@
   function situacaoIndicadorInverso(resultado, meta) {
     if (resultado === null || meta === null || meta <= 0) return "Sem calculo";
     if (resultado <= meta) return "Atingido";
-    if (resultado <= meta * 1.2) return "Abaixo da meta";
-    return "Crítico";
+    return "Abaixo da meta";
   }
 
   function desempenhoIndicadorInverso(resultado, meta) {
@@ -682,7 +678,7 @@
         metaReferencia: target,
         situacao: accumulatedResult >= target
           ? "Atingido"
-          : accumulatedResult / target >= 0.8 ? "Abaixo da meta" : "Crítico"
+          : "Abaixo da meta"
       }
     );
   }
@@ -789,9 +785,7 @@
     const situacao = metaTrimestral
       ? percentual >= metaTrimestral
         ? "Atingido"
-        : percentualAtingido >= 0.8
-          ? "Abaixo da meta"
-          : "Crítico"
+        : "Abaixo da meta"
       : percentual >= 1
         ? "Atingido"
         : percentual > 0
@@ -859,9 +853,7 @@
       ? "Em acompanhamento"
       : npsRealizado >= referenciaSituacao
         ? "Atingido"
-        : npsRealizado >= referenciaSituacao * 0.8
-          ? "Abaixo da meta"
-          : "Crítico";
+        : "Abaixo da meta";
     return ok(npsRealizado, npsRealizado, percentualAtingido, percentualAtingido, regra.unidadeMedida, "NPS calculado por posição de pesquisa.", {
       npsRealizado,
       metaReferenciaPeriodo,
@@ -910,9 +902,7 @@
         ? "Em acompanhamento"
         : notaApurada >= metaAnual
           ? "Atingido"
-          : notaApurada >= metaAnual * 0.8
-            ? "Abaixo da meta"
-            : "Crítico";
+          : "Abaixo da meta";
 
     return ok(notaApurada, notaApurada, percentualAtingido, percentualAtingido, regra.unidadeMedida, "Nota de pesquisa anual calculada por posição de referência.", {
       notaClimaApurada: notaApurada,
@@ -953,9 +943,7 @@
       const situacao = metaTrimestral
         ? percentualPlanoExecutado >= metaTrimestral
           ? "Atingido"
-          : percentualAtingidoCurva >= 0.8
-            ? "Abaixo da meta"
-            : "Crítico"
+          : "Abaixo da meta"
         : acumulado >= metaMinimaMelhorias
           ? "Atingido"
           : acumulado > 0
@@ -1017,9 +1005,7 @@
       const situacao = metaReferencia
         ? acumulado >= metaReferencia
           ? "Atingido"
-          : percentual >= 0.8
-            ? "Abaixo da meta"
-            : "Crítico"
+          : "Abaixo da meta"
         : "Sem cálculo";
       return ok(acumulado, acumulado, percentual, percentual, regra.unidadeMedida, "Elementos únicos atendidos calculados com sucesso.", {
         elementosAtendidos,
@@ -1068,9 +1054,7 @@
     const situacao = metaReferencia
       ? acumulado >= metaReferencia
         ? "Atingido"
-        : percentual >= 0.8
-          ? "Abaixo da meta"
-          : "Crítico"
+        : "Abaixo da meta"
       : "Sem cálculo";
     return ok(acumulado, acumulado, percentual, percentual, regra.unidadeMedida, "Iniciativas apoiadas calculadas com sucesso.", {
       iniciativasApoiadas,
@@ -1142,9 +1126,7 @@
     const percentual = acoesRealizadasAcumuladas / metaReferencia;
     const situacao = acoesRealizadasAcumuladas >= metaReferencia
       ? "Atingido"
-      : percentual >= 0.8
-        ? "Abaixo da meta"
-        : "Crítico";
+      : "Abaixo da meta";
 
     return ok(resultadoPercentual, resultadoPercentual, percentual, percentual, regra.unidadeMedida, "Execução de ações propostas calculada.", {
       resultadoPercentualVisibilidade: resultadoPercentual,
@@ -1212,9 +1194,7 @@
     const percentual = valorInvestidoAcumulado / metaReferencia;
     const situacao = valorInvestidoAcumulado >= metaReferencia
       ? "Atingido"
-      : percentual >= 0.8
-        ? "Abaixo da meta"
-        : "Crítico";
+      : "Abaixo da meta";
     return ok(valorInvestidoAcumulado, valorInvestidoAcumulado, percentual, percentual, regra.unidadeMedida, "Investimento socioambiental acumulado calculado.", {
       valorInvestidoAcumulado,
       valorInvestidoAcumuladoAteCompetencia: valorInvestidoAcumulado,
@@ -1301,9 +1281,7 @@
     const percentualAtingido = realizado2026 / metaCalculada2026;
     const situacao = indiceEmRelacaoA2025 >= metaIndice
       ? "Atingido"
-      : indiceEmRelacaoA2025 >= metaIndice * 0.8
-        ? "Abaixo da meta"
-        : "Crítico";
+      : "Abaixo da meta";
 
     return ok(indiceEmRelacaoA2025, indiceEmRelacaoA2025, percentualAtingido, percentualAtingido, regra.unidadeMedida, "Crescimento comparado com base equivalente de 2025 calculado.", {
       resultadoReferencia2025: base2025,

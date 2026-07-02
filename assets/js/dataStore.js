@@ -1414,6 +1414,10 @@
     return lancamentos;
   }
 
+  function normalizarSituacaoLancamento(launch) {
+    return window.Situations ? Situations.normalizarLancamento(launch) : launch;
+  }
+
   function normalizeData(key, value) {
     value = corrigirValorSalvo(value);
 
@@ -2321,7 +2325,7 @@
     }
 
     if (key === "lancamentos" && Array.isArray(value)) {
-      return value.map((launch) => normalizarCamposMoeda(migrarCampoJogoResponsavelCapacitacaoLegado(migrarCampoVisibilidadeRepassesLegado(migrarCampoIncentivoSocioambientalLegado(migrarCampoApoioSocioambientalLegado(migrarCampoPrincipiosJogoResponsavelLegado(migrarCampoCapacidadeTicLegado(migrarCampoPlataformaJogosLegado(migrarCampoAprimoramentoLegado(migrarCampoCapacitacaoLegado(migrarCampoClimaLegado(migrarCampoNpsLegado(migrarCampoOfertasLegado(migrarCampoRedeLotericaLegado(migrarCampoEcossistemaLegado(migrarCampoRepasseSocialLegado(migrarCampoGgrLegado({
+      return value.map((launch) => normalizarSituacaoLancamento(normalizarCamposMoeda(migrarCampoJogoResponsavelCapacitacaoLegado(migrarCampoVisibilidadeRepassesLegado(migrarCampoIncentivoSocioambientalLegado(migrarCampoApoioSocioambientalLegado(migrarCampoPrincipiosJogoResponsavelLegado(migrarCampoCapacidadeTicLegado(migrarCampoPlataformaJogosLegado(migrarCampoAprimoramentoLegado(migrarCampoCapacitacaoLegado(migrarCampoClimaLegado(migrarCampoNpsLegado(migrarCampoOfertasLegado(migrarCampoRedeLotericaLegado(migrarCampoEcossistemaLegado(migrarCampoRepasseSocialLegado(migrarCampoGgrLegado({
         ...launch,
         pilar: getCanonicalPillar(Number(launch.indicadorId)),
         competencia: launch.competencia || `${launch.ano}-${String(launch.mes).padStart(2, "0")}`,
@@ -2412,7 +2416,7 @@
           metaMensal: 0.2805,
           metaAnualDescricao: "Aumentar em 05 p.p. as vendas provenientes de canais digitais."
         } : {})
-      }))))))))))))))))));
+      })))))))))))))))))));
     }
 
     if ((key === "homologacoes" || key === "historico") && Array.isArray(value)) {
@@ -2571,6 +2575,9 @@
   }
 
   function saveLocal(key, value) {
+    if (key === "lancamentos" && Array.isArray(value)) {
+      value = value.map(normalizarSituacaoLancamento);
+    }
     cache[key] = value;
     syncValidationCollection(key, value);
     if (key === "lancamentos") {

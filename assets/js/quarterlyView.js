@@ -28,9 +28,9 @@
   }
 
   function badgeClass(value) {
+    value = Situations.normalizarSituacao(value);
     if (value === "Fechado" || value === "Atingido") return "ok";
     if (value === "Parcial" || value === "Abaixo da meta" || value === "Em andamento") return "warn";
-    if (value === "Crítico" || value === "Não atingido") return "danger";
     return "info";
   }
 

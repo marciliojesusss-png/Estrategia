@@ -297,7 +297,7 @@
           ? "Preencher"
           : "Visualizar";
       const resultadoMensal = item.resultadoMensal ?? item.realizadoMensal;
-      const situacao = item.situacaoCalculada || getCalculatedSituation(item.percentualAtingido ?? item.percentualAtingidoMensal);
+      const situacao = Situations.normalizarSituacao(item.situacaoCalculada || getCalculatedSituation(item.percentualAtingido ?? item.percentualAtingidoMensal));
       return `
         <tr>
           <td>${escapeHtml(indicador ? indicador.indicador : item.indicadorId)}</td>
@@ -422,8 +422,7 @@
     const percentual = toNumberOrNull(percentualAtingido);
     if (percentual === null) return "Sem dados";
     if (percentual >= 1) return "Atingido";
-    if (percentual >= 0.8) return "Abaixo da meta";
-    return "Critico";
+    return "Abaixo da meta";
   }
 
   function renderDynamicFields(lancamento, regra) {
@@ -764,7 +763,7 @@
       : result.resultado.percentualAtingidoMensalFormatado || Calculations.formatarPercentual(result.resultado.percentualAtingidoMensal);
     document.getElementById("launchResultadoAcumulado").value = result.resultado.resultadoOficialAnualFormatado || Calculations.formatarValor(result.resultado.resultadoOficialAnual, result.resultado.unidadeMedida);
     document.getElementById("launchPercentualAcumulado").value = result.resultado.percentualAtingidoAnualFormatado || Calculations.formatarPercentual(result.resultado.percentualAtingidoAnual);
-    document.getElementById("launchSituacaoCalculada").value = result.resultado.situacao || getCalculatedSituation(result.resultado.percentualAtingidoAnual ?? result.resultado.percentualAtingidoMensal);
+    document.getElementById("launchSituacaoCalculada").value = Situations.normalizarSituacao(result.resultado.situacao || getCalculatedSituation(result.resultado.percentualAtingidoAnual ?? result.resultado.percentualAtingidoMensal));
     if (result.resultado.erro) {
       document.getElementById("launchResultadoMensal").value = "-";
       document.getElementById("launchPercentualCalculado").value = "-";
@@ -859,7 +858,7 @@
       percentualAtingidoAcumulado: calculation.resultado.percentualAtingidoAcumulado,
       percentualAtingidoAnual: calculation.resultado.percentualAtingidoAnual,
       resultadoOficialAnual: calculation.resultado.resultadoOficialAnual,
-      situacaoCalculada: calculation.resultado.situacao || getCalculatedSituation(calculation.resultado.percentualAtingidoAnual ?? calculation.resultado.percentualAtingidoMensal),
+      situacaoCalculada: Situations.normalizarSituacao(calculation.resultado.situacao || getCalculatedSituation(calculation.resultado.percentualAtingidoAnual ?? calculation.resultado.percentualAtingidoMensal)),
       status: action === "send" ? "Enviado para homologação" : "Em preenchimento",
       justificativa: document.getElementById("launchJustificativa").value.trim(),
       observacaoArea: document.getElementById("launchObservacaoArea").value.trim(),
@@ -909,7 +908,7 @@
         lancamento.percentualAtingidoAcumulado = resultado.percentualAtingidoAcumulado;
         lancamento.percentualAtingidoAnual = resultado.percentualAtingidoAnual;
         lancamento.resultadoOficialAnual = resultado.resultadoOficialAnual;
-        lancamento.situacaoCalculada = resultado.situacao || getCalculatedSituation(resultado.percentualAtingidoAnual ?? resultado.percentualAtingidoMensal);
+        lancamento.situacaoCalculada = Situations.normalizarSituacao(resultado.situacao || getCalculatedSituation(resultado.percentualAtingidoAnual ?? resultado.percentualAtingidoMensal));
       }
     });
   }

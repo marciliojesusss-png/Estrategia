@@ -48,6 +48,19 @@
     target.insertAdjacentHTML("afterend", messages.join(""));
   }
 
+  function configureChartTheme() {
+    if (!window.Chart) return;
+    Chart.defaults.color = "#afc4dd";
+    Chart.defaults.borderColor = "rgba(59, 151, 255, 0.18)";
+    Chart.defaults.font.family = 'Inter, "Segoe UI", Arial, Helvetica, sans-serif';
+    Chart.defaults.plugins.legend.labels.color = "#d7ecff";
+    Chart.defaults.plugins.tooltip.backgroundColor = "rgba(3, 17, 38, 0.95)";
+    Chart.defaults.plugins.tooltip.titleColor = "#f5f9ff";
+    Chart.defaults.plugins.tooltip.bodyColor = "#d7ecff";
+    Chart.defaults.plugins.tooltip.borderColor = "rgba(49, 196, 255, 0.35)";
+    Chart.defaults.plugins.tooltip.borderWidth = 1;
+  }
+
   async function initLogin() {
     const usuarios = await DataStore.loadJson("usuarios");
     const select = document.getElementById("usuarioSelect");
@@ -166,6 +179,8 @@
   }
 
   document.addEventListener("DOMContentLoaded", () => {
+    document.body.classList.add("theme-dark-blue");
+    configureChartTheme();
     initPage().catch((error) => {
       console.error(error);
       document.body.insertAdjacentHTML("afterbegin", `<div class="notice">Erro ao iniciar a página: ${error.message}</div>`);

@@ -71,6 +71,15 @@ def text(value):
     return str(value)
 
 
+def normalizar_situacao(value):
+    if value is None:
+        return None
+    normalized = str(value).strip().lower()
+    if normalized in {"crítico", "critico"}:
+        return "Abaixo da meta"
+    return value
+
+
 def clean_indicator_name(value):
     raw = str(value or "").strip()
     parts = raw.split(". ", 1)
@@ -119,6 +128,7 @@ def migrate():
 
     connection = init_database()
     cursor = connection.cursor()
+    situacoes_normalizadas = 0
 
     for indicador in indicadores:
         cursor.execute(
@@ -152,6 +162,10 @@ def migrate():
 
     for lancamento in lancamentos:
         lancamento_id = str(lancamento.get("id"))
+        situacao_original = lancamento.get("situacaoCalculada")
+        situacao_normalizada = normalizar_situacao(situacao_original)
+        if situacao_normalizada != situacao_original:
+            situacoes_normalizadas += 1
         cursor.execute(
             """
             INSERT OR REPLACE INTO lancamentos (
@@ -178,7 +192,7 @@ def migrate():
                 text(lancamento.get("resultadoOficialAnual") or lancamento.get("resultadoAcumulado") or lancamento.get("resultadoMensal")),
                 text(lancamento.get("metaReferencia") or lancamento.get("metaMensal")),
                 text(lancamento.get("percentualAtingido") or lancamento.get("percentualAtingidoMensal")),
-                lancamento.get("situacaoCalculada"),
+                situacao_normalizada,
                 lancamento.get("status"),
                 lancamento.get("observacaoArea") or lancamento.get("justificativa"),
                 f"evidencia-{lancamento_id}" if any(lancamento.get(k) for k in ("evidencia", "linkEvidencia", "arquivoEvidencia")) else None,
@@ -347,6 +361,29 @@ def migrate():
             migrated_at,
         ),
     )
+
+    if situacoes_normalizadas:
+        cursor.execute(
+            """
+            INSERT OR REPLACE INTO auditoria (
+              id, entidade, entidade_id, acao, descricao, dados_anteriores_json,
+              dados_novos_json, usuario, perfil_usuario, data_acao, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                f"normalizacao-situacao-critico-{stamp()}",
+                "lancamentos",
+                "situacao",
+                "normalizar_situacao_critico",
+                "Categoria Crítico substituída por Abaixo da meta conforme orientação de gestão.",
+                dump({"situacao": ["Crítico", "Critico", "crítico", "critico"]}),
+                dump({"situacao": "Abaixo da meta", "registros": situacoes_normalizadas}),
+                "sistema",
+                "Sistema",
+                migrated_at,
+                migrated_at,
+            ),
+        )
 
     connection.commit()
     connection.close()
