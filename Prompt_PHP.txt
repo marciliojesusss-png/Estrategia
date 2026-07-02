@@ -1,0 +1,959 @@
+Migrar a aplicação “CAIXA Loterias — Indicadores Estratégicos” para PHP, preservando integralmente o banco SQLite, a estrutura visual, o layout, os dados gravados, as regras de cálculo, os fluxos de lançamento, homologação, relatórios e todas as funcionalidades já implementadas.
+
+CONTEXTO DO PROJETO
+
+A aplicação atual foi desenvolvida para validação local do sistema de Indicadores Estratégicos da CAIXA Loterias.
+
+O sistema já possui:
+
+- 23 indicadores PEI/PN cadastrados;
+- regras específicas de cálculo por indicador;
+- Resumo Executivo;
+- Visão Trimestral;
+- tela de Indicadores;
+- tela de Lançamentos;
+- Relatórios;
+- menu superior;
+- layout dark azul inspirado na CAIXA Loterias;
+- gráfico de barras por pilar;
+- scroller de destaques dos indicadores;
+- tabela executiva;
+- filtros;
+- badges de situação;
+- exportação/importação JSON;
+- banco SQLite local;
+- dados já gravados;
+- homologações;
+- status;
+- informações metodológicas;
+- curvas trimestrais;
+- regras de exibição por perfil;
+- remoção da situação “Crítico”, consolidando tudo abaixo da meta como “Abaixo da meta”.
+
+Agora precisamos migrar a aplicação para PHP, pois PHP é a linguagem aceita no ambiente/servidor da CAIXA Loterias.
+
+O banco atual em SQLite deve ser preservado.
+
+A aplicação deve continuar funcionando localmente com SQLite, mas com backend em PHP.
+
+OBJETIVO
+
+Migrar a aplicação para arquitetura PHP + SQLite, preservando tudo que já foi construído.
+
+A migração deve ser segura, incremental e sem perda de dados.
+
+A aplicação final deve funcionar assim:
+
+Frontend HTML/CSS/JavaScript
+↓
+Chamadas HTTP/fetch
+↓
+Backend PHP
+↓
+Banco SQLite existente em /database/indicadores.sqlite
+
+NÃO PERMITIDO
+
+Não apagar o banco SQLite existente.
+Não recriar a base do zero.
+Não perder dados gravados.
+Não alterar as regras de cálculo dos indicadores.
+Não alterar os resultados já homologados.
+Não alterar metas, fórmulas ou curvas.
+Não remover exportação/importação JSON.
+Não remover layout dark azul.
+Não remover gráfico de barras.
+Não remover scroller de destaques.
+Não remover filtros.
+Não remover tabela executiva.
+Não remover badges.
+Não remover fluxo de lançamento.
+Não remover informações metodológicas.
+Não alterar status existentes sem necessidade.
+Não transformar a aplicação em outro framework pesado sem autorização.
+Não implementar SQL Server agora.
+Não implementar autenticação corporativa real agora.
+Não alterar a identidade visual do sistema.
+
+LINGUAGEM E STACK
+
+Usar:
+
+- PHP 8.x ou compatível;
+- SQLite via PDO;
+- HTML;
+- CSS;
+- JavaScript puro;
+- JSON para APIs;
+- sem necessidade de Laravel neste momento, salvo se já houver estrutura compatível;
+- sem dependências complexas.
+
+Estrutura recomendada:
+
+/public
+  index.php
+  resumo-executivo.php
+  visao-trimestral.php
+  indicadores.php
+  lancamentos.php
+  relatorios.php
+  assets/
+    css/
+      styles.css
+      theme-dark-blue.css
+    js/
+      app.js
+      resumo-executivo.js
+      visao-trimestral.js
+      indicadores.js
+      lancamentos.js
+      relatorios.js
+
+/api
+  indicadores.php
+  lancamentos.php
+  resumo-executivo.php
+  visao-trimestral.php
+  homologacoes.php
+  relatorios.php
+  configuracoes.php
+  database.php
+
+/app
+  config/
+    config.php
+  core/
+    Database.php
+    Response.php
+    Request.php
+  repositories/
+    IndicadoresRepository.php
+    LancamentosRepository.php
+    HomologacoesRepository.php
+    AuditoriaRepository.php
+    ConfiguracoesRepository.php
+  services/
+    CalculoIndicadoresService.php
+    ResumoExecutivoService.php
+    VisaoTrimestralService.php
+    ExportacaoJsonService.php
+    ImportacaoJsonService.php
+    IntegridadeBancoService.php
+
+/database
+  indicadores.sqlite
+  schema.sql
+  backups/
+
+/templates
+  partials/
+    header.php
+    nav.php
+    footer.php
+
+1. PRESERVAÇÃO DO BANCO SQLITE
+
+O banco existente deve ser mantido em:
+
+/database/indicadores.sqlite
+
+Antes de qualquer alteração, criar backup automático:
+
+/database/backups/indicadores-backup-ANTES-MIGRACAO-PHP-AAAA-MM-DD-HHMM.sqlite
+
+Também criar backup JSON, se a aplicação já possuir exportador.
+
+A aplicação PHP deve usar esse arquivo SQLite como fonte oficial local.
+
+No PHP, conectar usando PDO:
+
+sqlite:../database/indicadores.sqlite
+
+ou caminho absoluto seguro definido em config.php.
+
+Exemplo de configuração:
+
+define('DB_PATH', __DIR__ . '/../../database/indicadores.sqlite');
+
+2. NÃO RECRIAR TABELAS SE JÁ EXISTIREM
+
+Ao iniciar a aplicação, verificar se o banco existe.
+
+Se existir:
+- não sobrescrever;
+- não apagar;
+- não recriar;
+- apenas conectar e usar.
+
+Se não existir:
+- criar a partir do schema.sql somente se for uma instalação nova.
+
+Regra:
+
+if file_exists('/database/indicadores.sqlite'):
+    usar banco existente
+else:
+    criar novo banco com schema.sql
+
+3. CAMADA DE CONEXÃO PHP
+
+Criar classe:
+
+/app/core/Database.php
+
+Responsabilidades:
+
+- abrir conexão PDO com SQLite;
+- ativar modo de erro por exceção;
+- ativar foreign keys;
+- garantir UTF-8;
+- fornecer conexão para repositories.
+
+Exemplo esperado:
+
+class Database {
+    private static $connection = null;
+
+    public static function getConnection(): PDO {
+        if (self::$connection === null) {
+            $pdo = new PDO('sqlite:' . DB_PATH);
+            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            $pdo->exec('PRAGMA foreign_keys = ON');
+            self::$connection = $pdo;
+        }
+
+        return self::$connection;
+    }
+}
+
+4. GARANTIR UTF-8
+
+Todos os arquivos PHP e HTML devem usar UTF-8.
+
+Em todas as páginas PHP/HTML, usar:
+
+<meta charset="UTF-8">
+
+Nas APIs PHP, retornar:
+
+header('Content-Type: application/json; charset=utf-8');
+
+Nas páginas:
+
+header('Content-Type: text/html; charset=utf-8');
+
+Corrigir qualquer texto com mojibake, como:
+
+CatÃ¡logo → Catálogo
+metodolÃ³gico → metodológico
+estratÃ©gicos → estratégicos
+situaÃ§Ã£o → situação
+homologaÃ§Ã£o → homologação
+lanÃ§amentos → lançamentos
+competÃªncia → competência
+evidÃªncia → evidência
+descriÃ§Ã£o → descrição
+observaÃ§Ã£o → observação
+relatÃ³rios → relatórios
+configuraÃ§Ãµes → configurações
+apuraÃ§Ã£o → apuração
+cÃ¡lculo → cálculo
+fÃ³rmula → fórmula
+usuÃ¡rio → usuário
+validaÃ§Ã£o → validação
+
+5. TRANSFORMAR PÁGINAS HTML EM PHP SEM ALTERAR LAYOUT
+
+Converter as páginas principais para PHP:
+
+resumo-executivo.html → resumo-executivo.php
+visao-trimestral.html → visao-trimestral.php
+indicadores.html → indicadores.php
+lancamentos.html → lancamentos.php
+relatorios.html → relatorios.php
+
+Preservar:
+- layout;
+- classes CSS;
+- tema dark azul;
+- menu superior;
+- filtros;
+- gráficos;
+- scroller;
+- tabela executiva;
+- botões;
+- textos;
+- responsividade.
+
+Apenas trocar a extensão e incluir partials PHP quando conveniente:
+
+include '../templates/partials/header.php';
+include '../templates/partials/nav.php';
+include '../templates/partials/footer.php';
+
+6. MANTER O FRONTEND EXISTENTE
+
+Não reescrever toda a interface.
+
+Manter a maior parte possível do HTML, CSS e JavaScript já existente.
+
+Ajustar apenas as chamadas de dados.
+
+Antes, se o sistema lia localStorage ou JSON direto, agora deve chamar as APIs PHP.
+
+Exemplo:
+
+fetch('/api/resumo-executivo.php')
+  .then(response => response.json())
+  .then(data => renderizarResumoExecutivo(data));
+
+7. LOCALSTORAGE NÃO DEVE SER FONTE OFICIAL
+
+Após a migração, o localStorage pode continuar sendo usado apenas para:
+
+- filtros recentes;
+- estado visual;
+- perfil selecionado para validação;
+- preferências de interface;
+- tema, se houver;
+- sessão simulada.
+
+A fonte oficial dos dados passa a ser:
+
+/database/indicadores.sqlite
+
+Não salvar lançamentos oficiais apenas no localStorage.
+
+8. CRIAR API PHP PARA RESUMO EXECUTIVO
+
+Criar endpoint:
+
+/api/resumo-executivo.php
+
+Método GET.
+
+Deve retornar JSON contendo:
+
+{
+  "cards": {
+    "totalIndicadores": 23,
+    "indicadoresAtingidos": 0,
+    "indicadoresAbaixoMeta": 0,
+    "indicadoresSemDados": 0,
+    "indicadoresHomologados": 0,
+    "pendentesHomologacao": 0
+  },
+  "distribuicaoPorPilar": [],
+  "destaques": [],
+  "tabelaExecutiva": []
+}
+
+A API deve aplicar as regras já existentes:
+
+- sem situação “Crítico”;
+- “Crítico” legado deve ser normalizado para “Abaixo da meta”;
+- gráfico deve ter apenas:
+  - Atingidos;
+  - Abaixo da meta;
+  - Sem dados;
+- respeitar filtros enviados por query string.
+
+Exemplo:
+
+/api/resumo-executivo.php?plano=PEI&pilar=Atuação%20em%20Ecossistema&status=Homologado
+
+9. CRIAR API PHP PARA INDICADORES
+
+Criar endpoint:
+
+/api/indicadores.php
+
+Métodos:
+
+GET:
+- lista indicadores;
+- permite filtrar por plano, pilar, unidade_apuradora, diretoria_responsavel, ativo.
+
+GET com id:
+- retorna detalhe de um indicador.
+
+POST/PUT, se já existir funcionalidade de edição:
+- atualizar cadastro metodológico do indicador.
+
+Não alterar os 23 indicadores sem necessidade.
+
+A numeração deve ser campo técnico separado:
+
+numero
+nome
+
+Não concatenar número no nome na visão executiva.
+
+10. CRIAR API PHP PARA LANÇAMENTOS
+
+Criar endpoint:
+
+/api/lancamentos.php
+
+Métodos:
+
+GET:
+- listar lançamentos;
+- filtrar por indicador, mês, ano, trimestre, unidade apuradora e status;
+- no perfil Unidade Apuradora, permitir listar indicadores da unidade mesmo sem lançamento criado.
+
+POST:
+- salvar rascunho;
+- criar lançamento se não existir.
+
+PUT:
+- atualizar lançamento.
+
+POST action=enviar_homologacao:
+- enviar lançamento para homologação.
+
+POST action=homologar:
+- homologar lançamento.
+
+POST action=reabrir:
+- reabrir lançamento.
+
+POST action=retificar:
+- registrar retificação.
+
+A tela Lançamentos deve continuar exibindo indicadores da unidade SUCOL, incluindo “Arrecadação Gerada com o Ecossistema”.
+
+11. CRIAR API PHP PARA VISÃO TRIMESTRAL
+
+Criar endpoint:
+
+/api/visao-trimestral.php
+
+Deve retornar:
+
+- plano;
+- pilar;
+- indicador;
+- trimestre;
+- meta trimestral;
+- realizado trimestral;
+- % atingido;
+- situação;
+- status;
+- meses homologados;
+- fechamento 3 de 3;
+- parcial ou fechado.
+
+Preservar regras específicas dos indicadores:
+
+- GGR com meta acumulada;
+- IEO inverso;
+- Lucro Líquido acumulado;
+- PIX;
+- Repasse Social acumulado;
+- NPS;
+- Clima Organizacional;
+- Ecossistema com cenários;
+- Rede Lotérica com incremento trimestral;
+- Jogo Responsável;
+- Capacitação.
+
+12. CRIAR API PHP PARA RELATÓRIOS E EXPORTAÇÃO JSON
+
+Criar endpoint:
+
+/api/relatorios.php
+
+Funcionalidades:
+
+- exportar base completa para JSON;
+- exportar resumo executivo;
+- exportar visão trimestral;
+- exportar backup;
+- verificar integridade do banco.
+
+A exportação JSON deve preservar estrutura:
+
+{
+  "metadata": {
+    "sistema": "Central de Indicadores Estratégicos",
+    "empresa": "CAIXA Loterias",
+    "modo": "php_sqlite_local",
+    "banco": "SQLite",
+    "dataExportacao": "...",
+    "anoReferencia": 2026
+  },
+  "indicadores": [],
+  "lancamentos": [],
+  "homologacoes": [],
+  "retificacoes": [],
+  "evidencias": [],
+  "auditoria": [],
+  "configuracoes": {},
+  "usuariosValidacao": []
+}
+
+13. PRESERVAR REGRAS DOS 23 INDICADORES
+
+Criar ou migrar o motor de cálculo para PHP:
+
+/app/services/CalculoIndicadoresService.php
+
+Esse serviço deve concentrar as regras dos indicadores.
+
+Não espalhar regras em várias páginas.
+
+Função principal:
+
+calcularIndicador($indicador, $dadosEntrada, $competencia)
+
+Deve retornar:
+
+[
+  "resultado_calculado" => "...",
+  "resultado_oficial" => "...",
+  "meta_referencia" => "...",
+  "percentual_atingido" => "...",
+  "situacao" => "...",
+  "detalhes_calculo" => []
+]
+
+14. SITUAÇÃO “CRÍTICO” REMOVIDA
+
+Garantir que o PHP também respeite a regra nova:
+
+Não retornar “Crítico”.
+
+Se resultado abaixo da meta:
+retornar “Abaixo da meta”.
+
+Manter situações especiais:
+
+- Sem dados
+- Não iniciado
+- Em andamento
+- Em acompanhamento
+- Em preenchimento
+- Em prospecção/estruturação
+- Em elaboração/homologação
+- Sem meta no período
+- Dados insuficientes
+
+Criar função:
+
+normalizarSituacao($situacao)
+
+Se receber:
+Crítico, Critico, crítico, critico
+
+Retornar:
+Abaixo da meta
+
+15. INDICADOR 22 — ARRECADAÇÃO GERADA COM O ECOSSISTEMA
+
+Preservar regra revisada.
+
+O indicador deve trabalhar com dois cenários:
+
+- Lotex;
+- Lotex + Marketplace.
+
+Fórmula:
+
+(arrecadacaoViaEcossistema / arrecadacaoTotal) * 100
+
+Curva Lotex:
+
+1TRI: meta 0,99%
+2TRI: meta 0,86%
+3TRI: meta 0,81%
+4TRI: meta 0,72%
+
+Curva Lotex + Marketplace:
+
+1TRI: meta 3,76%
+2TRI: meta 3,60%
+3TRI: meta 3,65%
+4TRI: meta 3,80%
+
+Dados de teste 1TRI Lotex:
+
+arrecadacaoViaEcossistema = 39800000
+arrecadacaoTotal = 5966900000
+resultado esperado = 0,67%
+atingimento esperado = 67,12%
+
+Dados de teste 1TRI Lotex + Marketplace:
+
+arrecadacaoViaEcossistema = 242300000
+arrecadacaoTotal = 5966900000
+resultado esperado = 4,06%
+atingimento esperado = 107,94%
+
+No Resumo Executivo, usar cenário oficial configurado.
+
+Por padrão:
+lotex_marketplace
+
+16. INDICADOR 23 — PARTICIPAÇÃO DA REDE LOTÉRICA
+
+Preservar regra revisada.
+
+Este indicador deve exibir incremento percentual, não índice 102%.
+
+Fórmula oficial:
+
+(arrecadacaoRedeLoterica2026 / arrecadacaoRedeLoterica2025) * 100
+
+Cálculo exibido:
+
+indice = (arrecadacaoRedeLoterica2026 / arrecadacaoRedeLoterica2025) * 100
+incremento = indice - 100
+
+O realizado exibido é o incremento.
+
+Curva trimestral:
+
+1TRI: 0,50%
+2TRI: 1,00%
+3TRI: 1,50%
+4TRI: 2,00%
+
+Dados de teste:
+
+arrecadacaoRedeLoterica2025 = 3000000000
+arrecadacaoRedeLoterica2026 = 3017079000
+
+resultado esperado:
+indice = 100,5693%
+incremento = 0,5693%
+realizado exibido = 0,57%
+meta = 0,50%
+atingimento = 113,86%
+situação = Atingido
+
+Não exibir meta 102% no Resumo Executivo.
+
+17. INDICADOR 6 — IEO RECORRENTE
+
+Preservar regra inversa.
+
+Fórmula:
+
+((Despesa de pessoal + Despesas administrativas) / Receitas líquidas) * 100
+
+Quanto menor, melhor.
+
+Se resultado <= meta:
+Atingido
+
+Se resultado > meta:
+Abaixo da meta
+
+Não retornar Crítico.
+
+18. INDICADORES DE PESQUISA
+
+Preservar regras:
+
+NPS:
+- baseline 55;
+- meta anual correta 58;
+- 1TRI pode exibir 55 como referência/acompanhamento;
+- não tratar 55 como meta anual definitiva.
+
+Clima Organizacional:
+- meta anual >= 60;
+- unidade apuradora GERIN;
+- diretoria responsável DILOT;
+- pesquisa/nota anual;
+- 1TRI em acompanhamento.
+
+19. CAPACITAÇÃO E JOGO RESPONSÁVEL
+
+Preservar:
+
+Capacitação dos Empregados:
+- meta 90%;
+- 1TRI: 137 de 151 = 90,7%;
+- atingimento 100% ou 100,81%, conforme regra atual;
+- critério de cursos por trimestre.
+
+Jogo Responsável 2026:
+- meta 90%;
+- 1TRI: pelo menos 1 ação de disseminação;
+- anual: pelo menos 2 iniciativas;
+- 137 de 151 = 90,73%.
+
+20. PRESERVAR TEMA DARK AZUL
+
+Toda a migração para PHP deve preservar o layout dark azul atual.
+
+Não voltar para tema claro.
+
+Preservar:
+- fundo dark azul;
+- menu superior;
+- cards dark;
+- gráfico com cores vivas;
+- scroller;
+- badges;
+- botões;
+- tabela executiva dark;
+- ausência de categoria Crítico.
+
+21. PRESERVAR GRÁFICO DE BARRAS COMO FILTRO
+
+O gráfico de barras deve continuar interativo.
+
+Categorias:
+- Atingidos;
+- Abaixo da meta;
+- Sem dados.
+
+Sem categoria Crítico.
+
+Ao clicar em um segmento:
+- filtrar Tabela Executiva por pilar + situação.
+
+22. PRESERVAR SCROLLER DE DESTAQUES
+
+O scroller deve continuar exibindo:
+
+- nome do indicador;
+- resultado;
+- situação;
+- competência;
+- status.
+
+Ao clicar:
+- abrir detalhe ou filtrar tabela, conforme já implementado.
+
+23. PRESERVAR TABELA EXECUTIVA
+
+A tabela executiva deve continuar funcionando, com:
+
+- filtros;
+- dados vindos do SQLite;
+- botão visualizar/ver;
+- badges;
+- paginação, se houver;
+- sem numeração concatenada no nome do indicador.
+
+24. PERFIS E PERMISSÕES
+
+Manter perfis simulados:
+
+- Usuário da Companhia;
+- Unidade Apuradora;
+- Administrador, se existir;
+- Homologador, se existir.
+
+Em PHP, por enquanto, não implementar login corporativo real.
+
+Usar sessão PHP ou localStorage para perfil atual.
+
+Exemplo:
+
+$_SESSION['perfil_atual']
+
+ou manter no frontend e enviar como parâmetro para API.
+
+O perfil controla permissões, não a base de dados.
+
+Resumo Executivo deve mostrar visão institucional completa.
+
+Lançamentos pode filtrar por unidade apuradora.
+
+25. CONFIGURAÇÃO DO SERVIDOR LOCAL PHP
+
+O projeto deve funcionar com servidor PHP embutido:
+
+php -S 127.0.0.1:8000 -t public
+
+Documentar no README.
+
+Exemplo:
+
+1. Instalar PHP 8.x
+2. Entrar na pasta do projeto
+3. Rodar:
+   php -S 127.0.0.1:8000 -t public
+4. Acessar:
+   http://127.0.0.1:8000/resumo-executivo.php
+
+26. CUIDADO COM CAMINHOS
+
+Como o sistema antes rodava em:
+
+127.0.0.1:5500
+
+Agora pode rodar em:
+
+127.0.0.1:8000
+
+Evitar caminhos absolutos quebrados.
+
+Usar caminhos relativos seguros ou constantes PHP.
+
+27. BACKUP OBRIGATÓRIO ANTES DA MIGRAÇÃO
+
+Antes de qualquer alteração no banco:
+
+1. Criar backup SQLite.
+2. Criar backup JSON, se possível.
+3. Registrar no README que a migração criou backup.
+
+Nome sugerido:
+
+/database/backups/indicadores-antes-php-AAAA-MM-DD-HHMM.sqlite
+
+28. MIGRAÇÃO INCREMENTAL
+
+Fazer a migração em etapas.
+
+Etapa 1:
+- criar estrutura PHP;
+- conectar SQLite;
+- criar endpoint simples de teste.
+
+Etapa 2:
+- migrar Resumo Executivo para consumir API PHP.
+
+Etapa 3:
+- migrar Indicadores.
+
+Etapa 4:
+- migrar Lançamentos.
+
+Etapa 5:
+- migrar Visão Trimestral.
+
+Etapa 6:
+- migrar Relatórios/exportação.
+
+Etapa 7:
+- remover dependência de localStorage para dados oficiais.
+
+Etapa 8:
+- revisar layout.
+
+Não tentar reescrever tudo de uma vez sem testar.
+
+29. TESTES OBRIGATÓRIOS
+
+Após migrar, testar:
+
+Resumo Executivo:
+- total 23 indicadores;
+- cards corretos;
+- gráfico correto;
+- sem críticos;
+- scroller funcionando;
+- tabela executiva carregando do SQLite.
+
+Indicadores:
+- lista dos 23 indicadores;
+- nomes sem numeração na visão executiva;
+- detalhes metodológicos preservados.
+
+Lançamentos:
+- indicador 22 aparece para SUCOL;
+- é possível preencher dados;
+- salvar grava no SQLite;
+- status atualiza.
+
+Visão Trimestral:
+- metas e resultados corretos;
+- 3 de 3 homologados, quando aplicável.
+
+Relatórios:
+- exportação JSON funciona;
+- backup funciona.
+
+Encoding:
+- sem textos com CatÃ¡logo, SituaÃ§Ã£o etc.
+
+Tema:
+- dark azul preservado.
+
+30. CRITÉRIOS DE ACEITE
+
+A migração será considerada concluída se:
+
+1. A aplicação rodar em PHP.
+2. O banco SQLite existente for preservado.
+3. Os dados gravados antes da migração continuarem aparecendo.
+4. Os 23 indicadores continuarem cadastrados.
+5. O Resumo Executivo funcionar.
+6. A Visão Trimestral funcionar.
+7. A tela Indicadores funcionar.
+8. A tela Lançamentos funcionar.
+9. A tela Relatórios funcionar.
+10. O tema dark azul for preservado.
+11. O gráfico de barras continuar funcionando.
+12. A tabela executiva continuar funcionando.
+13. O scroller continuar funcionando.
+14. A exportação JSON continuar funcionando.
+15. O SQLite continuar em /database/indicadores.sqlite.
+16. Não houver perda de dados.
+17. Não houver categoria “Crítico”.
+18. Não houver erro de acentuação.
+19. O sistema puder ser executado com php -S.
+20. A aplicação estiver pronta para futura migração para servidor PHP da CAIXA Loterias.
+
+31. DOCUMENTAÇÃO
+
+Atualizar README.md com:
+
+- requisitos;
+- como rodar localmente;
+- estrutura do projeto;
+- localização do banco SQLite;
+- como fazer backup;
+- como exportar JSON;
+- como migrar para servidor PHP;
+- aviso de que SQLite é base local/versionável e não substitui banco corporativo multiusuário.
+
+Exemplo de aviso:
+
+“Este projeto utiliza SQLite local para validação e homologação funcional. No ambiente corporativo, a base poderá ser migrada para SQL Server ou outro banco definido pela arquitetura da CAIXA Loterias.”
+
+32. RESULTADO ESPERADO
+
+Ao final, a arquitetura deve ser:
+
+PHP Pages:
+resumo-executivo.php
+visao-trimestral.php
+indicadores.php
+lancamentos.php
+relatorios.php
+
+Frontend:
+HTML/CSS/JS dark azul
+
+APIs:
+PHP retornando JSON
+
+Banco:
+SQLite preservado em /database/indicadores.sqlite
+
+Dados:
+Todos preservados
+
+Regras:
+Todas preservadas
+
+Layout:
+Preservado e funcionando
+
+33. IMPORTANTE FINAL
+
+Antes de qualquer modificação destrutiva, criar backup.
+Não apagar o banco.
+Não recriar tabelas sem necessidade.
+Não alterar dados históricos.
+Não alterar cálculos.
+Não remover funcionalidades.
+A migração deve ser conservadora, segura e testável.

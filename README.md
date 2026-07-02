@@ -115,6 +115,28 @@ Depois, basta abrir o sistema. Os dados versionados estarao no projeto.
 
 Aviso: este banco SQL local e adequado para validacao e portabilidade do projeto. Ele nao substitui o banco corporativo multiusuario. Alteracoes feitas em computadores diferentes precisam ser sincronizadas via Git.
 
+## Execucao Em PHP
+
+A migracao para PHP preserva o banco SQLite existente em `database/indicadores.sqlite` e expoe APIs locais em `/api`. Antes da migracao foi criado o backup:
+
+```text
+database/backups/indicadores-antes-php-2026-07-02-1003.sqlite
+```
+
+Para rodar a aplicacao pelo PHP 8:
+
+```bat
+php -S 127.0.0.1:8000 -t public
+```
+
+Depois acesse:
+
+```text
+http://127.0.0.1:8000/index.php
+```
+
+As paginas `.php` em `public/` reaproveitam o layout atual e o frontend passa a carregar as colecoes pelo backend PHP/SQLite. Os arquivos `.html` continuam disponiveis para consulta estatica local.
+
 Chaves de sessao/perfil simuladas:
 
 ```text
@@ -138,6 +160,32 @@ Trocar perfil simulado altera apenas permissoes e visualizacao. A troca de perfi
 |-- visao-trimestral.html
 |-- administracao.html
 |-- dashboard.html          # legado; redireciona para resumo-executivo.html
+|-- app/
+|   |-- config/
+|   |-- core/
+|   |-- repositories/
+|   `-- services/
+|-- api/
+|   |-- database.php
+|   |-- indicadores.php
+|   |-- lancamentos.php
+|   |-- homologacoes.php
+|   |-- configuracoes.php
+|   |-- resumo-executivo.php
+|   |-- visao-trimestral.php
+|   `-- relatorios.php
+|-- public/
+|   |-- index.php
+|   |-- resumo-executivo.php
+|   |-- visao-trimestral.php
+|   |-- indicadores.php
+|   |-- lancamentos.php
+|   |-- homologacao.php
+|   |-- relatorios.php
+|   |-- administracao.php
+|   |-- api/
+|   `-- assets/
+|-- templates/
 |-- assets/
 |   |-- css/
 |   `-- js/

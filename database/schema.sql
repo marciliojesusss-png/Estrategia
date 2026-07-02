@@ -66,6 +66,32 @@ CREATE TABLE IF NOT EXISTS homologacoes (
 CREATE UNIQUE INDEX IF NOT EXISTS idx_homologacoes_idempotencia
   ON homologacoes(lancamento_id, acao, data_acao);
 
+CREATE TABLE IF NOT EXISTS solicitacoes_reabertura (
+  id TEXT PRIMARY KEY,
+  lancamento_id TEXT NOT NULL,
+  indicador_id TEXT,
+  competencia TEXT,
+  solicitante_usuario TEXT,
+  solicitante_perfil TEXT,
+  solicitante_unidade TEXT,
+  tipo_ajuste TEXT,
+  justificativa TEXT NOT NULL,
+  observacao_complementar TEXT,
+  status_solicitacao TEXT NOT NULL,
+  administrador_responsavel TEXT,
+  decisao_administrador TEXT,
+  justificativa_decisao TEXT,
+  data_solicitacao TEXT,
+  data_decisao TEXT,
+  created_at TEXT,
+  updated_at TEXT,
+  FOREIGN KEY (lancamento_id) REFERENCES lancamentos(id)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_solicitacoes_reabertura_pendente
+  ON solicitacoes_reabertura(lancamento_id)
+  WHERE status_solicitacao = 'Pendente';
+
 CREATE TABLE IF NOT EXISTS retificacoes (
   id TEXT PRIMARY KEY,
   lancamento_id TEXT NOT NULL,
