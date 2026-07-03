@@ -76,7 +76,8 @@
 
     if (isUsuarioCompanhia(user.perfil)) {
       if (options.allowIndicatorDetail && page === "indicadores") {
-        return new URLSearchParams(window.location.search).has("indicadorId");
+        const params = new URLSearchParams(window.location.search);
+        return params.has("indicadorId") || params.has("id");
       }
       return USER_COMPANY_ALLOWED_PAGES.includes(page);
     }

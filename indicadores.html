@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CAIXA Loterias | Indicadores</title>
-  <link rel="stylesheet" href="assets/css/styles.css?v=INDICADORES-PERCENTUAL-HEADER-001">
+  <link rel="stylesheet" href="assets/css/styles.css?v=INDICADORES-COMPOSICAO-RESPONSIVA-001">
   <script src="assets/js/currency.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="assets/js/situations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="assets/js/bootstrap-data.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
@@ -14,7 +14,7 @@
   <script src="assets/js/calculations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="assets/js/formulas.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="assets/js/quarterly.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="assets/js/indicators.js?v=INDICADORES-PERCENTUAL-HEADER-001" defer></script>
+  <script src="assets/js/indicators.js?v=INDICADORES-COMPOSICAO-RESPONSIVA-001" defer></script>
   <script src="assets/js/app.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
 </head>
 <body data-page="indicadores">
@@ -22,13 +22,16 @@
     <header id="appHeader" class="topbar"></header>
     <nav id="appNav" class="sidebar"></nav>
     <main class="content">
-      <section class="page-heading">
-        <p class="eyebrow">Cadastro e consulta</p>
-        <h1>Indicadores</h1>
-        <p>Catálogo metodológico dos indicadores estratégicos.</p>
+      <section id="indicatorPageHeading" class="page-heading">
+        <div>
+          <p id="indicatorPageEyebrow" class="eyebrow">Cadastro e consulta</p>
+          <h1 id="indicatorPageTitle">Indicadores</h1>
+          <p id="indicatorPageDescription">Catálogo metodológico dos indicadores estratégicos.</p>
+        </div>
+        <button id="backFromIndicatorDetail" class="secondary-action indicator-detail-back" type="button" hidden>Voltar</button>
       </section>
 
-      <section class="filters" aria-label="Filtros dos indicadores">
+      <section id="indicatorCatalogFilters" class="filters" aria-label="Filtros dos indicadores">
         <label>Plano <select data-filter="plano"></select></label>
         <label>Pilar <select data-filter="pilar"></select></label>
         <label>Unidade apuradora <select data-filter="unidade"></select></label>
@@ -37,7 +40,7 @@
 
       <div id="indicatorMessage" class="notice" hidden></div>
 
-      <section class="panel">
+      <section id="indicatorCatalogPanel" class="panel">
         <div class="panel-actions indicators-actions">
           <span id="indicatorCount" class="result-count"></span>
           <button id="resetIndicatorData" class="secondary-action admin-only" type="button" hidden>Restaurar dados da planilha</button>
@@ -80,8 +83,8 @@
                 <h3>Competências de 2026</h3>
               </div>
             </div>
-            <div class="table-wrap compact-table indicator-monthly-table">
-              <table>
+            <div class="table-wrap compact-table indicator-monthly-table table-responsive table-composicao-wrapper">
+              <table class="table-composicao-mensal">
                 <thead>
                   <tr id="indicatorMonthlyHeader">
                     <th>Mês</th>

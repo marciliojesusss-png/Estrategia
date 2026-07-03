@@ -90,7 +90,20 @@
     return value === "usuario da companhia" ||
       value === "usuario companhia" ||
       value === "usuario_companhia" ||
-      value === "consulta institucional";
+      value === "consulta institucional" ||
+      value === "consulta_institucional";
+  }
+
+  function isConsultaInstitucional(perfil) {
+    const value = normalizeText(perfil).replace(/\s+/g, " ");
+    return value === "consulta institucional" ||
+      value === "consulta/gestao" ||
+      value === "consulta gestao";
+  }
+
+  function shouldShowOperationalStatusInHighlights() {
+    const perfil = state.user?.perfil;
+    return !isUsuarioCompanhia(perfil) && !isConsultaInstitucional(perfil);
   }
 
   function shouldHideStatusColumn() {
@@ -116,7 +129,7 @@
   }
 
   function hasChartFilter() {
-    return Boolean(state.chartFilter.pilar && state.chartFilter.situacao);
+    return Boolean(state.chartFilter.pilar);
   }
 
   function clearChartFilter() {
@@ -137,8 +150,18 @@
     if (!hasChartFilter()) return results;
     return results.filter((result) => (
       normalizeText(result.indicador.pilar) === normalizeText(state.chartFilter.pilar) &&
-      chartSituation(result) === state.chartFilter.situacao
+      (!state.chartFilter.situacao || chartSituation(result) === state.chartFilter.situacao)
     ));
+  }
+
+  function applyPillarGaugeFilter(pilar) {
+    if (state.chartFilter.pilar === pilar && !state.chartFilter.situacao) {
+      clearChartFilter();
+      return;
+    }
+    state.chartFilter = { pilar, situacao: null };
+    refresh();
+    document.getElementById("executiveTableTitle")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   function hasHighlightFilter() {
@@ -245,14 +268,27 @@
     const statusSelect = document.querySelector('[data-executive-filter="status"]');
     const statusFilter = statusSelect?.closest("label");
     const catalogLink = document.querySelector(".executive-detail-link");
+    const heading = document.querySelector(".executive-heading");
+    const content = document.querySelector(".executive-content");
+    const filtersPanel = document.querySelector(".executive-filters");
+    const hideInstitutionalHeading = isUsuarioCompanhia(state.user?.perfil);
     if (statusFilter) {
       statusFilter.hidden = shouldHideStatusColumn();
+    }
+    if (filtersPanel) {
+      filtersPanel.classList.toggle("sem-status", shouldHideStatusColumn());
     }
     if (statusSelect && shouldHideStatusColumn()) {
       statusSelect.value = "Todos";
     }
     if (catalogLink) {
       catalogLink.hidden = isUsuarioCompanhia(state.user?.perfil);
+    }
+    if (heading) {
+      heading.hidden = hideInstitutionalHeading;
+    }
+    if (content) {
+      content.classList.toggle("resumo-sem-heading", hideInstitutionalHeading);
     }
     renderExecutiveTableHeader();
   }
@@ -393,7 +429,7 @@
   function groupByPillar(results) {
     const represented = unique(results.map((item) => item.indicador.pilar));
     const pillars = [
-      ...PILLAR_ORDER.filter((pillar) => represented.includes(pillar)),
+      ...PILLAR_ORDER,
       ...represented.filter((pillar) => !PILLAR_ORDER.includes(pillar))
     ];
     return pillars.map((pillar) => {
@@ -403,9 +439,64 @@
         pillar,
         items,
         ...totals,
-        attainedPercent: totals.total ? totals.achieved / totals.total : 0
+        attainedPercent: totals.total ? totals.achieved / totals.total : 0,
+        attainedPercentage: totals.total ? (totals.achieved / totals.total) * 100 : 0
       };
     });
+  }
+
+  function pillarIcon(pillar) {
+    const icons = {
+      "cliente no centro": '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm-7 8a7 7 0 0 1 14 0"/><path d="M12 3v2m0 6v2m-5-5H5m14 0h-2"/></svg>',
+      "eficiencia e rentabilidade": '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18h16"/><path d="M7 15v-4m5 4V6m5 9V9"/><path d="M8 5h8a3 3 0 0 1 0 6h-8a3 3 0 0 1 0-6Z"/><path d="M12 5v6"/></svg>',
+      "tecnologia e inovacao": '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v4m0 10v4M3 12h4m10 0h4"/><circle cx="12" cy="12" r="4"/><path d="m5 5 3 3m8 8 3 3m0-14-3 3M8 16l-3 3"/></svg>',
+      "pessoas, cultura e agilidade": '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 11a3 3 0 1 0-3-3"/><path d="M8 11a3 3 0 1 1 3-3"/><path d="M4 20a5 5 0 0 1 8 0"/><path d="M12 20a5 5 0 0 1 8 0"/></svg>',
+      "sustentabilidade e cidadania": '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20c7-1 13-7 14-14-7 1-13 7-14 14Z"/><path d="M5 20c1-5 4-8 9-10"/><path d="M4 13c-1-4 1-7 5-9 1 3 0 5-2 7"/></svg>',
+      "atuacao em ecossistema": '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/><path d="M7 6.5A12 12 0 0 0 17 6.5M7 17.5a12 12 0 0 1 10 0"/></svg>'
+    };
+    return icons[normalizeText(pillar)] || '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 3"/></svg>';
+  }
+
+  function gaugeColor(percent) {
+    if (percent >= 80) return "#35d65b";
+    if (percent >= 50) return "#ffc233";
+    if (percent > 0) return "#ff7a00";
+    return "#7f94ad";
+  }
+
+  function gaugeTone(percent) {
+    if (percent >= 80) return "ok";
+    if (percent >= 50) return "warn";
+    if (percent > 0) return "attention";
+    return "neutral";
+  }
+
+  function renderPillarGauges(groups) {
+    const target = document.getElementById("executivePillarGauges");
+    if (!target) return;
+    target.innerHTML = groups.map((group) => {
+      const percent = Number(group.attainedPercentage || 0);
+      const percentLabel = percent.toLocaleString("pt-BR", { maximumFractionDigits: percent % 1 ? 1 : 0 });
+      const active = state.chartFilter.pilar && normalizeText(state.chartFilter.pilar) === normalizeText(group.pillar) && !state.chartFilter.situacao;
+      return `
+        <button
+          class="pilar-gauge-card pilar-gauge-${gaugeTone(percent)} ${active ? "is-active" : ""}"
+          type="button"
+          data-gauge-pilar="${escapeHtml(group.pillar)}"
+          style="--gauge-color:${gaugeColor(percent)};"
+          aria-label="${escapeHtml(group.pillar)}: ${percentLabel}% de indicadores atingidos"
+        >
+          <span class="pilar-card-header">
+            <span class="pilar-icon">${pillarIcon(group.pillar)}</span>
+            <span>${escapeHtml(group.pillar)}</span>
+          </span>
+          <span class="gauge" style="--percentual:${Math.max(0, Math.min(percent, 100))};">
+            <span class="gauge-inner"><strong>${percentLabel}%</strong></span>
+          </span>
+          <span class="pilar-card-footer">${group.total ? `${group.achieved} de ${group.total} atingidos` : "Sem indicadores no recorte"}</span>
+        </button>
+      `;
+    }).join("");
   }
 
   function renderPillarCards(groups) {
@@ -498,7 +589,7 @@
     const isSelectedSegment = (row, situation) => (
       activeFilter &&
       normalizeText(row.pillar) === normalizeText(state.chartFilter.pilar) &&
-      situation === state.chartFilter.situacao
+      (!state.chartFilter.situacao || situation === state.chartFilter.situacao)
     );
     chartInstance = new Chart(canvas, {
       type: "bar",
@@ -564,14 +655,18 @@
     const status = displayStatus(result);
     const competence = result.competencia || "-";
     const active = Number(result.indicador.id) === Number(state.highlightFilterId);
-    const tooltip = [
+    const showOperationalStatus = shouldShowOperationalStatusInHighlights();
+    const tooltipLines = [
       `Indicador: ${name}`,
       `Resultado oficial: ${officialResult}`,
       `Meta: ${meta}`,
-      `Situacao: ${situation}`,
-      `Status: ${status}`,
-      `Ultima competencia: ${competence}`
-    ].join("\n");
+      `Situacao: ${situation}`
+    ];
+    if (showOperationalStatus) {
+      tooltipLines.push(`Status: ${status}`);
+    }
+    tooltipLines.push(`Ultima competencia: ${competence}`);
+    const tooltip = tooltipLines.join("\n");
     return `
       <button
         class="executive-highlight-card ${active ? "is-active" : ""}"
@@ -585,7 +680,7 @@
         <span class="badge ${badgeClass(situation)}">${escapeHtml(situation)}</span>
         <span class="executive-highlight-footer">
           <span>${escapeHtml(competence)}</span>
-          <span class="badge ${badgeClass(status)}">${escapeHtml(status)}</span>
+          ${showOperationalStatus ? `<span class="badge ${badgeClass(status)}">${escapeHtml(status)}</span>` : ""}
         </span>
       </button>
     `;
@@ -620,7 +715,11 @@
     const clearHighlight = document.getElementById("clearExecutiveHighlightFilter");
     if (!banner || !text) return;
     const filters = [];
-    if (hasChartFilter()) filters.push(`${state.chartFilter.pilar} > ${state.chartFilter.situacao}`);
+    if (hasChartFilter()) {
+      filters.push(state.chartFilter.situacao
+        ? `${state.chartFilter.pilar} > ${state.chartFilter.situacao}`
+        : `Pilar > ${state.chartFilter.pilar}`);
+    }
     if (hasHighlightFilter()) {
       const indicator = state.indicators.find((item) => Number(item.id) === Number(state.highlightFilterId));
       filters.push(limparNomeIndicador(indicator?.indicador || "Indicador selecionado"));
@@ -665,7 +764,7 @@
           <td class="official-value">${result.lancamento ? StrategicResults.formatOfficialResult(result) : "-"}</td>
           <td class="col-situacao"><span class="badge badge-situacao ${badgeClass(situation)} ${String(situation).length > 16 ? "long" : ""}">${escapeHtml(situation)}</span></td>
           ${shouldHideStatusColumn() ? "" : `<td class="col-status"><span class="badge badge-status ${badgeClass(status)}">${escapeHtml(status)}</span></td>`}
-          <td><a class="secondary-action table-action dashboard-action" href="${window.AppRoutes ? window.AppRoutes.page("indicadores") : "indicadores.html"}?indicadorId=${result.indicador.id}" title="Visualizar indicador">Ver</a></td>
+          <td><a class="secondary-action table-action dashboard-action" href="${window.AppRoutes ? window.AppRoutes.page("indicadores") : "indicadores.html"}?view=detalhe&id=${result.indicador.id}&origem=resumo-executivo" title="Visualizar indicador">Ver</a></td>
         </tr>
       `;
     }).join("");
@@ -676,6 +775,7 @@
     const tableResults = filterResultsByHighlight(filterResultsByChart(results));
     const groups = groupByPillar(results);
     renderCards(results);
+    renderPillarGauges(groups);
     renderChart(groups);
     renderHighlights(results);
     renderChartFilterBanner();
@@ -716,6 +816,13 @@
         : null;
       if (!item) return;
       applyHighlightFilter(Number(item.dataset.highlightIndicatorId));
+    });
+    document.getElementById("executivePillarGauges")?.addEventListener("click", (event) => {
+      const item = event.target instanceof Element
+        ? event.target.closest("[data-gauge-pilar]")
+        : null;
+      if (!item) return;
+      applyPillarGaugeFilter(item.dataset.gaugePilar);
     });
     updatePeriodFilters();
     refresh();

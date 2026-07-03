@@ -42,6 +42,53 @@
       .replaceAll("'", "&#039;");
   }
 
+  function normalizeText(value) {
+    return String(value || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim()
+      .toLowerCase();
+  }
+
+  function requestedIndicatorId() {
+    const params = new URLSearchParams(window.location.search);
+    return Number(params.get("id") || params.get("indicadorId"));
+  }
+
+  function isRouteDetailMode() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("view") === "detalhe" || Boolean(params.get("id") || params.get("indicadorId"));
+  }
+
+  function detailBackTarget() {
+    const origin = new URLSearchParams(window.location.search).get("origem");
+    const page = origin === "indicadores" ? "indicadores" : "resumo-executivo";
+    return window.AppRoutes ? window.AppRoutes.page(page) : `${page}.html`;
+  }
+
+  function setIndicatorPageMode(indicador) {
+    const detailMode = isRouteDetailMode() && Boolean(indicador);
+    const eyebrow = document.getElementById("indicatorPageEyebrow");
+    const title = document.getElementById("indicatorPageTitle");
+    const description = document.getElementById("indicatorPageDescription");
+    const filters = document.getElementById("indicatorCatalogFilters");
+    const catalog = document.getElementById("indicatorCatalogPanel");
+    const backButton = document.getElementById("backFromIndicatorDetail");
+
+    if (eyebrow) eyebrow.textContent = detailMode ? "DETALHE DO INDICADOR" : "Cadastro e consulta";
+    if (title) title.textContent = detailMode ? indicador.indicador : "Indicadores";
+    if (description) {
+      description.textContent = detailMode
+        ? "Consulta metodológica, composição mensal e histórico do indicador."
+        : "Catálogo metodológico dos indicadores estratégicos.";
+    }
+    if (filters) filters.hidden = detailMode;
+    if (catalog) catalog.hidden = detailMode;
+    if (backButton) backButton.hidden = !detailMode;
+    document.body.classList.toggle("indicator-detail-mode", detailMode);
+    document.title = detailMode ? `CAIXA Loterias | ${indicador.indicador}` : "CAIXA Loterias | Indicadores";
+  }
+
   function canEdit() {
     return state.user && state.user.perfil === "Administrador";
   }
@@ -137,6 +184,7 @@
     const panel = document.getElementById("indicatorDetailPanel");
     const readOnly = document.getElementById("indicatorReadOnly");
     const form = document.getElementById("indicatorForm");
+    setIndicatorPageMode(indicador);
 
     if (!indicador) {
       panel.hidden = true;
@@ -290,15 +338,87 @@
     return `<a class="secondary-action table-action dashboard-action" href="${target}?lancamentoId=${lancamento.id}">Visualizar</a>`;
   }
 
-  function applyMonthlyPercentHeaderLayout() {
+  function monthlyColumnClass(label) {
+    const text = normalizeText(label).replace(/\s+/g, " ");
+    if (text === "acao" || text === "acoes") return "cell-action col-acao";
+    if (text.includes("status")) return "cell-badge col-status badge-status";
+    if (text.includes("situacao")) return "cell-badge col-situacao badge-situacao";
+    if (text === "conta?") return "cell-badge col-numero-curto";
+    if (
+      text.includes("competencia") ||
+      text === "mes" ||
+      text.includes("mes/competencia")
+    ) return "cell-compact col-competencia";
+    if (
+      text.includes("data-base") ||
+      text.includes("data de")
+    ) return "cell-compact col-data";
+    if (
+      text === "tipo" ||
+      text.includes("tipo da") ||
+      text === "cenario" ||
+      text.includes("semestre previsto")
+    ) return "cell-compact col-tipo-posicao";
+    if (text.includes("%")) return "cell-valor col-percentual nowrap";
+    if (text.includes("baseline") || text.includes("nps apurado")) return "cell-valor col-numero-curto";
+    if (text.includes("meta")) return "cell-valor col-meta";
+    if (
+      text.includes("fonte") ||
+      text.includes("evidencia")
+    ) return "cell-texto-longo col-evidencia cell-evidencia";
+    if (
+      text.includes("observacao") ||
+      text.includes("justificativa") ||
+      text.includes("descricao") ||
+      text.includes("criterio") ||
+      text.includes("marco") ||
+      text.includes("etapa") ||
+      text.includes("acao principal") ||
+      text.includes("acao proposta") ||
+      text.includes("nome da") ||
+      text.includes("projeto/iniciativa")
+    ) return "cell-texto-longo col-observacao cell-observacao";
+    if (
+      text.includes("resultado") ||
+      text.includes("arrecadacao") ||
+      text.includes("premios") ||
+      text.includes("valor") ||
+      text.includes("despesa") ||
+      text.includes("receita") ||
+      text.includes("ggr") ||
+      text.includes("ieo") ||
+      text.includes("repasse") ||
+      text.includes("indice") ||
+      text.includes("incremento") ||
+      text.includes("publico") ||
+      text.includes("empregados") ||
+      text.includes("cobertura") ||
+      text.includes("melhorias")
+    ) return "cell-valor col-valor";
+    return "cell-texto col-valor";
+  }
+
+  function applyMonthlyTableLayout() {
     const header = document.getElementById("indicatorMonthlyHeader");
     const body = document.getElementById("indicatorMonthlyComposition");
     if (!header || !body) return;
+    const table = header.closest("table");
+    const wrapper = body.closest(".table-wrap");
+    table?.classList.add("table-analitica", "table-composicao-mensal");
+    wrapper?.classList.add("table-analitica-wrapper", "table-responsive", "table-composicao-wrapper");
+    table?.style.setProperty("--monthly-column-count", header.children.length);
     [...header.children].forEach((cell, index) => {
-      if (cell.textContent.trim().toLowerCase() !== "% atingido") return;
-      cell.classList.add("monthly-percent-attained-col");
+      const columnClasses = monthlyColumnClass(cell.textContent).split(/\s+/).filter(Boolean);
+      cell.classList.add("monthly-col", ...columnClasses);
+      if (normalizeText(cell.textContent).trim() === "% atingido") {
+        cell.classList.add("monthly-percent-attained-col");
+      }
       body.querySelectorAll("tr").forEach((row) => {
-        row.children[index]?.classList.add("monthly-percent-attained-col");
+        const rowCell = row.children[index];
+        rowCell?.classList.add("monthly-col", ...columnClasses);
+        if (normalizeText(cell.textContent).trim() === "% atingido") {
+          rowCell?.classList.add("monthly-percent-attained-col");
+        }
       });
     });
   }
@@ -1054,7 +1174,7 @@
         </tr>
       `;
     }).join("");
-    applyMonthlyPercentHeaderLayout();
+    applyMonthlyTableLayout();
 
     const quarters = QuarterlyConsolidation.consolidarAno(indicador, regra, launches, 2026);
     const quarterlyUnit = isBase2025Growth ? "moeda" : isVisibilidadeRepasses ? "quantidade" : regra.unidadeMedida;
@@ -1194,6 +1314,14 @@
       renderDetail(getSelectedIndicator());
     });
 
+    document.getElementById("backFromIndicatorDetail")?.addEventListener("click", () => {
+      if (window.history.length > 1) {
+        window.history.back();
+        return;
+      }
+      window.location.href = detailBackTarget();
+    });
+
     document.getElementById("resetIndicatorData").addEventListener("click", () => {
       const confirmed = window.confirm("Restaurar os indicadores originais da planilha? Alterações locais de cadastro serão descartadas.");
       if (!confirmed) return;
@@ -1218,11 +1346,14 @@
     bindEvents();
     refresh();
 
-    const requestedId = Number(new URLSearchParams(window.location.search).get("indicadorId"));
+    const requestedId = requestedIndicatorId();
     if (requestedId && state.indicadores.some((item) => item.id === requestedId)) {
       state.selectedId = requestedId;
       renderDetail(getSelectedIndicator());
       document.getElementById("indicatorDetailPanel").scrollIntoView({ block: "start" });
+    } else if (isRouteDetailMode()) {
+      showMessage("Indicador não encontrado ou indisponível para o perfil atual.", "warning");
+      setIndicatorPageMode(null);
     }
   }
 
