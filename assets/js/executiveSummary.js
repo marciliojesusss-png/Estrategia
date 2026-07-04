@@ -28,6 +28,11 @@
     "arrecadacao gerada com o ecossistema",
     "participacao da rede loterica nos negocios"
   ];
+  const SUMMARY_CARD_FILTERS = {
+    atingido: { label: "Indicadores atingidos", situation: "Atingido" },
+    abaixo_da_meta: { label: "Indicadores abaixo da meta", situation: "Abaixo da meta" },
+    sem_dados: { label: "Indicadores sem dados", situation: "Sem dados" }
+  };
   let chartInstance = null;
   let state = {
     data: null,
@@ -39,6 +44,7 @@
       pilar: null,
       situacao: null
     },
+    summaryCardFilter: null,
     highlightFilterId: null,
     highlightsPaused: false
   };
@@ -154,6 +160,38 @@
     ));
   }
 
+  function hasSummaryCardFilter() {
+    return Boolean(state.summaryCardFilter);
+  }
+
+  function normalizeSummaryCardSituation(value) {
+    const normalized = normalizeText(normalizeSituation(value));
+    if (normalized === "atingido" || normalized === "atingida") return "atingido";
+    if (normalized === "abaixo da meta" || normalized === "critico" || normalized === "nao atingido") return "abaixo_da_meta";
+    if (normalized === "sem dados" || normalized === "sem calculo" || normalized === "nao iniciado" || normalized === "-") return "sem_dados";
+    return normalized;
+  }
+
+  function filterResultsBySummaryCard(results) {
+    if (!hasSummaryCardFilter()) return results;
+    return results.filter((result) => normalizeSummaryCardSituation(displaySituation(result)) === state.summaryCardFilter);
+  }
+
+  function clearSummaryCardFilter() {
+    state.summaryCardFilter = null;
+    refresh();
+  }
+
+  function applySummaryCardFilter(type) {
+    if (type === "todos") {
+      state.summaryCardFilter = null;
+    } else {
+      state.summaryCardFilter = state.summaryCardFilter === type ? null : type;
+    }
+    refresh();
+    document.getElementById("executiveTableTitle")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   function applyPillarGaugeFilter(pilar) {
     if (state.chartFilter.pilar === pilar && !state.chartFilter.situacao) {
       clearChartFilter();
@@ -190,6 +228,7 @@
 
   function clearInteractiveFilters() {
     state.chartFilter = { pilar: null, situacao: null };
+    state.summaryCardFilter = null;
     state.highlightFilterId = null;
     refresh();
     document.getElementById("executiveTableTitle")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -406,24 +445,30 @@
   function renderCards(results) {
     const totals = aggregate(results);
     const cards = [
-      ["Total de indicadores", totals.total, "total"],
-      ["Indicadores atingidos", totals.achieved, "ok"],
-      ["Indicadores abaixo da meta", totals.attention, "warn"],
-      ["Indicadores sem dados", totals.noData, "neutral"],
-      ["Indicadores homologados", totals.homologated, "info"],
-      ["Pendentes de homologação", totals.pending, "pending"]
+      { label: "Total de indicadores", value: totals.total, tone: "total", filter: "todos" },
+      { label: "Indicadores atingidos", value: totals.achieved, tone: "ok", filter: "atingido" },
+      { label: "Indicadores abaixo da meta", value: totals.attention, tone: "warn", filter: "abaixo_da_meta" },
+      { label: "Indicadores sem dados", value: totals.noData, tone: "neutral", filter: "sem_dados" },
+      { label: "Indicadores homologados", value: totals.homologated, tone: "info" },
+      { label: "Pendentes de homologação", value: totals.pending, tone: "pending" }
     ];
     const visibleCards = shouldHideOperationalHomologationCards()
-      ? cards.filter(([, , tone]) => tone !== "info" && tone !== "pending")
+      ? cards.filter((card) => card.tone !== "info" && card.tone !== "pending")
       : cards;
     const target = document.getElementById("executiveCards");
     target.classList.toggle("usuario-companhia", shouldHideOperationalHomologationCards());
-    target.innerHTML = visibleCards.map(([label, value, tone]) => `
-      <article class="executive-summary-card executive-tone-${tone}">
+    target.innerHTML = visibleCards.map(({ label, value, tone, filter }) => {
+      const active = filter && filter !== "todos" && state.summaryCardFilter === filter;
+      const filterAttrs = filter
+        ? `role="button" tabindex="0" aria-pressed="${active ? "true" : "false"}" data-summary-card-filter="${filter}"`
+        : "";
+      return `
+      <article class="executive-summary-card executive-tone-${tone} ${filter ? "is-filterable" : ""} ${active ? "is-active" : ""}" ${filterAttrs}>
         <span>${escapeHtml(label)}</span>
         <strong>${escapeHtml(value)}</strong>
       </article>
-    `).join("");
+    `;
+    }).join("");
   }
 
   function groupByPillar(results) {
@@ -712,13 +757,20 @@
     const banner = document.getElementById("executiveChartFilterBanner");
     const text = document.getElementById("executiveChartFilterText");
     const clearChart = document.getElementById("clearExecutiveChartFilter");
+    const clearSummaryCard = document.getElementById("clearExecutiveSummaryCardFilter");
     const clearHighlight = document.getElementById("clearExecutiveHighlightFilter");
     if (!banner || !text) return;
     const filters = [];
-    if (hasChartFilter()) {
+    const summarySituation = SUMMARY_CARD_FILTERS[state.summaryCardFilter]?.situation || null;
+    if (hasChartFilter() && summarySituation && !state.chartFilter.situacao) {
+      filters.push(`${state.chartFilter.pilar} > ${summarySituation}`);
+    } else if (hasChartFilter()) {
       filters.push(state.chartFilter.situacao
         ? `${state.chartFilter.pilar} > ${state.chartFilter.situacao}`
         : `Pilar > ${state.chartFilter.pilar}`);
+    }
+    if (hasSummaryCardFilter() && !(hasChartFilter() && summarySituation && !state.chartFilter.situacao)) {
+      filters.push(SUMMARY_CARD_FILTERS[state.summaryCardFilter]?.label || "Filtro dos cards");
     }
     if (hasHighlightFilter()) {
       const indicator = state.indicators.find((item) => Number(item.id) === Number(state.highlightFilterId));
@@ -729,12 +781,14 @@
       banner.hidden = true;
       text.textContent = "";
       if (clearChart) clearChart.hidden = true;
+      if (clearSummaryCard) clearSummaryCard.hidden = true;
       if (clearHighlight) clearHighlight.hidden = true;
       return;
     }
     banner.hidden = false;
     text.textContent = `Filtro aplicado: ${filters.join(" | ")}`;
     if (clearChart) clearChart.hidden = !hasChartFilter();
+    if (clearSummaryCard) clearSummaryCard.hidden = !hasSummaryCardFilter();
     if (clearHighlight) clearHighlight.hidden = !hasHighlightFilter();
   }
 
@@ -748,7 +802,10 @@
     ));
     document.getElementById("executiveResultCount").textContent = `${ordered.length} indicador${ordered.length === 1 ? "" : "es"}`;
     if (!ordered.length) {
-      target.innerHTML = `<tr><td colspan="${shouldHideStatusColumn() ? 8 : 9}">Nenhum indicador encontrado para os filtros selecionados.</td></tr>`;
+      const emptyMessage = hasSummaryCardFilter()
+        ? "Nenhum indicador encontrado para o filtro selecionado."
+        : "Nenhum indicador encontrado para os filtros selecionados.";
+      target.innerHTML = `<tr><td colspan="${shouldHideStatusColumn() ? 8 : 9}">${emptyMessage}</td></tr>`;
       return;
     }
     target.innerHTML = ordered.map((result) => {
@@ -772,7 +829,9 @@
 
   function refresh() {
     const results = getFilteredResults();
-    const tableResults = filterResultsByHighlight(filterResultsByChart(results));
+    const chartResults = filterResultsByChart(results);
+    const summaryCardResults = filterResultsBySummaryCard(chartResults);
+    const tableResults = filterResultsByHighlight(summaryCardResults);
     const groups = groupByPillar(results);
     renderCards(results);
     renderPillarGauges(groups);
@@ -793,6 +852,7 @@
         pilar: null,
         situacao: null
       },
+      summaryCardFilter: null,
       highlightFilterId: null,
       highlightsPaused: false
     };
@@ -804,6 +864,7 @@
       });
     });
     document.getElementById("clearExecutiveChartFilter")?.addEventListener("click", clearChartFilter);
+    document.getElementById("clearExecutiveSummaryCardFilter")?.addEventListener("click", clearSummaryCardFilter);
     document.getElementById("clearExecutiveHighlightFilter")?.addEventListener("click", clearHighlightFilter);
     document.getElementById("viewAllExecutiveIndicators")?.addEventListener("click", clearInteractiveFilters);
     document.getElementById("toggleExecutiveHighlights")?.addEventListener("click", () => {
@@ -816,6 +877,22 @@
         : null;
       if (!item) return;
       applyHighlightFilter(Number(item.dataset.highlightIndicatorId));
+    });
+    document.getElementById("executiveCards")?.addEventListener("click", (event) => {
+      const item = event.target instanceof Element
+        ? event.target.closest("[data-summary-card-filter]")
+        : null;
+      if (!item) return;
+      applySummaryCardFilter(item.dataset.summaryCardFilter);
+    });
+    document.getElementById("executiveCards")?.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      const item = event.target instanceof Element
+        ? event.target.closest("[data-summary-card-filter]")
+        : null;
+      if (!item) return;
+      event.preventDefault();
+      applySummaryCardFilter(item.dataset.summaryCardFilter);
     });
     document.getElementById("executivePillarGauges")?.addEventListener("click", (event) => {
       const item = event.target instanceof Element

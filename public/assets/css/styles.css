@@ -2296,6 +2296,9 @@ textarea[readonly] {
 .summary-card,
 .executive-summary-card {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   overflow: hidden;
   min-height: 112px;
   padding: 18px 18px 18px 94px;
@@ -2330,14 +2333,48 @@ textarea[readonly] {
 
 .summary-card span,
 .executive-summary-card span {
+  display: flex;
+  min-height: 2.25rem;
+  align-items: flex-end;
   color: var(--text-muted);
   font-weight: 600;
+  line-height: 1.16;
 }
 
 .summary-card strong,
 .executive-summary-card strong {
   color: var(--text-main);
   font-size: 2.1rem;
+  line-height: 1;
+  margin-top: 6px;
+}
+
+.executive-tone-warn span {
+  max-width: 165px;
+  line-height: 1.12;
+}
+
+.executive-summary-card.is-filterable {
+  cursor: pointer;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease, background 0.18s ease;
+}
+
+.executive-summary-card.is-filterable:hover,
+.executive-summary-card.is-filterable:focus-visible {
+  border-color: var(--accent-cyan);
+  box-shadow: var(--shadow-glow);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.executive-summary-card.is-active {
+  border-color: var(--accent-yellow);
+  background:
+    radial-gradient(circle at 18% 42%, rgba(249, 200, 70, 0.16), transparent 4.2rem),
+    linear-gradient(180deg, rgba(13, 55, 108, 0.98), rgba(9, 43, 85, 0.98));
+  box-shadow:
+    0 0 0 1px rgba(249, 200, 70, 0.45),
+    0 0 18px rgba(249, 200, 70, 0.18);
 }
 
 .executive-tone-ok::before {
