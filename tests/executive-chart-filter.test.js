@@ -8,7 +8,8 @@ const executiveHtml = fs.readFileSync(path.join(root, "resumo-executivo.html"), 
 const styles = fs.readFileSync(path.join(root, "assets", "css", "styles.css"), "utf8");
 
 assert.match(executiveSummary, /chartFilter:\s*\{/);
-assert.match(executiveSummary, /function applyChartFilter\(pilar, situacao\)/);
+assert.match(executiveSummary, /function scrollToExecutiveTable\(delay = 0\)/);
+assert.match(executiveSummary, /function applyChartFilter\(pilar, situacao, options = \{\}\)/);
 assert.match(executiveSummary, /function clearChartFilter\(\)/);
 assert.match(executiveSummary, /function filterResultsByChart\(results\)/);
 assert.match(executiveSummary, /HIGHLIGHT_LIMIT = 12/);
@@ -17,6 +18,9 @@ assert.match(executiveSummary, /function filterResultsByHighlight\(results\)/);
 assert.match(executiveSummary, /function renderHighlights\(results\)/);
 assert.match(executiveSummary, /chart\.getElementsAtEventForMode/);
 assert.match(executiveSummary, /row\[segment\.key\]/);
+assert.match(executiveSummary, /applyChartFilter\(row\.pillar, segment\.situation, \{ scrollToTable: true \}\)/);
+assert.match(executiveSummary, /scrollToExecutiveTable\(100\)/);
+assert.match(executiveSummary, /window\.setTimeout\(scroll, delay\)/);
 assert.match(executiveSummary, /canvas\.style\.cursor/);
 assert.match(executiveSummary, /Pilar: \$\{context\.label\}/);
 assert.match(executiveSummary, /Situa/);
@@ -39,6 +43,7 @@ assert.doesNotMatch(executiveHtml, /Panorama dos pilares/);
 
 assert.match(styles, /\.executive-chart-filter-banner/);
 assert.match(styles, /\.executive-chart-filter-banner\[hidden\]/);
+assert.match(styles, /\.executive-table-panel\s*\{[\s\S]*scroll-margin-top: 140px;/);
 assert.match(styles, /\.executive-highlights-panel/);
 assert.match(styles, /@keyframes executiveHighlightsScroll/);
 assert.match(styles, /\.executive-highlight-card/);

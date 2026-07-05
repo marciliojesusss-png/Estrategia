@@ -33,6 +33,7 @@
     abaixo_da_meta: { label: "Indicadores abaixo da meta", situation: "Abaixo da meta" },
     sem_dados: { label: "Indicadores sem dados", situation: "Sem dados" }
   };
+  const CHART_DEVICE_PIXEL_RATIO = Math.min(Math.max(window.devicePixelRatio || 1, 2), 3);
   let chartInstance = null;
   let state = {
     data: null,
@@ -127,11 +128,18 @@
     return normalizedValue || "Sem dados";
   }
 
+  function summarySituationGroup(value) {
+    const normalized = normalizeText(normalizeSituation(value));
+    if (normalized === "atingido" || normalized === "atingida") return "atingido";
+    if (normalized === "abaixo da meta" || normalized === "critico" || normalized === "nao atingido") return "abaixo_da_meta";
+    return "sem_dados";
+  }
+
   function chartSituation(result) {
-    const situation = normalizeSituation(displaySituation(result));
-    if (situation === "Atingido") return "Atingido";
-    if (situation === "Sem dados") return "Sem dados";
-    return "Abaixo da meta";
+    const group = summarySituationGroup(displaySituation(result));
+    if (group === "atingido") return "Atingido";
+    if (group === "abaixo_da_meta") return "Abaixo da meta";
+    return "Sem dados";
   }
 
   function hasChartFilter() {
@@ -143,13 +151,27 @@
     refresh();
   }
 
-  function applyChartFilter(pilar, situacao) {
+  function scrollToExecutiveTable(delay = 0) {
+    const target = document.querySelector(".executive-table-panel")
+      || document.getElementById("executiveTableTitle")
+      || document.querySelector(".tabela-executiva");
+    if (!target) return;
+    const scroll = () => target.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (delay) {
+      window.setTimeout(scroll, delay);
+      return;
+    }
+    scroll();
+  }
+
+  function applyChartFilter(pilar, situacao, options = {}) {
     if (state.chartFilter.pilar === pilar && state.chartFilter.situacao === situacao) {
       clearChartFilter();
       return;
     }
     state.chartFilter = { pilar, situacao };
     refresh();
+    if (options.scrollToTable) scrollToExecutiveTable(100);
   }
 
   function filterResultsByChart(results) {
@@ -165,11 +187,7 @@
   }
 
   function normalizeSummaryCardSituation(value) {
-    const normalized = normalizeText(normalizeSituation(value));
-    if (normalized === "atingido" || normalized === "atingida") return "atingido";
-    if (normalized === "abaixo da meta" || normalized === "critico" || normalized === "nao atingido") return "abaixo_da_meta";
-    if (normalized === "sem dados" || normalized === "sem calculo" || normalized === "nao iniciado" || normalized === "-") return "sem_dados";
-    return normalized;
+    return summarySituationGroup(value);
   }
 
   function filterResultsBySummaryCard(results) {
@@ -189,7 +207,7 @@
       state.summaryCardFilter = state.summaryCardFilter === type ? null : type;
     }
     refresh();
-    document.getElementById("executiveTableTitle")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    scrollToExecutiveTable();
   }
 
   function applyPillarGaugeFilter(pilar) {
@@ -199,7 +217,7 @@
     }
     state.chartFilter = { pilar, situacao: null };
     refresh();
-    document.getElementById("executiveTableTitle")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    scrollToExecutiveTable();
   }
 
   function hasHighlightFilter() {
@@ -218,7 +236,7 @@
     }
     state.highlightFilterId = indicadorId;
     refresh();
-    document.getElementById("executiveTableTitle")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    scrollToExecutiveTable();
   }
 
   function filterResultsByHighlight(results) {
@@ -231,7 +249,7 @@
     state.summaryCardFilter = null;
     state.highlightFilterId = null;
     refresh();
-    document.getElementById("executiveTableTitle")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    scrollToExecutiveTable();
   }
 
   function highlightPriority(result) {
@@ -430,13 +448,15 @@
   }
 
   function aggregate(results) {
-    const situations = results.map((item) => normalizeSituation(displaySituation(item)));
+    const situations = results.map((item) => summarySituationGroup(displaySituation(item)));
     const statuses = results.map(displayStatus);
+    const achieved = situations.filter((item) => item === "atingido").length;
+    const attention = situations.filter((item) => item === "abaixo_da_meta").length;
     return {
       total: results.length,
-      achieved: situations.filter((item) => item === "Atingido").length,
-      attention: situations.filter((item) => item === "Abaixo da meta").length,
-      noData: situations.filter((item) => item === "Sem dados").length,
+      achieved,
+      attention,
+      noData: results.length - achieved - attention,
       homologated: statuses.filter((item) => item === "Homologado" || item === "Fechado").length,
       pending: statuses.filter((item) => item === "Enviado para homologação" || item === "Parcial").length
     };
@@ -459,11 +479,12 @@
     target.classList.toggle("usuario-companhia", shouldHideOperationalHomologationCards());
     target.innerHTML = visibleCards.map(({ label, value, tone, filter }) => {
       const active = filter && filter !== "todos" && state.summaryCardFilter === filter;
+      const specificClass = filter === "abaixo_da_meta" ? "abaixo-meta" : "";
       const filterAttrs = filter
         ? `role="button" tabindex="0" aria-pressed="${active ? "true" : "false"}" data-summary-card-filter="${filter}"`
         : "";
       return `
-      <article class="executive-summary-card executive-tone-${tone} ${filter ? "is-filterable" : ""} ${active ? "is-active" : ""}" ${filterAttrs}>
+      <article class="executive-summary-card executive-tone-${tone} ${specificClass} ${filter ? "is-filterable" : ""} ${active ? "is-active" : ""}" ${filterAttrs}>
         <span>${escapeHtml(label)}</span>
         <strong>${escapeHtml(value)}</strong>
       </article>
@@ -480,12 +501,32 @@
     return pillars.map((pillar) => {
       const items = results.filter((item) => item.indicador.pilar === pillar);
       const totals = aggregate(items);
+      const pillarSituations = items.map(chartSituation);
+      const achieved = pillarSituations.filter((item) => item === "Atingido").length;
+      const attention = pillarSituations.filter((item) => item === "Abaixo da meta").length;
+      const noData = pillarSituations.filter((item) => item === "Sem dados").length;
+      const gaugeTotal = items.length;
+      const attainedPercent = gaugeTotal ? achieved / gaugeTotal : 0;
+      const statusGauge = !gaugeTotal || noData === gaugeTotal
+        ? "Sem dados"
+        : achieved === gaugeTotal
+          ? "Atingido"
+          : attention
+            ? "Abaixo da meta"
+            : "Em acompanhamento";
       return {
         pillar,
         items,
         ...totals,
-        attainedPercent: totals.total ? totals.achieved / totals.total : 0,
-        attainedPercentage: totals.total ? (totals.achieved / totals.total) * 100 : 0
+        total: items.length,
+        achieved,
+        attention,
+        noData,
+        totalWithData: gaugeTotal,
+        gaugeTotal,
+        attainedPercent,
+        attainedPercentage: attainedPercent * 100,
+        statusGauge
       };
     });
   }
@@ -502,17 +543,17 @@
     return icons[normalizeText(pillar)] || '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 3"/></svg>';
   }
 
-  function gaugeColor(percent) {
-    if (percent >= 80) return "#35d65b";
-    if (percent >= 50) return "#ffc233";
-    if (percent > 0) return "#ff7a00";
-    return "#7f94ad";
+  function gaugeColor(status) {
+    if (status === "Atingido") return "#35d65b";
+    if (status === "Abaixo da meta") return "#ff7a00";
+    if (status === "Em acompanhamento") return "#f9c846";
+    return "#91a7bd";
   }
 
-  function gaugeTone(percent) {
-    if (percent >= 80) return "ok";
-    if (percent >= 50) return "warn";
-    if (percent > 0) return "attention";
+  function gaugeTone(status) {
+    if (status === "Atingido") return "ok";
+    if (status === "Abaixo da meta") return "attention";
+    if (status === "Em acompanhamento") return "progress";
     return "neutral";
   }
 
@@ -523,12 +564,15 @@
       const percent = Number(group.attainedPercentage || 0);
       const percentLabel = percent.toLocaleString("pt-BR", { maximumFractionDigits: percent % 1 ? 1 : 0 });
       const active = state.chartFilter.pilar && normalizeText(state.chartFilter.pilar) === normalizeText(group.pillar) && !state.chartFilter.situacao;
+      const countLabel = group.gaugeTotal && group.noData !== group.gaugeTotal
+        ? `${group.achieved} de ${group.gaugeTotal} atingidos`
+        : "Sem dados no período";
       return `
         <button
-          class="pilar-gauge-card pilar-gauge-${gaugeTone(percent)} ${active ? "is-active" : ""}"
+          class="pilar-gauge-card pilar-gauge-${gaugeTone(group.statusGauge)} ${active ? "is-active" : ""}"
           type="button"
           data-gauge-pilar="${escapeHtml(group.pillar)}"
-          style="--gauge-color:${gaugeColor(percent)};"
+          style="--gauge-color:${gaugeColor(group.statusGauge)};"
           aria-label="${escapeHtml(group.pillar)}: ${percentLabel}% de indicadores atingidos"
         >
           <span class="pilar-card-header">
@@ -538,7 +582,10 @@
           <span class="gauge" style="--percentual:${Math.max(0, Math.min(percent, 100))};">
             <span class="gauge-inner"><strong>${percentLabel}%</strong></span>
           </span>
-          <span class="pilar-card-footer">${group.total ? `${group.achieved} de ${group.total} atingidos` : "Sem indicadores no recorte"}</span>
+          <span class="pilar-card-footer">
+            <span class="pilar-card-status">${escapeHtml(group.statusGauge)}</span>
+            <span class="pilar-card-count">${escapeHtml(countLabel)}</span>
+          </span>
         </button>
       `;
     }).join("");
@@ -626,8 +673,8 @@
 
     if (!groups.length || !window.Chart) return;
     const chartSegments = [
-      { label: "Atingidos", situation: "Atingido", key: "achieved", color: "#35d65b", muted: "rgba(53, 214, 91, 0.26)" },
-      { label: "Abaixo da meta", situation: "Abaixo da meta", key: "attention", color: "#ff9800", muted: "rgba(255, 152, 0, 0.28)" },
+      { label: "Atingido", situation: "Atingido", key: "achieved", color: "#35d65b", muted: "rgba(53, 214, 91, 0.26)" },
+      { label: "Abaixo da meta", situation: "Abaixo da meta", key: "attention", color: "#ff7a00", muted: "rgba(255, 122, 0, 0.28)" },
       { label: "Sem dados", situation: "Sem dados", key: "noData", color: "#91a7bd", muted: "rgba(145, 167, 189, 0.32)" }
     ];
     const activeFilter = hasChartFilter();
@@ -652,6 +699,17 @@
       options: {
         indexAxis: "y",
         responsive: true,
+        maintainAspectRatio: false,
+        devicePixelRatio: CHART_DEVICE_PIXEL_RATIO,
+        resizeDelay: 80,
+        layout: {
+          padding: {
+            left: 4,
+            right: 8,
+            top: 4,
+            bottom: 0
+          }
+        },
         onClick: (event, elements, chart) => {
           const points = chart.getElementsAtEventForMode(event, "nearest", { intersect: true }, true);
           const point = points[0];
@@ -659,7 +717,7 @@
           const row = rows[point.index];
           const segment = chartSegments[point.datasetIndex];
           if (!row || !segment || !row[segment.key]) return;
-          applyChartFilter(row.pillar, segment.situation);
+          applyChartFilter(row.pillar, segment.situation, { scrollToTable: true });
         },
         onHover: (event, elements) => {
           const point = elements && elements[0];
@@ -668,7 +726,16 @@
           canvas.style.cursor = row && segment && row[segment.key] ? "pointer" : "default";
         },
         plugins: {
-          legend: { position: "bottom" },
+          legend: {
+            position: "bottom",
+            labels: {
+              color: "#d8efff",
+              boxWidth: 12,
+              boxHeight: 8,
+              padding: 14,
+              font: { size: 12, weight: "700", family: "Arial, Helvetica, sans-serif" }
+            }
+          },
           tooltip: {
             callbacks: {
               title: () => "",
@@ -685,8 +752,17 @@
           }
         },
         scales: {
-          x: { stacked: true, beginAtZero: true, ticks: { precision: 0 } },
-          y: { stacked: true }
+          x: {
+            stacked: true,
+            beginAtZero: true,
+            grid: { color: "rgba(175, 196, 221, 0.12)" },
+            ticks: { color: "#afc4dd", precision: 0, font: { size: 11, weight: "600", family: "Arial, Helvetica, sans-serif" } }
+          },
+          y: {
+            stacked: true,
+            grid: { display: false },
+            ticks: { color: "#f5f9ff", font: { size: 11, weight: "700", family: "Arial, Helvetica, sans-serif" } }
+          }
         }
       }
     });

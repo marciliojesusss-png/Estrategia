@@ -26,6 +26,7 @@
     user: null,
     indicadores: [],
     selectedId: null,
+    selectedLaunchId: null,
     editMode: false
   };
 
@@ -50,14 +51,29 @@
       .toLowerCase();
   }
 
+  function isUsuarioCompanhiaProfile(perfil) {
+    if (window.Auth?.isUsuarioCompanhia?.(perfil)) return true;
+    const value = normalizeText(perfil).replace(/\s+/g, " ");
+    return value === "usuario da companhia" ||
+      value === "usuario companhia" ||
+      value === "usuario_companhia" ||
+      value === "consulta institucional" ||
+      value === "consulta_institucional";
+  }
+
   function requestedIndicatorId() {
     const params = new URLSearchParams(window.location.search);
     return Number(params.get("id") || params.get("indicadorId"));
   }
 
+  function requestedLaunchId() {
+    const params = new URLSearchParams(window.location.search);
+    return Number(params.get("lancamentoId"));
+  }
+
   function isRouteDetailMode() {
     const params = new URLSearchParams(window.location.search);
-    return params.get("view") === "detalhe" || Boolean(params.get("id") || params.get("indicadorId"));
+    return params.get("view") === "detalhe" || Boolean(params.get("id") || params.get("indicadorId") || params.get("lancamentoId"));
   }
 
   function detailBackTarget() {
@@ -197,6 +213,7 @@
 
     readOnly.hidden = state.editMode;
     document.getElementById("indicatorTracking").hidden = state.editMode;
+    document.getElementById("monthlyLaunchDetail").hidden = state.editMode || !state.selectedLaunchId;
     form.hidden = !state.editMode;
 
     if (state.editMode) {
@@ -316,6 +333,7 @@
       </article>
     `).join("");
     renderIndicatorTracking(indicador);
+    renderLaunchDetail(indicador);
   }
 
   function getRule(indicador) {
@@ -328,14 +346,276 @@
     return `${(Number(value) * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
   }
 
+  function indicatorDetailTarget(indicadorId, launchId = null) {
+    const target = window.AppRoutes ? window.AppRoutes.page("indicadores") : "indicadores.html";
+    const params = new URLSearchParams({
+      view: "detalhe",
+      id: String(indicadorId)
+    });
+    if (launchId) params.set("lancamentoId", String(launchId));
+    return `${target}?${params.toString()}`;
+  }
+
   function monthlyAction(lancamento) {
     if (!lancamento) return "-";
-    const page = ["Enviado para homologação", "Homologado"].includes(lancamento.status) &&
-      ["Administrador", "Diretoria Homologadora"].includes(state.user.perfil)
-      ? "homologacao.html"
-      : "lancamentos.html";
-    const target = window.AppRoutes ? window.AppRoutes.page(page) : page;
-    return `<a class="secondary-action table-action dashboard-action" href="${target}?lancamentoId=${lancamento.id}">Visualizar</a>`;
+    return `<a class="secondary-action table-action dashboard-action" href="${indicatorDetailTarget(lancamento.indicadorId, lancamento.id)}">Visualizar</a>`;
+  }
+
+  function getSelectedLaunch() {
+    if (!state.selectedLaunchId) return null;
+    return (state.data.lancamentos || []).find((item) => Number(item.id) === Number(state.selectedLaunchId)) || null;
+  }
+
+  function formatEmpty(value, fallback = "-") {
+    return value === null || value === undefined || value === "" ? fallback : value;
+  }
+
+  function humanizeFieldName(name) {
+    return String(name || "")
+      .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+      .replace(/_/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .replace(/^./, (letter) => letter.toUpperCase());
+  }
+
+  function formatInputValue(value, field = {}) {
+    if (value === null || value === undefined || value === "") return "-";
+    if (typeof value === "boolean") return value ? "Sim" : "Não";
+    if (field.tipo === "numero") return Calculations.formatarValor(value, "numero");
+    if (field.tipo === "percentual") return Calculations.formatarValor(value, "percentual");
+    if (field.tipo === "moeda") return Calculations.formatarValor(value, "moeda");
+    if (Array.isArray(value)) return value.length ? value.join(", ") : "-";
+    if (typeof value === "object") return JSON.stringify(value);
+    return String(value);
+  }
+
+  function formatMeasureValue(value, unit) {
+    if (value === null || value === undefined || value === "") return "-";
+    if (typeof value === "string" && Number.isNaN(Number(value))) return value;
+    return Calculations.formatarValor(value, unit);
+  }
+
+  function launchCalculation(indicador, regra, lancamento) {
+    if (!indicador || !regra || !lancamento) return null;
+    const launches = (state.data.lancamentos || [])
+      .filter((item) => (
+        Number(item.indicadorId) === Number(indicador.id) &&
+        Number(item.ano) === Number(lancamento.ano) &&
+        Number(item.mes) <= Number(lancamento.mes)
+      ))
+      .sort((a, b) => Number(a.mes) - Number(b.mes));
+    return IndicatorFormulas.calcularIndicador(indicador, regra, lancamento, launches);
+  }
+
+  function launchBadge(status) {
+    if (status === "Homologado") return "ok";
+    if (status === "Devolvido para ajuste") return "danger";
+    if (status === "Enviado para homologação") return "warn";
+    return "info";
+  }
+
+  function launchDetailItem([label, value, full]) {
+    return `
+      <article class="detail-item ${full ? "full-span" : ""}">
+        <span>${escapeHtml(label)}</span>
+        <p>${escapeHtml(formatEmpty(value))}</p>
+      </article>
+    `;
+  }
+
+  function renderTextBlock(title, value, emptyText) {
+    return `
+      <article class="launch-detail-card">
+        <h4>${escapeHtml(title)}</h4>
+        <p>${escapeHtml(formatEmpty(value, emptyText))}</p>
+      </article>
+    `;
+  }
+
+  function renderInputData(indicador, regra, lancamento) {
+    const campos = lancamento.camposEntrada || {};
+    const fieldMap = Object.fromEntries((regra?.camposEntrada || []).map((field) => [field.nome, field]));
+    const entries = Object.entries(campos)
+      .filter(([, value]) => value !== null && value !== undefined && value !== "")
+      .map(([key, value]) => {
+        const field = fieldMap[key] || {};
+        return [field.rotulo || humanizeFieldName(key), formatInputValue(value, field)];
+      });
+
+    if (!entries.length) {
+      return `
+        <article class="launch-detail-card full-span">
+          <h4>Dados informados pela unidade</h4>
+          <p>Nenhum dado de entrada registrado.</p>
+        </article>
+      `;
+    }
+
+    return `
+      <article class="launch-detail-card full-span">
+        <h4>Dados informados pela unidade</h4>
+        <div class="detail-grid launch-input-grid">
+          ${entries.map(launchDetailItem).join("")}
+        </div>
+      </article>
+    `;
+  }
+
+  function evidenceEntries(lancamento) {
+    const entries = [];
+    const add = (label, value) => {
+      if (!value || entries.some((item) => item.value === value)) return;
+      entries.push({ label, value });
+    };
+    add("Evidência", lancamento.evidencia);
+    add("Arquivo", lancamento.arquivoEvidencia);
+    add("Link", lancamento.linkEvidencia);
+    Object.entries(lancamento.camposEntrada || {}).forEach(([key, value]) => {
+      const normalized = normalizeText(key);
+      if (normalized.includes("evidencia") || normalized.includes("fonte") || normalized.includes("arquivo") || normalized.includes("link")) {
+        add(humanizeFieldName(key), value);
+      }
+    });
+    return entries;
+  }
+
+  function renderEvidence(lancamento) {
+    const entries = evidenceEntries(lancamento);
+    if (!entries.length) {
+      return renderTextBlock("Fonte/Evidência", "Nenhuma evidência anexada.", "Nenhuma evidência anexada.");
+    }
+    return `
+      <article class="launch-detail-card">
+        <h4>Fonte/Evidência</h4>
+        <ul class="launch-detail-list">
+          ${entries.map(({ label, value }) => {
+            const text = String(value);
+            const content = /^https?:\/\//i.test(text)
+              ? `<a href="${escapeHtml(text)}" target="_blank" rel="noopener noreferrer">${escapeHtml(text)}</a>`
+              : escapeHtml(text);
+            return `<li><strong>${escapeHtml(label)}:</strong> ${content}</li>`;
+          }).join("")}
+        </ul>
+      </article>
+    `;
+  }
+
+  function launchHistoryEntries(lancamento) {
+    const historico = (state.data.historico || [])
+      .filter((item) => (
+        Number(item.lancamentoId) === Number(lancamento.id) ||
+        (String(item.entidade || "").includes("lancamento") && Number(item.registroId) === Number(lancamento.id))
+      ))
+      .map((item) => ({
+        action: item.acao || item.action || "Registro",
+        user: item.usuario || item.user || "-",
+        profile: item.perfil || item.profile || "-",
+        date: item.dataHora || item.data || "",
+        note: item.justificativa || item.observacao || item.valorNovo?.observacaoDiretoria || item.valorNovo?.justificativa || ""
+      }));
+    const homologacoes = (state.data.homologacoes || [])
+      .filter((item) => Number(item.lancamentoId) === Number(lancamento.id))
+      .map((item) => ({
+        action: item.status || "Homologação",
+        user: item.usuario || item.responsavel || item.homologadoPor || "-",
+        profile: item.perfil || "Homologação",
+        date: item.dataHora || item.dataHomologacao || item.dataAtualizacao || "",
+        note: item.observacaoDiretoria || item.justificativa || ""
+      }));
+    const solicitacoes = (state.data.solicitacoesReabertura || [])
+      .filter((item) => Number(item.lancamentoId) === Number(lancamento.id))
+      .map((item) => ({
+        action: `Solicitação de reabertura - ${item.statusSolicitacao || "Registrada"}`,
+        user: item.solicitante || item.usuario || "-",
+        profile: item.perfilSolicitante || item.perfil || "-",
+        date: item.dataSolicitacao || item.dataHora || "",
+        note: item.justificativa || item.justificativaDecisao || ""
+      }));
+    return [...historico, ...homologacoes, ...solicitacoes]
+      .sort((a, b) => String(a.date).localeCompare(String(b.date)));
+  }
+
+  function renderHistory(lancamento) {
+    if (isUsuarioCompanhiaProfile(state.user?.perfil)) return "";
+    const entries = launchHistoryEntries(lancamento);
+    if (!entries.length) {
+      return renderTextBlock("Histórico de homologação", "Nenhum histórico registrado.", "Nenhum histórico registrado.");
+    }
+    return `
+      <article class="launch-detail-card full-span">
+        <h4>Histórico de homologação</h4>
+        <ol class="launch-history-list">
+          ${entries.map((item) => `
+            <li>
+              <strong>${escapeHtml(humanizeFieldName(item.action))}</strong>
+              <span>${escapeHtml(item.date ? new Date(item.date).toLocaleString("pt-BR") : "-")}</span>
+              <p>${escapeHtml(item.user)}${item.profile && item.profile !== "-" ? ` · ${escapeHtml(item.profile)}` : ""}</p>
+              ${item.note ? `<p>${escapeHtml(item.note)}</p>` : ""}
+            </li>
+          `).join("")}
+        </ol>
+      </article>
+    `;
+  }
+
+  function renderLaunchDetail(indicador) {
+    const panel = document.getElementById("monthlyLaunchDetail");
+    const content = document.getElementById("monthlyLaunchDetailContent");
+    const title = document.getElementById("monthlyLaunchDetailTitle");
+    const subtitle = document.getElementById("monthlyLaunchDetailSubtitle");
+    const lancamento = getSelectedLaunch();
+
+    if (!panel || !content || !lancamento || !indicador || Number(lancamento.indicadorId) !== Number(indicador.id) || state.editMode) {
+      if (panel) panel.hidden = true;
+      return;
+    }
+
+    const regra = getRule(indicador);
+    const calculated = launchCalculation(indicador, regra, lancamento) || {};
+    const situation = calculated.situacao || lancamento.situacaoCalculada || Calculations.calcularStatusDesempenho(calculated.percentualAtingidoMensal ?? lancamento.percentualAtingido);
+    const metaReferencia = calculated.metaReferenciaMensal ?? calculated.metaReferenciaPeriodo ?? calculated.metaAcumulada ?? lancamento.metaMensal ?? regra?.metaAnualValor;
+    const resultadoCalculado = calculated.resultadoMensal ?? calculated.resultadoCalculado ?? lancamento.resultadoMensal ?? lancamento.realizadoMensal;
+    const resultadoOficial = lancamento.status === "Homologado"
+      ? resultadoCalculado
+      : (calculated.resultadoOficial ?? lancamento.resultadoOficial ?? "-");
+    const percent = calculated.percentualAtingidoMensal ?? calculated.percentualAtingido ?? lancamento.percentualAtingido;
+
+    panel.hidden = false;
+    title.textContent = `${indicador.indicador} — ${lancamento.nomeMes}/${lancamento.ano}`;
+    subtitle.textContent = "Informações prestadas pela unidade apuradora na competência selecionada.";
+    content.innerHTML = `
+      <article class="launch-detail-card full-span">
+        <div class="detail-header compact">
+          <div>
+            <p class="eyebrow">Competência</p>
+            <h4>${escapeHtml(lancamento.nomeMes)}/${escapeHtml(lancamento.ano)}</h4>
+          </div>
+          <span class="badge ${launchBadge(lancamento.status)}">${escapeHtml(lancamento.status || "Não iniciado")}</span>
+        </div>
+        <div class="detail-grid">
+          ${[
+            ["Indicador", indicador.indicador, true],
+            ["Plano", indicador.plano],
+            ["Pilar", indicador.pilar],
+            ["Unidade apuradora", indicador.unidadeApuradora || "Não informado"],
+            ["Diretoria responsável", indicador.diretoriaResponsavel || "Não informado"],
+            ["Competência", `${lancamento.nomeMes}/${lancamento.ano}`],
+            ["Situação", situation],
+            ["Meta de referência", formatMeasureValue(metaReferencia, regra?.unidadeMedida)],
+            ["Resultado calculado", formatMeasureValue(resultadoCalculado, regra?.unidadeMedida)],
+            ["Resultado oficial", resultadoOficial === "-" ? "-" : formatMeasureValue(resultadoOficial, regra?.unidadeMedida)],
+            ["% atingido", Calculations.formatarPercentual(percent)]
+          ].map(launchDetailItem).join("")}
+        </div>
+      </article>
+      ${renderInputData(indicador, regra, lancamento)}
+      ${renderTextBlock("Observação da área", lancamento.observacaoArea, "Sem observação registrada.")}
+      ${renderTextBlock("Justificativa", lancamento.justificativa, "Sem justificativa registrada.")}
+      ${renderEvidence(lancamento)}
+      ${renderTextBlock("Observação da diretoria", lancamento.observacaoDiretoria, "Sem observação da diretoria registrada.")}
+      ${renderHistory(lancamento)}
+    `;
   }
 
   function monthlyColumnClass(label) {
@@ -1242,6 +1522,7 @@
 
     if (state.selectedId && !visible.some((item) => item.id === state.selectedId)) {
       state.selectedId = null;
+      state.selectedLaunchId = null;
       state.editMode = false;
     }
 
@@ -1302,6 +1583,7 @@
       const button = event.target.closest("button[data-action]");
       if (!button) return;
       state.selectedId = Number(button.dataset.id);
+      state.selectedLaunchId = null;
       state.editMode = button.dataset.action === "edit" && canEdit();
       renderDetail(getSelectedIndicator());
       document.getElementById("indicatorDetailPanel").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -1322,6 +1604,14 @@
       window.location.href = detailBackTarget();
     });
 
+    document.getElementById("backToIndicatorFromLaunch")?.addEventListener("click", () => {
+      state.selectedLaunchId = null;
+      const target = indicatorDetailTarget(state.selectedId);
+      window.history.replaceState({}, "", target);
+      renderDetail(getSelectedIndicator());
+      document.getElementById("indicatorTracking")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
     document.getElementById("resetIndicatorData").addEventListener("click", () => {
       const confirmed = window.confirm("Restaurar os indicadores originais da planilha? Alterações locais de cadastro serão descartadas.");
       if (!confirmed) return;
@@ -1336,6 +1626,7 @@
       user,
       indicadores: data.indicadores,
       selectedId: null,
+      selectedLaunchId: null,
       editMode: false
     };
 
@@ -1346,11 +1637,13 @@
     bindEvents();
     refresh();
 
-    const requestedId = requestedIndicatorId();
+    const requestedLaunch = (state.data.lancamentos || []).find((item) => Number(item.id) === requestedLaunchId());
+    const requestedId = requestedLaunch ? Number(requestedLaunch.indicadorId) : requestedIndicatorId();
     if (requestedId && state.indicadores.some((item) => item.id === requestedId)) {
       state.selectedId = requestedId;
+      state.selectedLaunchId = requestedLaunch ? Number(requestedLaunch.id) : null;
       renderDetail(getSelectedIndicator());
-      document.getElementById("indicatorDetailPanel").scrollIntoView({ block: "start" });
+      document.getElementById(state.selectedLaunchId ? "monthlyLaunchDetail" : "indicatorDetailPanel").scrollIntoView({ block: "start" });
     } else if (isRouteDetailMode()) {
       showMessage("Indicador não encontrado ou indisponível para o perfil atual.", "warning");
       setIndicatorPageMode(null);

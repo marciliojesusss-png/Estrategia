@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CAIXA Loterias | Indicadores</title>
-  <link rel="stylesheet" href="assets/css/styles.css?v=INDICADORES-COMPOSICAO-RESPONSIVA-001">
+  <link rel="stylesheet" href="assets/css/styles.css?v=INDICADORES-DETALHE-LANCAMENTO-001">
   <script src="assets/js/currency.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="assets/js/situations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="assets/js/bootstrap-data.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
@@ -14,7 +14,7 @@
   <script src="assets/js/calculations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="assets/js/formulas.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="assets/js/quarterly.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="assets/js/indicators.js?v=INDICADORES-COMPOSICAO-RESPONSIVA-001" defer></script>
+  <script src="assets/js/indicators.js?v=INDICADORES-DETALHE-LANCAMENTO-002" defer></script>
   <script src="assets/js/app.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
 </head>
 <body data-page="indicadores">
@@ -126,6 +126,18 @@
             </div>
           </section>
         </div>
+
+        <section id="monthlyLaunchDetail" class="monthly-launch-detail" hidden>
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Detalhe do lançamento</p>
+              <h3 id="monthlyLaunchDetailTitle">Informações prestadas pela unidade apuradora</h3>
+              <p id="monthlyLaunchDetailSubtitle" class="section-subtitle"></p>
+            </div>
+            <button id="backToIndicatorFromLaunch" class="secondary-action table-action" type="button">Voltar ao indicador</button>
+          </div>
+          <div id="monthlyLaunchDetailContent" class="launch-detail-layout"></div>
+        </section>
 
         <form id="indicatorForm" class="editor-form" hidden>
           <input type="hidden" id="indicatorId">
