@@ -56,9 +56,18 @@ scripts/
 Os scripts principais são:
 
 ```text
+scripts/migrar-para-sqlserver.ps1
 scripts/migrar-sqlite-para-sqlserver.py
 scripts/verificar-sqlserver.py
 ```
+
+O caminho mais simples e usar o orquestrador:
+
+```powershell
+.\migrar-para-sqlserver.bat -Ambiente homologacao
+```
+
+Esse comando chama o PowerShell `scripts/migrar-para-sqlserver.ps1`, que executa backup, migracao e verificacao na ordem certa.
 
 ## 3. Antes de começar
 
@@ -216,7 +225,81 @@ Homologação é um ambiente de teste parecido com o real.
 
 Ele serve para descobrir problemas sem afetar usuários finais.
 
-## 9. Rodar a migração
+## 9. Rodar a migração simplificada
+
+Use este comando para homologacao:
+
+```powershell
+.\migrar-para-sqlserver.bat -Ambiente homologacao
+```
+
+Ele faz automaticamente:
+
+1. Confere se o SQLite existe.
+2. Confere se Python e `pyodbc` estao disponiveis.
+3. Define variaveis padrao do SQL Server quando voce nao informou.
+4. Cria backup do SQLite em `database/backups/`.
+5. Executa `scripts/migrar-sqlite-para-sqlserver.py`.
+6. Executa `scripts/verificar-sqlserver.py`.
+7. Para o processo se a verificacao encontrar alertas.
+
+Para informar servidor e banco:
+
+```powershell
+.\migrar-para-sqlserver.bat -Ambiente homologacao -Servidor "SERVIDOR_SQL" -Banco "Estrategia_HML"
+```
+
+Para preparar somente a estrutura:
+
+```powershell
+.\migrar-para-sqlserver.bat -Ambiente homologacao -SchemaOnly
+```
+
+Para homologacao, se for permitido limpar as tabelas de destino antes de recarregar:
+
+```powershell
+.\migrar-para-sqlserver.bat -Ambiente homologacao -Truncate
+```
+
+Em producao, o orquestrador bloqueia `-Truncate` por seguranca.
+
+Para producao:
+
+```powershell
+.\migrar-para-sqlserver.bat -Ambiente producao -Servidor "SERVIDOR_SQL" -Banco "Estrategia"
+```
+
+O script pede confirmacao antes de continuar em producao.
+
+### Usuarios de acesso
+
+Se o SQLite local tiver a tabela `usuarios_acesso` e voce quiser sincronizar esses acessos para o SQL Server:
+
+```powershell
+.\migrar-para-sqlserver.bat -Ambiente homologacao -SyncAuthUsers
+```
+
+Se a equipe de banco preferir executar manualmente pelo SSMS, gere um arquivo SQL:
+
+```powershell
+.\migrar-para-sqlserver.bat -Ambiente homologacao -GerarSqlAuthUsers
+```
+
+O arquivo sera gerado em:
+
+```text
+database/sqlserver/sincronizar-usuarios-acesso.sql
+```
+
+Use `-SeedAuthUsers` somente em homologacao/local para criar usuarios ficticios:
+
+```powershell
+.\migrar-para-sqlserver.bat -Ambiente homologacao -SchemaOnly -SeedAuthUsers
+```
+
+Em producao, o orquestrador bloqueia `-SeedAuthUsers`.
+
+## 9.1. Rodar a migração manualmente
 
 Com as variáveis de ambiente configuradas, execute:
 
@@ -413,6 +496,29 @@ Solução: confira se o seu usuário Windows tem permissão no banco SQL Server.
 Erro de driver ODBC:
 
 Solução: instale o Microsoft ODBC Driver for SQL Server.
+
+Erro de certificado SSL/TLS:
+
+```text
+Provedor SSL: A cadeia de certificacao foi emitida por uma autoridade que nao e de confianca.
+```
+
+Isso acontece porque o ODBC Driver 18 usa criptografia por padrao. O modo mais seguro em producao e manter:
+
+```text
+Encrypt=yes
+TrustServerCertificate=no
+```
+
+Nesse caso, a maquina da aplicacao precisa confiar no certificado usado pelo SQL Server.
+
+Em homologacao/local, para testar rapidamente enquanto o certificado nao foi ajustado, rode:
+
+```powershell
+.\migrar-para-sqlserver.bat -Ambiente homologacao -TrustServerCertificate yes
+```
+
+Nao use `TrustServerCertificate=yes` em producao sem validacao da equipe de infraestrutura/seguranca.
 
 Erro de tabelas já preenchidas:
 
