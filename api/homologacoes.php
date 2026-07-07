@@ -10,4 +10,4 @@ if (Request::method() !== 'GET') {
     return;
 }
 
-Response::json($repository->all());
+Response::json($repository->all(Auth::scopeFilters()));

@@ -69,6 +69,15 @@
     Chart.defaults.plugins.tooltip.borderWidth = 1;
   }
 
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
   async function initLogin() {
     const usuarios = await DataStore.loadJson("usuarios");
     const select = document.getElementById("usuarioSelect");
@@ -77,7 +86,7 @@
     const diretoriaInput = document.getElementById("diretoriaInput");
 
     select.innerHTML = usuarios.map((usuario) => (
-      `<option value="${usuario.id}">${usuario.nome}</option>`
+      `<option value="${escapeHtml(usuario.id)}">${escapeHtml(usuario.nome)}</option>`
     )).join("");
 
     function fillUser() {
@@ -118,9 +127,9 @@
           <span class="brand-system-name">Indicadores Estratégicos</span>
         </div>
         <div class="header-actions">
-          <span class="header-chip">${user.nome}</span>
-          <span class="header-chip">${user.perfil}</span>
-          <span class="header-chip">${user.unidadeApuradora || user.diretoriaResponsavel || "Escopo geral"}</span>
+          <span class="header-chip">${escapeHtml(user.nome)}</span>
+          <span class="header-chip">${escapeHtml(user.perfil)}</span>
+          <span class="header-chip">${escapeHtml(user.unidadeApuradora || user.diretoriaResponsavel || "Escopo geral")}</span>
           <button class="secondary-action logout-button btn-sair" type="button">Sair</button>
         </div>
       </div>
@@ -141,7 +150,7 @@
       const flash = Auth.consumeFlashMessage();
       const showTechnicalNotices = Auth.isAdministrador(user.perfil);
       const messages = [
-        flash ? `<div class="notice ${flash.type || "info"}">${flash.message}</div>` : "",
+        flash ? `<div class="notice ${escapeHtml(flash.type || "info")}">${escapeHtml(flash.message)}</div>` : "",
         ...(showTechnicalNotices ? storageMessages(storageInfo) : []),
         showTechnicalNotices && scope ? `<div class="notice muted">${scope}</div>` : ""
       ].join("");
@@ -185,7 +194,7 @@
     configureChartTheme();
     initPage().catch((error) => {
       console.error(error);
-      document.body.insertAdjacentHTML("afterbegin", `<div class="notice">Erro ao iniciar a página: ${error.message}</div>`);
+      document.body.insertAdjacentHTML("afterbegin", `<div class="notice">Erro ao iniciar a página: ${escapeHtml(error.message)}</div>`);
     });
   });
 })();

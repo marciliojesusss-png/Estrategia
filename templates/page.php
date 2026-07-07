@@ -40,7 +40,10 @@ function render_static_page(string $htmlFile): void
         $html
     );
     $assetVersion = 'AUTH-CORPORATIVA-001';
-    $authUser = json_encode(Auth::currentUserForFrontend(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    $authUser = json_encode(
+        Auth::currentUserForFrontend(),
+        JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+    );
     $authScript = "<script>window.CAIXA_LOTERIAS_AUTH_USER = {$authUser};</script>\n";
     $html = str_replace('</head>', $authScript . '</head>', $html);
     $html = (string) preg_replace(

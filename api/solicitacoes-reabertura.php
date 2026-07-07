@@ -43,6 +43,16 @@ function save_lancamentos(LancamentosRepository $repository, array $items): void
     $repository->replaceAll($items);
 }
 
+function launch_in_user_scope(LancamentosRepository $repository, string $lancamentoId): bool
+{
+    foreach ($repository->all(Auth::scopeFilters()) as $lancamento) {
+        if ((string) ($lancamento['id'] ?? '') === $lancamentoId) {
+            return true;
+        }
+    }
+    return false;
+}
+
 if ($action === 'listar') {
     Response::json($solicitacoes->all(Auth::scopeFilters(api_filters($_GET))));
     return;
@@ -58,6 +68,10 @@ if ($action === 'criar') {
     $justificativa = trim((string) ($payload['justificativa'] ?? ''));
     if ($lancamentoId === '' || $justificativa === '') {
         Response::error('Informe o lancamento e a justificativa da solicitacao.', 400);
+        return;
+    }
+    if (Auth::normalizeProfile($perfil) !== 'administrador' && !launch_in_user_scope($lancamentos, $lancamentoId)) {
+        Response::error('Lancamento fora do escopo do usuario autenticado.', 403);
         return;
     }
 

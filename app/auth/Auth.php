@@ -32,6 +32,11 @@ final class Auth
             return self::sessionUser();
         }
 
+        if (empty($_SESSION['auth_session_initialized'])) {
+            session_regenerate_id(true);
+            $_SESSION['auth_session_initialized'] = true;
+        }
+
         self::ensureTables();
         self::seedLocalUsersIfNeeded();
 
@@ -43,6 +48,10 @@ final class Auth
         }
 
         $access = self::findAccess($matricula);
+        if ($access === null && !self::isLocalEnvironment()) {
+            self::deny('Usuario sem acesso cadastrado.');
+        }
+
         $profile = self::normalizeProfile((string) ($access['perfil'] ?? self::DEFAULT_PROFILE));
 
         $_SESSION['matricula'] = $matricula;
@@ -108,7 +117,27 @@ final class Auth
             'noUnidade' => $user['no_unidade'],
             'unidadeApuradora' => $user['unidade_apuradora'],
             'diretoriaResponsavel' => $user['diretoria_responsavel'],
+            'csrfToken' => self::csrfToken(),
         ];
+    }
+
+    public static function csrfToken(): string
+    {
+        self::startSession();
+        if (empty($_SESSION['csrf_token']) || !is_string($_SESSION['csrf_token'])) {
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        }
+        return $_SESSION['csrf_token'];
+    }
+
+    public static function requireCsrf(): void
+    {
+        self::startSession();
+        $token = (string) ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
+        if ($token === '' || empty($_SESSION['csrf_token']) || !hash_equals((string) $_SESSION['csrf_token'], $token)) {
+            Response::error('Token CSRF invalido ou ausente.', 419);
+            exit;
+        }
     }
 
     public static function homeForProfile(?string $profile = null): string
@@ -148,6 +177,17 @@ final class Auth
     private static function startSession(): void
     {
         if (session_status() !== PHP_SESSION_ACTIVE) {
+            $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+                || (($_SERVER['SERVER_PORT'] ?? '') === '443');
+            session_set_cookie_params([
+                'lifetime' => 0,
+                'path' => '/',
+                'secure' => $secure,
+                'httponly' => true,
+                'samesite' => 'Lax',
+            ]);
+            ini_set('session.use_strict_mode', '1');
+            ini_set('session.use_only_cookies', '1');
             session_start();
         }
     }
@@ -201,11 +241,8 @@ final class Auth
     {
         $env = strtolower((string) APP_ENV);
         $serverName = strtolower((string) ($_SERVER['SERVER_NAME'] ?? ''));
-        $remoteAddr = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
         return in_array($env, ['local', 'development', 'dev'], true)
-            || PHP_SAPI === 'cli-server'
-            || in_array($serverName, ['localhost', '127.0.0.1'], true)
-            || in_array($remoteAddr, ['127.0.0.1', '::1'], true);
+            || (PHP_SAPI === 'cli-server' && in_array($serverName, ['localhost', '127.0.0.1'], true));
     }
 
     private static function ensureTables(): void

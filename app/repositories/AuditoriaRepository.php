@@ -27,32 +27,37 @@ final class AuditoriaRepository
     public function replaceAll(array $items): void
     {
         $this->db->beginTransaction();
-        $stmt = $this->db->prepare(
-            'INSERT OR REPLACE INTO auditoria (
-                id, entidade, entidade_id, acao, descricao, dados_anteriores_json,
-                dados_novos_json, usuario, perfil_usuario, data_acao, created_at
-             ) VALUES (
-                :id, :entidade, :entidade_id, :acao, :descricao, :dados_anteriores_json,
-                :dados_novos_json, :usuario, :perfil_usuario, :data_acao, :created_at
-             )'
-        );
-        $now = date('c');
-        foreach ($items as $item) {
-            $stmt->execute([
-                ':id' => (string) ($item['id'] ?? uniqid('auditoria-', true)),
-                ':entidade' => $item['entidade'] ?? null,
-                ':entidade_id' => (string) ($item['registroId'] ?? $item['entidadeId'] ?? ''),
-                ':acao' => $item['acao'] ?? null,
-                ':descricao' => $item['descricao'] ?? null,
-                ':dados_anteriores_json' => self::encode($item['valorAnterior'] ?? null),
-                ':dados_novos_json' => self::encode($item['valorNovo'] ?? null),
-                ':usuario' => $item['usuario'] ?? null,
-                ':perfil_usuario' => $item['perfilUsuario'] ?? null,
-                ':data_acao' => $item['dataHora'] ?? $now,
-                ':created_at' => $now,
-            ]);
+        try {
+            $stmt = $this->db->prepare(
+                'INSERT OR REPLACE INTO auditoria (
+                    id, entidade, entidade_id, acao, descricao, dados_anteriores_json,
+                    dados_novos_json, usuario, perfil_usuario, data_acao, created_at
+                 ) VALUES (
+                    :id, :entidade, :entidade_id, :acao, :descricao, :dados_anteriores_json,
+                    :dados_novos_json, :usuario, :perfil_usuario, :data_acao, :created_at
+                 )'
+            );
+            $now = date('c');
+            foreach ($items as $item) {
+                $stmt->execute([
+                    ':id' => (string) ($item['id'] ?? uniqid('auditoria-', true)),
+                    ':entidade' => $item['entidade'] ?? null,
+                    ':entidade_id' => (string) ($item['registroId'] ?? $item['entidadeId'] ?? ''),
+                    ':acao' => $item['acao'] ?? null,
+                    ':descricao' => $item['descricao'] ?? null,
+                    ':dados_anteriores_json' => self::encode($item['valorAnterior'] ?? null),
+                    ':dados_novos_json' => self::encode($item['valorNovo'] ?? null),
+                    ':usuario' => $item['usuario'] ?? null,
+                    ':perfil_usuario' => $item['perfilUsuario'] ?? null,
+                    ':data_acao' => $item['dataHora'] ?? $now,
+                    ':created_at' => $now,
+                ]);
+            }
+            $this->db->commit();
+        } catch (Throwable $error) {
+            $this->db->rollBack();
+            throw $error;
         }
-        $this->db->commit();
     }
 
     private static function decode(?string $value): mixed

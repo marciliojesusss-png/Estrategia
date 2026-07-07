@@ -11,12 +11,13 @@ if ($method === 'GET') {
         Response::json([
             'ok' => true,
             'mode' => 'php_sqlite_local',
-            'database' => DB_PATH,
+            'database' => DB_CONNECTION,
         ]);
         return;
     }
 
     if (($_GET['all'] ?? '') !== '') {
+        Auth::requireApiProfiles(['administrador']);
         Response::json($service->all(Auth::scopeFilters()));
         return;
     }
@@ -24,6 +25,12 @@ if ($method === 'GET') {
     $collection = (string) ($_GET['collection'] ?? '');
     if ($collection === '') {
         Response::error('Informe a coleção desejada.', 400);
+        return;
+    }
+
+    $user = Auth::requireAnyAuthenticated();
+    if (in_array($collection, ['historico', 'usuarios'], true) && (string) ($user['perfil'] ?? '') !== 'administrador') {
+        Response::json([]);
         return;
     }
 
@@ -37,7 +44,7 @@ if ($method === 'GET') {
 }
 
 if ($method === 'POST') {
-    Auth::requireApiProfiles(['unidade_apuradora', 'administrador']);
+    $user = Auth::requireApiProfiles(['unidade_apuradora', 'homologador', 'administrador']);
     $payload = Request::json();
     $key = (string) ($payload['key'] ?? '');
     $value = $payload['value'] ?? null;
@@ -48,10 +55,10 @@ if ($method === 'POST') {
     }
 
     try {
-        $service->saveCollection($key, $value);
+        $service->saveCollection($key, $value, $user);
         Response::json(['ok' => true, 'persisted' => true, 'key' => $key]);
-    } catch (InvalidArgumentException) {
-        Response::json(['ok' => true, 'persisted' => false, 'key' => $key]);
+    } catch (InvalidArgumentException $error) {
+        Response::error($error->getMessage(), 400);
     }
     return;
 }

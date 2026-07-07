@@ -495,10 +495,12 @@
   }
 
   async function phpApiFetch(path, options = {}) {
+    const csrfToken = window.Auth?.getCurrentUser?.()?.csrfToken || window.CAIXA_LOTERIAS_AUTH_USER?.csrfToken || "";
     const response = await fetch(path, {
       cache: "no-store",
       headers: {
         "Content-Type": "application/json",
+        ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {}),
         ...(options.headers || {})
       },
       ...options

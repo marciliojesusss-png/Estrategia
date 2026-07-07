@@ -36,53 +36,58 @@ final class LancamentosRepository
     public function replaceAll(array $items): void
     {
         $this->db->beginTransaction();
-        $stmt = $this->db->prepare(
-            'INSERT OR REPLACE INTO lancamentos (
-                id, indicador_id, competencia, ano, mes, trimestre, plano, pilar,
-                unidade_apuradora, diretoria_responsavel, dados_entrada_json,
-                resultado_calculado, resultado_oficial, meta_referencia,
-                percentual_atingido, situacao, status, observacao_unidade,
-                evidencia_id, usuario_responsavel, created_at, updated_at
-             ) VALUES (
-                :id, :indicador_id, :competencia, :ano, :mes, :trimestre, :plano, :pilar,
-                :unidade_apuradora, :diretoria_responsavel, :dados_entrada_json,
-                :resultado_calculado, :resultado_oficial, :meta_referencia,
-                :percentual_atingido, :situacao, :status, :observacao_unidade,
-                :evidencia_id, :usuario_responsavel, :created_at, :updated_at
-             )'
-        );
+        try {
+            $stmt = $this->db->prepare(
+                'INSERT OR REPLACE INTO lancamentos (
+                    id, indicador_id, competencia, ano, mes, trimestre, plano, pilar,
+                    unidade_apuradora, diretoria_responsavel, dados_entrada_json,
+                    resultado_calculado, resultado_oficial, meta_referencia,
+                    percentual_atingido, situacao, status, observacao_unidade,
+                    evidencia_id, usuario_responsavel, created_at, updated_at
+                 ) VALUES (
+                    :id, :indicador_id, :competencia, :ano, :mes, :trimestre, :plano, :pilar,
+                    :unidade_apuradora, :diretoria_responsavel, :dados_entrada_json,
+                    :resultado_calculado, :resultado_oficial, :meta_referencia,
+                    :percentual_atingido, :situacao, :status, :observacao_unidade,
+                    :evidencia_id, :usuario_responsavel, :created_at, :updated_at
+                 )'
+            );
 
-        $now = date('c');
-        foreach ($items as $item) {
-            $ano = (int) ($item['ano'] ?? 2026);
-            $mes = (int) ($item['mes'] ?? 1);
-            $competencia = $item['competencia'] ?? sprintf('%04d-%02d', $ano, $mes);
-            $stmt->execute([
-                ':id' => (string) ($item['id'] ?? uniqid('lancamento-', true)),
-                ':indicador_id' => (string) ($item['indicadorId'] ?? $item['indicador_id'] ?? ''),
-                ':competencia' => $competencia,
-                ':ano' => $ano,
-                ':mes' => $mes,
-                ':trimestre' => $item['trimestre'] ?? (ceil($mes / 3) . 'TRI/' . $ano),
-                ':plano' => $item['plano'] ?? null,
-                ':pilar' => $item['pilar'] ?? null,
-                ':unidade_apuradora' => $item['unidadeApuradora'] ?? null,
-                ':diretoria_responsavel' => $item['diretoriaResponsavel'] ?? null,
-                ':dados_entrada_json' => json_encode($item['camposEntrada'] ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-                ':resultado_calculado' => $this->text($item['resultadoMensal'] ?? $item['realizadoMensal'] ?? null),
-                ':resultado_oficial' => $this->text($item['resultadoOficialAnual'] ?? $item['resultadoAcumulado'] ?? $item['resultadoMensal'] ?? null),
-                ':meta_referencia' => $this->text($item['metaMensal'] ?? $item['metaReferencia'] ?? null),
-                ':percentual_atingido' => $this->text($item['percentualAtingidoAnual'] ?? $item['percentualAtingido'] ?? $item['percentualAtingidoMensal'] ?? null),
-                ':situacao' => SituacaoService::normalizar($item['situacaoCalculada'] ?? null),
-                ':status' => $item['status'] ?? null,
-                ':observacao_unidade' => $item['observacaoArea'] ?? $item['justificativa'] ?? null,
-                ':evidencia_id' => $item['evidenciaId'] ?? null,
-                ':usuario_responsavel' => $item['preenchidoPor'] ?? $item['usuarioResponsavel'] ?? null,
-                ':created_at' => $item['created_at'] ?? $item['dataPreenchimento'] ?? $now,
-                ':updated_at' => $now,
-            ]);
+            $now = date('c');
+            foreach ($items as $item) {
+                $ano = (int) ($item['ano'] ?? 2026);
+                $mes = (int) ($item['mes'] ?? 1);
+                $competencia = $item['competencia'] ?? sprintf('%04d-%02d', $ano, $mes);
+                $stmt->execute([
+                    ':id' => (string) ($item['id'] ?? uniqid('lancamento-', true)),
+                    ':indicador_id' => (string) ($item['indicadorId'] ?? $item['indicador_id'] ?? ''),
+                    ':competencia' => $competencia,
+                    ':ano' => $ano,
+                    ':mes' => $mes,
+                    ':trimestre' => $item['trimestre'] ?? (ceil($mes / 3) . 'TRI/' . $ano),
+                    ':plano' => $item['plano'] ?? null,
+                    ':pilar' => $item['pilar'] ?? null,
+                    ':unidade_apuradora' => $item['unidadeApuradora'] ?? null,
+                    ':diretoria_responsavel' => $item['diretoriaResponsavel'] ?? null,
+                    ':dados_entrada_json' => json_encode($item['camposEntrada'] ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                    ':resultado_calculado' => $this->text($item['resultadoMensal'] ?? $item['realizadoMensal'] ?? null),
+                    ':resultado_oficial' => $this->text($item['resultadoOficialAnual'] ?? $item['resultadoAcumulado'] ?? $item['resultadoMensal'] ?? null),
+                    ':meta_referencia' => $this->text($item['metaMensal'] ?? $item['metaReferencia'] ?? null),
+                    ':percentual_atingido' => $this->text($item['percentualAtingidoAnual'] ?? $item['percentualAtingido'] ?? $item['percentualAtingidoMensal'] ?? null),
+                    ':situacao' => SituacaoService::normalizar($item['situacaoCalculada'] ?? null),
+                    ':status' => $item['status'] ?? null,
+                    ':observacao_unidade' => $item['observacaoArea'] ?? $item['justificativa'] ?? null,
+                    ':evidencia_id' => $item['evidenciaId'] ?? null,
+                    ':usuario_responsavel' => $item['preenchidoPor'] ?? $item['usuarioResponsavel'] ?? null,
+                    ':created_at' => $item['created_at'] ?? $item['dataPreenchimento'] ?? $now,
+                    ':updated_at' => $now,
+                ]);
+            }
+            $this->db->commit();
+        } catch (Throwable $error) {
+            $this->db->rollBack();
+            throw $error;
         }
-        $this->db->commit();
     }
 
     private function map(array $row): array

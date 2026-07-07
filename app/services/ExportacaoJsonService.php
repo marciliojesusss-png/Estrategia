@@ -9,9 +9,9 @@ final class ExportacaoJsonService
     {
     }
 
-    public function exportarBaseCompleta(): array
+    public function exportarBaseCompleta(array $filters = [], bool $includeSensitive = false): array
     {
-        $data = $this->base->all();
+        $data = $this->base->all($filters);
         return [
             'metadata' => [
                 'sistema' => 'Central de Indicadores Estratégicos',
@@ -26,7 +26,7 @@ final class ExportacaoJsonService
             'homologacoes' => $data['homologacoes'],
             'retificacoes' => [],
             'evidencias' => [],
-            'auditoria' => $data['historico'],
+            'auditoria' => $includeSensitive ? $data['historico'] : [],
             'configuracoes' => [
                 'planos' => $data['planos'],
                 'pilares' => $data['pilares'],
@@ -35,7 +35,7 @@ final class ExportacaoJsonService
                 'metas' => $data['metas'],
                 'regrasIndicadores' => $data['regrasIndicadores'],
             ],
-            'usuariosValidacao' => $data['usuarios'],
+            'usuariosValidacao' => $includeSensitive ? $data['usuarios'] : [],
         ];
     }
 }

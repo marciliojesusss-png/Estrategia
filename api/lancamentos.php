@@ -11,14 +11,14 @@ if (Request::method() === 'GET') {
 }
 
 if (in_array(Request::method(), ['POST', 'PUT'], true)) {
-    Auth::requireApiProfiles(['unidade_apuradora', 'administrador']);
+    $user = Auth::requireApiProfiles(['unidade_apuradora', 'homologador', 'administrador']);
     $payload = Request::json();
     $items = array_is_list($payload) ? $payload : ($payload['lancamentos'] ?? []);
     if (!is_array($items)) {
         Response::error('Envie uma lista de lançamentos.', 400);
         return;
     }
-    $repository->replaceAll($items);
+    (new BaseDadosService())->saveCollection('lancamentos', $items, $user);
     Response::json(['ok' => true, 'persisted' => true, 'total' => count($items)]);
     return;
 }

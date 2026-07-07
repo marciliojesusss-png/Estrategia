@@ -15,7 +15,11 @@ require_once __DIR__ . '/../app/repositories/AuditoriaRepository.php';
 require_once __DIR__ . '/../app/repositories/SolicitacoesReaberturaRepository.php';
 
 set_exception_handler(static function (Throwable $error): void {
-    Response::error($error->getMessage(), 500);
+    error_log($error);
+    $message = in_array(strtolower((string) APP_ENV), ['local', 'development', 'dev'], true)
+        ? $error->getMessage()
+        : 'Erro interno ao processar a solicitacao.';
+    Response::error($message, 500);
 });
 
 function api_filters(array $source): array
@@ -24,3 +28,7 @@ function api_filters(array $source): array
 }
 
 Auth::requireAnyAuthenticated();
+
+if (in_array(Request::method(), ['POST', 'PUT', 'PATCH', 'DELETE'], true)) {
+    Auth::requireCsrf();
+}

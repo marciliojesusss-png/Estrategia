@@ -10,7 +10,7 @@ define('BACKUP_DIR', APP_ROOT . '/database/backups');
 define('LDAP_PATH', getenv('LDAP_PATH') ?: dirname(APP_ROOT) . '/acessoldap/LDAP.php');
 define('SQLSERVER_HOST', getenv('SQLSERVER_HOST') ?: 'localhost');
 define('SQLSERVER_DATABASE', getenv('SQLSERVER_DATABASE') ?: 'Estrategia');
-define('SQLSERVER_ENCRYPT', getenv('SQLSERVER_ENCRYPT') ?: 'no');
-define('SQLSERVER_TRUST_SERVER_CERTIFICATE', getenv('SQLSERVER_TRUST_SERVER_CERTIFICATE') ?: 'yes');
+define('SQLSERVER_ENCRYPT', getenv('SQLSERVER_ENCRYPT') ?: 'yes');
+define('SQLSERVER_TRUST_SERVER_CERTIFICATE', getenv('SQLSERVER_TRUST_SERVER_CERTIFICATE') ?: 'no');
 
 date_default_timezone_set('America/Sao_Paulo');

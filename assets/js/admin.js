@@ -35,6 +35,7 @@
   ];
 
   const MODULE_TITLES = {
+    acessos: "Acessos corporativos",
     usuarios: "Usuários simulados",
     planos: "Planos",
     pilares: "Pilares estratégicos",
@@ -51,9 +52,20 @@
   let state = {
     data: null,
     user: null,
-    module: "usuarios",
-    editingId: null
+    module: "acessos",
+    editingId: null,
+    accessUsers: null,
+    accessStorage: null,
+    accessStorageWarned: false,
+    loadingAccessUsers: false
   };
+
+  const ACCESS_PROFILE_OPTIONS = [
+    ["usuario_companhia", "Usuário Companhia"],
+    ["unidade_apuradora", "Unidade Apuradora"],
+    ["homologador", "Diretoria Homologadora"],
+    ["administrador", "Administrador"]
+  ];
 
   function escapeHtml(value) {
     return String(value ?? "")
@@ -69,6 +81,52 @@
     target.className = `notice ${type}`;
     target.textContent = message;
     target.hidden = false;
+  }
+
+  async function adminApi(path, options = {}) {
+    const csrfToken = window.Auth?.getCurrentUser?.()?.csrfToken || window.CAIXA_LOTERIAS_AUTH_USER?.csrfToken || "";
+    const response = await fetch(path, {
+      cache: "no-store",
+      headers: {
+        "Content-Type": "application/json",
+        ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {}),
+        ...(options.headers || {})
+      },
+      ...options
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || payload.ok === false) {
+      throw new Error(payload.error || `Falha na API (${response.status}).`);
+    }
+    return payload;
+  }
+
+  async function loadAccessUsers() {
+    if (state.loadingAccessUsers) return;
+    state.loadingAccessUsers = true;
+    try {
+      const payload = await adminApi("/api/usuarios-acesso.php");
+      state.accessStorage = payload.storage || null;
+      state.accessUsers = payload.usuarios || [];
+      if (state.accessStorage && state.accessStorage.driver !== "sqlsrv" && !state.accessStorageWarned) {
+        showMessage("Aba Acessos usando SQLite local. O SQL Server nao sera alterado neste modo.", "warning");
+        state.accessStorageWarned = true;
+      }
+    } catch (error) {
+      state.accessUsers = [];
+      showMessage(error.message || "Nao foi possivel carregar os acessos.", "warning");
+    } finally {
+      state.loadingAccessUsers = false;
+    }
+  }
+
+  async function saveAccessUser(payload) {
+    const response = await adminApi("/api/usuarios-acesso.php", {
+      method: payload.id ? "PUT" : "POST",
+      body: JSON.stringify(payload)
+    });
+    state.accessStorage = response.storage || state.accessStorage;
+    state.accessUsers = response.usuarios || [];
   }
 
   function nextNumericId(items) {
@@ -87,6 +145,7 @@
 
   function renderCards() {
     const items = [
+      ["Acessos corporativos", state.accessUsers ? state.accessUsers.length : "-"],
       ["Usuários simulados", state.data.usuarios.length],
       ["Planos", state.data.planos.length],
       ["Pilares", state.data.pilares.length],
@@ -149,7 +208,7 @@
       button.classList.toggle("active", button.dataset.adminModule === module);
     });
     document.getElementById("adminForm").hidden = true;
-    document.getElementById("adminNewButton").hidden = !["usuarios", "planos", "pilares", "unidades", "diretorias", "metas"].includes(module);
+    document.getElementById("adminNewButton").hidden = !["acessos", "usuarios", "planos", "pilares", "unidades", "diretorias", "metas"].includes(module);
     renderModule();
   }
 
@@ -183,6 +242,121 @@
         <input id="${id}" name="${fieldConfig.key}" type="${fieldConfig.type || "text"}" value="${escapeHtml(value)}" ${fieldConfig.required ? "required" : ""}>
       </label>
     `;
+  }
+
+  function accessProfileLabel(profile) {
+    return ACCESS_PROFILE_OPTIONS.find(([value]) => value === profile)?.[1] || profile || "-";
+  }
+
+  function accessStorageLabel() {
+    if (!state.accessStorage) return "banco ativo";
+    return state.accessStorage.driver === "sqlsrv"
+      ? `SQL Server (${state.accessStorage.database || "Estrategia"})`
+      : "SQLite local";
+  }
+
+  function renderAccessUsers() {
+    if (state.accessUsers === null) {
+      table(["Matrícula", "Nome", "Perfil", "Unidade", "Diretoria", "Status", "Ações"], [
+        `<tr><td colspan="7">Carregando acessos corporativos...</td></tr>`
+      ]);
+      loadAccessUsers().then(() => {
+        renderCards();
+        renderAccessUsers();
+      });
+      return;
+    }
+
+    const rows = state.accessUsers.map((item) => `
+      <tr>
+        <td>${escapeHtml(item.matricula)}</td>
+        <td>${escapeHtml(item.nome)}</td>
+        <td>${escapeHtml(accessProfileLabel(item.perfil))}</td>
+        <td>${escapeHtml(item.unidadeApuradora || item.sgUnidade || "-")}</td>
+        <td>${escapeHtml(item.diretoriaResponsavel || "-")}</td>
+        <td><span class="badge ${item.ativo ? "ok" : "danger"}">${item.ativo ? "Ativo" : "Inativo"}</span></td>
+        <td><button class="secondary-action table-action" type="button" data-edit-access="${escapeHtml(item.id)}">Editar</button></td>
+      </tr>
+    `);
+
+    table(["Matrícula", "Nome", "Perfil", "Unidade", "Diretoria", "Status", "Ações"], rows);
+  }
+
+  function openAccessForm(item = null) {
+    const form = document.getElementById("adminForm");
+    const source = item || {
+      id: "",
+      matricula: "",
+      nome: "",
+      email: "",
+      sgUnidade: "",
+      noUnidade: "",
+      perfil: "usuario_companhia",
+      unidadeApuradora: "",
+      diretoriaResponsavel: "",
+      ativo: true
+    };
+
+    form.innerHTML = `
+      <input type="hidden" name="id" value="${escapeHtml(source.id || "")}">
+      <label>Matrícula
+        <input name="matricula" value="${escapeHtml(source.matricula || "")}" required>
+      </label>
+      <label>Nome
+        <input name="nome" value="${escapeHtml(source.nome || "")}" required>
+      </label>
+      <label>E-mail
+        <input name="email" type="email" value="${escapeHtml(source.email || "")}">
+      </label>
+      <label>Perfil
+        <select name="perfil" required>
+          ${options(ACCESS_PROFILE_OPTIONS, source.perfil || "usuario_companhia")}
+        </select>
+      </label>
+      <label>Sigla da unidade
+        <input name="sgUnidade" value="${escapeHtml(source.sgUnidade || "")}">
+      </label>
+      <label>Nome da unidade
+        <input name="noUnidade" value="${escapeHtml(source.noUnidade || "")}">
+      </label>
+      <label>Unidade apuradora
+        <input name="unidadeApuradora" value="${escapeHtml(source.unidadeApuradora || "")}">
+      </label>
+      <label>Diretoria responsável
+        <input name="diretoriaResponsavel" value="${escapeHtml(source.diretoriaResponsavel || "")}">
+      </label>
+      <label>Status
+        <select name="ativo" required>
+          ${options([["true", "Ativo"], ["false", "Inativo"]], String(source.ativo !== false))}
+        </select>
+      </label>
+      <div class="form-actions full-span">
+        <button class="primary-action" type="submit">Salvar acesso</button>
+        <button id="adminCancelForm" class="secondary-action" type="button">Cancelar</button>
+      </div>
+    `;
+    form.hidden = false;
+    state.editingId = item ? item.id : null;
+  }
+
+  async function saveAccessForm(event) {
+    event.preventDefault();
+    const values = Object.fromEntries(new FormData(event.currentTarget).entries());
+    const payload = {
+      ...values,
+      id: values.id ? Number(values.id) : 0,
+      ativo: values.ativo === "true"
+    };
+
+    try {
+      await saveAccessUser(payload);
+      showMessage(`Acesso salvo em usuarios_acesso no ${accessStorageLabel()}.`);
+      document.getElementById("adminForm").hidden = true;
+      renderCards();
+      renderAccessUsers();
+    } catch (error) {
+      showMessage(error.message || "Nao foi possivel salvar o acesso.", "warning");
+    }
   }
 
   function simpleConfig(module) {
@@ -623,6 +797,10 @@
   }
 
   function renderModule() {
+    if (state.module === "acessos") {
+      renderAccessUsers();
+      return;
+    }
     if (["usuarios", "planos", "pilares", "unidades", "diretorias"].includes(state.module)) {
       renderSimpleModule(state.module);
       return;
@@ -641,6 +819,10 @@
     });
 
     document.getElementById("adminNewButton").addEventListener("click", () => {
+      if (state.module === "acessos") {
+        openAccessForm();
+        return;
+      }
       if (state.module === "metas") {
         openMetaForm();
         return;
@@ -654,6 +836,10 @@
     });
 
     document.getElementById("adminForm").addEventListener("submit", (event) => {
+      if (state.module === "acessos") {
+        saveAccessForm(event);
+        return;
+      }
       if (state.module === "metas") {
         saveMetaForm(event);
         return;
@@ -668,6 +854,13 @@
     });
 
     document.getElementById("adminTableBody").addEventListener("click", (event) => {
+      const accessButton = event.target.closest("[data-edit-access]");
+      if (accessButton) {
+        const item = (state.accessUsers || []).find((record) => String(record.id) === String(accessButton.dataset.editAccess));
+        if (item) openAccessForm(item);
+        return;
+      }
+
       const simpleButton = event.target.closest("[data-edit-simple]");
       if (simpleButton) {
         const config = simpleConfig(state.module);
@@ -712,12 +905,12 @@
 
   async function init({ data, user }) {
     const storageInfo = await DataStore.getStorageInfo();
-    state = { data, user, storageInfo, module: "usuarios", editingId: null };
+    state = { data, user, storageInfo, module: "acessos", editingId: null, accessUsers: null, accessStorage: null, accessStorageWarned: false, loadingAccessUsers: false };
     state.data.solicitacoesReabertura = state.data.solicitacoesReabertura || [];
     renderConfigurationInfo();
     renderCards();
     bindEvents();
-    setModule("usuarios");
+    setModule("acessos");
   }
 
   window.PageModules = window.PageModules || {};
