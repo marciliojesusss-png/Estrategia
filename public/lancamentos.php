@@ -2,4 +2,4 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../templates/page.php';
-render_static_page('lancamentos.html');
+render_protected_page('lancamentos.html', ['unidade_apuradora', 'administrador']);

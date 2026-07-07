@@ -17,7 +17,7 @@ if ($method === 'GET') {
     }
 
     if (($_GET['all'] ?? '') !== '') {
-        Response::json($service->all());
+        Response::json($service->all(Auth::scopeFilters()));
         return;
     }
 
@@ -27,7 +27,7 @@ if ($method === 'GET') {
         return;
     }
 
-    $value = $service->collection($collection, api_filters($_GET));
+    $value = $service->collection($collection, Auth::scopeFilters(api_filters($_GET)));
     if ($value === null) {
         Response::error("Coleção {$collection} não encontrada.", 404);
         return;
@@ -37,6 +37,7 @@ if ($method === 'GET') {
 }
 
 if ($method === 'POST') {
+    Auth::requireApiProfiles(['unidade_apuradora', 'administrador']);
     $payload = Request::json();
     $key = (string) ($payload['key'] ?? '');
     $value = $payload['value'] ?? null;

@@ -30,6 +30,33 @@ TABLES = [
     "backups_importacao",
 ]
 
+AUTH_TABLE_COLUMNS = {
+    "usuarios_acesso": [
+        "id",
+        "matricula",
+        "nome",
+        "email",
+        "sg_unidade",
+        "no_unidade",
+        "perfil",
+        "unidade_apuradora",
+        "diretoria_responsavel",
+        "ativo",
+        "created_at",
+        "updated_at",
+    ],
+    "acessos_log": [
+        "id",
+        "matricula",
+        "nome",
+        "perfil",
+        "sg_unidade",
+        "ip",
+        "user_agent",
+        "data_acesso",
+    ],
+}
+
 PRIMARY_KEYS = {
     "configuracoes": "chave",
 }
@@ -149,6 +176,19 @@ def sqlserver_table_exists(connection, table):
             (table,),
         )
     )
+
+
+def sqlserver_columns(connection, table):
+    rows = connection.cursor().execute(
+        """
+        SELECT COLUMN_NAME
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME = ?
+        ORDER BY ORDINAL_POSITION
+        """,
+        table,
+    ).fetchall()
+    return [row[0] for row in rows]
 
 
 def compare_counts(sqlite_conn, sqlserver_conn):
@@ -279,6 +319,31 @@ def validate_foreign_keys_sqlserver(connection):
     return ok, result
 
 
+def validate_auth_tables_sqlserver(connection):
+    result = {}
+    ok = True
+    for table, expected_columns in AUTH_TABLE_COLUMNS.items():
+        exists = sqlserver_table_exists(connection, table)
+        columns = sqlserver_columns(connection, table) if exists else []
+        missing_columns = [
+            column for column in expected_columns if column not in columns
+        ]
+        row_count = (
+            sqlserver_scalar(connection, f"SELECT COUNT(*) FROM dbo.{bracket(table)}")
+            if exists
+            else None
+        )
+        passed = exists and not missing_columns
+        ok = ok and passed
+        result[table] = {
+            "passed": passed,
+            "exists": exists,
+            "rows": row_count,
+            "missingColumns": missing_columns,
+        }
+    return ok, result
+
+
 def validate_json_sqlserver(connection):
     result = {}
     ok = True
@@ -332,6 +397,7 @@ def main():
         grouped_ok, grouped = compare_grouped_counts(sqlite_conn, sqlserver_conn)
         fks_ok, fks = validate_foreign_keys_sqlserver(sqlserver_conn)
         json_ok, json_checks = validate_json_sqlserver(sqlserver_conn)
+        auth_ok, auth_tables = validate_auth_tables_sqlserver(sqlserver_conn)
 
         report["checks"] = {
             "counts": counts,
@@ -339,8 +405,9 @@ def main():
             "groupedCounts": grouped,
             "foreignKeys": fks,
             "json": json_checks,
+            "authTables": auth_tables,
         }
-        report["status"] = "ok" if all([counts_ok, ids_ok, grouped_ok, fks_ok, json_ok]) else "alertas"
+        report["status"] = "ok" if all([counts_ok, ids_ok, grouped_ok, fks_ok, json_ok, auth_ok]) else "alertas"
         write_report(args.report, report)
         print(f"Verificacao concluida. Relatorio: {args.report}")
         if report["status"] != "ok":

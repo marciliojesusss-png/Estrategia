@@ -1,0 +1,205 @@
+{
+  "generatedAt": "2026-07-07T00:46:06.085777+00:00",
+  "sqlite": "C:\\Users\\jonat\\OneDrive\\Documentos\\GitHub\\Estratégia\\database\\indicadores.sqlite",
+  "checks": {
+    "counts": {
+      "indicadores": {
+        "sqlite": 23,
+        "sqlserver": 23,
+        "passed": true
+      },
+      "lancamentos": {
+        "sqlite": 276,
+        "sqlserver": 276,
+        "passed": true
+      },
+      "homologacoes": {
+        "sqlite": 26,
+        "sqlserver": 26,
+        "passed": true
+      },
+      "solicitacoes_reabertura": {
+        "sqlite": 0,
+        "sqlserver": 0,
+        "passed": true
+      },
+      "retificacoes": {
+        "sqlite": 0,
+        "sqlserver": 0,
+        "passed": true
+      },
+      "evidencias": {
+        "sqlite": 26,
+        "sqlserver": 26,
+        "passed": true
+      },
+      "auditoria": {
+        "sqlite": 80,
+        "sqlserver": 80,
+        "passed": true
+      },
+      "configuracoes": {
+        "sqlite": 10,
+        "sqlserver": 10,
+        "passed": true
+      },
+      "usuarios_validacao": {
+        "sqlite": 13,
+        "sqlserver": 13,
+        "passed": true
+      },
+      "backups_importacao": {
+        "sqlite": 1,
+        "sqlserver": 1,
+        "passed": true
+      }
+    },
+    "ids": {
+      "indicadores": {
+        "passed": true,
+        "sqliteCount": 23,
+        "sqlserverCount": 23,
+        "missing": [],
+        "extra": []
+      },
+      "lancamentos": {
+        "passed": true,
+        "sqliteCount": 276,
+        "sqlserverCount": 276,
+        "missing": [],
+        "extra": []
+      },
+      "homologacoes": {
+        "passed": true,
+        "sqliteCount": 26,
+        "sqlserverCount": 26,
+        "missing": [],
+        "extra": []
+      },
+      "solicitacoes_reabertura": {
+        "passed": true,
+        "sqliteCount": 0,
+        "sqlserverCount": 0,
+        "missing": [],
+        "extra": []
+      },
+      "retificacoes": {
+        "passed": true,
+        "sqliteCount": 0,
+        "sqlserverCount": 0,
+        "missing": [],
+        "extra": []
+      },
+      "evidencias": {
+        "passed": true,
+        "sqliteCount": 26,
+        "sqlserverCount": 26,
+        "missing": [],
+        "extra": []
+      },
+      "auditoria": {
+        "passed": true,
+        "sqliteCount": 80,
+        "sqlserverCount": 80,
+        "missing": [],
+        "extra": []
+      },
+      "configuracoes": {
+        "passed": true,
+        "sqliteCount": 10,
+        "sqlserverCount": 10,
+        "missing": [],
+        "extra": []
+      },
+      "usuarios_validacao": {
+        "passed": true,
+        "sqliteCount": 13,
+        "sqlserverCount": 13,
+        "missing": [],
+        "extra": []
+      },
+      "backups_importacao": {
+        "passed": true,
+        "sqliteCount": 1,
+        "sqlserverCount": 1,
+        "missing": [],
+        "extra": []
+      }
+    },
+    "groupedCounts": {
+      "lancamentos_por_indicador": {
+        "passed": true,
+        "mismatched": {}
+      },
+      "homologacoes_por_lancamento": {
+        "passed": true,
+        "mismatched": {}
+      }
+    },
+    "foreignKeys": {
+      "lancamentos.indicador_id": {
+        "passed": true,
+        "orphans": 0
+      },
+      "homologacoes.lancamento_id": {
+        "passed": true,
+        "orphans": 0
+      },
+      "solicitacoes_reabertura.lancamento_id": {
+        "passed": true,
+        "orphans": 0
+      },
+      "retificacoes.lancamento_id": {
+        "passed": true,
+        "orphans": 0
+      },
+      "evidencias.lancamento_id": {
+        "passed": true,
+        "orphans": 0
+      }
+    },
+    "json": {
+      "lancamentos": {
+        "passed": true,
+        "errors": []
+      },
+      "retificacoes": {
+        "passed": true,
+        "errors": []
+      },
+      "auditoria": {
+        "passed": false,
+        "errors": [
+          {
+            "id": "normalizacao-situacao-critico-2026-07-01-214540",
+            "column": "dados_novos_json",
+            "error": "Invalid \\escape: line 1 column 71 (char 70)"
+          }
+        ]
+      },
+      "configuracoes": {
+        "passed": true,
+        "errors": []
+      },
+      "usuarios_validacao": {
+        "passed": true,
+        "errors": []
+      }
+    },
+    "authTables": {
+      "usuarios_acesso": {
+        "passed": true,
+        "exists": true,
+        "rows": 0,
+        "missingColumns": []
+      },
+      "acessos_log": {
+        "passed": true,
+        "exists": true,
+        "rows": 0,
+        "missingColumns": []
+      }
+    }
+  },
+  "status": "alertas"
+}

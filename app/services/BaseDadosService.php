@@ -52,7 +52,7 @@ final class BaseDadosService
         };
     }
 
-    public function all(): array
+    public function all(array $filters = []): array
     {
         return [
             'usuarios' => $this->collection('usuarios'),
@@ -60,12 +60,12 @@ final class BaseDadosService
             'pilares' => $this->collection('pilares'),
             'unidades' => $this->collection('unidades'),
             'diretorias' => $this->collection('diretorias'),
-            'indicadores' => $this->collection('indicadores'),
+            'indicadores' => $this->collection('indicadores', $filters),
             'metas' => $this->collection('metas'),
             'regrasIndicadores' => $this->collection('regrasIndicadores'),
-            'lancamentos' => $this->collection('lancamentos'),
+            'lancamentos' => $this->collection('lancamentos', $filters),
             'homologacoes' => $this->collection('homologacoes'),
-            'solicitacoesReabertura' => $this->collection('solicitacoesReabertura'),
+            'solicitacoesReabertura' => $this->collection('solicitacoesReabertura', $filters),
             'historico' => $this->collection('historico'),
         ];
     }

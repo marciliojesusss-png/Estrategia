@@ -5,6 +5,7 @@ require_once __DIR__ . '/bootstrap.php';
 
 $repository = new IndicadoresRepository(Database::getConnection());
 $id = (string) ($_GET['id'] ?? $_GET['indicadorId'] ?? '');
+$filters = Auth::scopeFilters(api_filters($_GET));
 
 if ($id !== '') {
     $indicator = $repository->find($id);
@@ -16,4 +17,4 @@ if ($id !== '') {
     return;
 }
 
-Response::json($repository->all(api_filters($_GET)));
+Response::json($repository->all($filters));

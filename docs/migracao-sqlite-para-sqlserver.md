@@ -132,6 +132,17 @@ Você não precisa migrar tabela por tabela manualmente.
 
 O script de migração faz isso automaticamente, na ordem correta.
 
+Além dessas tabelas antigas, o script também prepara duas tabelas novas no SQL Server para a autenticação corporativa:
+
+```text
+usuarios_acesso
+acessos_log
+```
+
+Essas duas tabelas não vêm do SQLite antigo.
+
+Elas servem para controlar o perfil de acesso de cada matrícula e registrar os acessos ao sistema.
+
 ## 6. Preparar o acesso ao SQL Server
 
 O script precisa saber como conectar no SQL Server.
@@ -219,17 +230,44 @@ Esse comando faz o seguinte:
 2. Conecta no SQL Server.
 3. Se o banco `Estrategia` ainda não existir, tenta criá-lo.
 4. Cria as tabelas no SQL Server, se ainda não existirem.
-5. Copia os dados.
-6. Preserva os IDs atuais.
-7. Converte campos booleanos para `BIT`.
-8. Mantém campos JSON como texto.
-9. Gera um relatório.
+5. Cria também as tabelas de autenticação `usuarios_acesso` e `acessos_log`.
+6. Copia os dados antigos do SQLite.
+7. Preserva os IDs atuais.
+8. Converte campos booleanos para `BIT`.
+9. Mantém campos JSON como texto.
+10. Gera um relatório.
 
 O relatório será salvo em:
 
 ```text
 database/sqlserver/migration-report.json
 ```
+
+### Criar somente as tabelas que faltam
+
+Se os dados antigos já foram migrados e você só precisa criar tabelas novas, use:
+
+```powershell
+python .\scripts\migrar-sqlite-para-sqlserver.py --schema-only
+```
+
+Esse comando prepara a estrutura do SQL Server sem copiar novamente os dados do SQLite.
+
+Isso é útil no seu caso quando o banco `Estrategia` já existe e já tem as tabelas principais.
+
+### Usuários locais de teste
+
+Em ambiente local ou homologação, você pode pedir para o script criar usuários fictícios de teste na tabela `usuarios_acesso`.
+
+Use somente para teste:
+
+```powershell
+python .\scripts\migrar-sqlite-para-sqlserver.py --schema-only --seed-auth-users
+```
+
+Esse comando cria perfis locais como administrador, unidade apuradora, homologador e usuário comum.
+
+Não use essa opção em produção sem autorização.
 
 ## 10. Quando usar a opção --truncate
 
@@ -391,6 +429,7 @@ Use esta lista para controlar o processo:
 - [ ] Driver ODBC instalado
 - [ ] Migração feita em homologação
 - [ ] Verificação passou em homologação
+- [ ] Tabelas `usuarios_acesso` e `acessos_log` existem no SQL Server
 - [ ] Sistema testado em homologação
 - [ ] Janela de produção comunicada
 - [ ] Backup final de produção feito

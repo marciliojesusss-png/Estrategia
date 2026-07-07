@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/../app/auth/Auth.php';
+
 function render_static_page(string $htmlFile): void
 {
     $path = dirname(__DIR__) . DIRECTORY_SEPARATOR . $htmlFile;
@@ -37,7 +39,10 @@ function render_static_page(string $htmlFile): void
         ],
         $html
     );
-    $assetVersion = 'AVISOS-TECNICOS-ADMIN-001';
+    $assetVersion = 'AUTH-CORPORATIVA-001';
+    $authUser = json_encode(Auth::currentUserForFrontend(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    $authScript = "<script>window.CAIXA_LOTERIAS_AUTH_USER = {$authUser};</script>\n";
+    $html = str_replace('</head>', $authScript . '</head>', $html);
     $html = (string) preg_replace(
         '#assets/css/styles\.css(?:\?v=[^"]*)?#',
         'assets/css/styles.css?v=' . $assetVersion,
@@ -54,4 +59,10 @@ function render_static_page(string $htmlFile): void
         $html
     );
     echo $html;
+}
+
+function render_protected_page(string $htmlFile, array $profiles): void
+{
+    Auth::requireProfiles($profiles);
+    render_static_page($htmlFile);
 }

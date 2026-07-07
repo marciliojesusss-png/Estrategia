@@ -32,6 +32,54 @@ TABLES = [
     "backups_importacao",
 ]
 
+AUTH_TABLES = [
+    "usuarios_acesso",
+    "acessos_log",
+]
+
+AUTH_SEED_USERS = [
+    {
+        "matricula": "C000001",
+        "nome": "Administrador Local",
+        "email": "administrador.local@caixa.gov.br",
+        "sg_unidade": "MATRIZ",
+        "no_unidade": "Administracao Local",
+        "perfil": "administrador",
+        "unidade_apuradora": None,
+        "diretoria_responsavel": None,
+    },
+    {
+        "matricula": "C000002",
+        "nome": "Unidade Apuradora Local",
+        "email": "unidade.apuradora.local@caixa.gov.br",
+        "sg_unidade": "SUCOL",
+        "no_unidade": "Unidade Apuradora Local",
+        "perfil": "unidade_apuradora",
+        "unidade_apuradora": "SUCOL",
+        "diretoria_responsavel": None,
+    },
+    {
+        "matricula": "C000003",
+        "nome": "Homologador Local",
+        "email": "homologador.local@caixa.gov.br",
+        "sg_unidade": "DIFIR",
+        "no_unidade": "Diretoria Homologadora Local",
+        "perfil": "homologador",
+        "unidade_apuradora": None,
+        "diretoria_responsavel": "DIFIR",
+    },
+    {
+        "matricula": "C000004",
+        "nome": "Usuario Companhia Local",
+        "email": "usuario.companhia.local@caixa.gov.br",
+        "sg_unidade": "GERAL",
+        "no_unidade": "Companhia Local",
+        "perfil": "usuario_companhia",
+        "unidade_apuradora": None,
+        "diretoria_responsavel": None,
+    },
+]
+
 BOOLEAN_COLUMNS = {
     "indicadores": {"ativo"},
     "usuarios_validacao": {"ativo"},
@@ -262,6 +310,39 @@ BEGIN
         created_at NVARCHAR(40) NULL
     );
 END;
+
+IF OBJECT_ID(N'dbo.usuarios_acesso', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.usuarios_acesso (
+        id INT IDENTITY(1,1) NOT NULL CONSTRAINT pk_usuarios_acesso PRIMARY KEY,
+        matricula NVARCHAR(50) NOT NULL,
+        nome NVARCHAR(255) NULL,
+        email NVARCHAR(255) NULL,
+        sg_unidade NVARCHAR(50) NULL,
+        no_unidade NVARCHAR(255) NULL,
+        perfil NVARCHAR(50) NOT NULL,
+        unidade_apuradora NVARCHAR(255) NULL,
+        diretoria_responsavel NVARCHAR(255) NULL,
+        ativo BIT NOT NULL CONSTRAINT df_usuarios_acesso_ativo DEFAULT 1,
+        created_at DATETIME2 NULL,
+        updated_at DATETIME2 NULL,
+        CONSTRAINT uq_usuarios_acesso_matricula UNIQUE (matricula)
+    );
+END;
+
+IF OBJECT_ID(N'dbo.acessos_log', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.acessos_log (
+        id INT IDENTITY(1,1) NOT NULL CONSTRAINT pk_acessos_log PRIMARY KEY,
+        matricula NVARCHAR(50) NULL,
+        nome NVARCHAR(255) NULL,
+        perfil NVARCHAR(50) NULL,
+        sg_unidade NVARCHAR(50) NULL,
+        ip NVARCHAR(100) NULL,
+        user_agent NVARCHAR(MAX) NULL,
+        data_acesso DATETIME2 NOT NULL CONSTRAINT df_acessos_log_data_acesso DEFAULT SYSUTCDATETIME()
+    );
+END;
 """
 
 
@@ -278,9 +359,19 @@ def parse_args():
         help="Nao executa schema antes da carga.",
     )
     parser.add_argument(
+        "--schema-only",
+        action="store_true",
+        help="Cria apenas a estrutura no SQL Server, sem copiar dados do SQLite.",
+    )
+    parser.add_argument(
         "--truncate",
         action="store_true",
         help="Limpa as tabelas SQL Server antes de inserir os dados.",
+    )
+    parser.add_argument(
+        "--seed-auth-users",
+        action="store_true",
+        help="Inclui usuarios locais de teste em dbo.usuarios_acesso. Use apenas em homologacao/local.",
     )
     return parser.parse_args()
 
@@ -413,6 +504,20 @@ def sqlserver_columns(connection, table):
     return [row[0] for row in rows]
 
 
+def sqlserver_table_exists(connection, table):
+    cursor = connection.cursor()
+    return bool(
+        cursor.execute(
+            """
+            SELECT COUNT(*)
+            FROM INFORMATION_SCHEMA.TABLES
+            WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME = ?
+            """,
+            table,
+        ).fetchone()[0]
+    )
+
+
 def normalize_value(table, column, value):
     if value is None:
         return None
@@ -428,6 +533,49 @@ def delete_target_rows(connection):
     for table in reversed(TABLES):
         cursor.execute(f"DELETE FROM dbo.{bracket(table)}")
     connection.commit()
+
+
+def seed_auth_users(connection):
+    cursor = connection.cursor()
+    inserted = 0
+    for user in AUTH_SEED_USERS:
+        exists = cursor.execute(
+            "SELECT COUNT(*) FROM dbo.usuarios_acesso WHERE matricula = ?",
+            user["matricula"],
+        ).fetchone()[0]
+        if exists:
+            continue
+
+        cursor.execute(
+            """
+            INSERT INTO dbo.usuarios_acesso (
+                matricula,
+                nome,
+                email,
+                sg_unidade,
+                no_unidade,
+                perfil,
+                unidade_apuradora,
+                diretoria_responsavel,
+                ativo,
+                created_at,
+                updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, SYSUTCDATETIME(), SYSUTCDATETIME())
+            """,
+            user["matricula"],
+            user["nome"],
+            user["email"],
+            user["sg_unidade"],
+            user["no_unidade"],
+            user["perfil"],
+            user["unidade_apuradora"],
+            user["diretoria_responsavel"],
+        )
+        inserted += 1
+
+    connection.commit()
+    return {"name": "seedAuthUsers", "status": "ok", "inserted": inserted}
 
 
 def migrate_table(sqlite_conn, sqlserver_conn, table):
@@ -474,6 +622,17 @@ def table_count(connection, table, sqlserver=False):
     return connection.execute(f'SELECT COUNT(*) FROM "{table}"').fetchone()[0]
 
 
+def auth_table_report(connection):
+    report = {}
+    for table in AUTH_TABLES:
+        exists = sqlserver_table_exists(connection, table)
+        report[table] = {
+            "exists": exists,
+            "sqlserver": table_count(connection, table, sqlserver=True) if exists else None,
+        }
+    return report
+
+
 def write_report(path, payload):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -488,6 +647,7 @@ def main():
         "generatedAt": datetime.now(timezone.utc).isoformat(),
         "sqlite": str(args.sqlite),
         "tables": {},
+        "authTables": {},
         "steps": [],
     }
 
@@ -495,6 +655,16 @@ def main():
         if not args.skip_schema:
             source = execute_schema(sqlserver_conn, args.schema)
             report["steps"].append({"name": "schema", "status": "ok", "source": source})
+
+        if args.seed_auth_users:
+            report["steps"].append(seed_auth_users(sqlserver_conn))
+
+        if args.schema_only:
+            report["authTables"] = auth_table_report(sqlserver_conn)
+            report["status"] = "ok"
+            write_report(args.report, report)
+            print(f"Estrutura SQL Server preparada. Relatorio: {args.report}")
+            return
 
         if args.truncate:
             delete_target_rows(sqlserver_conn)
@@ -509,6 +679,7 @@ def main():
                     "sqlserver": table_count(sqlserver_conn, table, sqlserver=True),
                 }
 
+        report["authTables"] = auth_table_report(sqlserver_conn)
         report["status"] = "ok"
         write_report(args.report, report)
         print(f"Migracao concluida. Relatorio: {args.report}")

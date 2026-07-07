@@ -10,9 +10,10 @@ $auditoria = new AuditoriaRepository($db);
 
 $payload = Request::method() === 'GET' ? $_GET : Request::json();
 $action = (string) ($payload['action'] ?? 'listar');
-$user = is_array($payload['user'] ?? null) ? $payload['user'] : [];
-$perfil = (string) ($user['perfil'] ?? $payload['perfil'] ?? '');
-$usuario = (string) ($user['email'] ?? $user['nome'] ?? $payload['usuario'] ?? 'Usuário não informado');
+$user = Auth::currentUserForFrontend();
+$perfil = (string) ($user['perfilCodigo'] ?? 'usuario_companhia');
+$perfilLabel = (string) ($user['perfil'] ?? $perfil);
+$usuario = (string) ($user['matricula'] ?? $user['nome'] ?? 'Usuario nao informado');
 
 function append_audit(AuditoriaRepository $auditoria, array $entry): void
 {
@@ -43,27 +44,27 @@ function save_lancamentos(LancamentosRepository $repository, array $items): void
 }
 
 if ($action === 'listar') {
-    Response::json($solicitacoes->all(api_filters($_GET)));
+    Response::json($solicitacoes->all(Auth::scopeFilters(api_filters($_GET))));
     return;
 }
 
 if ($action === 'criar') {
-    if (!in_array($perfil, ['Administrador', 'Diretoria Homologadora'], true)) {
-        Response::error('Perfil não autorizado a solicitar reabertura.', 403);
+    if (!in_array(Auth::normalizeProfile($perfil), ['administrador', 'homologador'], true)) {
+        Response::error('Perfil nao autorizado a solicitar reabertura.', 403);
         return;
     }
 
     $lancamentoId = (string) ($payload['lancamentoId'] ?? '');
     $justificativa = trim((string) ($payload['justificativa'] ?? ''));
     if ($lancamentoId === '' || $justificativa === '') {
-        Response::error('Informe o lançamento e a justificativa da solicitação.', 400);
+        Response::error('Informe o lancamento e a justificativa da solicitacao.', 400);
         return;
     }
 
     $items = $solicitacoes->all();
     foreach ($items as $item) {
         if ((string) $item['lancamentoId'] === $lancamentoId && $item['statusSolicitacao'] === 'Pendente') {
-            Response::error('Já existe uma solicitação de reabertura pendente para este lançamento.', 409);
+            Response::error('Ja existe uma solicitacao de reabertura pendente para este lancamento.', 409);
             return;
         }
     }
@@ -75,7 +76,7 @@ if ($action === 'criar') {
         'indicadorId' => $payload['indicadorId'] ?? '',
         'competencia' => $payload['competencia'] ?? '',
         'solicitanteUsuario' => $usuario,
-        'solicitantePerfil' => $perfil,
+        'solicitantePerfil' => $perfilLabel,
         'solicitanteUnidade' => $user['unidadeApuradora'] ?? $user['diretoriaResponsavel'] ?? '',
         'tipoAjuste' => $payload['tipoAjuste'] ?? '',
         'justificativa' => $justificativa,
@@ -94,37 +95,37 @@ if ($action === 'criar') {
     save_solicitacoes($solicitacoes, $items);
     append_audit($auditoria, [
         'acao' => 'solicitacao_reabertura_criada',
-        'descricao' => 'Solicitação de reabertura criada pelo Diretor/Homologador.',
+        'descricao' => 'Solicitacao de reabertura criada pelo homologador.',
         'registroId' => $request['id'],
         'valorNovo' => $request,
         'usuario' => $usuario,
-        'perfilUsuario' => $perfil,
+        'perfilUsuario' => $perfilLabel,
     ]);
     Response::json(['ok' => true, 'solicitacao' => $request], 201);
     return;
 }
 
 if (!in_array($action, ['aprovar', 'negar'], true)) {
-    Response::error('Ação inválida.', 400);
+    Response::error('Acao invalida.', 400);
     return;
 }
 
-if ($perfil !== 'Administrador') {
+if (Auth::normalizeProfile($perfil) !== 'administrador') {
     append_audit($auditoria, [
         'acao' => 'tentativa_reabertura_nao_autorizada',
-        'descricao' => 'Usuário sem permissão tentou reabrir lançamento homologado.',
+        'descricao' => 'Usuario sem permissao tentou reabrir lancamento homologado.',
         'registroId' => (string) ($payload['id'] ?? ''),
         'usuario' => $usuario,
-        'perfilUsuario' => $perfil,
+        'perfilUsuario' => $perfilLabel,
     ]);
-    Response::error('A reabertura de lançamento homologado é permitida apenas ao Administrador.', 403);
+    Response::error('A reabertura de lancamento homologado e permitida apenas ao Administrador.', 403);
     return;
 }
 
 $id = (string) ($payload['id'] ?? '');
 $justificativaDecisao = trim((string) ($payload['justificativaDecisao'] ?? ''));
 if ($id === '' || $justificativaDecisao === '') {
-    Response::error('Informe a solicitação e a justificativa da decisão.', 400);
+    Response::error('Informe a solicitacao e a justificativa da decisao.', 400);
     return;
 }
 
@@ -137,7 +138,7 @@ foreach ($items as $item) {
     }
 }
 if (!$current || $current['statusSolicitacao'] !== 'Pendente') {
-    Response::error('Solicitação pendente não encontrada.', 404);
+    Response::error('Solicitacao pendente nao encontrada.', 404);
     return;
 }
 
@@ -178,13 +179,13 @@ if ($action === 'aprovar') {
 append_audit($auditoria, [
     'acao' => $action === 'aprovar' ? 'solicitacao_reabertura_aprovada' : 'solicitacao_reabertura_negada',
     'descricao' => $action === 'aprovar'
-        ? 'Solicitação aprovada pelo Administrador e lançamento reaberto para edição.'
-        : 'Solicitação de reabertura negada pelo Administrador.',
+        ? 'Solicitacao aprovada pelo Administrador e lancamento reaberto para edicao.'
+        : 'Solicitacao de reabertura negada pelo Administrador.',
     'registroId' => $id,
     'valorAnterior' => $current,
     'valorNovo' => ['solicitacao' => $updatedRequest, 'lancamento' => $updatedLaunch],
     'usuario' => $usuario,
-    'perfilUsuario' => $perfil,
+    'perfilUsuario' => $perfilLabel,
 ]);
 
 Response::json(['ok' => true, 'solicitacao' => $updatedRequest, 'lancamento' => $updatedLaunch]);

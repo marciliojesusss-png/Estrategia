@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../app/core/Database.php';
 require_once __DIR__ . '/../app/core/Request.php';
 require_once __DIR__ . '/../app/core/Response.php';
+require_once __DIR__ . '/../app/auth/Auth.php';
 require_once __DIR__ . '/../app/services/BaseDadosService.php';
 require_once __DIR__ . '/../app/services/ResumoExecutivoService.php';
 require_once __DIR__ . '/../app/services/ExportacaoJsonService.php';
@@ -21,3 +22,5 @@ function api_filters(array $source): array
 {
     return array_filter($source, static fn($value): bool => $value !== null && $value !== '');
 }
+
+Auth::requireAnyAuthenticated();

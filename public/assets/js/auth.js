@@ -39,6 +39,9 @@
   }
 
   function getCurrentUser() {
+    if (window.CAIXA_LOTERIAS_AUTH_USER) {
+      return window.CAIXA_LOTERIAS_AUTH_USER;
+    }
     const raw = localStorage.getItem(SESSION_KEY);
     return raw ? JSON.parse(raw) : null;
   }
@@ -53,7 +56,7 @@
     localStorage.removeItem(SESSION_KEY);
     localStorage.removeItem(PROFILE_KEY);
     localStorage.removeItem(PERMISSIONS_KEY);
-    window.location.href = window.AppRoutes ? window.AppRoutes.page("index") : "index.html";
+    window.location.href = window.location.pathname.endsWith(".php") ? "logout.php" : (window.AppRoutes ? window.AppRoutes.page("index") : "index.html");
   }
 
   function requireAuth() {
@@ -133,12 +136,12 @@
       return indicadores;
     }
 
-    if (user.perfil === "Unidade Apuradora") {
+    if (user.perfil === "Unidade Apuradora" || user.perfilCodigo === "unidade_apuradora") {
       const unidade = normalizeScopeValue(userUnit(user));
       return indicadores.filter((item) => normalizeScopeValue(indicatorUnit(item)) === unidade);
     }
 
-    if (user.perfil === "Diretoria Homologadora") {
+    if (user.perfil === "Diretoria Homologadora" || user.perfilCodigo === "homologador") {
       const diretoria = normalizeScopeValue(userDirectory(user));
       return indicadores.filter((item) => normalizeScopeValue(indicatorDirectory(item)) === diretoria);
     }
