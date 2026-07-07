@@ -85,6 +85,16 @@ BOOLEAN_COLUMNS = {
     "usuarios_validacao": {"ativo"},
 }
 
+JSON_COLUMNS = {
+    "lancamentos": {"dados_entrada_json"},
+    "retificacoes": {"versao_anterior_json", "versao_nova_json"},
+    "auditoria": {"dados_anteriores_json", "dados_novos_json"},
+    "configuracoes": {"valor_json"},
+    "usuarios_validacao": {"permissoes_json"},
+}
+
+INVALID_JSON_ESCAPE = re.compile(r'\\(?!["\\/u])')
+
 DEFAULT_SQLSERVER_SCHEMA = r"""
 IF OBJECT_ID(N'dbo.indicadores', N'U') IS NULL
 BEGIN
@@ -525,7 +535,24 @@ def normalize_value(table, column, value):
         if isinstance(value, str):
             return 1 if value.strip().lower() in {"1", "true", "sim", "yes"} else 0
         return 1 if value else 0
+    if column in JSON_COLUMNS.get(table, set()):
+        return normalize_json_value(value)
     return value
+
+
+def normalize_json_value(value):
+    if not isinstance(value, str) or value == "":
+        return value
+    try:
+        json.loads(value)
+        return value
+    except json.JSONDecodeError:
+        repaired = INVALID_JSON_ESCAPE.sub(r"\\\\", value)
+    try:
+        json.loads(repaired)
+        return repaired
+    except json.JSONDecodeError:
+        return value
 
 
 def delete_target_rows(connection):

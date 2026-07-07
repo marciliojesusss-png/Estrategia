@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-07-07T00:46:06.085777+00:00",
-  "sqlite": "C:\\Users\\jonat\\OneDrive\\Documentos\\GitHub\\Estratégia\\database\\indicadores.sqlite",
+  "generatedAt": "2026-07-07T15:59:20.787676+00:00",
+  "sqlite": "database\\indicadores.sqlite",
   "checks": {
     "counts": {
       "indicadores": {
@@ -168,14 +168,8 @@
         "errors": []
       },
       "auditoria": {
-        "passed": false,
-        "errors": [
-          {
-            "id": "normalizacao-situacao-critico-2026-07-01-214540",
-            "column": "dados_novos_json",
-            "error": "Invalid \\escape: line 1 column 71 (char 70)"
-          }
-        ]
+        "passed": true,
+        "errors": []
       },
       "configuracoes": {
         "passed": true,
@@ -201,5 +195,5 @@
       }
     }
   },
-  "status": "alertas"
+  "status": "ok"
 }

@@ -1,129 +1,53 @@
 # CAIXA Loterias - Indicadores Estrategicos
 
-Aplicacao web local para acompanhamento de indicadores estrategicos, lancamentos mensais, homologacoes, visao trimestral, dashboard, relatorios e administracao de cadastros.
+Aplicacao web para acompanhamento dos indicadores estrategicos da CAIXA Loterias, com lancamentos mensais, homologacoes, visao trimestral, resumo executivo, relatorios e administracao de acessos.
 
-O sistema foi construido em HTML, CSS e JavaScript puro. A aplicacao pode ser aberta diretamente pelo `index.html`, sem necessidade de iniciar servidor.
+O projeto pode rodar de duas formas:
 
-Na fase atual, o projeto tambem possui uma base SQL local versionavel em SQLite:
+- **Validacao local:** HTML/JavaScript com SQLite versionado e armazenamento local do navegador.
+- **Ambiente corporativo:** PHP com backend em SQL Server e autenticacao corporativa via LDAP.
+
+## Visao Rapida
+
+Principais recursos:
+
+- Resumo executivo dos indicadores.
+- Visao trimestral consolidada.
+- Cadastro e consulta de indicadores.
+- Lancamentos mensais por unidade apuradora.
+- Homologacao por diretoria responsavel.
+- Solicitacao e aprovacao de reabertura.
+- Relatorios operacionais.
+- Administracao de acessos corporativos.
+- Migracao facilitada de SQLite para SQL Server.
+
+Banco local versionado:
 
 ```text
 database/indicadores.sqlite
 ```
 
-Esse arquivo acompanha o projeto no GitHub para validacao e portabilidade. O navegador continua usando a camada local segura para operacao da interface; a atualizacao fisica do SQLite versionado e feita pelo script `scripts\migrar-json-para-sqlite.py`.
+Banco corporativo esperado:
 
-## Como Usar
+```text
+SQL Server / banco Estrategia
+```
 
-### Modo recomendado
+## Como Rodar Localmente
 
-Abra o arquivo:
+### Modo HTML/local
+
+Abra:
 
 ```text
 index.html
 ```
 
-Os dados sao carregados a partir de `assets/js/bootstrap-data.js` e da base local de validacao. O banco SQLite versionado em `database/indicadores.sqlite` representa a base SQL local portavel do projeto. Quando a versao de dados do projeto muda, bases antigas salvas em perfis do navegador sao substituidas automaticamente pela base versionada.
+Esse modo usa os arquivos estaticos e dados locais no navegador. E util para validacao visual e consulta local.
 
-Para compartilhar a mesma base entre computadores, versionar o arquivo SQLite com Git. Perfis diferentes do Chrome mantem armazenamentos locais separados.
+### Modo PHP/local
 
-## Perfis Simulados
-
-A tela inicial permite selecionar usuarios simulados com diferentes perfis:
-
-- Administrador
-- Consulta/Gestao
-- Usuario Companhia
-- Unidade Apuradora
-- Diretoria Homologadora
-
-As permissoes de navegacao e visualizacao sao controladas no front-end pelo modulo de autenticacao simulado.
-
-## Modulos
-
-- **Resumo Executivo:** visao gerencial consolidada.
-- **Visao Trimestral:** consolidacao trimestral dos indicadores.
-- **Indicadores:** consulta e manutencao dos indicadores.
-- **Lancamentos:** preenchimento mensal pelas unidades apuradoras.
-- **Homologacao:** analise, aprovacao, devolucao e reabertura pela diretoria.
-- **Relatorios:** consulta dos dados operacionais.
-- **Configuracoes:** cadastros, perfis simulados, permissoes, integridade da base e parametros locais.
-
-## Persistencia Dos Dados
-
-A aplicacao trabalha com tres camadas:
-
-1. **Semente inicial:** `assets/js/bootstrap-data.js`, mantido como fallback embutido da aplicacao.
-2. **Base de validacao local:** chave `central_indicadores_base_validacao` no navegador atual.
-3. **Banco SQL local versionavel:** `database/indicadores.sqlite`, gerado a partir dos JSON atuais.
-
-O antigo banco JSON em arquivos foi removido apos a verificacao de migracao para SQLite. O relatorio da migracao fica em `database/migration-report.json`.
-
-No modo recomendado, os dados ficam salvos no navegador/perfil atual e a base SQL portavel fica no arquivo SQLite versionado. Perfis diferentes do Google Chrome possuem armazenamentos locais separados; portanto, alteracoes feitas manualmente em um perfil nao aparecem em outro perfil sem um backend/local server gravando em uma base comum.
-
-### Base De Validacao Local
-
-A secao **Base de Validacao Local** oferece:
-
-- Verificar integridade da base.
-- Limpar dados locais com confirmacao.
-
-A chave oficial da base local e:
-
-```text
-central_indicadores_base_validacao
-```
-
-### Banco SQL Local
-
-O banco local SQLite fica em:
-
-```text
-database/indicadores.sqlite
-```
-
-Arquivos relacionados:
-
-```text
-database/schema.sql
-database/README.md
-scripts/migrar-json-para-sqlite.py
-```
-
-Para regenerar o SQLite a partir da semente embutida atual:
-
-```bat
-python scripts\migrar-json-para-sqlite.py
-```
-
-O script cria um backup automatico do banco anterior em `database/backups/` antes de sobrescrever `database/indicadores.sqlite`.
-
-Fluxo para atualizar a base local no GitHub:
-
-```bat
-git add database/indicadores.sqlite
-git commit -m "Atualiza base local de validacao dos indicadores"
-git push
-```
-
-Fluxo para outro computador receber a base:
-
-```bat
-git pull
-```
-
-Depois, basta abrir o sistema. Os dados versionados estarao no projeto.
-
-Aviso: este banco SQL local e adequado para validacao e portabilidade do projeto. Ele nao substitui o banco corporativo multiusuario. Alteracoes feitas em computadores diferentes precisam ser sincronizadas via Git.
-
-## Execucao Em PHP
-
-A migracao para PHP preserva o banco SQLite existente em `database/indicadores.sqlite` e expoe APIs locais em `/api`. Antes da migracao foi criado o backup:
-
-```text
-database/backups/indicadores-antes-php-2026-07-02-1003.sqlite
-```
-
-Para rodar a aplicacao pelo PHP 8:
+Recomendado para testar APIs, sessao e regras de acesso:
 
 ```bat
 php -S 127.0.0.1:8000 -t public
@@ -135,17 +59,216 @@ Depois acesse:
 http://127.0.0.1:8000/index.php
 ```
 
-As paginas `.php` em `public/` reaproveitam o layout atual e o frontend passa a carregar as colecoes pelo backend PHP/SQLite. Os arquivos `.html` continuam disponiveis para consulta estatica local.
+No modo PHP, as paginas em `public/` usam as APIs de `/api` e o backend PHP acessa o banco configurado.
 
-Chaves de sessao/perfil simuladas:
+## Autenticacao
+
+Em producao, a aplicacao nao deve ter tela de login propria. O fluxo esperado e:
 
 ```text
-central_indicadores_usuario_atual
-central_indicadores_perfil_atual
-central_indicadores_permissoes_atual
+Usuario acessa o sistema
+        |
+        v
+LDAP corporativo identifica a matricula
+        |
+        v
+Aplicacao consulta usuarios_acesso no SQL Server
+        |
+        v
+Perfil e escopo sao carregados na sessao
 ```
 
-Trocar perfil simulado altera apenas permissoes e visualizacao. A troca de perfil nao cria nova base, nao limpa dados e nao carrega a semente inicial quando ja existe base local.
+O LDAP identifica o empregado. A tabela `usuarios_acesso` define o perfil dentro da aplicacao.
+
+Perfis suportados:
+
+```text
+administrador
+unidade_apuradora
+homologador
+usuario_companhia
+```
+
+Tabelas corporativas de autenticacao:
+
+```text
+dbo.usuarios_acesso
+dbo.acessos_log
+```
+
+Em producao:
+
+- se o LDAP nao estiver disponivel, o acesso falha;
+- se a matricula nao estiver ativa em `usuarios_acesso`, o acesso falha;
+- paginas e APIs validam perfil e escopo no backend;
+- operacoes de escrita exigem token CSRF.
+
+Guia detalhado:
+
+```text
+docs/autenticacao-corporativa.md
+```
+
+## Configuracao Para SQL Server
+
+Variaveis principais:
+
+```bat
+set APP_ENV=production
+set DB_CONNECTION=sqlsrv
+set SQLSERVER_HOST=SERVIDOR_SQL
+set SQLSERVER_DATABASE=Estrategia
+set SQLSERVER_ENCRYPT=yes
+set SQLSERVER_TRUST_SERVER_CERTIFICATE=no
+set LDAP_PATH=C:\caminho\corporativo\acessoldap\LDAP.php
+```
+
+Dependencias do servidor PHP:
+
+- PHP 8 ou superior.
+- Extensoes `pdo_sqlsrv` e `sqlsrv`.
+- Acesso ao SQL Server.
+- Caminho corporativo do `LDAP.php`.
+
+Dependencias dos scripts de migracao:
+
+- Python.
+- Pacote `pyodbc`.
+- Microsoft ODBC Driver for SQL Server.
+
+Instalacao do `pyodbc`:
+
+```bat
+python -m pip install pyodbc
+```
+
+## Migracao SQLite Para SQL Server
+
+O projeto possui um orquestrador para simplificar a migracao:
+
+```text
+migrar-para-sqlserver.bat
+scripts/migrar-para-sqlserver.ps1
+```
+
+Ele executa os scripts Python existentes na ordem correta:
+
+1. Valida dependencias.
+2. Cria backup do SQLite.
+3. Executa a migracao para SQL Server.
+4. Executa a verificacao da migracao.
+5. Gera/atualiza relatorios em `database/sqlserver/`.
+
+### Migrar Para Homologacao
+
+Com valores padrao (`localhost`, banco `Estrategia`):
+
+```bat
+.\migrar-para-sqlserver.bat -Ambiente homologacao
+```
+
+Em homologacao, o orquestrador usa `TrustServerCertificate=yes` por padrao para permitir SQL Server local ou de teste com certificado autoassinado.
+
+Informando servidor e banco:
+
+```bat
+.\migrar-para-sqlserver.bat -Ambiente homologacao -Servidor "SERVIDOR_SQL" -Banco "Estrategia_HML"
+```
+
+### Migrar Para Producao
+
+```bat
+.\migrar-para-sqlserver.bat -Ambiente producao -Servidor "SERVIDOR_SQL" -Banco "Estrategia"
+```
+
+Em producao, o script pede confirmacao antes de continuar e bloqueia opcoes perigosas como `-Truncate` e `-SeedAuthUsers`.
+O padrao de producao e `TrustServerCertificate=no`.
+
+### Criar Somente Estrutura
+
+Use quando quiser criar apenas tabelas, sem copiar dados:
+
+```bat
+.\migrar-para-sqlserver.bat -Ambiente homologacao -SchemaOnly
+```
+
+### Recarregar Homologacao
+
+Use somente em homologacao, quando for permitido apagar as tabelas de destino antes de recarregar:
+
+```bat
+.\migrar-para-sqlserver.bat -Ambiente homologacao -Truncate
+```
+
+O script pede confirmacao. Em producao, essa opcao e bloqueada.
+
+### Usuarios De Acesso
+
+Se a tabela `usuarios_acesso` existir no SQLite local e voce quiser sincroniza-la para o SQL Server:
+
+```bat
+.\migrar-para-sqlserver.bat -Ambiente homologacao -SyncAuthUsers
+```
+
+Se a equipe de banco preferir executar manualmente no SSMS:
+
+```bat
+.\migrar-para-sqlserver.bat -Ambiente homologacao -GerarSqlAuthUsers
+```
+
+Isso gera:
+
+```text
+database/sqlserver/sincronizar-usuarios-acesso.sql
+```
+
+Para criar usuarios ficticios apenas em homologacao/local:
+
+```bat
+.\migrar-para-sqlserver.bat -Ambiente homologacao -SchemaOnly -SeedAuthUsers
+```
+
+Nao use usuarios ficticios em producao.
+
+### Erro De Certificado SQL Server
+
+Se aparecer erro parecido com:
+
+```text
+Provedor SSL: A cadeia de certificacao foi emitida por uma autoridade que nao e de confianca.
+```
+
+Em homologacao/local, o comando com `-Ambiente homologacao` ja usa `TrustServerCertificate=yes` por padrao. Se quiser forcar a validacao do certificado tambem em homologacao, execute:
+
+```bat
+.\migrar-para-sqlserver.bat -Ambiente homologacao -TrustServerCertificate no
+```
+
+Em producao, o recomendado e manter:
+
+```text
+Encrypt=yes
+TrustServerCertificate=no
+```
+
+Nesse caso, a maquina da aplicacao precisa confiar no certificado usado pelo SQL Server.
+
+Guia detalhado:
+
+```text
+docs/migracao-sqlite-para-sqlserver.md
+```
+
+## Persistencia Dos Dados
+
+Camadas usadas pelo projeto:
+
+1. **Semente embutida:** dados base no frontend.
+2. **Base local do navegador:** armazenamento por perfil do Chrome/Edge.
+3. **SQLite versionado:** `database/indicadores.sqlite`.
+4. **SQL Server corporativo:** destino da implantacao em servidor.
+
+O SQLite e adequado para validacao e portabilidade. Em ambiente corporativo, o banco principal deve ser o SQL Server.
 
 ## Estrutura Principal
 
@@ -159,21 +282,14 @@ Trocar perfil simulado altera apenas permissoes e visualizacao. A troca de perfi
 |-- resumo-executivo.html
 |-- visao-trimestral.html
 |-- administracao.html
-|-- dashboard.html          # legado; redireciona para resumo-executivo.html
+|-- migrar-para-sqlserver.bat
 |-- app/
+|   |-- auth/
 |   |-- config/
 |   |-- core/
 |   |-- repositories/
 |   `-- services/
 |-- api/
-|   |-- database.php
-|   |-- indicadores.php
-|   |-- lancamentos.php
-|   |-- homologacoes.php
-|   |-- configuracoes.php
-|   |-- resumo-executivo.php
-|   |-- visao-trimestral.php
-|   `-- relatorios.php
 |-- public/
 |   |-- index.php
 |   |-- resumo-executivo.php
@@ -191,18 +307,28 @@ Trocar perfil simulado altera apenas permissoes e visualizacao. A troca de perfi
 |   `-- js/
 |-- database/
 |   |-- indicadores.sqlite
-|   |-- migration-report.json
 |   |-- schema.sql
-|   `-- README.md
+|   |-- README.md
+|   `-- sqlserver/
+|-- docs/
 |-- tests/
 `-- scripts/
-    |-- migrar-json-para-sqlite.py
-    `-- verificar-migracao-json-sqlite.py
+    |-- migrar-para-sqlserver.ps1
+    |-- migrar-sqlite-para-sqlserver.py
+    |-- verificar-sqlserver.py
+    |-- sincronizar-usuarios-acesso-sqlserver.py
+    `-- gerar-sql-usuarios-acesso.py
 ```
 
-## Comandos De Teste
+## Testes E Validacoes
 
-Execute os testes individualmente com Node.js:
+Lint PHP:
+
+```bat
+php -l app\auth\Auth.php
+```
+
+Testes JavaScript principais:
 
 ```bat
 node tests\persistence.test.js
@@ -215,8 +341,30 @@ node tests\local-validation.test.js
 node tests\sqlite-database.test.js
 ```
 
+Validar scripts Python:
+
+```bat
+python -m py_compile scripts\migrar-sqlite-para-sqlserver.py scripts\verificar-sqlserver.py scripts\sincronizar-usuarios-acesso-sqlserver.py scripts\gerar-sql-usuarios-acesso.py
+```
+
+## Checklist De Implantacao
+
+- [ ] Validar sistema localmente.
+- [ ] Criar banco SQL Server de homologacao.
+- [ ] Rodar migracao em homologacao.
+- [ ] Conferir `database/sqlserver/migration-report.json`.
+- [ ] Configurar `usuarios_acesso`.
+- [ ] Configurar `LDAP_PATH`.
+- [ ] Rodar a aplicacao com `DB_CONNECTION=sqlsrv`.
+- [ ] Testar login LDAP.
+- [ ] Testar perfis e escopos.
+- [ ] Testar lancamentos e homologacoes.
+- [ ] Repetir fluxo em producao somente apos homologacao aprovada.
+
 ## Observacoes
 
-- O banco JSON em arquivos foi removido depois da migracao confirmada para SQLite.
-- Ao abrir direto pelo `index.html`, nao ha processo local para finalizar.
-- Os dados operacionais principais sao `lancamentos`, `homologacoes` e `historico`.
+- O banco JSON em arquivos foi removido depois da migracao para SQLite.
+- O SQLite continua util para desenvolvimento e validacao local.
+- Em producao, use SQL Server como banco principal.
+- O fallback local de usuario deve ficar restrito a desenvolvimento.
+- As APIs protegem sessao, perfil, escopo e CSRF no backend.
