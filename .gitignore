@@ -1,6 +1,24 @@
-# Banco SQLite local de validacao versionado no projeto.
+﻿# Banco SQLite local de validacao versionado no projeto.
 !/database/indicadores.sqlite
 !/database/schema.sql
 
 # Backups locais gerados pelo script de migracao podem ser recriados.
 database/backups/*.sqlite
+# Caches e arquivos temporarios
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.cache/
+.phpunit.cache/
+.phpunit.result.cache
+.parcel-cache/
+.vite/
+.next/
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
