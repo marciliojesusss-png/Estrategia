@@ -103,12 +103,6 @@ Em producao:
 - paginas e APIs validam perfil e escopo no backend;
 - operacoes de escrita exigem token CSRF.
 
-Guia detalhado:
-
-```text
-docs/autenticacao-corporativa.md
-```
-
 ## Configuracao Para SQL Server
 
 Variaveis principais:
@@ -144,38 +138,94 @@ python -m pip install pyodbc
 
 ## Migracao SQLite Para SQL Server
 
-O projeto possui um orquestrador para simplificar a migracao:
+A aplicacao usa SQLite como base local versionada e SQL Server como banco corporativo. O script de migracao copia a estrutura e os dados do SQLite para o SQL Server, validando no final se a carga ficou consistente.
+
+Use este fluxo quando for preparar uma base de homologacao ou quando for levar a aplicacao para o ambiente corporativo com `DB_CONNECTION=sqlsrv`.
+
+### Arquivos Do Processo
+
+O ponto de entrada recomendado e o arquivo `.bat` da raiz:
 
 ```text
 migrar-para-sqlserver.bat
-scripts/migrar-para-sqlserver.ps1
+scripts/migrar-para-sqlserver.py
 ```
 
-Ele executa os scripts Python existentes na ordem correta:
+O `.bat` apenas encontra o Python e chama o script principal. Toda a logica fica em:
+
+```text
+scripts/migrar-para-sqlserver.py
+```
+
+O schema SQL Server usado para criar as tabelas fica em:
+
+```text
+database/sqlserver/schema.sql
+```
+
+### O Que O Script Faz
+
+Ao executar a migracao completa, o script:
 
 1. Valida dependencias.
-2. Cria backup do SQLite.
-3. Executa a migracao para SQL Server.
-4. Executa a verificacao da migracao.
-5. Gera/atualiza relatorios em `database/sqlserver/`.
+2. Le o SQLite de origem em `database/indicadores.sqlite`.
+3. Cria um backup do SQLite em `database/backups/`.
+4. Conecta no SQL Server usando as variaveis ou parametros informados.
+5. Cria o banco SQL Server se ele ainda nao existir e o usuario tiver permissao.
+6. Executa `database/sqlserver/schema.sql` para criar as tabelas e indices.
+7. Copia os dados das tabelas principais para `dbo.*` no SQL Server.
+8. Normaliza valores booleanos e pequenos problemas de JSON encontrados na origem.
+9. Opcionalmente sincroniza `usuarios_acesso`.
+10. Opcionalmente gera SQL manual para `usuarios_acesso`.
+11. Verifica contagens, IDs, chaves estrangeiras, JSONs e tabelas de autenticacao.
+12. Gera ou atualiza relatorios em `database/sqlserver/`.
 
-### Migrar Para Homologacao
+Se a verificacao final passar, a base SQL Server esta pronta para ser usada pela aplicacao PHP configurada com:
 
-Com valores padrao (`localhost`, banco `Estrategia`):
+```bat
+set DB_CONNECTION=sqlsrv
+```
+
+### Antes De Executar
+
+Instale as dependencias do script na maquina que fara a migracao:
+
+```bat
+python -m pip install pyodbc
+```
+
+Tambem e necessario ter o Microsoft ODBC Driver for SQL Server instalado e acesso ao servidor SQL Server de destino.
+
+Por padrao, o script usa:
+
+```text
+Servidor: localhost
+Banco: Estrategia
+Driver: ODBC Driver 18 for SQL Server
+SQLite: database/indicadores.sqlite
+```
+
+Voce pode sobrescrever esses valores por parametros no comando.
+
+### Como Executar
+
+#### Migrar Para Homologacao
+
+Para migrar para uma base local ou de homologacao com os valores padrao:
 
 ```bat
 .\migrar-para-sqlserver.bat -Ambiente homologacao
 ```
 
-Em homologacao, o orquestrador usa `TrustServerCertificate=yes` por padrao para permitir SQL Server local ou de teste com certificado autoassinado.
+Em homologacao, o script usa `TrustServerCertificate=yes` por padrao. Isso facilita testes com SQL Server local ou certificado autoassinado.
 
-Informando servidor e banco:
+Para informar servidor e banco:
 
 ```bat
 .\migrar-para-sqlserver.bat -Ambiente homologacao -Servidor "SERVIDOR_SQL" -Banco "Estrategia_HML"
 ```
 
-### Migrar Para Producao
+#### Migrar Para Producao
 
 ```bat
 .\migrar-para-sqlserver.bat -Ambiente producao -Servidor "SERVIDOR_SQL" -Banco "Estrategia"
@@ -184,27 +234,37 @@ Informando servidor e banco:
 Em producao, o script pede confirmacao antes de continuar e bloqueia opcoes perigosas como `-Truncate` e `-SeedAuthUsers`.
 O padrao de producao e `TrustServerCertificate=no`.
 
-### Criar Somente Estrutura
+#### Criar Somente Estrutura
 
-Use quando quiser criar apenas tabelas, sem copiar dados:
+Use quando quiser criar apenas o banco, as tabelas e os indices, sem copiar os dados do SQLite:
 
 ```bat
 .\migrar-para-sqlserver.bat -Ambiente homologacao -SchemaOnly
 ```
 
-### Recarregar Homologacao
+#### Recarregar Homologacao
 
-Use somente em homologacao, quando for permitido apagar as tabelas de destino antes de recarregar:
+Use somente em homologacao, quando for permitido apagar os dados das tabelas de destino antes de recarregar:
 
 ```bat
 .\migrar-para-sqlserver.bat -Ambiente homologacao -Truncate
 ```
 
-O script pede confirmacao. Em producao, essa opcao e bloqueada.
+O script pede confirmacao antes de apagar os dados. Em producao, essa opcao e bloqueada.
 
-### Usuarios De Acesso
+#### Verificar Sem Migrar
 
-Se a tabela `usuarios_acesso` existir no SQLite local e voce quiser sincroniza-la para o SQL Server:
+Use quando quiser apenas conferir se o SQL Server continua igual ao SQLite:
+
+```bat
+.\migrar-para-sqlserver.bat -Ambiente homologacao -VerifyOnly
+```
+
+Essa opcao nao copia dados. Ela somente executa as validacoes e atualiza `database/sqlserver/migration-report.json`.
+
+#### Usuarios De Acesso
+
+A tabela `usuarios_acesso` define quais empregados podem acessar a aplicacao e com qual perfil. Se essa tabela existir no SQLite local e voce quiser sincroniza-la para o SQL Server:
 
 ```bat
 .\migrar-para-sqlserver.bat -Ambiente homologacao -SyncAuthUsers
@@ -230,6 +290,85 @@ Para criar usuarios ficticios apenas em homologacao/local:
 
 Nao use usuarios ficticios em producao.
 
+### Relatorios Gerados
+
+O principal relatorio e:
+
+```text
+database/sqlserver/migration-report.json
+```
+
+Ele informa se a migracao passou ou se existem alertas. O script valida:
+
+- quantidade de registros por tabela;
+- IDs existentes no SQLite e no SQL Server;
+- contagens agrupadas importantes;
+- chaves estrangeiras;
+- campos JSON;
+- tabelas de autenticacao.
+
+Quando `-SyncAuthUsers` e usado, tambem e gerado:
+
+```text
+database/sqlserver/usuarios-acesso-sync-report.json
+```
+
+Quando `-GerarSqlAuthUsers` e usado, tambem e gerado:
+
+```text
+database/sqlserver/sincronizar-usuarios-acesso.sql
+```
+
+### Opcoes Mais Usadas
+
+```text
+-Ambiente homologacao|producao
+```
+
+Define o modo de execucao. Em homologacao, o script e mais permissivo com certificado local. Em producao, exige confirmacao e bloqueia opcoes destrutivas.
+
+```text
+-Servidor "SERVIDOR_SQL"
+```
+
+Define o servidor SQL Server.
+
+```text
+-Banco "Estrategia"
+```
+
+Define o banco SQL Server de destino.
+
+```text
+-Truncate
+```
+
+Apaga os dados das tabelas migradas antes de recarregar. Use apenas em homologacao.
+
+```text
+-SchemaOnly
+```
+
+Cria apenas a estrutura SQL Server.
+
+```text
+-SkipBackup
+```
+
+Nao cria backup do SQLite antes da migracao. Use somente quando tiver certeza de que ja existe backup.
+
+```text
+-SkipVerify
+```
+
+Nao executa a verificacao final.
+
+```text
+-Yes
+```
+
+Responde automaticamente as confirmacoes do script. Use com cuidado.
+
 ### Erro De Certificado SQL Server
 
 Se aparecer erro parecido com:
@@ -252,12 +391,6 @@ TrustServerCertificate=no
 ```
 
 Nesse caso, a maquina da aplicacao precisa confiar no certificado usado pelo SQL Server.
-
-Guia detalhado:
-
-```text
-docs/migracao-sqlite-para-sqlserver.md
-```
 
 ## Persistencia Dos Dados
 
@@ -310,14 +443,10 @@ O SQLite e adequado para validacao e portabilidade. Em ambiente corporativo, o b
 |   |-- schema.sql
 |   |-- README.md
 |   `-- sqlserver/
-|-- docs/
+|       `-- schema.sql
 |-- tests/
 `-- scripts/
-    |-- migrar-para-sqlserver.ps1
-    |-- migrar-sqlite-para-sqlserver.py
-    |-- verificar-sqlserver.py
-    |-- sincronizar-usuarios-acesso-sqlserver.py
-    `-- gerar-sql-usuarios-acesso.py
+    `-- migrar-para-sqlserver.py
 ```
 
 ## Testes E Validacoes
@@ -344,7 +473,7 @@ node tests\sqlite-database.test.js
 Validar scripts Python:
 
 ```bat
-python -m py_compile scripts\migrar-sqlite-para-sqlserver.py scripts\verificar-sqlserver.py scripts\sincronizar-usuarios-acesso-sqlserver.py scripts\gerar-sql-usuarios-acesso.py
+python -m py_compile scripts\migrar-para-sqlserver.py
 ```
 
 ## Checklist De Implantacao

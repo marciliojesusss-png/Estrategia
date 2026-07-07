@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-07-07T15:59:20.787676+00:00",
-  "sqlite": "database\\indicadores.sqlite",
+  "generatedAt": "2026-07-07T16:18:11.280074+00:00",
+  "sqlite": "C:\\Users\\jonat\\OneDrive\\Documentos\\GitHub\\Estratégia\\database\\indicadores.sqlite",
   "checks": {
     "counts": {
       "indicadores": {
