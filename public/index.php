@@ -5,6 +5,8 @@ require_once __DIR__ . '/../app/bootstrap.php';
 require_once __DIR__ . '/../app/core/Router.php';
 require_once __DIR__ . '/../app/core/Database.php';
 require_once __DIR__ . '/../app/auth/Auth.php';
+require_once __DIR__ . '/../app/controllers/IndicadorController.php';
+require_once __DIR__ . '/../app/controllers/IndicadorApiController.php';
 
 $router = new Router();
 $legacyPage = function ($file) {
@@ -18,16 +20,26 @@ $router->get('/', function () { Response::redirect(Auth::homeForProfile(Auth::au
 $router->get('/dashboard', $legacyPage('resumo-executivo.php'));
 $router->get('/resumo-executivo', $legacyPage('resumo-executivo.php'));
 $router->get('/visao-trimestral', $legacyPage('visao-trimestral.php'));
-$router->get('/indicadores', $legacyPage('indicadores.php'));
+$indicadores = new IndicadorController();
+$router->get('/indicadores', array($indicadores, 'index'));
+$router->get('/indicadores/novo', array($indicadores, 'create'));
+$router->post('/indicadores/novo', function () use ($indicadores) { $indicadores->store(); });
+$router->get('/indicadores/exportar', array($indicadores, 'export'));
+$router->get('/indicadores/{id}', array($indicadores, 'show'));
+$router->get('/indicadores/{id}/editar', array($indicadores, 'edit'));
+$router->post('/indicadores/{id}/editar', array($indicadores, 'store'));
+$router->post('/indicadores/{id}/status', array($indicadores, 'status'));
 $router->get('/lancamentos', $legacyPage('lancamentos.php'));
 $router->get('/homologacoes', $legacyPage('homologacao.php'));
 $router->get('/relatorios', $legacyPage('relatorios.php'));
 $router->get('/administracao', $legacyPage('administracao.php'));
-$router->get('/logout', function () { Session::destroy(); Response::redirect('/'); });
+$router->any('/logout', $legacyPage('logout.php'));
 
 foreach (array('database', 'configuracoes', 'homologacoes', 'indicadores', 'lancamentos', 'relatorios', 'resumo-executivo', 'solicitacoes-reabertura', 'usuarios-acesso', 'visao-trimestral') as $api) {
     $router->any('/api/' . $api, $legacyApi($api . '.php'));
 }
+$indicatorApi = new IndicadorApiController();
+$router->any('/api/indicadores/{id}', array($indicatorApi, 'handle'));
 
 $router->get('/saude', function () {
     Response::success(array('aplicacao' => 'disponivel', 'php' => PHP_VERSION), 'Aplicacao disponivel.');

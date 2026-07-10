@@ -2,19 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/bootstrap.php';
+require_once __DIR__ . '/../app/controllers/IndicadorApiController.php';
 
-$repository = new IndicadoresRepository(Database::getConnection());
-$id = (string) ($_GET['id'] ?? $_GET['indicadorId'] ?? '');
-$filters = Auth::scopeFilters(api_filters($_GET));
-
-if ($id !== '') {
-    $indicator = $repository->find($id);
-    if (!$indicator) {
-        Response::error('Indicador não encontrado.', 404);
-        return;
-    }
-    Response::json($indicator);
-    return;
-}
-
-Response::json($repository->all($filters));
+$id = isset($_GET['id']) ? (string) $_GET['id'] : (isset($_GET['indicadorId']) ? (string) $_GET['indicadorId'] : null);
+(new IndicadorApiController())->handle($id === '' ? null : $id);

@@ -54,15 +54,13 @@ function launch_in_user_scope(LancamentosRepository $repository, string $lancame
 }
 
 if ($action === 'listar') {
+    Auth::requirePermission('reaberturas', 'solicitar', true);
     Response::json($solicitacoes->all(Auth::scopeFilters(api_filters($_GET))));
     return;
 }
 
 if ($action === 'criar') {
-    if (!in_array(Auth::normalizeProfile($perfil), ['administrador', 'homologador'], true)) {
-        Response::error('Perfil nao autorizado a solicitar reabertura.', 403);
-        return;
-    }
+    Auth::requirePermission('reaberturas', 'solicitar', true);
 
     $lancamentoId = (string) ($payload['lancamentoId'] ?? '');
     $justificativa = trim((string) ($payload['justificativa'] ?? ''));
@@ -123,6 +121,8 @@ if (!in_array($action, ['aprovar', 'negar'], true)) {
     Response::error('Acao invalida.', 400);
     return;
 }
+
+Auth::requirePermission('reaberturas', 'decidir', true);
 
 if (Auth::normalizeProfile($perfil) !== 'administrador') {
     append_audit($auditoria, [

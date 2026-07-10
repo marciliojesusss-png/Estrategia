@@ -17,7 +17,7 @@ if ($method === 'GET') {
     }
 
     if (($_GET['all'] ?? '') !== '') {
-        Auth::requireApiProfiles(['administrador']);
+        Auth::requirePermission('administracao', 'gerenciar', true);
         Response::json($service->all(Auth::scopeFilters()));
         return;
     }
@@ -29,10 +29,11 @@ if ($method === 'GET') {
     }
 
     $user = Auth::requireAnyAuthenticated();
-    if (in_array($collection, ['historico', 'usuarios'], true) && (string) ($user['perfil'] ?? '') !== 'administrador') {
-        Response::json([]);
-        return;
-    }
+    if ($collection === 'historico') Auth::requirePermission('auditoria', 'visualizar', true);
+    if ($collection === 'usuarios') Auth::requirePermission('administracao', 'gerenciar', true);
+    if ($collection === 'indicadores') Auth::requirePermission('indicadores', 'visualizar', true);
+    if ($collection === 'lancamentos') Auth::requirePermission('lancamentos', 'visualizar', true);
+    if ($collection === 'homologacoes') Auth::requirePermission('homologacoes', 'visualizar', true);
 
     $value = $service->collection($collection, Auth::scopeFilters(api_filters($_GET)));
     if ($value === null) {
@@ -44,13 +45,21 @@ if ($method === 'GET') {
 }
 
 if ($method === 'POST') {
-    $user = Auth::requireApiProfiles(['unidade_apuradora', 'homologador', 'administrador']);
+    $user = Auth::requireAnyAuthenticated();
     $payload = Request::json();
     $key = (string) ($payload['key'] ?? '');
     $value = $payload['value'] ?? null;
 
     if ($key === '' || !is_array($value)) {
         Response::error('Payload inválido. Envie key e value.', 400);
+        return;
+    }
+
+    if ($key === 'lancamentos') Auth::requirePermission('lancamentos', 'gerenciar', true);
+    elseif ($key === 'homologacoes') Auth::requirePermission('homologacoes', 'decidir', true);
+    else {
+        AccessLogger::record('acao_negada', $user, array('recurso' => 'database/' . $key));
+        Response::error('Colecao sem gravacao direta autorizada.', 403);
         return;
     }
 

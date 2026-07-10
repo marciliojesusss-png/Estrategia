@@ -6,6 +6,9 @@ require_once __DIR__ . '/../core/Response.php';
 require_once __DIR__ . '/../core/Session.php';
 require_once __DIR__ . '/../core/Csrf.php';
 require_once __DIR__ . '/../core/Logger.php';
+require_once __DIR__ . '/AccessLogger.php';
+require_once __DIR__ . '/CorporateIdentity.php';
+require_once __DIR__ . '/AccessPolicy.php';
 
 final class Auth
 {
@@ -28,6 +31,9 @@ final class Auth
     public static function authenticate()
     {
         Session::start();
+        if (Session::consumeExpired()) {
+            AccessLogger::record('sessao_expirada', array());
+        }
         if (self::$authenticated && !empty($_SESSION['matricula'])) {
             return self::sessionUser();
         }
@@ -55,8 +61,8 @@ final class Auth
         $_SESSION['sg_unidade'] = isset($access['sg_unidade']) ? (string) $access['sg_unidade'] : (isset($corporate['sg_unidade']) ? (string) $corporate['sg_unidade'] : '');
         $_SESSION['no_unidade'] = isset($access['no_unidade']) ? (string) $access['no_unidade'] : (isset($corporate['no_unidade']) ? (string) $corporate['no_unidade'] : '');
         $_SESSION['perfil'] = $profile;
-        $_SESSION['unidade_apuradora'] = isset($access['unidade_apuradora']) ? (string) $access['unidade_apuradora'] : '';
-        $_SESSION['diretoria_responsavel'] = isset($access['diretoria_responsavel']) ? (string) $access['diretoria_responsavel'] : '';
+        $_SESSION['unidade_apuradora'] = $profile === 'unidade_apuradora' && isset($access['sg_unidade']) ? (string) $access['sg_unidade'] : '';
+        $_SESSION['diretoria_responsavel'] = $profile === 'homologador' && isset($access['sg_unidade']) ? (string) $access['sg_unidade'] : '';
         if (empty($_SESSION['_access_logged'])) {
             self::logAccess();
             $_SESSION['_access_logged'] = true;
@@ -70,6 +76,7 @@ final class Auth
         $user = self::authenticate();
         $allowed = array_map(array(__CLASS__, 'normalizeProfile'), $profiles);
         if (!in_array($user['perfil'], $allowed, true)) {
+            AccessLogger::record('acesso_negado', $user, array('recurso' => self::requestResource()));
             http_response_code(403);
             require APP_ROOT . '/views/erros/403.php';
             exit;
@@ -82,6 +89,7 @@ final class Auth
         $user = self::authenticate();
         $allowed = array_map(array(__CLASS__, 'normalizeProfile'), $profiles);
         if (!in_array($user['perfil'], $allowed, true)) {
+            AccessLogger::record('acesso_negado', $user, array('recurso' => self::requestResource()));
             Response::error('Perfil nao autorizado para esta operacao.', 403);
             exit;
         }
@@ -91,6 +99,42 @@ final class Auth
     public static function requireAnyAuthenticated()
     {
         return self::authenticate();
+    }
+
+    public static function requirePermission($module, $action, $api = false)
+    {
+        $user = self::authenticate();
+        if (!AccessPolicy::allows($user['perfil'], $module, $action)) {
+            AccessLogger::record('acesso_negado', $user, array('recurso' => $module . '/' . $action));
+            if ($api) Response::error('Acesso nao autorizado.', 403);
+            else {
+                http_response_code(403);
+                require APP_ROOT . '/views/erros/403.php';
+            }
+            exit;
+        }
+        return $user;
+    }
+
+    public static function authorizeRecord(array $record, $api = true)
+    {
+        $user = self::authenticate();
+        if (!AccessPolicy::scopeAllows($user, $record)) {
+            AccessLogger::record('escopo_negado', $user, array('recurso' => self::requestResource()));
+            if ($api) Response::error('Registro fora do escopo autorizado.', 403);
+            else require APP_ROOT . '/views/erros/403.php';
+            exit;
+        }
+        return $user;
+    }
+
+    public static function logout()
+    {
+        Session::start();
+        $user = self::sessionUser();
+        if ($user['matricula'] !== '') AccessLogger::record('logout', $user);
+        self::$authenticated = false;
+        Session::destroy();
     }
 
     public static function currentUserForFrontend()
@@ -114,6 +158,7 @@ final class Auth
     public static function requireCsrf()
     {
         $token = isset($_SERVER['HTTP_X_CSRF_TOKEN']) ? (string) $_SERVER['HTTP_X_CSRF_TOKEN'] : '';
+        if ($token === '' && isset($_POST['_csrf_token'])) $token = (string) $_POST['_csrf_token'];
         if (!Csrf::validate($token)) {
             Response::error('Token CSRF invalido ou ausente.', 403);
             exit;
@@ -173,9 +218,9 @@ final class Auth
     private static function loadCorporateData()
     {
         if (is_file(LDAP_PATH)) {
-            $dados = array();
-            require LDAP_PATH;
-            return is_array($dados) ? $dados : array();
+            $identity = CorporateIdentity::load(LDAP_PATH);
+            if ($identity === null) self::deny('Identidade corporativa invalida.');
+            return $identity;
         }
         if (!self::isLocalEnvironment()) self::deny('Autenticacao corporativa indisponivel.');
         $selected = isset($_GET['dev_user']) ? $_GET['dev_user'] : (getenv('AUTH_LOCAL_USER') ?: (isset($_SESSION['dev_user']) ? $_SESSION['dev_user'] : 'C000004'));
@@ -205,7 +250,7 @@ final class Auth
     private static function findAccess($matricula)
     {
         try {
-            $stmt = Database::getConnection()->prepare('SELECT * FROM usuarios_acesso WHERE matricula = :matricula AND ativo = 1');
+            $stmt = Database::getConnection()->prepare('SELECT matricula, nome, perfil, sg_unidade, no_unidade, ativo FROM usuarios_acesso WHERE matricula = :matricula AND ativo = 1');
             $stmt->execute(array(':matricula' => $matricula));
             $row = $stmt->fetch();
             return is_array($row) ? $row : null;
@@ -218,16 +263,12 @@ final class Auth
 
     private static function logAccess()
     {
-        try {
-            $stmt = Database::getConnection()->prepare('INSERT INTO acessos_log (matricula, nome, perfil, sg_unidade, ip, user_agent, data_acesso) VALUES (:matricula, :nome, :perfil, :sg_unidade, :ip, :user_agent, :data_acesso)');
-            $stmt->execute(array(':matricula' => $_SESSION['matricula'], ':nome' => $_SESSION['nome'], ':perfil' => $_SESSION['perfil'], ':sg_unidade' => $_SESSION['sg_unidade'], ':ip' => isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : null, ':user_agent' => isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : null, ':data_acesso' => date('Y-m-d H:i:s')));
-        } catch (Exception $error) {
-            Logger::error('Falha ao registrar acesso.', array('tipo' => get_class($error)));
-        }
+        AccessLogger::record('login', self::sessionUser());
     }
 
     private static function deny($message)
     {
+        AccessLogger::record('autenticacao_negada', array(), array('recurso' => self::requestResource()));
         http_response_code(401);
         echo htmlspecialchars($message, ENT_QUOTES, 'UTF-8');
         exit;
@@ -243,5 +284,10 @@ final class Auth
     {
         $converted = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $value);
         return $converted === false ? $value : $converted;
+    }
+
+    private static function requestResource()
+    {
+        return isset($_SERVER['REQUEST_URI']) ? parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) : '';
     }
 }

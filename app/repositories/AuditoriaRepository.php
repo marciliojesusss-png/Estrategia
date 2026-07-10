@@ -59,6 +59,25 @@ final class AuditoriaRepository
         }
     }
 
+    public function append(array $item)
+    {
+        $stmt = $this->db->prepare(
+            'INSERT INTO auditoria (id, entidade, entidade_id, acao, descricao, dados_anteriores_json, dados_novos_json, usuario, perfil_usuario, data_acao, created_at) '
+            . 'VALUES (:id, :entidade, :entidade_id, :acao, :descricao, :anterior, :novo, :usuario, :perfil, :data_acao, :created_at)'
+        );
+        $now = date('c');
+        $stmt->execute(array(
+            ':id' => uniqid('auditoria-', true), ':entidade' => 'indicadores',
+            ':entidade_id' => (string) $item['registroId'], ':acao' => $item['acao'],
+            ':descricao' => isset($item['descricao']) ? $item['descricao'] : null,
+            ':anterior' => self::encode(isset($item['valorAnterior']) ? $item['valorAnterior'] : null),
+            ':novo' => self::encode(isset($item['valorNovo']) ? $item['valorNovo'] : null),
+            ':usuario' => isset($item['usuario']) ? $item['usuario'] : null,
+            ':perfil' => isset($item['perfilUsuario']) ? $item['perfilUsuario'] : null,
+            ':data_acao' => $now, ':created_at' => $now,
+        ));
+    }
+
     private static function decode($value)
     {
         if ($value === null || $value === '') {

@@ -47,6 +47,14 @@ final class Session
         session_destroy();
     }
 
+    public static function consumeExpired()
+    {
+        self::start();
+        $expired = !empty($_SESSION['_expired']);
+        unset($_SESSION['_expired']);
+        return $expired;
+    }
+
     private static function enforceTimeout()
     {
         $now = time();

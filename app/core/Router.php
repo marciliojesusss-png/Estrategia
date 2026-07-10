@@ -13,7 +13,17 @@ final class Router
 
     public function add($method, $path, $handler)
     {
-        $this->routes[] = array('method' => strtoupper($method), 'path' => $this->normalize($path), 'handler' => $handler);
+        $normalized = $this->normalize($path);
+        $names = array();
+        $parts = explode('/', trim($normalized, '/'));
+        $regexParts = array();
+        foreach ($parts as $part) {
+            if (preg_match('/^\{([a-zA-Z_][a-zA-Z0-9_]*)\}$/', $part, $match)) {
+                $names[] = $match[1]; $regexParts[] = '([^/]+)';
+            } else $regexParts[] = preg_quote($part, '#');
+        }
+        $regex = $normalized === '/' ? '#^/$#' : '#^/' . implode('/', $regexParts) . '$#';
+        $this->routes[] = array('method' => strtoupper($method), 'path' => $normalized, 'regex' => $regex, 'names' => $names, 'handler' => $handler);
     }
 
     public function dispatch($method, $path)
@@ -21,8 +31,10 @@ final class Router
         $method = strtoupper($method);
         $path = $this->normalize($path);
         foreach ($this->routes as $route) {
-            if (($route['method'] === '*' || $route['method'] === $method) && $route['path'] === $path) {
-                call_user_func($route['handler']);
+            if (($route['method'] === '*' || $route['method'] === $method) && preg_match($route['regex'], $path, $matches)) {
+                array_shift($matches);
+                $arguments = array_map('urldecode', $matches);
+                call_user_func_array($route['handler'], $arguments);
                 return;
             }
         }

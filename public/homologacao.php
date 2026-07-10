@@ -2,4 +2,5 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../templates/page.php';
-render_protected_page('homologacao.html', ['homologador', 'administrador']);
+Auth::requirePermission('homologacoes', 'visualizar');
+render_static_page('homologacao.html');

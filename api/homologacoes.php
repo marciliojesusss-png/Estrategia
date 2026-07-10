@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/bootstrap.php';
+Auth::requirePermission('homologacoes', 'visualizar', true);
 
 $repository = new HomologacoesRepository(Database::getConnection());
 

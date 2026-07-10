@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/bootstrap.php';
 
-Auth::requireApiProfiles(['administrador']);
+Auth::requirePermission('administracao', 'gerenciar', true);
 
 $db = Database::getConnection();
 $method = Request::method();
