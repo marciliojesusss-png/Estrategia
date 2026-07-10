@@ -1,9 +1,10 @@
 ﻿(function () {
   function pageUrl(page) {
+    const basePath = String(window.APP_BASE_PATH || "").replace(/\/$/, "");
     const cleanPage = String(page).replace(/\.(html|php)$/i, "");
-    if (cleanPage === "index") return "/";
-    if (cleanPage === "homologacao") return "/homologacoes";
-    return `/${cleanPage.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}`;
+    if (cleanPage === "index") return `${basePath}/`;
+    if (cleanPage === "homologacao") return `${basePath}/homologacoes`;
+    return `${basePath}/${cleanPage.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}`;
   }
 
   window.AppRoutes = { page: pageUrl };
@@ -123,7 +124,7 @@
     header.innerHTML = `
       <div class="header-top">
         <div class="brand-block header-brand">
-          <img class="brand-logo-caixa-loterias" src="/assets/img/caixa-loterias-logo-negativa.png?v=2" alt="CAIXA Loterias">
+          <img class="brand-logo-caixa-loterias" src="${window.APP_BASE_PATH || ""}/assets/img/caixa-loterias-logo-negativa.png?v=2" alt="CAIXA Loterias">
           <span class="brand-divider" aria-hidden="true"></span>
           <span class="brand-system-name">Indicadores Estratégicos</span>
         </div>
@@ -149,7 +150,7 @@
         window.LogoutModal.open();
         return;
       }
-      window.location.href = "/logout";
+      window.location.href = `${window.APP_BASE_PATH || ""}/logout`;
     });
 
     const content = document.querySelector(".content");

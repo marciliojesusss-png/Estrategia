@@ -46,6 +46,9 @@ final class Response
 
     public static function redirect($location, $status = 302)
     {
+        if (defined('APP_BASE_PATH') && strpos($location, '/') === 0 && strpos($location, '//') !== 0 && strpos($location, APP_BASE_PATH . '/') !== 0) {
+            $location = APP_BASE_PATH . $location;
+        }
         header('Location: ' . $location, true, $status);
         exit;
     }

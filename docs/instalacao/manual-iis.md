@@ -20,6 +20,15 @@
 9. Execute `scripts/preflight-publicacao.ps1` no servidor; ele deve terminar sem erros.
 10. Reinicie o pool e execute `scripts/smoke-test.ps1 -BaseUrl https://endereco`.
 
+### Publicação em `https://www.gelot.mz.caixa/estrategia`
+
+1. No site HTTPS `www.gelot.mz.caixa`, adicione uma aplicação IIS com alias `estrategia`.
+2. Aponte o caminho físico dessa aplicação exclusivamente para `Estrategia\public`.
+3. Configure `APP_BASE_PATH=/estrategia` no ambiente do processo FastCGI (este também é o padrão atual do projeto).
+4. Mantenha o `public\web.config` na raiz da aplicação virtual e confirme que o URL Rewrite está instalado.
+
+O login poderá ser acessado por `https://www.gelot.mz.caixa/estrategia/login.php`; a URL canônica usada após a entrada será `https://www.gelot.mz.caixa/estrategia/login`.
+
 ## Diagnóstico rápido
 
 - `500.19`: módulo URL Rewrite ausente ou `web.config` inválido.

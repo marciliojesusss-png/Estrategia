@@ -6,6 +6,12 @@ function e($value)
     return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
+function app_url($path = '/')
+{
+    $path = '/' . ltrim((string) $path, '/');
+    return APP_BASE_PATH . ($path === '/' ? '/' : $path);
+}
+
 function redirect_to($location, $status = 302)
 {
     header('Location: ' . $location, true, $status);

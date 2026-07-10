@@ -5,6 +5,7 @@ define('APP_ROOT', dirname(__DIR__, 2));
 define('APP_ENV', getenv('APP_ENV') ?: 'production');
 define('APP_DEBUG', filter_var(getenv('APP_DEBUG') ?: 'false', FILTER_VALIDATE_BOOLEAN));
 define('APP_URL', rtrim(getenv('APP_URL') ?: '', '/'));
+define('APP_BASE_PATH', '/' . trim(getenv('APP_BASE_PATH') ?: 'estrategia', '/'));
 define('DB_CONNECTION', getenv('DB_CONNECTION') ?: (APP_ENV === 'production' ? 'sqlsrv' : 'sqlite'));
 define('DB_PATH', APP_ROOT . '/database/indicadores.sqlite');
 define('SCHEMA_PATH', APP_ROOT . '/database/schema.sql');

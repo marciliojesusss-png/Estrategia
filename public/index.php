@@ -16,6 +16,16 @@ require_once __DIR__ . '/../app/controllers/DashboardApiController.php';
 require_once __DIR__ . '/../app/controllers/AdministracaoController.php';
 require_once __DIR__ . '/../app/controllers/AdministracaoApiController.php';
 
+// Mantém links, formulários e assets sob a aplicação virtual configurada no IIS.
+ob_start(function ($content) {
+    if (strpos($content, '<') === false) return $content;
+    return str_replace(
+        array('href="/', 'src="/', 'action="/', 'content="0;url=/'),
+        array('href="' . APP_BASE_PATH . '/', 'src="' . APP_BASE_PATH . '/', 'action="' . APP_BASE_PATH . '/', 'content="0;url=' . APP_BASE_PATH . '/'),
+        $content
+    );
+});
+
 $router = new Router();
 $frontendPage = function ($file) {
     return function () use ($file) { require __DIR__ . '/' . $file; };
@@ -35,6 +45,9 @@ $router->get('/login', function () {
         Response::redirect('/');
     }
     require APP_ROOT . '/views/auth/login.php';
+});
+$router->get('/login.php', function () {
+    Response::redirect('/login');
 });
 $router->post('/login', function () {
     if (!Auth::isLocal()) {
@@ -121,4 +134,6 @@ $router->get('/saude/banco', function () {
 
 $fallback = isset($_GET['rota']) ? (string) $_GET['rota'] : '';
 $uri = $fallback !== '' ? $fallback : parse_url(isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '/', PHP_URL_PATH);
+if (strpos($uri, APP_BASE_PATH . '/') === 0) $uri = substr($uri, strlen(APP_BASE_PATH));
+elseif ($uri === APP_BASE_PATH) $uri = '/';
 $router->dispatch(Request::method(), $uri);

@@ -56,7 +56,7 @@
     localStorage.removeItem(SESSION_KEY);
     localStorage.removeItem(PROFILE_KEY);
     localStorage.removeItem(PERMISSIONS_KEY);
-    window.location.href = "/logout";
+    window.location.href = `${window.APP_BASE_PATH || ""}/logout`;
   }
 
   function requireAuth() {
