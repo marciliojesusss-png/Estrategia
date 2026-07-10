@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/Logger.php';
 require_once __DIR__ . '/Response.php';
+require_once __DIR__ . '/HttpException.php';
 
 final class ErrorHandler
 {
@@ -28,6 +29,10 @@ final class ErrorHandler
             'arquivo' => $error->getFile(),
             'linha' => $error->getLine(),
         ));
+        if ($error instanceof HttpException) {
+            Response::error($error->getMessage(),$error->status(),$error->errors());
+            return;
+        }
         if (self::expectsJson()) {
             Response::error('Erro interno ao processar a solicitacao.', 500);
             return;

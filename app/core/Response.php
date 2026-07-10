@@ -7,6 +7,8 @@ final class Response
     {
         http_response_code($status);
         header('Content-Type: application/json; charset=utf-8');
+        header('Cache-Control: no-store, private');
+        header('X-Request-Id: '.self::requestId());
         $encoded = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         if ($encoded === false) {
             http_response_code(500);
@@ -14,6 +16,8 @@ final class Response
         }
         echo $encoded;
     }
+
+    private static function requestId(){if(!empty($_SERVER['HTTP_X_REQUEST_ID'])&&preg_match('/^[a-zA-Z0-9._-]{1,100}$/',$_SERVER['HTTP_X_REQUEST_ID']))return$_SERVER['HTTP_X_REQUEST_ID'];return bin2hex(random_bytes(12));}
 
     public static function error($message, $status = 400, array $errors = array())
     {

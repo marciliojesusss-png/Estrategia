@@ -10,10 +10,8 @@ const pages = fs.readdirSync(root).filter((name) => (
   !["dashboard.html", "index.html"].includes(name)
 ));
 
-assert.match(app, /id="topbarNav"/);
-assert.match(app, /class="topbar-nav"/);
-assert.match(app, /topbar-menu-toggle/);
-assert.match(app, /aria-expanded/);
+assert.match(app, /class="header-nav"/);
+assert.match(app, /aria-label="Navegação principal"/);
 assert.match(app, /nav\.hidden = true/);
 assert.match(app, /storage-notice/);
 assert.doesNotMatch(app, /Exportar base/);
@@ -27,6 +25,7 @@ assert.match(styles, /\.sidebar\s*\{[\s\S]*display: none;/);
 assert.match(styles, /\.content\s*\{[\s\S]*width: 100%;/);
 assert.match(styles, /@media \(max-width: 820px\)/);
 assert.match(styles, /\.topbar-nav\.is-open/);
+assert.match(styles, /\.header-nav/);
 assert.match(styles, /\.storage-notice summary::after/);
 
 pages.forEach((page) => {

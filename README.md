@@ -497,3 +497,20 @@ python -m py_compile scripts\migrar-para-sqlserver.py
 - Em producao, use SQL Server como banco principal.
 - O fallback local de usuario deve ficar restrito a desenvolvimento.
 - As APIs protegem sessao, perfil, escopo e CSRF no backend.
+
+## Testes E Publicacao
+
+Execute toda a regressao local com:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\testar-projeto.ps1
+```
+
+No servidor IIS, execute o preflight e, depois da implantacao, o smoke test:
+
+```powershell
+powershell -File scripts\preflight-publicacao.ps1
+powershell -File scripts\smoke-test.ps1 -BaseUrl https://endereco-do-sistema
+```
+
+Consulte `docs/instalacao/manual-iis.md`, `docs/publicacao/plano-implantacao.md`, `docs/publicacao/checklist-go-live.md` e `docs/testes/matriz-rastreabilidade.md`. A suite local verde nao substitui a homologacao em PHP 7.1.19, IIS e SQL Server.

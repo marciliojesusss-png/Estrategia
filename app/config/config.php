@@ -25,5 +25,6 @@ define('SESSION_IDLE_TIMEOUT', (int) (getenv('SESSION_IDLE_TIMEOUT') ?: 1800));
 define('LOG_MAX_BYTES', (int) (getenv('LOG_MAX_BYTES') ?: 5242880));
 define('UPLOAD_MAX_BYTES', (int) (getenv('UPLOAD_MAX_BYTES') ?: 10485760));
 define('UPLOAD_ALLOWED_EXTENSIONS', getenv('UPLOAD_ALLOWED_EXTENSIONS') ?: 'pdf,jpg,jpeg,png,xls,xlsx,doc,docx');
+define('API_MAX_PAYLOAD_BYTES', (int) (getenv('API_MAX_PAYLOAD_BYTES') ?: 1048576));
 
 date_default_timezone_set('America/Sao_Paulo');

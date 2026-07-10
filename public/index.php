@@ -80,6 +80,7 @@ $router->get('/api/dashboard/{action}',array($dashboardApi,'handle'));
 $adminApi=new AdministracaoApiController();
 $router->any('/api/administracao/{resource}',array($adminApi,'handle'));
 $router->any('/api/administracao/{resource}/{id}',array($adminApi,'handle'));
+$router->get('/api/documentacao',function(){Auth::requireAnyAuthenticated();header('Content-Type: text/markdown; charset=utf-8');header('Cache-Control: private, no-store');readfile(APP_ROOT.'/docs/api.md');});
 
 $router->get('/saude', function () {
     Response::success(array('aplicacao' => 'disponivel', 'php' => PHP_VERSION), 'Aplicacao disponivel.');

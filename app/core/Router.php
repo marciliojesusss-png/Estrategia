@@ -30,7 +30,8 @@ final class Router
     {
         $method = strtoupper($method);
         $path = $this->normalize($path);
-        foreach ($this->routes as $route) {
+        $pathMatched=false;$allowed=array();foreach ($this->routes as $route) {
+            if(preg_match($route['regex'],$path)){$pathMatched=true;if($route['method']!=='*')$allowed[]=$route['method'];}
             if (($route['method'] === '*' || $route['method'] === $method) && preg_match($route['regex'], $path, $matches)) {
                 array_shift($matches);
                 $arguments = array_map('urldecode', $matches);
@@ -38,6 +39,7 @@ final class Router
                 return;
             }
         }
+        if($pathMatched){if($allowed)header('Allow: '.implode(', ',array_unique($allowed)));if(strpos($path,'/api/')===0)Response::error('Metodo nao permitido.',405);else{http_response_code(405);echo'Metodo nao permitido.';}return;}
         ErrorHandler::renderError(404);
     }
 
