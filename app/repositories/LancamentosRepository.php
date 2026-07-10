@@ -5,9 +5,8 @@ require_once __DIR__ . '/../services/SituacaoService.php';
 
 final class LancamentosRepository
 {
-    public function __construct(private PDO $db)
-    {
-    }
+    private $db;
+    public function __construct(PDO $db) { $this->db = $db; }
 
     public function all(array $filters = []): array
     {
@@ -131,12 +130,12 @@ final class LancamentosRepository
         ];
     }
 
-    private function numberOrNull(mixed $value): ?float
+    private function numberOrNull($value)
     {
         return $value === null || $value === '' || !is_numeric($value) ? null : (float) $value;
     }
 
-    private function text(mixed $value): ?string
+    private function text($value)
     {
         if ($value === null || $value === '') {
             return null;

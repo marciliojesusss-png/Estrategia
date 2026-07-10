@@ -3,9 +3,8 @@ declare(strict_types=1);
 
 final class IndicadoresRepository
 {
-    public function __construct(private PDO $db)
-    {
-    }
+    private $db;
+    public function __construct(PDO $db) { $this->db = $db; }
 
     public function all(array $filters = []): array
     {
@@ -32,7 +31,7 @@ final class IndicadoresRepository
         return array_map([$this, 'map'], $stmt->fetchAll());
     }
 
-    public function find(string $id): ?array
+    public function find($id)
     {
         $stmt = $this->db->prepare('SELECT * FROM indicadores WHERE id = :id');
         $stmt->execute([':id' => $id]);

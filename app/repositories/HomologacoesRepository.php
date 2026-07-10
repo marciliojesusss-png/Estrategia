@@ -3,9 +3,8 @@ declare(strict_types=1);
 
 final class HomologacoesRepository
 {
-    public function __construct(private PDO $db)
-    {
-    }
+    private $db;
+    public function __construct(PDO $db) { $this->db = $db; }
 
     public function all(array $filters = []): array
     {
@@ -28,7 +27,7 @@ final class HomologacoesRepository
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
         $rows = $stmt->fetchAll();
-        return array_map(static fn(array $row): array => [
+        return array_map(static function (array $row) { return [
             'id' => $row['id'],
             'lancamentoId' => is_numeric($row['lancamento_id']) ? (int) $row['lancamento_id'] : $row['lancamento_id'],
             'acao' => $row['acao'],
@@ -39,7 +38,7 @@ final class HomologacoesRepository
             'usuario' => $row['usuario'],
             'perfilUsuario' => $row['perfil_usuario'],
             'dataAcao' => $row['data_acao'],
-        ], $rows);
+        ]; }, $rows);
     }
 
     public function replaceAll(array $items): void
@@ -81,13 +80,11 @@ final class HomologacoesRepository
         }
     }
 
-    private function actionForStatus(string $status): string
+    private function actionForStatus($status)
     {
-        return match ($status) {
-            'Homologado' => 'homologacao_lancamento',
-            'Devolvido para ajuste' => 'devolucao_lancamento',
-            'Reaberto' => 'reabertura_lancamento',
-            default => 'atualizacao_homologacao',
-        };
+        if ($status === 'Homologado') return 'homologacao_lancamento';
+        if ($status === 'Devolvido para ajuste') return 'devolucao_lancamento';
+        if ($status === 'Reaberto') return 'reabertura_lancamento';
+        return 'atualizacao_homologacao';
     }
 }

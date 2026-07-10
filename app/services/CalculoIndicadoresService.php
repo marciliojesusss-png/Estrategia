@@ -5,7 +5,7 @@ require_once __DIR__ . '/SituacaoService.php';
 
 final class CalculoIndicadoresService
 {
-    public function normalizarSituacao(?string $situacao): ?string
+    public function normalizarSituacao($situacao)
     {
         return SituacaoService::normalizar($situacao);
     }

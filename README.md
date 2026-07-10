@@ -30,7 +30,7 @@ database/indicadores.sqlite
 Banco corporativo esperado:
 
 ```text
-SQL Server / banco Estrategia
+SQL Server DF7436SR439 / banco DB5319_IndicadoresEstrategicos
 ```
 
 ## Como Rodar Localmente
@@ -111,7 +111,7 @@ Variaveis principais:
 set APP_ENV=production
 set DB_CONNECTION=sqlsrv
 set SQLSERVER_HOST=SERVIDOR_SQL
-set SQLSERVER_DATABASE=Estrategia
+set SQLSERVER_DATABASE=DB5319_IndicadoresEstrategicos
 set SQLSERVER_ENCRYPT=yes
 set SQLSERVER_TRUST_SERVER_CERTIFICATE=no
 set LDAP_PATH=C:\caminho\corporativo\acessoldap\LDAP.php
@@ -119,7 +119,7 @@ set LDAP_PATH=C:\caminho\corporativo\acessoldap\LDAP.php
 
 Dependencias do servidor PHP:
 
-- PHP 8 ou superior.
+- PHP 7.1.19.
 - Extensoes `pdo_sqlsrv` e `sqlsrv`.
 - Acesso ao SQL Server.
 - Caminho corporativo do `LDAP.php`.

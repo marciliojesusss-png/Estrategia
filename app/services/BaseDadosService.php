@@ -12,14 +12,14 @@ require_once __DIR__ . '/../repositories/SolicitacoesReaberturaRepository.php';
 
 final class BaseDadosService
 {
-    private PDO $db;
-    private ConfiguracoesRepository $configuracoes;
-    private IndicadoresRepository $indicadores;
-    private LancamentosRepository $lancamentos;
-    private HomologacoesRepository $homologacoes;
-    private AuditoriaRepository $auditoria;
-    private UsuariosRepository $usuarios;
-    private SolicitacoesReaberturaRepository $solicitacoesReabertura;
+    private $db;
+    private $configuracoes;
+    private $indicadores;
+    private $lancamentos;
+    private $homologacoes;
+    private $auditoria;
+    private $usuarios;
+    private $solicitacoesReabertura;
 
     public function __construct()
     {
@@ -33,23 +33,16 @@ final class BaseDadosService
         $this->solicitacoesReabertura = new SolicitacoesReaberturaRepository($this->db);
     }
 
-    public function collection(string $key, array $filters = []): mixed
+    public function collection($key, array $filters = array())
     {
-        return match ($key) {
-            'usuarios' => $this->usuarios->all(),
-            'planos' => $this->configuracoes->get('planos', []),
-            'pilares' => $this->configuracoes->get('pilares', []),
-            'unidades' => $this->configuracoes->get('unidades', []),
-            'diretorias' => $this->configuracoes->get('diretorias', []),
-            'metas' => $this->configuracoes->get('metas', []),
-            'regrasIndicadores' => $this->configuracoes->get('regrasIndicadores', []),
-            'indicadores' => $this->indicadores->all($filters),
-            'lancamentos' => $this->lancamentos->all($filters),
-            'homologacoes' => $this->homologacoes->all($filters),
-            'solicitacoesReabertura' => $this->solicitacoesReabertura->all($filters),
-            'historico' => $this->auditoria->all(),
-            default => null,
-        };
+        if ($key === 'usuarios') return $this->usuarios->all();
+        if (in_array($key, array('planos', 'pilares', 'unidades', 'diretorias', 'metas', 'regrasIndicadores'), true)) return $this->configuracoes->get($key, array());
+        if ($key === 'indicadores') return $this->indicadores->all($filters);
+        if ($key === 'lancamentos') return $this->lancamentos->all($filters);
+        if ($key === 'homologacoes') return $this->homologacoes->all($filters);
+        if ($key === 'solicitacoesReabertura') return $this->solicitacoesReabertura->all($filters);
+        if ($key === 'historico') return $this->auditoria->all();
+        return null;
     }
 
     public function all(array $filters = []): array
@@ -165,7 +158,7 @@ final class BaseDadosService
         }
 
         $allowedIndicatorIds = $this->allowedIndicatorIds($user);
-        return array_values(array_filter($items, static function (mixed $item) use ($allowedIndicatorIds): bool {
+        return array_values(array_filter($items, static function ($item) use ($allowedIndicatorIds) {
             if (!is_array($item)) {
                 return false;
             }

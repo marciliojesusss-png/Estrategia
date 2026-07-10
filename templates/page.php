@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../app/auth/Auth.php';
 
-function render_static_page(string $htmlFile): void
+function render_static_page($htmlFile)
 {
     $path = dirname(__DIR__) . DIRECTORY_SEPARATOR . $htmlFile;
     if (!is_file($path)) {
@@ -64,7 +64,7 @@ function render_static_page(string $htmlFile): void
     echo $html;
 }
 
-function render_protected_page(string $htmlFile, array $profiles): void
+function render_protected_page($htmlFile, array $profiles)
 {
     Auth::requireProfiles($profiles);
     render_static_page($htmlFile);

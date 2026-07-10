@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/../app/bootstrap.php';
 require_once __DIR__ . '/../app/core/Database.php';
 require_once __DIR__ . '/../app/core/Request.php';
 require_once __DIR__ . '/../app/core/Response.php';
@@ -14,17 +15,9 @@ require_once __DIR__ . '/../app/repositories/HomologacoesRepository.php';
 require_once __DIR__ . '/../app/repositories/AuditoriaRepository.php';
 require_once __DIR__ . '/../app/repositories/SolicitacoesReaberturaRepository.php';
 
-set_exception_handler(static function (Throwable $error): void {
-    error_log($error);
-    $message = in_array(strtolower((string) APP_ENV), ['local', 'development', 'dev'], true)
-        ? $error->getMessage()
-        : 'Erro interno ao processar a solicitacao.';
-    Response::error($message, 500);
-});
-
-function api_filters(array $source): array
+function api_filters(array $source)
 {
-    return array_filter($source, static fn($value): bool => $value !== null && $value !== '');
+    return array_filter($source, static function ($value) { return $value !== null && $value !== ''; });
 }
 
 Auth::requireAnyAuthenticated();

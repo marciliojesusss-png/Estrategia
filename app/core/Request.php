@@ -3,12 +3,12 @@ declare(strict_types=1);
 
 final class Request
 {
-    public static function method(): string
+    public static function method()
     {
         return strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
     }
 
-    public static function input(): array
+    public static function input()
     {
         $raw = file_get_contents('php://input') ?: '';
         if ($raw === '') {
@@ -18,7 +18,7 @@ final class Request
         return is_array($json) ? $json : [];
     }
 
-    public static function json(): array
+    public static function json()
     {
         return self::input();
     }

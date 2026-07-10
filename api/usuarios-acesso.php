@@ -25,7 +25,7 @@ function usuarios_acesso_normalize_profile(string $profile): string
     return Auth::normalizeProfile($profile);
 }
 
-function usuarios_acesso_bool(mixed $value): int
+function usuarios_acesso_bool($value)
 {
     if (is_bool($value)) {
         return $value ? 1 : 0;
@@ -151,14 +151,14 @@ try {
                      updated_at = :updated_at
                  WHERE id = :id'
             );
-            $stmt->execute([...usuarios_acesso_params($record), ':updated_at' => $now, ':id' => $id]);
+            $stmt->execute(array_merge(usuarios_acesso_params($record), array(':updated_at' => $now, ':id' => $id)));
         } else {
             $stmt = $db->prepare(
                 'INSERT INTO ' . usuarios_acesso_table() . '
                  (matricula, nome, email, sg_unidade, no_unidade, perfil, unidade_apuradora, diretoria_responsavel, ativo, created_at, updated_at)
                  VALUES (:matricula, :nome, :email, :sg_unidade, :no_unidade, :perfil, :unidade_apuradora, :diretoria_responsavel, :ativo, :created_at, :updated_at)'
             );
-            $stmt->execute([...usuarios_acesso_params($record), ':created_at' => $now, ':updated_at' => $now]);
+            $stmt->execute(array_merge(usuarios_acesso_params($record), array(':created_at' => $now, ':updated_at' => $now)));
         }
 
         Response::json([

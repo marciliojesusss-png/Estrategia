@@ -23,6 +23,14 @@ Este diretório organiza a migração do Sistema de Gestão de Indicadores Estra
 9. [APIs e integrações](./etapa-09-apis-e-integracoes.md)
 10. [Testes e publicação](./etapa-10-testes-e-publicacao.md)
 
+## Diagnóstico executado na Etapa 1
+
+- [Inventário do estado atual](./diagnostico/inventario-atual.md)
+- [Banco de dados](./diagnostico/banco-de-dados.md)
+- [Regras de negócio e acesso](./diagnostico/regras-negocio-e-acesso.md)
+- [Arquitetura proposta](./diagnostico/arquitetura-proposta.md)
+- [Riscos e plano de migração](./diagnostico/riscos-e-plano.md)
+
 ## Restrições permanentes
 
 - PHP puro, sem framework, CMS, ORM ou engine de templates.
@@ -32,4 +40,3 @@ Este diretório organiza a migração do Sistema de Gestão de Indicadores Estra
 - SQL fora das views e regras de negócio fora dos controllers.
 - Controle de acesso, CSRF, XSS, auditoria e tratamento seguro de erros.
 - Bibliotecas de frontend preferencialmente locais em `assets/vendor`.
-

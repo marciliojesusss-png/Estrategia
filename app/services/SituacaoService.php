@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 final class SituacaoService
 {
-    public static function normalizar(?string $situacao): ?string
+    public static function normalizar($situacao)
     {
         if ($situacao === null) {
             return null;

@@ -6,9 +6,8 @@ require_once __DIR__ . '/SituacaoService.php';
 
 final class ResumoExecutivoService
 {
-    public function __construct(private BaseDadosService $base = new BaseDadosService())
-    {
-    }
+    private $base;
+    public function __construct(BaseDadosService $base = null) { $this->base = $base ?: new BaseDadosService(); }
 
     public function resumo(array $filters = []): array
     {
@@ -38,17 +37,17 @@ final class ResumoExecutivoService
 
         $cards = [
             'totalIndicadores' => count($indicadores),
-            'indicadoresAtingidos' => count(array_filter($tabela, fn($r) => $r['situacao'] === 'Atingido')),
-            'indicadoresAbaixoMeta' => count(array_filter($tabela, fn($r) => $r['situacao'] === 'Abaixo da meta')),
-            'indicadoresSemDados' => count(array_filter($tabela, fn($r) => $r['situacao'] === 'Sem dados')),
-            'indicadoresHomologados' => count(array_filter($tabela, fn($r) => $r['status'] === 'Homologado')),
-            'pendentesHomologacao' => count(array_filter($tabela, fn($r) => $r['status'] === 'Enviado para homologação')),
+            'indicadoresAtingidos' => count(array_filter($tabela, function ($r) { return $r['situacao'] === 'Atingido'; })),
+            'indicadoresAbaixoMeta' => count(array_filter($tabela, function ($r) { return $r['situacao'] === 'Abaixo da meta'; })),
+            'indicadoresSemDados' => count(array_filter($tabela, function ($r) { return $r['situacao'] === 'Sem dados'; })),
+            'indicadoresHomologados' => count(array_filter($tabela, function ($r) { return $r['status'] === 'Homologado'; })),
+            'pendentesHomologacao' => count(array_filter($tabela, function ($r) { return $r['status'] === 'Enviado para homologação'; })),
         ];
 
         $distribuicao = [];
         foreach ($tabela as $row) {
             $pilar = $row['pilar'] ?: 'Não informado';
-            $distribuicao[$pilar] ??= ['pilar' => $pilar, 'Atingido' => 0, 'Abaixo da meta' => 0, 'Sem dados' => 0];
+            if (!isset($distribuicao[$pilar])) $distribuicao[$pilar] = ['pilar' => $pilar, 'Atingido' => 0, 'Abaixo da meta' => 0, 'Sem dados' => 0];
             $key = in_array($row['situacao'], ['Atingido', 'Abaixo da meta'], true) ? $row['situacao'] : 'Sem dados';
             $distribuicao[$pilar][$key]++;
         }

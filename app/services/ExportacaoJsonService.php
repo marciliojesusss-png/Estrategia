@@ -5,9 +5,8 @@ require_once __DIR__ . '/BaseDadosService.php';
 
 final class ExportacaoJsonService
 {
-    public function __construct(private BaseDadosService $base = new BaseDadosService())
-    {
-    }
+    private $base;
+    public function __construct(BaseDadosService $base = null) { $this->base = $base ?: new BaseDadosService(); }
 
     public function exportarBaseCompleta(array $filters = [], bool $includeSensitive = false): array
     {

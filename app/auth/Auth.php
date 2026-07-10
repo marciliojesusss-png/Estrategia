@@ -3,92 +3,84 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../core/Database.php';
 require_once __DIR__ . '/../core/Response.php';
+require_once __DIR__ . '/../core/Session.php';
+require_once __DIR__ . '/../core/Csrf.php';
+require_once __DIR__ . '/../core/Logger.php';
 
 final class Auth
 {
-    private const DEFAULT_PROFILE = 'usuario_companhia';
+    const DEFAULT_PROFILE = 'usuario_companhia';
 
-    private const PROFILE_LABELS = [
+    private static $authenticated = false;
+    private static $profileLabels = array(
         'usuario_companhia' => 'Usuario Companhia',
         'unidade_apuradora' => 'Unidade Apuradora',
         'homologador' => 'Diretoria Homologadora',
         'administrador' => 'Administrador',
-    ];
+    );
+    private static $localUsers = array(
+        'C000001' => array('matricula' => 'C000001', 'nome' => 'Administrador Local', 'funcao' => 'Desenvolvimento', 'unidade' => 'LOCAL', 'sg_unidade' => 'GERAL', 'no_unidade' => 'Ambiente Local'),
+        'C000002' => array('matricula' => 'C000002', 'nome' => 'Unidade Apuradora Local', 'funcao' => 'Desenvolvimento', 'unidade' => 'SUCOL', 'sg_unidade' => 'SUCOL', 'no_unidade' => 'Unidade SUCOL'),
+        'C000003' => array('matricula' => 'C000003', 'nome' => 'Homologador Local', 'funcao' => 'Desenvolvimento', 'unidade' => 'DIFIR', 'sg_unidade' => 'DIFIR', 'no_unidade' => 'Diretoria DIFIR'),
+        'C000004' => array('matricula' => 'C000004', 'nome' => 'Usuario Companhia Local', 'funcao' => 'Desenvolvimento', 'unidade' => 'CAIXA', 'sg_unidade' => 'CAIXA', 'no_unidade' => 'CAIXA Loterias'),
+    );
 
-    private const LOCAL_USERS = [
-        'C000001' => ['matricula' => 'C000001', 'nome' => 'Administrador Local', 'funcao' => 'Desenvolvimento', 'unidade' => 'LOCAL', 'sg_unidade' => 'GERAL', 'no_unidade' => 'Ambiente Local'],
-        'C000002' => ['matricula' => 'C000002', 'nome' => 'Unidade Apuradora Local', 'funcao' => 'Desenvolvimento', 'unidade' => 'SUCOL', 'sg_unidade' => 'SUCOL', 'no_unidade' => 'Unidade SUCOL'],
-        'C000003' => ['matricula' => 'C000003', 'nome' => 'Homologador Local', 'funcao' => 'Desenvolvimento', 'unidade' => 'DIFIR', 'sg_unidade' => 'DIFIR', 'no_unidade' => 'Diretoria DIFIR'],
-        'C000004' => ['matricula' => 'C000004', 'nome' => 'Usuario Companhia Local', 'funcao' => 'Desenvolvimento', 'unidade' => 'CAIXA', 'sg_unidade' => 'CAIXA', 'no_unidade' => 'CAIXA Loterias'],
-    ];
-
-    private static bool $authenticated = false;
-
-    public static function authenticate(): array
+    public static function authenticate()
     {
-        self::startSession();
-
-        if (self::$authenticated && isset($_SESSION['matricula'])) {
+        Session::start();
+        if (self::$authenticated && !empty($_SESSION['matricula'])) {
             return self::sessionUser();
         }
-
-        if (empty($_SESSION['auth_session_initialized'])) {
-            session_regenerate_id(true);
-            $_SESSION['auth_session_initialized'] = true;
+        if (empty($_SESSION['_auth_initialized'])) {
+            Session::regenerate();
+            $_SESSION['_auth_initialized'] = true;
         }
-
-        self::ensureTables();
-        self::seedLocalUsersIfNeeded();
-
-        $dados = self::loadCorporateData();
-        $matricula = trim((string) ($dados['matricula'] ?? ''));
-
+        $corporate = self::loadCorporateData();
+        $matricula = trim(isset($corporate['matricula']) ? (string) $corporate['matricula'] : '');
         if ($matricula === '') {
             self::deny('Usuario corporativo nao identificado.');
         }
-
         $access = self::findAccess($matricula);
         if ($access === null && !self::isLocalEnvironment()) {
             self::deny('Usuario sem acesso cadastrado.');
         }
-
-        $profile = self::normalizeProfile((string) ($access['perfil'] ?? self::DEFAULT_PROFILE));
-
-        $_SESSION['matricula'] = $matricula;
-        $_SESSION['nome'] = (string) ($access['nome'] ?? $dados['nome'] ?? $matricula);
-        $_SESSION['funcao'] = (string) ($dados['funcao'] ?? '');
-        $_SESSION['unidade'] = (string) ($dados['unidade'] ?? '');
-        $_SESSION['sg_unidade'] = (string) ($access['sg_unidade'] ?? $dados['sg_unidade'] ?? '');
-        $_SESSION['no_unidade'] = (string) ($access['no_unidade'] ?? $dados['no_unidade'] ?? '');
-        $_SESSION['perfil'] = $profile;
-        $_SESSION['perfil_label'] = self::profileLabel($profile);
-        $_SESSION['unidade_apuradora'] = (string) ($access['unidade_apuradora'] ?? '');
-        $_SESSION['diretoria_responsavel'] = (string) ($access['diretoria_responsavel'] ?? '');
-
-        if (empty($_SESSION['acesso_log_registrado'])) {
-            self::logAccess();
-            $_SESSION['acesso_log_registrado'] = true;
+        if ($access === null) {
+            $access = self::localAccess($matricula);
         }
-
+        $profile = self::normalizeProfile(isset($access['perfil']) ? $access['perfil'] : self::DEFAULT_PROFILE);
+        $_SESSION['matricula'] = $matricula;
+        $_SESSION['nome'] = isset($access['nome']) ? (string) $access['nome'] : (isset($corporate['nome']) ? (string) $corporate['nome'] : $matricula);
+        $_SESSION['funcao'] = isset($corporate['funcao']) ? (string) $corporate['funcao'] : '';
+        $_SESSION['unidade'] = isset($corporate['unidade']) ? (string) $corporate['unidade'] : '';
+        $_SESSION['sg_unidade'] = isset($access['sg_unidade']) ? (string) $access['sg_unidade'] : (isset($corporate['sg_unidade']) ? (string) $corporate['sg_unidade'] : '');
+        $_SESSION['no_unidade'] = isset($access['no_unidade']) ? (string) $access['no_unidade'] : (isset($corporate['no_unidade']) ? (string) $corporate['no_unidade'] : '');
+        $_SESSION['perfil'] = $profile;
+        $_SESSION['unidade_apuradora'] = isset($access['unidade_apuradora']) ? (string) $access['unidade_apuradora'] : '';
+        $_SESSION['diretoria_responsavel'] = isset($access['diretoria_responsavel']) ? (string) $access['diretoria_responsavel'] : '';
+        if (empty($_SESSION['_access_logged'])) {
+            self::logAccess();
+            $_SESSION['_access_logged'] = true;
+        }
         self::$authenticated = true;
         return self::sessionUser();
     }
 
-    public static function requireProfiles(array $profiles): array
+    public static function requireProfiles(array $profiles)
     {
         $user = self::authenticate();
-        $allowed = array_map([self::class, 'normalizeProfile'], $profiles);
+        $allowed = array_map(array(__CLASS__, 'normalizeProfile'), $profiles);
         if (!in_array($user['perfil'], $allowed, true)) {
-            header('Location: /resumo-executivo.php?acesso=restrito');
+            http_response_code(403);
+            require APP_ROOT . '/views/erros/403.php';
             exit;
         }
         return $user;
     }
 
-    public static function requireApiProfiles(array $profiles): array
+    public static function requireApiProfiles(array $profiles)
     {
         $user = self::authenticate();
-        $allowed = array_map([self::class, 'normalizeProfile'], $profiles);
+        $allowed = array_map(array(__CLASS__, 'normalizeProfile'), $profiles);
         if (!in_array($user['perfil'], $allowed, true)) {
             Response::error('Perfil nao autorizado para esta operacao.', 403);
             exit;
@@ -96,60 +88,51 @@ final class Auth
         return $user;
     }
 
-    public static function requireAnyAuthenticated(): array
+    public static function requireAnyAuthenticated()
     {
         return self::authenticate();
     }
 
-    public static function currentUserForFrontend(): array
+    public static function currentUserForFrontend()
     {
         $user = self::authenticate();
-        return [
-            'id' => $user['matricula'],
-            'matricula' => $user['matricula'],
-            'nome' => $user['nome'],
-            'email' => $user['matricula'],
-            'perfil' => self::profileLabel($user['perfil']),
-            'perfilCodigo' => $user['perfil'],
-            'funcao' => $user['funcao'],
-            'unidade' => $user['unidade'],
-            'sgUnidade' => $user['sg_unidade'],
-            'noUnidade' => $user['no_unidade'],
-            'unidadeApuradora' => $user['unidade_apuradora'],
-            'diretoriaResponsavel' => $user['diretoria_responsavel'],
+        return array(
+            'id' => $user['matricula'], 'matricula' => $user['matricula'], 'nome' => $user['nome'],
+            'email' => $user['matricula'], 'perfil' => self::profileLabel($user['perfil']),
+            'perfilCodigo' => $user['perfil'], 'funcao' => $user['funcao'], 'unidade' => $user['unidade'],
+            'sgUnidade' => $user['sg_unidade'], 'noUnidade' => $user['no_unidade'],
+            'unidadeApuradora' => $user['unidade_apuradora'], 'diretoriaResponsavel' => $user['diretoria_responsavel'],
             'csrfToken' => self::csrfToken(),
-        ];
+        );
     }
 
-    public static function csrfToken(): string
+    public static function csrfToken()
     {
-        self::startSession();
-        if (empty($_SESSION['csrf_token']) || !is_string($_SESSION['csrf_token'])) {
-            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-        }
-        return $_SESSION['csrf_token'];
+        return Csrf::token();
     }
 
-    public static function requireCsrf(): void
+    public static function requireCsrf()
     {
-        self::startSession();
-        $token = (string) ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
-        if ($token === '' || empty($_SESSION['csrf_token']) || !hash_equals((string) $_SESSION['csrf_token'], $token)) {
-            Response::error('Token CSRF invalido ou ausente.', 419);
+        $token = isset($_SERVER['HTTP_X_CSRF_TOKEN']) ? (string) $_SERVER['HTTP_X_CSRF_TOKEN'] : '';
+        if (!Csrf::validate($token)) {
+            Response::error('Token CSRF invalido ou ausente.', 403);
             exit;
         }
     }
 
-    public static function homeForProfile(?string $profile = null): string
+    public static function homeForProfile($profile = null)
     {
-        return match (self::normalizeProfile($profile ?? (string) ($_SESSION['perfil'] ?? self::DEFAULT_PROFILE))) {
-            'unidade_apuradora' => '/lancamentos.php',
-            'homologador' => '/homologacao.php',
-            default => '/resumo-executivo.php',
-        };
+        $normalized = self::normalizeProfile($profile !== null ? $profile : (isset($_SESSION['perfil']) ? $_SESSION['perfil'] : self::DEFAULT_PROFILE));
+        if ($normalized === 'unidade_apuradora') {
+            return '/lancamentos';
+        }
+        if ($normalized === 'homologador') {
+            return '/homologacoes';
+        }
+        return '/dashboard';
     }
 
-    public static function scopeFilters(array $filters = []): array
+    public static function scopeFilters(array $filters = array())
     {
         $user = self::authenticate();
         if ($user['perfil'] === 'unidade_apuradora' && $user['unidade_apuradora'] !== '') {
@@ -163,172 +146,100 @@ final class Auth
         return $filters;
     }
 
-    public static function normalizeProfile(string $profile): string
+    public static function normalizeProfile($profile)
     {
-        $value = strtolower(trim(str_replace([' ', '-'], '_', self::removeAccents($profile))));
-        return match ($value) {
-            'administrador', 'admin', 'administrador_sistema' => 'administrador',
-            'unidade_apuradora' => 'unidade_apuradora',
-            'homologador', 'diretoria_homologadora' => 'homologador',
-            default => 'usuario_companhia',
-        };
+        $value = strtolower(trim(str_replace(array(' ', '-'), '_', self::removeAccents((string) $profile))));
+        if (in_array($value, array('administrador', 'admin', 'administrador_sistema'), true)) return 'administrador';
+        if ($value === 'unidade_apuradora') return 'unidade_apuradora';
+        if (in_array($value, array('homologador', 'diretoria_homologadora'), true)) return 'homologador';
+        return self::DEFAULT_PROFILE;
     }
 
-    private static function startSession(): void
+    private static function sessionUser()
     {
-        if (session_status() !== PHP_SESSION_ACTIVE) {
-            $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-                || (($_SERVER['SERVER_PORT'] ?? '') === '443');
-            session_set_cookie_params([
-                'lifetime' => 0,
-                'path' => '/',
-                'secure' => $secure,
-                'httponly' => true,
-                'samesite' => 'Lax',
-            ]);
-            ini_set('session.use_strict_mode', '1');
-            ini_set('session.use_only_cookies', '1');
-            session_start();
-        }
+        return array(
+            'matricula' => isset($_SESSION['matricula']) ? (string) $_SESSION['matricula'] : '',
+            'nome' => isset($_SESSION['nome']) ? (string) $_SESSION['nome'] : '',
+            'funcao' => isset($_SESSION['funcao']) ? (string) $_SESSION['funcao'] : '',
+            'unidade' => isset($_SESSION['unidade']) ? (string) $_SESSION['unidade'] : '',
+            'sg_unidade' => isset($_SESSION['sg_unidade']) ? (string) $_SESSION['sg_unidade'] : '',
+            'no_unidade' => isset($_SESSION['no_unidade']) ? (string) $_SESSION['no_unidade'] : '',
+            'perfil' => self::normalizeProfile(isset($_SESSION['perfil']) ? $_SESSION['perfil'] : self::DEFAULT_PROFILE),
+            'unidade_apuradora' => isset($_SESSION['unidade_apuradora']) ? (string) $_SESSION['unidade_apuradora'] : '',
+            'diretoria_responsavel' => isset($_SESSION['diretoria_responsavel']) ? (string) $_SESSION['diretoria_responsavel'] : '',
+        );
     }
 
-    private static function sessionUser(): array
+    private static function loadCorporateData()
     {
-        return [
-            'matricula' => (string) ($_SESSION['matricula'] ?? ''),
-            'nome' => (string) ($_SESSION['nome'] ?? ''),
-            'funcao' => (string) ($_SESSION['funcao'] ?? ''),
-            'unidade' => (string) ($_SESSION['unidade'] ?? ''),
-            'sg_unidade' => (string) ($_SESSION['sg_unidade'] ?? ''),
-            'no_unidade' => (string) ($_SESSION['no_unidade'] ?? ''),
-            'perfil' => self::normalizeProfile((string) ($_SESSION['perfil'] ?? self::DEFAULT_PROFILE)),
-            'unidade_apuradora' => (string) ($_SESSION['unidade_apuradora'] ?? ''),
-            'diretoria_responsavel' => (string) ($_SESSION['diretoria_responsavel'] ?? ''),
-        ];
-    }
-
-    private static function loadCorporateData(): array
-    {
-        $ldapPath = LDAP_PATH;
-        if (is_file($ldapPath)) {
-            $dados = [];
-            require $ldapPath;
-            return is_array($dados) ? $dados : [];
+        if (is_file(LDAP_PATH)) {
+            $dados = array();
+            require LDAP_PATH;
+            return is_array($dados) ? $dados : array();
         }
-
-        if (!self::isLocalEnvironment()) {
-            self::deny('Autenticacao corporativa indisponivel.');
-        }
-
-        $selected = (string) ($_GET['dev_user'] ?? getenv('AUTH_LOCAL_USER') ?: ($_SESSION['dev_user'] ?? 'C000004'));
-        $selected = strtoupper($selected);
+        if (!self::isLocalEnvironment()) self::deny('Autenticacao corporativa indisponivel.');
+        $selected = isset($_GET['dev_user']) ? $_GET['dev_user'] : (getenv('AUTH_LOCAL_USER') ?: (isset($_SESSION['dev_user']) ? $_SESSION['dev_user'] : 'C000004'));
+        $selected = strtoupper((string) $selected);
         $_SESSION['dev_user'] = $selected;
-        if (isset(self::LOCAL_USERS[$selected])) {
-            return self::LOCAL_USERS[$selected];
-        }
-
-        return [
-            ...self::LOCAL_USERS['C000004'],
-            'matricula' => $selected,
-            'nome' => $selected,
-            'unidade' => '',
-            'sg_unidade' => '',
-            'no_unidade' => '',
-        ];
+        return isset(self::$localUsers[$selected]) ? self::$localUsers[$selected] : array('matricula' => $selected, 'nome' => $selected);
     }
 
-    private static function isLocalEnvironment(): bool
+    private static function localAccess($matricula)
+    {
+        $profiles = array('C000001' => 'administrador', 'C000002' => 'unidade_apuradora', 'C000003' => 'homologador', 'C000004' => 'usuario_companhia');
+        $user = isset(self::$localUsers[$matricula]) ? self::$localUsers[$matricula] : array('matricula' => $matricula, 'nome' => $matricula);
+        $user['perfil'] = isset($profiles[$matricula]) ? $profiles[$matricula] : self::DEFAULT_PROFILE;
+        $user['unidade_apuradora'] = $matricula === 'C000002' ? 'SUCOL' : '';
+        $user['diretoria_responsavel'] = $matricula === 'C000003' ? 'DIFIR' : '';
+        return $user;
+    }
+
+    private static function isLocalEnvironment()
     {
         $env = strtolower((string) APP_ENV);
-        $serverName = strtolower((string) ($_SERVER['SERVER_NAME'] ?? ''));
-        return in_array($env, ['local', 'development', 'dev'], true)
-            || (PHP_SAPI === 'cli-server' && in_array($serverName, ['localhost', '127.0.0.1'], true));
+        $server = strtolower(isset($_SERVER['SERVER_NAME']) ? $_SERVER['SERVER_NAME'] : '');
+        return in_array($env, array('local', 'development', 'dev'), true)
+            || (PHP_SAPI === 'cli-server' && in_array($server, array('localhost', '127.0.0.1'), true));
     }
 
-    private static function ensureTables(): void
+    private static function findAccess($matricula)
     {
-        $db = Database::getConnection();
-        $driver = (string) $db->getAttribute(PDO::ATTR_DRIVER_NAME);
-        if ($driver === 'sqlsrv') {
-            $db->exec("IF OBJECT_ID(N'dbo.usuarios_acesso', N'U') IS NULL BEGIN CREATE TABLE dbo.usuarios_acesso (id INT IDENTITY(1,1) NOT NULL PRIMARY KEY, matricula NVARCHAR(50) NOT NULL UNIQUE, nome NVARCHAR(255) NULL, email NVARCHAR(255) NULL, sg_unidade NVARCHAR(50) NULL, no_unidade NVARCHAR(255) NULL, perfil NVARCHAR(50) NOT NULL, unidade_apuradora NVARCHAR(255) NULL, diretoria_responsavel NVARCHAR(255) NULL, ativo BIT NOT NULL DEFAULT 1, created_at DATETIME2 NULL, updated_at DATETIME2 NULL); END;");
-            $db->exec("IF OBJECT_ID(N'dbo.acessos_log', N'U') IS NULL BEGIN CREATE TABLE dbo.acessos_log (id INT IDENTITY(1,1) NOT NULL PRIMARY KEY, matricula NVARCHAR(50) NULL, nome NVARCHAR(255) NULL, perfil NVARCHAR(50) NULL, sg_unidade NVARCHAR(50) NULL, ip NVARCHAR(100) NULL, user_agent NVARCHAR(MAX) NULL, data_acesso DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()); END;");
-            return;
-        }
-
-        $db->exec("CREATE TABLE IF NOT EXISTS usuarios_acesso (id INTEGER PRIMARY KEY AUTOINCREMENT, matricula TEXT NOT NULL UNIQUE, nome TEXT, email TEXT, sg_unidade TEXT, no_unidade TEXT, perfil TEXT NOT NULL, unidade_apuradora TEXT, diretoria_responsavel TEXT, ativo INTEGER DEFAULT 1, created_at TEXT, updated_at TEXT);");
-        $db->exec("CREATE TABLE IF NOT EXISTS acessos_log (id INTEGER PRIMARY KEY AUTOINCREMENT, matricula TEXT, nome TEXT, perfil TEXT, sg_unidade TEXT, ip TEXT, user_agent TEXT, data_acesso TEXT);");
-    }
-
-    private static function seedLocalUsersIfNeeded(): void
-    {
-        if (!self::isLocalEnvironment()) {
-            return;
-        }
-
-        $db = Database::getConnection();
-        $count = (int) $db->query('SELECT COUNT(*) FROM usuarios_acesso')->fetchColumn();
-        if ($count > 0) {
-            return;
-        }
-
-        $now = date('Y-m-d H:i:s');
-        $stmt = $db->prepare('INSERT INTO usuarios_acesso (matricula, nome, email, sg_unidade, no_unidade, perfil, unidade_apuradora, diretoria_responsavel, ativo, created_at, updated_at) VALUES (:matricula, :nome, :email, :sg_unidade, :no_unidade, :perfil, :unidade_apuradora, :diretoria_responsavel, :ativo, :created_at, :updated_at)');
-        foreach ([
-            ['C000001', 'Administrador Local', 'administrador', '', ''],
-            ['C000002', 'Unidade Apuradora Local', 'unidade_apuradora', 'SUCOL', ''],
-            ['C000003', 'Homologador Local', 'homologador', '', 'DIFIR'],
-            ['C000004', 'Usuario Companhia Local', 'usuario_companhia', '', ''],
-        ] as [$matricula, $nome, $perfil, $unidade, $diretoria]) {
-            $stmt->execute([
-                ':matricula' => $matricula,
-                ':nome' => $nome,
-                ':email' => $matricula,
-                ':sg_unidade' => $unidade ?: $diretoria ?: 'LOCAL',
-                ':no_unidade' => 'Ambiente Local',
-                ':perfil' => $perfil,
-                ':unidade_apuradora' => $unidade,
-                ':diretoria_responsavel' => $diretoria,
-                ':ativo' => 1,
-                ':created_at' => $now,
-                ':updated_at' => $now,
-            ]);
+        try {
+            $stmt = Database::getConnection()->prepare('SELECT * FROM usuarios_acesso WHERE matricula = :matricula AND ativo = 1');
+            $stmt->execute(array(':matricula' => $matricula));
+            $row = $stmt->fetch();
+            return is_array($row) ? $row : null;
+        } catch (Exception $error) {
+            Logger::error('Falha ao consultar acesso.', array('tipo' => get_class($error)));
+            if (self::isLocalEnvironment()) return null;
+            throw $error;
         }
     }
 
-    private static function findAccess(string $matricula): ?array
+    private static function logAccess()
     {
-        $stmt = Database::getConnection()->prepare('SELECT * FROM usuarios_acesso WHERE matricula = :matricula AND ativo = 1');
-        $stmt->execute([':matricula' => $matricula]);
-        $row = $stmt->fetch();
-        return is_array($row) ? $row : null;
+        try {
+            $stmt = Database::getConnection()->prepare('INSERT INTO acessos_log (matricula, nome, perfil, sg_unidade, ip, user_agent, data_acesso) VALUES (:matricula, :nome, :perfil, :sg_unidade, :ip, :user_agent, :data_acesso)');
+            $stmt->execute(array(':matricula' => $_SESSION['matricula'], ':nome' => $_SESSION['nome'], ':perfil' => $_SESSION['perfil'], ':sg_unidade' => $_SESSION['sg_unidade'], ':ip' => isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : null, ':user_agent' => isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : null, ':data_acesso' => date('Y-m-d H:i:s')));
+        } catch (Exception $error) {
+            Logger::error('Falha ao registrar acesso.', array('tipo' => get_class($error)));
+        }
     }
 
-    private static function logAccess(): void
-    {
-        $stmt = Database::getConnection()->prepare('INSERT INTO acessos_log (matricula, nome, perfil, sg_unidade, ip, user_agent, data_acesso) VALUES (:matricula, :nome, :perfil, :sg_unidade, :ip, :user_agent, :data_acesso)');
-        $stmt->execute([
-            ':matricula' => $_SESSION['matricula'] ?? null,
-            ':nome' => $_SESSION['nome'] ?? null,
-            ':perfil' => $_SESSION['perfil'] ?? null,
-            ':sg_unidade' => $_SESSION['sg_unidade'] ?? null,
-            ':ip' => $_SERVER['REMOTE_ADDR'] ?? null,
-            ':user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
-            ':data_acesso' => date('Y-m-d H:i:s'),
-        ]);
-    }
-
-    private static function deny(string $message): never
+    private static function deny($message)
     {
         http_response_code(401);
-        exit($message);
+        echo htmlspecialchars($message, ENT_QUOTES, 'UTF-8');
+        exit;
     }
 
-    private static function profileLabel(string $profile): string
+    private static function profileLabel($profile)
     {
-        return self::PROFILE_LABELS[self::normalizeProfile($profile)] ?? self::PROFILE_LABELS[self::DEFAULT_PROFILE];
+        $normalized = self::normalizeProfile($profile);
+        return isset(self::$profileLabels[$normalized]) ? self::$profileLabels[$normalized] : self::$profileLabels[self::DEFAULT_PROFILE];
     }
 
-    private static function removeAccents(string $value): string
+    private static function removeAccents($value)
     {
         $converted = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $value);
         return $converted === false ? $value : $converted;

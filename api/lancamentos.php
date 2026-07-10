@@ -13,7 +13,9 @@ if (Request::method() === 'GET') {
 if (in_array(Request::method(), ['POST', 'PUT'], true)) {
     $user = Auth::requireApiProfiles(['unidade_apuradora', 'homologador', 'administrador']);
     $payload = Request::json();
-    $items = array_is_list($payload) ? $payload : ($payload['lancamentos'] ?? []);
+    $keys = array_keys($payload);
+    $isList = count($payload) === 0 || $keys === range(0, count($payload) - 1);
+    $items = $isList ? $payload : ($payload['lancamentos'] ?? []);
     if (!is_array($items)) {
         Response::error('Envie uma lista de lançamentos.', 400);
         return;

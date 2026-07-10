@@ -3,8 +3,10 @@ declare(strict_types=1);
 
 final class SolicitacoesReaberturaRepository
 {
-    public function __construct(private PDO $db)
+    private $db;
+    public function __construct(PDO $db)
     {
+        $this->db = $db;
         $this->ensureSchema();
     }
 

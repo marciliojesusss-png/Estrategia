@@ -158,16 +158,15 @@ if (!$current || $current['statusSolicitacao'] !== 'Pendente') {
 
 $now = date('c');
 $status = $action === 'aprovar' ? 'Aprovada' : 'Negada';
-$updatedRequest = [
-    ...$current,
+$updatedRequest = array_merge($current, [
     'statusSolicitacao' => $status,
     'administradorResponsavel' => $usuario,
     'decisaoAdministrador' => $action === 'aprovar' ? 'Aprovar e reabrir' : 'Negar',
     'justificativaDecisao' => $justificativaDecisao,
     'dataDecisao' => $now,
     'updatedAt' => $now,
-];
-$items = array_map(static fn(array $item): array => (string) $item['id'] === $id ? $updatedRequest : $item, $items);
+]);
+$items = array_map(static function (array $item) use ($id, $updatedRequest) { return (string) $item['id'] === $id ? $updatedRequest : $item; }, $items);
 save_solicitacoes($solicitacoes, $items);
 
 $updatedLaunch = null;
@@ -177,14 +176,13 @@ if ($action === 'aprovar') {
         if ((string) $item['id'] !== (string) $current['lancamentoId']) {
             return $item;
         }
-        $updatedLaunch = [
-            ...$item,
+        $updatedLaunch = array_merge($item, [
             'status' => 'Reaberto',
             'homologadoPor' => '',
             'dataHomologacao' => '',
             'reabertoPor' => $usuario,
             'dataReabertura' => $now,
-        ];
+        ]);
         return $updatedLaunch;
     }, $launches);
     save_lancamentos($lancamentos, $launches);

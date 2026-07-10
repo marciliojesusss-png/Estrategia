@@ -1,0 +1,1 @@
+<nav class="sidebar" aria-label="Navegação principal"><a href="/dashboard">Dashboard</a><a href="/indicadores">Indicadores</a><a href="/lancamentos">Lançamentos</a><a href="/homologacoes">Homologações</a></nav>

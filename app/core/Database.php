@@ -5,9 +5,9 @@ require_once __DIR__ . '/../config/config.php';
 
 final class Database
 {
-    private static ?PDO $connection = null;
+    private static $connection = null;
 
-    public static function getConnection(): PDO
+    public static function getConnection()
     {
         if (self::$connection !== null) {
             return self::$connection;
@@ -22,7 +22,7 @@ final class Database
         return self::$connection;
     }
 
-    private static function connectSqlite(): PDO
+    private static function connectSqlite()
     {
         if (!file_exists(DB_PATH)) {
             if (!file_exists(SCHEMA_PATH)) {
@@ -44,23 +44,27 @@ final class Database
         return $pdo;
     }
 
-    private static function connectSqlServer(): PDO
+    private static function connectSqlServer()
     {
         if (!in_array('sqlsrv', PDO::getAvailableDrivers(), true)) {
             throw new RuntimeException('Driver PDO sqlsrv nao esta instalado no PHP.');
         }
 
+        $server = SQLSERVER_HOST . (SQLSERVER_PORT !== '' ? ',' . SQLSERVER_PORT : '');
         $dsn = sprintf(
-            'sqlsrv:Server=%s;Database=%s;Encrypt=%s;TrustServerCertificate=%s',
-            SQLSERVER_HOST,
+            'sqlsrv:Server=%s;Database=%s;Encrypt=%s;TrustServerCertificate=%s;CharacterSet=UTF-8',
+            $server,
             SQLSERVER_DATABASE,
             SQLSERVER_ENCRYPT,
             SQLSERVER_TRUST_SERVER_CERTIFICATE
         );
 
-        $pdo = new PDO($dsn);
+        $pdo = SQLSERVER_USER !== ''
+            ? new PDO($dsn, SQLSERVER_USER, SQLSERVER_PASSWORD)
+            : new PDO($dsn);
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+        $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
 
         return $pdo;
     }

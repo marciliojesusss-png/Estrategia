@@ -3,14 +3,13 @@ declare(strict_types=1);
 
 final class AuditoriaRepository
 {
-    public function __construct(private PDO $db)
-    {
-    }
+    private $db;
+    public function __construct(PDO $db) { $this->db = $db; }
 
     public function all(): array
     {
         $rows = $this->db->query('SELECT * FROM auditoria ORDER BY data_acao, id')->fetchAll();
-        return array_map(static fn(array $row): array => [
+        return array_map(static function (array $row) { return [
             'id' => $row['id'],
             'entidade' => $row['entidade'],
             'registroId' => $row['entidade_id'],
@@ -21,7 +20,7 @@ final class AuditoriaRepository
             'usuario' => $row['usuario'],
             'perfilUsuario' => $row['perfil_usuario'],
             'dataHora' => $row['data_acao'],
-        ], $rows);
+        ]; }, $rows);
     }
 
     public function replaceAll(array $items): void
@@ -60,7 +59,7 @@ final class AuditoriaRepository
         }
     }
 
-    private static function decode(?string $value): mixed
+    private static function decode($value)
     {
         if ($value === null || $value === '') {
             return null;
@@ -69,7 +68,7 @@ final class AuditoriaRepository
         return json_last_error() === JSON_ERROR_NONE ? $decoded : $value;
     }
 
-    private static function encode(mixed $value): ?string
+    private static function encode($value)
     {
         if ($value === null) {
             return null;

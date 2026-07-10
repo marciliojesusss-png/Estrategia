@@ -3,11 +3,10 @@ declare(strict_types=1);
 
 final class ConfiguracoesRepository
 {
-    public function __construct(private PDO $db)
-    {
-    }
+    private $db;
+    public function __construct(PDO $db) { $this->db = $db; }
 
-    public function get(string $chave, mixed $default = []): mixed
+    public function get($chave, $default = array())
     {
         $stmt = $this->db->prepare('SELECT valor_json FROM configuracoes WHERE chave = :chave');
         $stmt->execute([':chave' => $chave]);
