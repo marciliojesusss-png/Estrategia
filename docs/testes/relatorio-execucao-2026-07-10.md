@@ -10,7 +10,7 @@
 
 ## Migração
 
-O relatório existente confirma contagens e IDs entre SQLite e SQL Server, mas permanece com status `alertas`: três valores de `configuracoes.valor_json` (`ano_referencia`, `ultima_migracao_json_sql` e `versao_base`) não passaram em `ISJSON`. Esse alerta deve ser corrigido e a reconciliação repetida antes do aceite.
+O relatório existente confirma contagens e IDs entre SQLite e SQL Server, mas permanece como evidência histórica com status `alertas`: três escalares JSON de `configuracoes.valor_json` não foram reconhecidos pelo `ISJSON`. O migrador `2026.07-php-views` corrige essa interpretação; a reconciliação precisa ser repetida no SQL Server antes do aceite.
 
 ## Limites desta evidência
 

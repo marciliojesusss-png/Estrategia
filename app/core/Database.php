@@ -52,7 +52,7 @@ final class Database
 
         $server = SQLSERVER_HOST . (SQLSERVER_PORT !== '' ? ',' . SQLSERVER_PORT : '');
         $dsn = sprintf(
-            'sqlsrv:Server=%s;Database=%s;Encrypt=%s;TrustServerCertificate=%s;CharacterSet=UTF-8',
+            'sqlsrv:Server=%s;Database=%s;Encrypt=%s;TrustServerCertificate=%s',
             $server,
             SQLSERVER_DATABASE,
             SQLSERVER_ENCRYPT,

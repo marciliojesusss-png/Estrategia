@@ -28,7 +28,7 @@
 3. Comparar esquema local, esquema corporativo e modelo usado pelo código.
 4. Adaptar a aplicação ao banco existente; propor alteração apenas mediante documento de limitação, tabela, proposta, justificativa e impacto.
 5. Ensaiar a carga em homologação com backup, contagens, IDs, FKs, amostras e hashes/valores críticos.
-6. Corrigir os três alertas de configuração conforme regra aprovada.
+6. Reexecutar a verificação com o migrador `2026.07-php-views` e confirmar que os três escalares JSON não geram mais falsos alertas.
 7. Migrar autenticação e usuários apenas depois de confirmar a origem corporativa e os campos reais.
 8. Executar migração final em janela autorizada, com plano de rollback testado.
 9. Reconciliar dados e executar smoke tests antes da liberação.
@@ -51,4 +51,3 @@
 - PHP 7.1.19 com versão compatível do driver `pdo_sqlsrv` para validação real.
 - Definição de formatos, tamanho e retenção das evidências.
 - Aprovação de segurança e infraestrutura para IIS, identidade do Application Pool e diretórios graváveis.
-

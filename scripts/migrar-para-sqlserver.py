@@ -9,10 +9,8 @@ from pathlib import Path
 
 try:
     import pyodbc
-except ImportError as exc:
-    raise SystemExit(
-        "Dependencia ausente: instale o pacote 'pyodbc' para conectar ao SQL Server."
-    ) from exc
+except ImportError:
+    pyodbc = None
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -21,6 +19,7 @@ DEFAULT_SCHEMA = ROOT / "database" / "sqlserver" / "schema.sql"
 DEFAULT_REPORT = ROOT / "database" / "sqlserver" / "migration-report.json"
 DEFAULT_AUTH_REPORT = ROOT / "database" / "sqlserver" / "usuarios-acesso-sync-report.json"
 DEFAULT_AUTH_SQL = ROOT / "database" / "sqlserver" / "sincronizar-usuarios-acesso.sql"
+MIGRATION_VERSION = "2026.07-php-views"
 
 TABLES = [
     "indicadores",
@@ -294,6 +293,12 @@ def validate_files(args):
     write_step("Validando arquivos e dependencias")
     if not args.sqlite.exists():
         raise SystemExit(f"SQLite nao encontrado: {args.sqlite}")
+    if not args.schema.exists():
+        raise SystemExit(f"Schema SQL Server nao encontrado: {args.schema}")
+    if pyodbc is None:
+        raise SystemExit(
+            "Dependencia ausente: instale o pacote 'pyodbc' para conectar ao SQL Server."
+        )
     write_ok("Python encontrado")
     write_ok("Modulo Python pyodbc encontrado")
 
@@ -469,6 +474,36 @@ def normalize_json_value(value):
         return repaired
     except json.JSONDecodeError:
         return value
+
+
+def validate_sqlite_source(connection):
+    errors = []
+    for table in TABLES:
+        if not sqlite_table_exists(connection, table):
+            errors.append(f"Tabela obrigatoria ausente no SQLite: {table}")
+    for table, columns in JSON_COLUMNS.items():
+        if not sqlite_table_exists(connection, table):
+            continue
+        available = set(sqlite_columns(connection, table))
+        key = primary_key(table)
+        for column in columns:
+            if column not in available:
+                errors.append(f"Coluna JSON ausente no SQLite: {table}.{column}")
+                continue
+            rows = connection.execute(
+                f'SELECT "{key}", "{column}" FROM "{table}" '
+                f'WHERE "{column}" IS NOT NULL AND "{column}" <> ?',
+                ("",),
+            ).fetchall()
+            for row in rows:
+                try:
+                    json.loads(row[column])
+                except (TypeError, json.JSONDecodeError):
+                    errors.append(f"JSON invalido no SQLite: {table}.{column}, id={row[key]}")
+    foreign_keys = connection.execute("PRAGMA foreign_key_check").fetchall()
+    for row in foreign_keys:
+        errors.append(f"Chave estrangeira invalida no SQLite: {tuple(row)}")
+    return {"passed": not errors, "errors": errors}
 
 
 def delete_target_rows(connection):
@@ -755,6 +790,7 @@ def validate_json_sqlserver(connection):
                 WHERE {bracket(column)} IS NOT NULL
                   AND {bracket(column)} <> N''
                   AND ISJSON({bracket(column)}) <> 1
+                  AND ISJSON(CONCAT(N'[', {bracket(column)}, N']')) <> 1
                 ORDER BY {bracket(key)}
                 """
             ).fetchall()
@@ -763,7 +799,7 @@ def validate_json_sqlserver(connection):
                     {
                         "id": str(row[0]),
                         "column": column,
-                        "error": "ISJSON retornou 0",
+                        "error": "valor nao e JSON valido (objeto, array ou escalar)",
                     }
                 )
                 if len(table_errors) >= 20:
@@ -802,6 +838,7 @@ def run_verification(sqlite_conn, sqlserver_conn, sqlite_path, report_path):
     auth_ok, auth_tables = validate_auth_tables_sqlserver(sqlserver_conn)
 
     report = {
+        "migrationVersion": MIGRATION_VERSION,
         "generatedAt": datetime.now(timezone.utc).isoformat(),
         "sqlite": str(sqlite_path),
         "checks": {
@@ -1001,6 +1038,7 @@ def write_report(path, payload):
 
 def run_migration(sqlite_conn, sqlserver_conn, args):
     report = {
+        "migrationVersion": MIGRATION_VERSION,
         "generatedAt": datetime.now(timezone.utc).isoformat(),
         "sqlite": str(args.sqlite),
         "tables": {},
@@ -1112,6 +1150,12 @@ def main():
             create_backup(args.sqlite)
 
         sqlite_conn = connect_sqlite(args.sqlite)
+        source_validation = validate_sqlite_source(sqlite_conn)
+        if not source_validation["passed"]:
+            for error in source_validation["errors"]:
+                write_warn(error)
+            raise SystemExit("A origem SQLite falhou no preflight da migracao.")
+        write_ok("Preflight da origem SQLite aprovado")
         sqlserver_conn = connect_sqlserver()
 
         if args.verify_only:

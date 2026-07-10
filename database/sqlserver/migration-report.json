@@ -1,5 +1,6 @@
 {
-  "generatedAt": "2026-07-07T16:34:29.937374+00:00",
+  "migrationVersion": "2026.07-php-views",
+  "generatedAt": "2026-07-10T13:22:09.785306+00:00",
   "sqlite": "C:\\Users\\jonat\\OneDrive\\Documentos\\GitHub\\Estratégia\\database\\indicadores.sqlite",
   "checks": {
     "counts": {
@@ -172,24 +173,8 @@
         "errors": []
       },
       "configuracoes": {
-        "passed": false,
-        "errors": [
-          {
-            "id": "ano_referencia",
-            "column": "valor_json",
-            "error": "ISJSON retornou 0"
-          },
-          {
-            "id": "ultima_migracao_json_sql",
-            "column": "valor_json",
-            "error": "ISJSON retornou 0"
-          },
-          {
-            "id": "versao_base",
-            "column": "valor_json",
-            "error": "ISJSON retornou 0"
-          }
-        ]
+        "passed": true,
+        "errors": []
       },
       "usuarios_validacao": {
         "passed": true,
@@ -211,5 +196,5 @@
       }
     }
   },
-  "status": "alertas"
+  "status": "ok"
 }

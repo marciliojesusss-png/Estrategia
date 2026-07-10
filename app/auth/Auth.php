@@ -37,6 +37,13 @@ final class Auth
         if (self::$authenticated && !empty($_SESSION['matricula'])) {
             return self::sessionUser();
         }
+        if (self::isLocalEnvironment() && empty($_SESSION['dev_user']) && !(getenv('AUTH_LOCAL_USER') ?: '')) {
+            $resource = self::requestResource();
+            if (strpos($resource, '/api/') === 0) {
+                self::deny('Autenticacao local necessaria.');
+            }
+            Response::redirect('/login');
+        }
         if (empty($_SESSION['_auth_initialized'])) {
             Session::regenerate();
             $_SESSION['_auth_initialized'] = true;
@@ -69,6 +76,33 @@ final class Auth
         }
         self::$authenticated = true;
         return self::sessionUser();
+    }
+
+    public static function hasAuthenticatedSession()
+    {
+        Session::start();
+        return !empty($_SESSION['matricula']);
+    }
+
+    public static function loginLocal($matricula)
+    {
+        if (!self::isLocalEnvironment()) {
+            self::deny('Login local indisponivel neste ambiente.');
+        }
+        $matricula = strtoupper(trim((string) $matricula));
+        if (!isset(self::$localUsers[$matricula])) {
+            self::deny('Usuario local invalido.');
+        }
+        Session::start();
+        unset($_SESSION['matricula'], $_SESSION['perfil'], $_SESSION['_access_logged']);
+        $_SESSION['dev_user'] = $matricula;
+        self::$authenticated = false;
+        return self::authenticate();
+    }
+
+    public static function isLocal()
+    {
+        return self::isLocalEnvironment();
     }
 
     public static function requireProfiles(array $profiles)
@@ -242,9 +276,7 @@ final class Auth
     private static function isLocalEnvironment()
     {
         $env = strtolower((string) APP_ENV);
-        $server = strtolower(isset($_SERVER['SERVER_NAME']) ? $_SERVER['SERVER_NAME'] : '');
-        return in_array($env, array('local', 'development', 'dev'), true)
-            || (PHP_SAPI === 'cli-server' && in_array($server, array('localhost', '127.0.0.1'), true));
+        return in_array($env, array('local', 'development', 'dev'), true);
     }
 
     private static function findAccess($matricula)

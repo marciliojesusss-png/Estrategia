@@ -42,8 +42,8 @@ erDiagram
 - Não foram encontrados órfãos nas cinco relações verificadas.
 - `solicitacoes_reabertura` e `retificacoes` estavam vazias.
 - `usuarios_acesso` e `acessos_log` existiam, mas estavam vazias.
-- O status final foi `alertas`.
-- Três valores de `configuracoes.valor_json` falharam no `ISJSON`: `ano_referencia`, `ultima_migracao_json_sql` e `versao_base`.
+- O relatório histórico ficou com status `alertas` porque o `ISJSON` da versão utilizada não reconheceu três escalares JSON válidos: `ano_referencia`, `ultima_migracao_json_sql` e `versao_base`.
+- O migrador `2026.07-php-views` passou a validar também escalares por meio de um array JSON temporário. A verificação deve ser repetida no SQL Server para substituir a evidência histórica.
 
 ## Divergências e riscos
 
@@ -68,4 +68,3 @@ Antes de implementar módulos, obter com acesso somente leitura:
 - permissões concedidas à identidade do Application Pool.
 
 Após a extração, produzir comparação campo a campo com o script local e uma proposta formal para cada divergência. Nenhuma alteração estrutural foi autorizada nesta etapa.
-

@@ -1,509 +1,100 @@
-# CAIXA Loterias - Indicadores Estrategicos
+# Indicadores Estratégicos — CAIXA Loterias
 
-Aplicacao web para acompanhamento dos indicadores estrategicos da CAIXA Loterias, com lancamentos mensais, homologacoes, visao trimestral, resumo executivo, relatorios e administracao de acessos.
+Aplicação PHP para gestão de indicadores estratégicos, lançamentos mensais, evidências, homologações, visão trimestral, relatórios, administração de acessos e auditoria.
 
-O projeto pode rodar de duas formas:
+## Requisitos
 
-- **Validacao local:** HTML/JavaScript com SQLite versionado e armazenamento local do navegador.
-- **Ambiente corporativo:** PHP com backend em SQL Server e autenticacao corporativa via LDAP.
+- PHP 7.1.19 no ambiente corporativo, com PDO.
+- SQL Server com `pdo_sqlsrv` e `sqlsrv` para homologação e produção.
+- IIS com FastCGI e URL Rewrite para publicação.
+- Python, `pyodbc` e Microsoft ODBC Driver somente para a migração SQLite → SQL Server.
 
-## Visao Rapida
+## Executar localmente
 
-Principais recursos:
+No PowerShell, a partir da raiz do projeto:
 
-- Resumo executivo dos indicadores.
-- Visao trimestral consolidada.
-- Cadastro e consulta de indicadores.
-- Lancamentos mensais por unidade apuradora.
-- Homologacao por diretoria responsavel.
-- Solicitacao e aprovacao de reabertura.
-- Relatorios operacionais.
-- Administracao de acessos corporativos.
-- Migracao facilitada de SQLite para SQL Server.
-
-Banco local versionado:
-
-```text
-database/indicadores.sqlite
+```powershell
+$env:APP_ENV='development'
+$env:DB_CONNECTION='sqlite'
+php -S 127.0.0.1:8000 -t public public/router.php
 ```
 
-Banco corporativo esperado:
+Acesse [http://127.0.0.1:8000](http://127.0.0.1:8000).
 
-```text
-SQL Server DF7436SR439 / banco DB5319_IndicadoresEstrategicos
+O router encaminha as rotas da aplicação ao front controller e entrega CSS, JavaScript e imagens diretamente. A primeira página será `/login` no ambiente local.
+
+## Configuração do SQL Server
+
+Defina as variáveis antes de iniciar a aplicação:
+
+```powershell
+$env:APP_ENV='production'
+$env:DB_CONNECTION='sqlsrv'
+$env:SQLSERVER_HOST='SERVIDOR_SQL'
+$env:SQLSERVER_DATABASE='DB5319_IndicadoresEstrategicos'
+$env:SQLSERVER_ENCRYPT='yes'
+$env:SQLSERVER_TRUST_SERVER_CERTIFICATE='no'
+$env:LDAP_PATH='C:\caminho\corporativo\acessoldap\LDAP.php'
+php -S 127.0.0.1:8000 -t public public/router.php
 ```
 
-## Como Rodar Localmente
+Credenciais não devem ser gravadas no repositório. Em produção, a autenticação é corporativa; o LDAP identifica o empregado e `dbo.usuarios_acesso` define perfil e escopo.
 
-### Modo PHP/local
+## Migração para SQL Server
 
-A aplicacao deve ser executada exclusivamente pelo front controller PHP:
+O SQLite em `database/indicadores.sqlite` é a origem controlada da migração. O schema de destino fica em `database/sqlserver/schema.sql`; o `.bat` chama `scripts/migrar-para-sqlserver.py`.
 
-```bat
-php -S 127.0.0.1:8000 -t public
-```
-
-Depois acesse:
-
-```text
-http://127.0.0.1:8000/index.php
-```
-
-No modo PHP, as paginas em `public/` usam as APIs de `/api` e o backend PHP acessa o banco configurado.
-
-## Autenticacao
-
-Em producao, a aplicacao nao deve ter tela de login propria. O fluxo esperado e:
-
-```text
-Usuario acessa o sistema
-        |
-        v
-LDAP corporativo identifica a matricula
-        |
-        v
-Aplicacao consulta usuarios_acesso no SQL Server
-        |
-        v
-Perfil e escopo sao carregados na sessao
-```
-
-O LDAP identifica o empregado. A tabela `usuarios_acesso` define o perfil dentro da aplicacao.
-
-Perfis suportados:
-
-```text
-administrador
-unidade_apuradora
-homologador
-usuario_companhia
-```
-
-Tabelas corporativas de autenticacao:
-
-```text
-dbo.usuarios_acesso
-dbo.acessos_log
-```
-
-Em producao:
-
-- se o LDAP nao estiver disponivel, o acesso falha;
-- se a matricula nao estiver ativa em `usuarios_acesso`, o acesso falha;
-- paginas e APIs validam perfil e escopo no backend;
-- operacoes de escrita exigem token CSRF.
-
-## Configuracao Para SQL Server
-
-Variaveis principais:
-
-```bat
-set APP_ENV=production
-set DB_CONNECTION=sqlsrv
-set SQLSERVER_HOST=SERVIDOR_SQL
-set SQLSERVER_DATABASE=DB5319_IndicadoresEstrategicos
-set SQLSERVER_ENCRYPT=yes
-set SQLSERVER_TRUST_SERVER_CERTIFICATE=no
-set LDAP_PATH=C:\caminho\corporativo\acessoldap\LDAP.php
-```
-
-Dependencias do servidor PHP:
-
-- PHP 7.1.19.
-- Extensoes `pdo_sqlsrv` e `sqlsrv`.
-- Acesso ao SQL Server.
-- Caminho corporativo do `LDAP.php`.
-
-Dependencias dos scripts de migracao:
-
-- Python.
-- Pacote `pyodbc`.
-- Microsoft ODBC Driver for SQL Server.
-
-Instalacao do `pyodbc`:
-
-```bat
-python -m pip install pyodbc
-```
-
-## Migracao SQLite Para SQL Server
-
-A aplicacao usa SQLite como base local versionada e SQL Server como banco corporativo. O script de migracao copia a estrutura e os dados do SQLite para o SQL Server, validando no final se a carga ficou consistente.
-
-Use este fluxo quando for preparar uma base de homologacao ou quando for levar a aplicacao para o ambiente corporativo com `DB_CONNECTION=sqlsrv`.
-
-### Arquivos Do Processo
-
-O ponto de entrada recomendado e o arquivo `.bat` da raiz:
-
-```text
-migrar-para-sqlserver.bat
-scripts/migrar-para-sqlserver.py
-```
-
-O `.bat` apenas encontra o Python e chama o script principal. Toda a logica fica em:
-
-```text
-scripts/migrar-para-sqlserver.py
-```
-
-O schema SQL Server usado para criar as tabelas fica em:
-
-```text
-database/sqlserver/schema.sql
-```
-
-### O Que O Script Faz
-
-Ao executar a migracao completa, o script:
-
-1. Valida dependencias.
-2. Le o SQLite de origem em `database/indicadores.sqlite`.
-3. Cria um backup do SQLite em `database/backups/`.
-4. Conecta no SQL Server usando as variaveis ou parametros informados.
-5. Cria o banco SQL Server se ele ainda nao existir e o usuario tiver permissao.
-6. Executa `database/sqlserver/schema.sql` para criar as tabelas e indices.
-7. Copia os dados das tabelas principais para `dbo.*` no SQL Server.
-8. Normaliza valores booleanos e pequenos problemas de JSON encontrados na origem.
-9. Opcionalmente sincroniza `usuarios_acesso`.
-10. Opcionalmente gera SQL manual para `usuarios_acesso`.
-11. Verifica contagens, IDs, chaves estrangeiras, JSONs e tabelas de autenticacao.
-12. Gera ou atualiza relatorios em `database/sqlserver/`.
-
-Se a verificacao final passar, a base SQL Server esta pronta para ser usada pela aplicacao PHP configurada com:
-
-```bat
-set DB_CONNECTION=sqlsrv
-```
-
-### Antes De Executar
-
-Instale as dependencias do script na maquina que fara a migracao:
-
-```bat
-python -m pip install pyodbc
-```
-
-Tambem e necessario ter o Microsoft ODBC Driver for SQL Server instalado e acesso ao servidor SQL Server de destino.
-
-Por padrao, o script usa:
-
-```text
-Servidor: localhost
-Banco: Estrategia
-Driver: ODBC Driver 18 for SQL Server
-SQLite: database/indicadores.sqlite
-```
-
-Voce pode sobrescrever esses valores por parametros no comando.
-
-### Como Executar
-
-#### Migrar Para Homologacao
-
-Para migrar para uma base local ou de homologacao com os valores padrao:
-
-```bat
-.\migrar-para-sqlserver.bat -Ambiente homologacao
-```
-
-Em homologacao, o script usa `TrustServerCertificate=yes` por padrao. Isso facilita testes com SQL Server local ou certificado autoassinado.
-
-Para informar servidor e banco:
-
-```bat
+```powershell
+# Homologação
 .\migrar-para-sqlserver.bat -Ambiente homologacao -Servidor "SERVIDOR_SQL" -Banco "Estrategia_HML"
+
+# Apenas verificar uma carga existente
+.\migrar-para-sqlserver.bat -Ambiente homologacao -Servidor "SERVIDOR_SQL" -Banco "Estrategia_HML" -VerifyOnly
+
+# Produção — somente após homologação e aceite
+.\migrar-para-sqlserver.bat -Ambiente producao -Servidor "SERVIDOR_SQL" -Banco "DB5319_IndicadoresEstrategicos"
 ```
 
-#### Migrar Para Producao
+O migrador cria backup da origem, executa preflight, aplica o schema, copia os dados e reconcilia contagens, IDs, agrupamentos, chaves estrangeiras e JSON. O resultado é salvo em `database/sqlserver/migration-report.json`.
 
-```bat
-.\migrar-para-sqlserver.bat -Ambiente producao -Servidor "SERVIDOR_SQL" -Banco "Estrategia"
-```
+## Testes
 
-Em producao, o script pede confirmacao antes de continuar e bloqueia opcoes perigosas como `-Truncate` e `-SeedAuthUsers`.
-O padrao de producao e `TrustServerCertificate=no`.
-
-#### Criar Somente Estrutura
-
-Use quando quiser criar apenas o banco, as tabelas e os indices, sem copiar os dados do SQLite:
-
-```bat
-.\migrar-para-sqlserver.bat -Ambiente homologacao -SchemaOnly
-```
-
-#### Recarregar Homologacao
-
-Use somente em homologacao, quando for permitido apagar os dados das tabelas de destino antes de recarregar:
-
-```bat
-.\migrar-para-sqlserver.bat -Ambiente homologacao -Truncate
-```
-
-O script pede confirmacao antes de apagar os dados. Em producao, essa opcao e bloqueada.
-
-#### Verificar Sem Migrar
-
-Use quando quiser apenas conferir se o SQL Server continua igual ao SQLite:
-
-```bat
-.\migrar-para-sqlserver.bat -Ambiente homologacao -VerifyOnly
-```
-
-Essa opcao nao copia dados. Ela somente executa as validacoes e atualiza `database/sqlserver/migration-report.json`.
-
-#### Usuarios De Acesso
-
-A tabela `usuarios_acesso` define quais empregados podem acessar a aplicacao e com qual perfil. Se essa tabela existir no SQLite local e voce quiser sincroniza-la para o SQL Server:
-
-```bat
-.\migrar-para-sqlserver.bat -Ambiente homologacao -SyncAuthUsers
-```
-
-Se a equipe de banco preferir executar manualmente no SSMS:
-
-```bat
-.\migrar-para-sqlserver.bat -Ambiente homologacao -GerarSqlAuthUsers
-```
-
-Isso gera:
-
-```text
-database/sqlserver/sincronizar-usuarios-acesso.sql
-```
-
-Para criar usuarios ficticios apenas em homologacao/local:
-
-```bat
-.\migrar-para-sqlserver.bat -Ambiente homologacao -SchemaOnly -SeedAuthUsers
-```
-
-Nao use usuarios ficticios em producao.
-
-### Relatorios Gerados
-
-O principal relatorio e:
-
-```text
-database/sqlserver/migration-report.json
-```
-
-Ele informa se a migracao passou ou se existem alertas. O script valida:
-
-- quantidade de registros por tabela;
-- IDs existentes no SQLite e no SQL Server;
-- contagens agrupadas importantes;
-- chaves estrangeiras;
-- campos JSON;
-- tabelas de autenticacao.
-
-Quando `-SyncAuthUsers` e usado, tambem e gerado:
-
-```text
-database/sqlserver/usuarios-acesso-sync-report.json
-```
-
-Quando `-GerarSqlAuthUsers` e usado, tambem e gerado:
-
-```text
-database/sqlserver/sincronizar-usuarios-acesso.sql
-```
-
-### Opcoes Mais Usadas
-
-```text
--Ambiente homologacao|producao
-```
-
-Define o modo de execucao. Em homologacao, o script e mais permissivo com certificado local. Em producao, exige confirmacao e bloqueia opcoes destrutivas.
-
-```text
--Servidor "SERVIDOR_SQL"
-```
-
-Define o servidor SQL Server.
-
-```text
--Banco "Estrategia"
-```
-
-Define o banco SQL Server de destino.
-
-```text
--Truncate
-```
-
-Apaga os dados das tabelas migradas antes de recarregar. Use apenas em homologacao.
-
-```text
--SchemaOnly
-```
-
-Cria apenas a estrutura SQL Server.
-
-```text
--SkipBackup
-```
-
-Nao cria backup do SQLite antes da migracao. Use somente quando tiver certeza de que ja existe backup.
-
-```text
--SkipVerify
-```
-
-Nao executa a verificacao final.
-
-```text
--Yes
-```
-
-Responde automaticamente as confirmacoes do script. Use com cuidado.
-
-### Erro De Certificado SQL Server
-
-Se aparecer erro parecido com:
-
-```text
-Provedor SSL: A cadeia de certificacao foi emitida por uma autoridade que nao e de confianca.
-```
-
-Em homologacao/local, o comando com `-Ambiente homologacao` ja usa `TrustServerCertificate=yes` por padrao. Se quiser forcar a validacao do certificado tambem em homologacao, execute:
-
-```bat
-.\migrar-para-sqlserver.bat -Ambiente homologacao -TrustServerCertificate no
-```
-
-Em producao, o recomendado e manter:
-
-```text
-Encrypt=yes
-TrustServerCertificate=no
-```
-
-Nesse caso, a maquina da aplicacao precisa confiar no certificado usado pelo SQL Server.
-
-## Persistencia Dos Dados
-
-Camadas usadas pelo projeto:
-
-1. **Semente embutida:** dados base no frontend.
-2. **Base local do navegador:** armazenamento por perfil do Chrome/Edge.
-3. **SQLite versionado:** `database/indicadores.sqlite`.
-4. **SQL Server corporativo:** destino da implantacao em servidor.
-
-O SQLite e adequado para validacao e portabilidade. Em ambiente corporativo, o banco principal deve ser o SQL Server.
-
-## Estrutura Principal
-
-```text
-.
-|-- migrar-para-sqlserver.bat
-|-- app/
-|   |-- auth/
-|   |-- config/
-|   |-- core/
-|   |-- repositories/
-|   `-- services/
-|-- api/
-|-- public/
-|   |-- index.php
-|   |-- resumo-executivo.php
-|   |-- visao-trimestral.php
-|   |-- indicadores.php
-|   |-- lancamentos.php
-|   |-- homologacao.php
-|   |-- relatorios.php
-|   |-- administracao.php
-|   |-- api/
-|   `-- assets/
-|-- templates/
-|-- views/
-|   |-- layouts/
-|   |-- components/
-|   |-- dashboard/
-|   |-- indicadores/
-|   |-- lancamentos/
-|   |-- homologacoes/
-|   |-- administracao/
-|   `-- legacy/
-|-- assets/
-|   |-- css/
-|   `-- js/
-|-- database/
-|   |-- indicadores.sqlite
-|   |-- schema.sql
-|   |-- README.md
-|   `-- sqlserver/
-|       `-- schema.sql
-|-- tests/
-`-- scripts/
-    `-- migrar-para-sqlserver.py
-```
-
-Nao existem paginas HTML soltas na raiz. As rotas publicas passam por `public/index.php`; apresentacoes modernas ficam em `views/` e as telas ainda baseadas no frontend JavaScript foram encapsuladas como views PHP em `views/legacy/`. Essa pasta e transitoria e pode ser substituida gradualmente por controllers e views server-side sem reintroduzir arquivos HTML publicos.
-
-## Testes E Validacoes
-
-Lint PHP:
-
-```bat
-php -l app\auth\Auth.php
-```
-
-Testes JavaScript principais:
-
-```bat
-node tests\persistence.test.js
-node tests\encoding.test.js
-node tests\formulas.test.js
-node tests\quarterly.test.js
-node tests\executive-summary.test.js
-node tests\currency.test.js
-node tests\local-validation.test.js
-node tests\sqlite-database.test.js
-```
-
-Validar scripts Python:
-
-```bat
-python -m py_compile scripts\migrar-para-sqlserver.py
-```
-
-## Checklist De Implantacao
-
-- [ ] Validar sistema localmente.
-- [ ] Criar banco SQL Server de homologacao.
-- [ ] Rodar migracao em homologacao.
-- [ ] Conferir `database/sqlserver/migration-report.json`.
-- [ ] Configurar `usuarios_acesso`.
-- [ ] Configurar `LDAP_PATH`.
-- [ ] Rodar a aplicacao com `DB_CONNECTION=sqlsrv`.
-- [ ] Testar login LDAP.
-- [ ] Testar perfis e escopos.
-- [ ] Testar lancamentos e homologacoes.
-- [ ] Repetir fluxo em producao somente apos homologacao aprovada.
-
-## Observacoes
-
-- O banco JSON em arquivos foi removido depois da migracao para SQLite.
-- O SQLite continua util para desenvolvimento e validacao local.
-- Em producao, use SQL Server como banco principal.
-- O fallback local de usuario deve ficar restrito a desenvolvimento.
-- As APIs protegem sessao, perfil, escopo e CSRF no backend.
-
-## Testes E Publicacao
-
-Execute toda a regressao local com:
+Execute a regressão completa:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\testar-projeto.ps1
 ```
 
-No servidor IIS, execute o preflight e, depois da implantacao, o smoke test:
+No servidor de destino:
 
 ```powershell
 powershell -File scripts\preflight-publicacao.ps1
 powershell -File scripts\smoke-test.ps1 -BaseUrl https://endereco-do-sistema
 ```
 
-Consulte `docs/instalacao/manual-iis.md`, `docs/publicacao/plano-implantacao.md`, `docs/publicacao/checklist-go-live.md` e `docs/testes/matriz-rastreabilidade.md`. A suite local verde nao substitui a homologacao em PHP 7.1.19, IIS e SQL Server.
+## Estrutura
+
+```text
+app/                 núcleo, autenticação, controllers, services e repositories
+api/                 endpoints compatíveis
+assets/              CSS, JavaScript e imagens-fonte
+database/            SQLite de origem e schemas SQL
+docs/                arquitetura, instalação, testes e publicação
+public/              única raiz pública e front controller
+scripts/             migração, testes e publicação
+storage/             logs, temporários e arquivos operacionais
+tests/               testes PHP, JavaScript e Python
+uploads/             evidências fora da raiz pública
+views/               layouts e páginas PHP
+```
+
+Não existem páginas HTML soltas na raiz. Todas as requisições públicas devem entrar por `public/index.php`.
+
+## Documentação
+
+- [API](docs/api.md)
+- [Instalação no IIS](docs/instalacao/manual-iis.md)
+- [Manual técnico](docs/manuais/manual-tecnico.md)
+- [Plano de implantação e rollback](docs/publicacao/plano-implantacao.md)
+- [Checklist de go-live](docs/publicacao/checklist-go-live.md)
+- [Matriz de rastreabilidade](docs/testes/matriz-rastreabilidade.md)

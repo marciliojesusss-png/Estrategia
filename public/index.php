@@ -25,7 +25,32 @@ $legacyApi = function ($file) {
     return function () use ($file) { require __DIR__ . '/../api/' . $file; };
 };
 
-$router->get('/', function () { Response::redirect(Auth::homeForProfile(Auth::authenticate()['perfil'])); });
+$router->get('/', function () {
+    if (Auth::isLocal()) {
+        Response::redirect('/login');
+    }
+    Response::redirect(Auth::homeForProfile(Auth::authenticate()['perfil']));
+});
+$router->get('/login', function () {
+    if (!Auth::isLocal()) {
+        Response::redirect('/');
+    }
+    require APP_ROOT . '/views/auth/login.php';
+});
+$router->post('/login', function () {
+    if (!Auth::isLocal()) {
+        Response::redirect('/');
+    }
+    $token = isset($_POST['_csrf_token']) ? (string) $_POST['_csrf_token'] : '';
+    if (!Csrf::validate($token)) {
+        http_response_code(403);
+        $loginError = 'Sessao expirada. Atualize a pagina e tente novamente.';
+        require APP_ROOT . '/views/auth/login.php';
+        return;
+    }
+    $user = Auth::loginLocal(isset($_POST['matricula']) ? $_POST['matricula'] : '');
+    Response::redirect(Auth::homeForProfile($user['perfil']));
+});
 $dashboard=new DashboardController();
 $router->get('/dashboard',array($dashboard,'index'));
 $router->get('/resumo-executivo',array($dashboard,'index'));

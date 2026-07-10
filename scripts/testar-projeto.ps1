@@ -31,6 +31,9 @@ Get-ChildItem tests -Filter *.test.js | Sort-Object Name | ForEach-Object {
 
 if (!$SemPython) {
     Invoke-Step 'Sintaxe da migracao SQL Server' { & python -m py_compile scripts\migrar-para-sqlserver.py }
+    Get-ChildItem tests -Filter *.test.py | Sort-Object Name | ForEach-Object {
+        Invoke-Step $_.Name { & python $_.FullName }
+    }
 }
 
 Write-Host "`nSUCESSO: regressao local concluida." -ForegroundColor Green

@@ -23,6 +23,9 @@ $webConfig = contents($root . '/public/web.config');
 $uploadConfig = contents($root . '/uploads/web.config');
 $config = contents($root . '/app/config/config.php');
 $helpers = contents($root . '/app/helpers/helpers.php');
+$routerScript = contents($root . '/public/router.php');
+$databaseSource = contents($root . '/app/core/Database.php');
+$authSource = contents($root . '/app/auth/Auth.php');
 
 foreach (array('X-Content-Type-Options', 'X-Frame-Options', 'Referrer-Policy', 'Permissions-Policy') as $header) {
     check(strpos($webConfig, $header) !== false, 'Cabecalho ausente: ' . $header);
@@ -35,6 +38,10 @@ check(strpos($uploadConfig, 'fileExtension=".phtml" allowed="false"') !== false,
 check(strpos($config, "getenv('APP_DEBUG') ?: 'false'") !== false, 'Debug nao possui padrao seguro.');
 check(strpos($config, "APP_ENV === 'production' ? 'sqlsrv' : 'sqlite'") !== false, 'SQL Server nao e o driver padrao de producao.');
 check(strpos($helpers, 'htmlspecialchars') !== false, 'Helper de escape HTML ausente.');
+check(strpos($routerScript, 'return false') !== false, 'Router local nao libera assets estaticos.');
+check(strpos($routerScript, 'realpath') !== false, 'Router local nao restringe arquivos ao public.');
+check(strpos($databaseSource, 'CharacterSet=') === false, 'DSN PDO_SQLSRV contem keyword CharacterSet incompativel.');
+check(strpos($authSource, "Response::redirect('/login')") !== false, 'Rotas locais nao autenticadas nao redirecionam ao login.');
 
 foreach (array('database', 'storage', 'uploads', 'app', '.env', 'composer.json') as $privatePath) {
     check(!file_exists($root . '/public/' . $privatePath), 'Recurso interno exposto no public/: ' . $privatePath);
