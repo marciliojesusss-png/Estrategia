@@ -39,6 +39,12 @@ check(strpos($helpers, 'htmlspecialchars') !== false, 'Helper de escape HTML aus
 foreach (array('database', 'storage', 'uploads', 'app', '.env', 'composer.json') as $privatePath) {
     check(!file_exists($root . '/public/' . $privatePath), 'Recurso interno exposto no public/: ' . $privatePath);
 }
+check(count(glob($root . '/*.html')) === 0, 'Ainda existem paginas HTML na raiz do projeto.');
+foreach (array($root . '/assets/js', $root . '/public/assets/js') as $javascriptPath) {
+    foreach (glob($javascriptPath . '/*.js') as $javascriptFile) {
+        check(strpos(contents($javascriptFile), '.html') === false, 'Rota HTML legada em ' . substr($javascriptFile, strlen($root) + 1));
+    }
+}
 
 $phpFiles = array();
 $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root . '/app'));

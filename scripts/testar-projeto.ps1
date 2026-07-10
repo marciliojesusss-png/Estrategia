@@ -16,7 +16,7 @@ Write-Host "PHP: $(& $php.Source -v | Select-Object -First 1)"
 Write-Host "Node: $(& $node.Source -v)"
 
 Invoke-Step 'Sintaxe PHP' {
-    Get-ChildItem app,api,public,tests -Recurse -Filter *.php | ForEach-Object {
+    Get-ChildItem app,api,public,templates,tests,views -Recurse -Filter *.php | ForEach-Object {
         & php -l $_.FullName | Out-Null
         if ($LASTEXITCODE -ne 0) { throw "Sintaxe invalida: $($_.FullName)" }
     }

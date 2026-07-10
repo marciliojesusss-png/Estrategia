@@ -56,13 +56,13 @@
     localStorage.removeItem(SESSION_KEY);
     localStorage.removeItem(PROFILE_KEY);
     localStorage.removeItem(PERMISSIONS_KEY);
-    window.location.href = window.location.pathname.endsWith(".php") ? "logout.php" : (window.AppRoutes ? window.AppRoutes.page("index") : "index.html");
+    window.location.href = "/logout";
   }
 
   function requireAuth() {
     const user = getCurrentUser();
     if (!user && document.body.dataset.page !== "login") {
-      window.location.href = window.AppRoutes ? window.AppRoutes.page("index") : "index.html";
+      window.location.href = "/";
       return null;
     }
     return user;

@@ -16,7 +16,7 @@ Essa sobreposição é útil como protótipo, mas hoje não representa a arquite
 
 | Área | Artefatos atuais | Diagnóstico |
 |---|---|---|
-| Telas estáticas | `index.html`, `dashboard.html`, `indicadores.html`, `lancamentos.html`, `homologacao.html`, `relatorios.html`, `resumo-executivo.html`, `visao-trimestral.html`, `administracao.html` | Protótipo funcional e referência visual. |
+| Views PHP | `views/` e `views/legacy/` | Telas server-side e frontend JavaScript encapsulado; não há HTML solto na raiz. |
 | Entrada PHP | `public/index.php` e páginas PHP por módulo | Protegem páginas por perfil e injetam o frontend existente. Não há roteador amigável. |
 | Templates | `templates/page.php` e `templates/partials/*` | Camada de composição inicial; ainda depende dos HTML da raiz. |
 | APIs | `api/*.php` | Endpoints procedurais, carregados por `api/bootstrap.php`. Cobertura REST incompleta. |
@@ -69,4 +69,3 @@ Todos os arquivos PHP passam no lint do PHP 8.3.31 instalado, o que não comprov
 - `assets/` e `public/assets/`: duas cópias dos ativos.
 - HTML na raiz e páginas PHP: as páginas PHP dependem dos protótipos HTML.
 - Regras de cálculo e workflow divididas entre JavaScript, services e endpoints procedurais.
-

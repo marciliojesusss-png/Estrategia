@@ -30,7 +30,7 @@
           <h1>Resumo Executivo</h1>
           <p>Leitura consolidada do desempenho oficial dos indicadores estratégicos.</p>
         </div>
-        <a class="secondary-action executive-detail-link" href="indicadores.html">Ver catálogo de indicadores</a>
+        <a class="secondary-action executive-detail-link" href="/indicadores">Ver catálogo de indicadores</a>
       </section>
 
       <section class="filters executive-filters" aria-label="Filtros do resumo executivo">

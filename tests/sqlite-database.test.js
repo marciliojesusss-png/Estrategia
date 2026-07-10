@@ -8,8 +8,9 @@ const dbPath = path.join(root, "database", "indicadores.sqlite");
 const schemaPath = path.join(root, "database", "schema.sql");
 const servicePath = path.join(root, "assets", "js", "databaseService.js");
 const migrationReportPath = path.join(root, "database", "migration-report.json");
-const adminHtml = fs.readFileSync(path.join(root, "administracao.html"), "utf8");
-const reportsHtml = fs.readFileSync(path.join(root, "relatorios.html"), "utf8");
+const legacyViews = path.join(root, "views", "legacy");
+const adminHtml = fs.readFileSync(path.join(legacyViews, "administracao.php"), "utf8");
+const reportsHtml = fs.readFileSync(path.join(legacyViews, "relatorios.php"), "utf8");
 const app = fs.readFileSync(path.join(root, "assets", "js", "app.js"), "utf8");
 const readme = fs.readFileSync(path.join(root, "README.md"), "utf8");
 const gitignore = fs.readFileSync(path.join(root, ".gitignore"), "utf8");
@@ -72,15 +73,15 @@ assert.match(reportsHtml, /id="databaseLocalPanel"/);
 assert.match(adminHtml, /assets\/js\/databaseService\.js/);
 assert.match(reportsHtml, /assets\/js\/databaseService\.js/);
 [
-  "resumo-executivo.html",
-  "visao-trimestral.html",
-  "indicadores.html",
-  "lancamentos.html",
-  "homologacao.html",
-  "relatorios.html",
-  "administracao.html"
+  "resumo-executivo.php",
+  "visao-trimestral.php",
+  "indicadores.php",
+  "lancamentos.php",
+  "homologacao.php",
+  "relatorios.php",
+  "administracao.php"
 ].forEach((page) => {
-  const html = fs.readFileSync(path.join(root, page), "utf8");
+  const html = fs.readFileSync(path.join(legacyViews, page), "utf8");
   assert.match(html, /assets\/js\/databaseService\.js/, page);
 });
 assert.match(app, /Modo SQL local ativo/);

@@ -35,19 +35,9 @@ SQL Server DF7436SR439 / banco DB5319_IndicadoresEstrategicos
 
 ## Como Rodar Localmente
 
-### Modo HTML/local
-
-Abra:
-
-```text
-index.html
-```
-
-Esse modo usa os arquivos estaticos e dados locais no navegador. E util para validacao visual e consulta local.
-
 ### Modo PHP/local
 
-Recomendado para testar APIs, sessao e regras de acesso:
+A aplicacao deve ser executada exclusivamente pelo front controller PHP:
 
 ```bat
 php -S 127.0.0.1:8000 -t public
@@ -407,14 +397,6 @@ O SQLite e adequado para validacao e portabilidade. Em ambiente corporativo, o b
 
 ```text
 .
-|-- index.html
-|-- indicadores.html
-|-- lancamentos.html
-|-- homologacao.html
-|-- relatorios.html
-|-- resumo-executivo.html
-|-- visao-trimestral.html
-|-- administracao.html
 |-- migrar-para-sqlserver.bat
 |-- app/
 |   |-- auth/
@@ -435,6 +417,15 @@ O SQLite e adequado para validacao e portabilidade. Em ambiente corporativo, o b
 |   |-- api/
 |   `-- assets/
 |-- templates/
+|-- views/
+|   |-- layouts/
+|   |-- components/
+|   |-- dashboard/
+|   |-- indicadores/
+|   |-- lancamentos/
+|   |-- homologacoes/
+|   |-- administracao/
+|   `-- legacy/
 |-- assets/
 |   |-- css/
 |   `-- js/
@@ -448,6 +439,8 @@ O SQLite e adequado para validacao e portabilidade. Em ambiente corporativo, o b
 `-- scripts/
     `-- migrar-para-sqlserver.py
 ```
+
+Nao existem paginas HTML soltas na raiz. As rotas publicas passam por `public/index.php`; apresentacoes modernas ficam em `views/` e as telas ainda baseadas no frontend JavaScript foram encapsuladas como views PHP em `views/legacy/`. Essa pasta e transitoria e pode ser substituida gradualmente por controllers e views server-side sem reintroduzir arquivos HTML publicos.
 
 ## Testes E Validacoes
 

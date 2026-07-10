@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CAIXA Loterias | Redirecionando</title>
-  <meta http-equiv="refresh" content="0;url=resumo-executivo.html">
+  <meta http-equiv="refresh" content="0;url=/resumo-executivo">
   <script>
-    window.location.replace("resumo-executivo.html");
+    window.location.replace("/resumo-executivo");
   </script>
 </head>
 <body>

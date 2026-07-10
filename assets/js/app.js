@@ -1,8 +1,9 @@
 ﻿(function () {
-  const PAGE_EXT = window.location.pathname.endsWith(".php") ? ".php" : ".html";
-
   function pageUrl(page) {
-    return `${String(page).replace(/\.(html|php)$/i, "")}${PAGE_EXT}`;
+    const cleanPage = String(page).replace(/\.(html|php)$/i, "");
+    if (cleanPage === "index") return "/";
+    if (cleanPage === "homologacao") return "/homologacoes";
+    return `/${cleanPage.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}`;
   }
 
   window.AppRoutes = { page: pageUrl };

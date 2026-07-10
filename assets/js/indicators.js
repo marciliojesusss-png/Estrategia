@@ -79,7 +79,7 @@
   function detailBackTarget() {
     const origin = new URLSearchParams(window.location.search).get("origem");
     const page = origin === "indicadores" ? "indicadores" : "resumo-executivo";
-    return window.AppRoutes ? window.AppRoutes.page(page) : `${page}.html`;
+    return window.AppRoutes ? window.AppRoutes.page(page) : `/${page}`;
   }
 
   function setIndicatorPageMode(indicador) {
@@ -347,7 +347,7 @@
   }
 
   function indicatorDetailTarget(indicadorId, launchId = null) {
-    const target = window.AppRoutes ? window.AppRoutes.page("indicadores") : "indicadores.html";
+    const target = window.AppRoutes ? window.AppRoutes.page("indicadores") : "/indicadores";
     const params = new URLSearchParams({
       view: "detalhe",
       id: String(indicadorId)

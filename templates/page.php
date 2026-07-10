@@ -3,9 +3,9 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../app/auth/Auth.php';
 
-function render_static_page($htmlFile)
+function render_legacy_page($viewFile)
 {
-    $path = dirname(__DIR__) . DIRECTORY_SEPARATOR . $htmlFile;
+    $path = APP_ROOT . '/views/legacy/' . basename($viewFile);
     if (!is_file($path)) {
         http_response_code(404);
         echo 'Página não encontrada.';
@@ -14,31 +14,6 @@ function render_static_page($htmlFile)
 
     header('Content-Type: text/html; charset=utf-8');
     $html = (string) file_get_contents($path);
-    $html = str_replace(
-        [
-            'index.html',
-            'dashboard.html',
-            'resumo-executivo.html',
-            'visao-trimestral.html',
-            'indicadores.html',
-            'lancamentos.html',
-            'homologacao.html',
-            'relatorios.html',
-            'administracao.html',
-        ],
-        [
-            'index.php',
-            'dashboard.php',
-            'resumo-executivo.php',
-            'visao-trimestral.php',
-            'indicadores.php',
-            'lancamentos.php',
-            'homologacao.php',
-            'relatorios.php',
-            'administracao.php',
-        ],
-        $html
-    );
     $assetVersion = 'AUTH-CORPORATIVA-001';
     $authUser = json_encode(
         Auth::currentUserForFrontend(),
@@ -64,8 +39,8 @@ function render_static_page($htmlFile)
     echo $html;
 }
 
-function render_protected_page($htmlFile, array $profiles)
+function render_protected_page($viewFile, array $profiles)
 {
     Auth::requireProfiles($profiles);
-    render_static_page($htmlFile);
+    render_legacy_page($viewFile);
 }

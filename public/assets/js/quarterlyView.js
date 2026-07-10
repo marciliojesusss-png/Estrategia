@@ -180,7 +180,7 @@
               <tr>
                 <td class="indicator-name">${escapeHtml(limparNomeIndicador(row.indicator.indicador))}</td>
                 ${quarterCells(row)}
-                <td><a class="secondary-action table-action dashboard-action" href="${window.AppRoutes ? window.AppRoutes.page("indicadores") : "indicadores.html"}?indicadorId=${row.indicator.id}">Visualizar</a></td>
+                <td><a class="secondary-action table-action dashboard-action" href="${window.AppRoutes ? window.AppRoutes.page("indicadores") : "/indicadores"}?indicadorId=${row.indicator.id}">Visualizar</a></td>
               </tr>
             `).join("")}
           </tbody>

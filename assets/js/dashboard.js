@@ -580,17 +580,17 @@
     const perfil = state.user?.perfil;
     const lancamento = item.lancamentoAcao;
     const status = lancamento?.status || "Não iniciado";
-    const actions = [actionLink("Visualizar", "indicadores.html", lancamento, item.indicador)];
+    const actions = [actionLink("Visualizar", "indicadores", lancamento, item.indicador)];
 
     if (["Administrador", "Unidade Apuradora"].includes(perfil) && ["Não iniciado", "Em preenchimento", "Devolvido para ajuste", "Reaberto"].includes(status)) {
-      actions.unshift(actionLink("Preencher", "lancamentos.html", lancamento, item.indicador));
+      actions.unshift(actionLink("Preencher", "lancamentos", lancamento, item.indicador));
     }
     if (["Administrador", "Diretoria Homologadora"].includes(perfil) && status === "Enviado para homologação") {
-      actions.unshift(actionLink("Homologar", "homologacao.html", lancamento, item.indicador, "homologar"));
-      actions.push(actionLink("Devolver", "homologacao.html", lancamento, item.indicador, "devolver"));
+      actions.unshift(actionLink("Homologar", "homologacao", lancamento, item.indicador, "homologar"));
+      actions.push(actionLink("Devolver", "homologacao", lancamento, item.indicador, "devolver"));
     }
     if (perfil === "Administrador" && status === "Homologado") {
-      actions.unshift(actionLink("Reabrir", "homologacao.html", lancamento, item.indicador, "reabrir"));
+      actions.unshift(actionLink("Reabrir", "homologacao", lancamento, item.indicador, "reabrir"));
     }
 
     return `<div class="row-actions dashboard-row-actions">${actions.join("")}</div>`;

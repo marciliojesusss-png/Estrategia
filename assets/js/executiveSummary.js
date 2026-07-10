@@ -897,7 +897,7 @@
           <td class="official-value">${result.lancamento ? StrategicResults.formatOfficialResult(result) : "-"}</td>
           <td class="col-situacao"><span class="badge badge-situacao ${badgeClass(situation)} ${String(situation).length > 16 ? "long" : ""}">${escapeHtml(situation)}</span></td>
           ${shouldHideStatusColumn() ? "" : `<td class="col-status"><span class="badge badge-status ${badgeClass(status)}">${escapeHtml(status)}</span></td>`}
-          <td><a class="secondary-action table-action dashboard-action" href="${window.AppRoutes ? window.AppRoutes.page("indicadores") : "indicadores.html"}?view=detalhe&id=${result.indicador.id}&origem=resumo-executivo" title="Visualizar indicador">Ver</a></td>
+          <td><a class="secondary-action table-action dashboard-action" href="${window.AppRoutes ? window.AppRoutes.page("indicadores") : "/indicadores"}?view=detalhe&id=${result.indicador.id}&origem=resumo-executivo" title="Visualizar indicador">Ver</a></td>
         </tr>
       `;
     }).join("");
