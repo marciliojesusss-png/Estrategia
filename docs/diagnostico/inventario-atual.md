@@ -6,9 +6,9 @@ Data do levantamento: 10/07/2026.
 
 O repositório contém três implementações sobrepostas:
 
-1. páginas HTML e JavaScript na raiz, com dados de semente e persistência local;
-2. páginas PHP em `public/`, que reutilizam os HTML por meio de `templates/page.php`;
-3. backend PHP em `app/` e `api/`, com SQLite como padrão e suporte parcial a SQL Server.
+1. páginas visuais completas em `views/frontend/`, integradas às APIs PHP;
+2. views server-side para formulários, detalhes, auditoria e erros;
+3. backend PHP em `app/` e `api/`, com SQLite local e SQL Server corporativo.
 
 Essa sobreposição é útil como protótipo, mas hoje não representa a arquitetura final exigida pelo prompt.
 
@@ -16,9 +16,9 @@ Essa sobreposição é útil como protótipo, mas hoje não representa a arquite
 
 | Área | Artefatos atuais | Diagnóstico |
 |---|---|---|
-| Views PHP | `views/` e `views/legacy/` | Telas server-side e frontend JavaScript encapsulado; não há HTML solto na raiz. |
+| Views PHP | `views/frontend/` e views server-side por módulo | Frontend visual completo separado de formulários/detalhes renderizados no servidor. |
 | Entrada PHP | `public/index.php` e páginas PHP por módulo | Protegem páginas por perfil e injetam o frontend existente. Não há roteador amigável. |
-| Templates | `templates/page.php` e `templates/partials/*` | Camada de composição inicial; ainda depende dos HTML da raiz. |
+| Templates | `templates/frontend.php` | Injeta identidade autenticada e versiona assets nas páginas completas do frontend. |
 | APIs | `api/*.php` | Endpoints procedurais, carregados por `api/bootstrap.php`. Cobertura REST incompleta. |
 | Espelhos públicos | `public/api/*.php` | Arquivos homônimos aos de `api/`, mas nenhum dos dez pares é idêntico; há risco de divergência. |
 | Núcleo | `app/core/Database.php`, `Request.php`, `Response.php` | Fundação parcial, sem roteador e tratamento central completo. |

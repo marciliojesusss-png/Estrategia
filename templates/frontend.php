@@ -3,9 +3,9 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../app/auth/Auth.php';
 
-function render_legacy_page($viewFile)
+function render_frontend_page($viewFile)
 {
-    $path = APP_ROOT . '/views/legacy/' . basename($viewFile);
+    $path = APP_ROOT . '/views/frontend/' . basename($viewFile);
     if (!is_file($path)) {
         http_response_code(404);
         echo 'Página não encontrada.';
@@ -42,5 +42,5 @@ function render_legacy_page($viewFile)
 function render_protected_page($viewFile, array $profiles)
 {
     Auth::requireProfiles($profiles);
-    render_legacy_page($viewFile);
+    render_frontend_page($viewFile);
 }

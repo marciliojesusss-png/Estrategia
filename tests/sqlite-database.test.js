@@ -8,9 +8,9 @@ const dbPath = path.join(root, "database", "indicadores.sqlite");
 const schemaPath = path.join(root, "database", "schema.sql");
 const servicePath = path.join(root, "assets", "js", "databaseService.js");
 const migrationReportPath = path.join(root, "database", "migration-report.json");
-const legacyViews = path.join(root, "views", "legacy");
-const adminHtml = fs.readFileSync(path.join(legacyViews, "administracao.php"), "utf8");
-const reportsHtml = fs.readFileSync(path.join(legacyViews, "relatorios.php"), "utf8");
+const frontendViews = path.join(root, "views", "frontend");
+const adminHtml = fs.readFileSync(path.join(frontendViews, "administracao.php"), "utf8");
+const reportsHtml = fs.readFileSync(path.join(frontendViews, "relatorios.php"), "utf8");
 const app = fs.readFileSync(path.join(root, "assets", "js", "app.js"), "utf8");
 const readme = fs.readFileSync(path.join(root, "README.md"), "utf8");
 const gitignore = fs.readFileSync(path.join(root, ".gitignore"), "utf8");
@@ -81,7 +81,7 @@ assert.match(reportsHtml, /assets\/js\/databaseService\.js/);
   "relatorios.php",
   "administracao.php"
 ].forEach((page) => {
-  const html = fs.readFileSync(path.join(legacyViews, page), "utf8");
+  const html = fs.readFileSync(path.join(frontendViews, page), "utf8");
   assert.match(html, /assets\/js\/databaseService\.js/, page);
 });
 assert.match(app, /Modo SQL local ativo/);

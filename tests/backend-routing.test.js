@@ -8,7 +8,7 @@ const dataStore = fs.readFileSync(path.join(root, 'assets', 'js', 'dataStore.js'
 assert.doesNotMatch(dataStore, /pathname\?\.endsWith\("\.php"\)/);
 assert.match(dataStore, /Boolean\(window\.CAIXA_LOTERIAS_AUTH_USER\)/);
 
-const summary = fs.readFileSync(path.join(root, 'views', 'legacy', 'resumo-executivo.php'), 'utf8');
+const summary = fs.readFileSync(path.join(root, 'views', 'frontend', 'resumo-executivo.php'), 'utf8');
 assert.match(summary, /\/assets\/vendor\/chart\.umd\.min\.js/);
 assert.doesNotMatch(summary, /cdn\.jsdelivr\.net/);
 

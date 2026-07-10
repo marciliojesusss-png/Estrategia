@@ -4,7 +4,7 @@ const path = require("node:path");
 
 const root = path.resolve(__dirname, "..");
 const executiveSummary = fs.readFileSync(path.join(root, "assets", "js", "executiveSummary.js"), "utf8");
-const executiveHtml = fs.readFileSync(path.join(root, "views", "legacy", "resumo-executivo.php"), "utf8");
+const executiveHtml = fs.readFileSync(path.join(root, "views", "frontend", "resumo-executivo.php"), "utf8");
 const styles = fs.readFileSync(path.join(root, "assets", "css", "styles.css"), "utf8");
 
 assert.match(executiveSummary, /chartFilter:\s*\{/);

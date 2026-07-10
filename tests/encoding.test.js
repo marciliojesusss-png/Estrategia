@@ -60,11 +60,11 @@ assert.equal(indicators[0].metaAnualDescricao.startsWith("≥"), true);
 assert.equal(indicators[5].metaAnualDescricao.startsWith("≤"), true);
 assert.equal(indicators[16].metaAnualDescricao.startsWith("≥"), true);
 
-const legacyViews = path.join(root, "views", "legacy");
-fs.readdirSync(legacyViews)
+const frontendViews = path.join(root, "views", "frontend");
+fs.readdirSync(frontendViews)
   .filter((name) => name.endsWith(".php"))
   .forEach((name) => {
-    const html = fs.readFileSync(path.join(legacyViews, name), "utf8");
+    const html = fs.readFileSync(path.join(frontendViews, name), "utf8");
     assert.match(html, /<meta charset="UTF-8">/);
     assert.doesNotMatch(html, /[\u00c3\u00c2\ufffd]|\u00e2[\u20ac-\u2122]/u);
   });

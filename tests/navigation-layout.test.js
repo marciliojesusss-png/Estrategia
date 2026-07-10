@@ -5,8 +5,8 @@ const path = require("node:path");
 const root = path.resolve(__dirname, "..");
 const app = fs.readFileSync(path.join(root, "assets", "js", "app.js"), "utf8");
 const styles = fs.readFileSync(path.join(root, "assets", "css", "styles.css"), "utf8");
-const legacyViews = path.join(root, "views", "legacy");
-const pages = fs.readdirSync(legacyViews).filter((name) => (
+const frontendViews = path.join(root, "views", "frontend");
+const pages = fs.readdirSync(frontendViews).filter((name) => (
   name.endsWith(".php") &&
   !["dashboard.php", "login.php"].includes(name)
 ));
@@ -30,7 +30,7 @@ assert.match(styles, /\.header-nav/);
 assert.match(styles, /\.storage-notice summary::after/);
 
 pages.forEach((page) => {
-  const html = fs.readFileSync(path.join(legacyViews, page), "utf8");
+  const html = fs.readFileSync(path.join(frontendViews, page), "utf8");
   if (html.includes('data-page="login"')) return;
   assert.match(html, /<header id="appHeader" class="topbar"><\/header>/, page);
   assert.match(html, /<main class="content/, page);

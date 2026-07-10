@@ -7,14 +7,14 @@ $contentView = isset($contentView) ? $contentView : null;
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title><?= e($pageTitle) ?></title>
+  <title><?= e($pageTitle) ?> | CAIXA Loterias</title>
   <link rel="stylesheet" href="/assets/css/styles.css">
 </head>
 <body>
-  <?php require APP_ROOT . '/views/components/header.php'; ?>
-  <div class="app-layout">
+  <div class="app-shell">
+    <?php require APP_ROOT . '/views/components/header.php'; ?>
     <?php require APP_ROOT . '/views/components/menu.php'; ?>
-    <main id="conteudo-principal" class="app-content">
+    <main id="conteudo-principal" class="content">
       <?php require APP_ROOT . '/views/components/breadcrumb.php'; ?>
       <?php require APP_ROOT . '/views/components/alerts.php'; ?>
       <?php if ($contentView && is_file($contentView)) require $contentView; ?>

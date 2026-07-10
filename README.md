@@ -91,7 +91,8 @@ scripts/             migração, testes e publicação
 storage/             logs, temporários e arquivos operacionais
 tests/               testes PHP, JavaScript e Python
 uploads/             evidências fora da raiz pública
-views/               layouts e páginas PHP
+views/frontend/      páginas visuais completas integradas ao backend PHP
+views/               layouts, componentes, formulários e detalhes server-side
 ```
 
 Não existem páginas HTML soltas na raiz. Todas as requisições públicas devem entrar por `public/index.php`.

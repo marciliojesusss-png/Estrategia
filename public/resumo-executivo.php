@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/../templates/page.php';
+require_once __DIR__ . '/../templates/frontend.php';
 Auth::requirePermission('dashboard', 'visualizar');
-render_legacy_page('resumo-executivo.php');
+render_frontend_page('resumo-executivo.php');

@@ -69,7 +69,7 @@ final class IndicadorController
     private function form($item, array $errors) { $this->render('form', array('item' => $item, 'errors' => $errors)); }
     private function render($view, array $data)
     {
-        extract($data); $pageTitle = 'Indicadores'; $breadcrumbs = array('Dashboard' => '/dashboard', 'Indicadores' => '/indicadores');
+        extract($data, EXTR_SKIP); $pageTitle = 'Indicadores'; $breadcrumbs = array('Dashboard' => '/dashboard', 'Indicadores' => '/indicadores');
         $contentView = APP_ROOT . '/views/indicadores/' . $view . '.php'; require APP_ROOT . '/views/layouts/base.php';
     }
 }

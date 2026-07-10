@@ -12,13 +12,12 @@ require_once __DIR__ . '/../app/controllers/LancamentoController.php';
 require_once __DIR__ . '/../app/controllers/EvidenciaController.php';
 require_once __DIR__ . '/../app/controllers/HomologacaoController.php';
 require_once __DIR__ . '/../app/controllers/HomologacaoApiController.php';
-require_once __DIR__ . '/../app/controllers/DashboardController.php';
 require_once __DIR__ . '/../app/controllers/DashboardApiController.php';
 require_once __DIR__ . '/../app/controllers/AdministracaoController.php';
 require_once __DIR__ . '/../app/controllers/AdministracaoApiController.php';
 
 $router = new Router();
-$legacyPage = function ($file) {
+$frontendPage = function ($file) {
     return function () use ($file) { require __DIR__ . '/' . $file; };
 };
 $legacyApi = function ($file) {
@@ -51,12 +50,11 @@ $router->post('/login', function () {
     $user = Auth::loginLocal(isset($_POST['matricula']) ? $_POST['matricula'] : '');
     Response::redirect(Auth::homeForProfile($user['perfil']));
 });
-$dashboard=new DashboardController();
-$router->get('/dashboard',$legacyPage('resumo-executivo.php'));
-$router->get('/resumo-executivo',$legacyPage('resumo-executivo.php'));
-$router->get('/visao-trimestral', $legacyPage('visao-trimestral.php'));
+$router->get('/dashboard',$frontendPage('resumo-executivo.php'));
+$router->get('/resumo-executivo',$frontendPage('resumo-executivo.php'));
+$router->get('/visao-trimestral', $frontendPage('visao-trimestral.php'));
 $indicadores = new IndicadorController();
-$router->get('/indicadores', $legacyPage('indicadores.php'));
+$router->get('/indicadores', $frontendPage('indicadores.php'));
 $router->get('/indicadores/novo', array($indicadores, 'create'));
 $router->post('/indicadores/novo', function () use ($indicadores) { $indicadores->store(); });
 $router->get('/indicadores/exportar', array($indicadores, 'export'));
@@ -65,7 +63,7 @@ $router->get('/indicadores/{id}/editar', array($indicadores, 'edit'));
 $router->post('/indicadores/{id}/editar', array($indicadores, 'store'));
 $router->post('/indicadores/{id}/status', array($indicadores, 'status'));
 $lancamentos = new LancamentoController();$evidencias = new EvidenciaController();
-$router->get('/lancamentos',$legacyPage('lancamentos.php'));
+$router->get('/lancamentos',$frontendPage('lancamentos.php'));
 $router->get('/lancamentos/novo',array($lancamentos,'create'));
 $router->post('/lancamentos/novo',function()use($lancamentos){$lancamentos->save();});
 $router->get('/lancamentos/{id}',array($lancamentos,'show'));
@@ -77,17 +75,17 @@ $router->post('/lancamentos/{id}/evidencias',array($evidencias,'upload'));
 $router->get('/evidencias/{id}/download',array($evidencias,'download'));
 $router->post('/evidencias/{id}/remover',array($evidencias,'remove'));
 $homologacoes=new HomologacaoController();
-$router->get('/homologacoes',$legacyPage('homologacao.php'));
+$router->get('/homologacoes',$frontendPage('homologacao.php'));
 $router->get('/homologacoes/{id}',array($homologacoes,'show'));
 $router->post('/homologacoes/{id}/{action}',array($homologacoes,'decide'));
-$router->get('/relatorios', $legacyPage('relatorios.php'));
+$router->get('/relatorios', $frontendPage('relatorios.php'));
 $administracao=new AdministracaoController();
-$router->get('/administracao',$legacyPage('administracao.php'));
+$router->get('/administracao',$frontendPage('administracao.php'));
 $router->post('/administracao/usuarios',function()use($administracao){$administracao->saveUser();});
 $router->post('/administracao/usuarios/{id}',array($administracao,'saveUser'));
 $router->post('/administracao/configuracoes/{key}',array($administracao,'saveConfig'));
 $router->get('/auditoria',array($administracao,'audit'));
-$router->any('/logout', $legacyPage('logout.php'));
+$router->any('/logout', $frontendPage('logout.php'));
 
 foreach (array('database', 'configuracoes', 'homologacoes', 'indicadores', 'lancamentos', 'relatorios', 'resumo-executivo', 'solicitacoes-reabertura', 'usuarios-acesso', 'visao-trimestral') as $api) {
     $router->any('/api/' . $api, $legacyApi($api . '.php'));
