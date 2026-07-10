@@ -1,62 +1,17 @@
 <?php
 declare(strict_types=1);
-
-require_once __DIR__ . '/BaseDadosService.php';
-require_once __DIR__ . '/SituacaoService.php';
-
+require_once __DIR__.'/../repositories/DashboardRepository.php';require_once __DIR__.'/SituacaoService.php';
 final class ResumoExecutivoService
 {
-    private $base;
-    public function __construct(BaseDadosService $base = null) { $this->base = $base ?: new BaseDadosService(); }
-
-    public function resumo(array $filters = []): array
+    private $repo;public function __construct($dependency=null){if($dependency instanceof DashboardRepository)$this->repo=$dependency;elseif($dependency instanceof PDO)$this->repo=new DashboardRepository($dependency);else$this->repo=new DashboardRepository(Database::getConnection());}
+    public function resumo(array $filters=array())
     {
-        $indicadores = $this->base->collection('indicadores', $filters);
-        $lancamentos = $this->base->collection('lancamentos', $filters);
-        $ultimos = [];
-        foreach ($lancamentos as $lancamento) {
-            $id = (int) $lancamento['indicadorId'];
-            if (!isset($ultimos[$id]) || strcmp((string) $lancamento['competencia'], (string) $ultimos[$id]['competencia']) > 0) {
-                $ultimos[$id] = $lancamento;
-            }
-        }
-
-        $tabela = [];
-        foreach ($indicadores as $indicador) {
-            $lancamento = $ultimos[(int) $indicador['id']] ?? null;
-            $situacao = SituacaoService::normalizar($lancamento['situacaoCalculada'] ?? null) ?? 'Sem dados';
-            $tabela[] = [
-                'indicador' => $indicador,
-                'lancamento' => $lancamento,
-                'pilar' => $indicador['pilar'],
-                'situacao' => $situacao,
-                'status' => $lancamento['status'] ?? 'Não iniciado',
-                'competencia' => $lancamento['nomeMes'] ?? null,
-            ];
-        }
-
-        $cards = [
-            'totalIndicadores' => count($indicadores),
-            'indicadoresAtingidos' => count(array_filter($tabela, function ($r) { return $r['situacao'] === 'Atingido'; })),
-            'indicadoresAbaixoMeta' => count(array_filter($tabela, function ($r) { return $r['situacao'] === 'Abaixo da meta'; })),
-            'indicadoresSemDados' => count(array_filter($tabela, function ($r) { return $r['situacao'] === 'Sem dados'; })),
-            'indicadoresHomologados' => count(array_filter($tabela, function ($r) { return $r['status'] === 'Homologado'; })),
-            'pendentesHomologacao' => count(array_filter($tabela, function ($r) { return $r['status'] === 'Enviado para homologação'; })),
-        ];
-
-        $distribuicao = [];
-        foreach ($tabela as $row) {
-            $pilar = $row['pilar'] ?: 'Não informado';
-            if (!isset($distribuicao[$pilar])) $distribuicao[$pilar] = ['pilar' => $pilar, 'Atingido' => 0, 'Abaixo da meta' => 0, 'Sem dados' => 0];
-            $key = in_array($row['situacao'], ['Atingido', 'Abaixo da meta'], true) ? $row['situacao'] : 'Sem dados';
-            $distribuicao[$pilar][$key]++;
-        }
-
-        return [
-            'cards' => $cards,
-            'distribuicaoPorPilar' => array_values($distribuicao),
-            'destaques' => array_slice($tabela, 0, 12),
-            'tabelaExecutiva' => $tabela,
-        ];
+        $ind=$this->repo->indicators($filters);$lan=$this->repo->launches($filters);$latest=array();$statusCounts=array();$monthly=array();$percentages=array();
+        foreach($lan as$l){$status=$this->status($l['status']);$statusCounts[$status]=isset($statusCounts[$status])?$statusCounts[$status]+1:1;$key=sprintf('%04d-%02d',(int)$l['ano'],(int)$l['mes']);if(!isset($monthly[$key]))$monthly[$key]=array('competencia'=>$key,'total'=>0,'percentuais'=>array());$monthly[$key]['total']++;$pct=$this->number($l['percentual_atingido']);if($pct!==null){$monthly[$key]['percentuais'][]=$pct;$percentages[]=$pct;}if(!isset($latest[$l['indicador_id']])||strcmp($l['competencia'],$latest[$l['indicador_id']]['competencia'])>0)$latest[$l['indicador_id']]=$l;}
+        $situations=array('Atingido'=>0,'Abaixo da meta'=>0,'Sem dados'=>0);$pillars=array();foreach($ind as$i){$l=isset($latest[$i['id']])?$latest[$i['id']]:null;$sit=$l?SituacaoService::normalizar($l['situacao']):null;if(!in_array($sit,array('Atingido','Abaixo da meta'),true))$sit='Sem dados';$situations[$sit]++;$pillar=$i['pilar']?:'Nao informado';if(!isset($pillars[$pillar]))$pillars[$pillar]=array('pilar'=>$pillar,'total'=>0,'atingidos'=>0,'abaixoMeta'=>0,'semDados'=>0);$pillars[$pillar]['total']++;if($sit==='Atingido')$pillars[$pillar]['atingidos']++;elseif($sit==='Abaixo da meta')$pillars[$pillar]['abaixoMeta']++;else$pillars[$pillar]['semDados']++;}
+        ksort($monthly);$trend=array();foreach($monthly as$m)$trend[]=array('competencia'=>$m['competencia'],'lancamentos'=>$m['total'],'mediaAtingimento'=>$this->average($m['percentuais']));$hom=$this->repo->homologationCounts($filters);
+        return array('cards'=>array('totalIndicadores'=>count($ind),'indicadoresAtivos'=>$this->countActive($ind,true),'indicadoresInativos'=>$this->countActive($ind,false),'lancamentos'=>count($lan),'rascunhos'=>isset($statusCounts['Rascunho'])?$statusCounts['Rascunho']:0,'submetidos'=>isset($statusCounts['Enviado para homologacao'])?$statusCounts['Enviado para homologacao']:0,'homologacoesPendentes'=>isset($statusCounts['Enviado para homologacao'])?$statusCounts['Enviado para homologacao']:0,'homologacoesAprovadas'=>isset($hom['Homologado'])?$hom['Homologado']:0,'homologacoesRejeitadas'=>isset($hom['Devolvido para ajuste'])?$hom['Devolvido para ajuste']:0,'mediaAtingimento'=>$this->average($percentages)),'graficos'=>array('situacoes'=>$situations,'pilares'=>array_values($pillars),'evolucao'=>$trend),'atualizacoesRecentes'=>$this->repo->recent($filters,10),'filtros'=>$filters);
     }
+    public function graficos(array$f=array()){return$this->resumo($f)['graficos'];}
+    private function number($v){if($v===null||$v===''||!is_numeric($v))return null;$n=(float)$v;return is_finite($n)?$n:null;}private function average(array$v){return count($v)?round(array_sum($v)/count($v),2):null;}private function countActive(array$i,$active){$n=0;foreach($i as$x)if((bool)$x['ativo']===$active)$n++;return$n;}private function status($s){return str_replace(array('homologação','homologaÃ§Ã£o'),'homologacao',(string)$s);}
 }

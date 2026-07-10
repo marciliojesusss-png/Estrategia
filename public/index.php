@@ -12,6 +12,10 @@ require_once __DIR__ . '/../app/controllers/LancamentoController.php';
 require_once __DIR__ . '/../app/controllers/EvidenciaController.php';
 require_once __DIR__ . '/../app/controllers/HomologacaoController.php';
 require_once __DIR__ . '/../app/controllers/HomologacaoApiController.php';
+require_once __DIR__ . '/../app/controllers/DashboardController.php';
+require_once __DIR__ . '/../app/controllers/DashboardApiController.php';
+require_once __DIR__ . '/../app/controllers/AdministracaoController.php';
+require_once __DIR__ . '/../app/controllers/AdministracaoApiController.php';
 
 $router = new Router();
 $legacyPage = function ($file) {
@@ -22,8 +26,9 @@ $legacyApi = function ($file) {
 };
 
 $router->get('/', function () { Response::redirect(Auth::homeForProfile(Auth::authenticate()['perfil'])); });
-$router->get('/dashboard', $legacyPage('resumo-executivo.php'));
-$router->get('/resumo-executivo', $legacyPage('resumo-executivo.php'));
+$dashboard=new DashboardController();
+$router->get('/dashboard',array($dashboard,'index'));
+$router->get('/resumo-executivo',array($dashboard,'index'));
 $router->get('/visao-trimestral', $legacyPage('visao-trimestral.php'));
 $indicadores = new IndicadorController();
 $router->get('/indicadores', array($indicadores, 'index'));
@@ -51,7 +56,12 @@ $router->get('/homologacoes',array($homologacoes,'index'));
 $router->get('/homologacoes/{id}',array($homologacoes,'show'));
 $router->post('/homologacoes/{id}/{action}',array($homologacoes,'decide'));
 $router->get('/relatorios', $legacyPage('relatorios.php'));
-$router->get('/administracao', $legacyPage('administracao.php'));
+$administracao=new AdministracaoController();
+$router->get('/administracao',array($administracao,'index'));
+$router->post('/administracao/usuarios',function()use($administracao){$administracao->saveUser();});
+$router->post('/administracao/usuarios/{id}',array($administracao,'saveUser'));
+$router->post('/administracao/configuracoes/{key}',array($administracao,'saveConfig'));
+$router->get('/auditoria',array($administracao,'audit'));
 $router->any('/logout', $legacyPage('logout.php'));
 
 foreach (array('database', 'configuracoes', 'homologacoes', 'indicadores', 'lancamentos', 'relatorios', 'resumo-executivo', 'solicitacoes-reabertura', 'usuarios-acesso', 'visao-trimestral') as $api) {
@@ -65,6 +75,11 @@ $router->post('/api/lancamentos/{id}/{action}', array($launchApi, 'handle'));
 $homologacaoApi=new HomologacaoApiController();
 $router->any('/api/homologacoes/{id}',array($homologacaoApi,'handle'));
 $router->post('/api/homologacoes/{id}/{action}',array($homologacaoApi,'handle'));
+$dashboardApi=new DashboardApiController();
+$router->get('/api/dashboard/{action}',array($dashboardApi,'handle'));
+$adminApi=new AdministracaoApiController();
+$router->any('/api/administracao/{resource}',array($adminApi,'handle'));
+$router->any('/api/administracao/{resource}/{id}',array($adminApi,'handle'));
 
 $router->get('/saude', function () {
     Response::success(array('aplicacao' => 'disponivel', 'php' => PHP_VERSION), 'Aplicacao disponivel.');

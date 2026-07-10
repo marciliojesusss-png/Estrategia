@@ -4127,3 +4127,5 @@ select:disabled {
 .app-modal .detail-header {
   margin-bottom: 4px;
 }
+/* Dashboard PHP: visualizacoes acessiveis sem dependencia de CDN. */
+.dashboard-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1rem;margin:1rem 0}.dashboard-cards article{display:grid;gap:.35rem}.dashboard-cards strong{font-size:1.8rem}.accessible-bars{display:grid;gap:1rem}.bar-track{height:1rem;background:#e7edf3;border-radius:999px;overflow:hidden;margin-top:.35rem}.bar-track span{display:block;height:100%;min-width:2px;background:#0669b2;border-radius:inherit}

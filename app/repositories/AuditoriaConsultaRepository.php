@@ -1,0 +1,9 @@
+<?php
+declare(strict_types=1);
+final class AuditoriaConsultaRepository
+{
+ private $db,$driver;public function __construct(PDO$db){$this->db=$db;$this->driver=(string)$db->getAttribute(PDO::ATTR_DRIVER_NAME);}
+ public function audit(array$f,$page,$per){return$this->page('auditoria','data_acao DESC,id DESC',$f,$page,$per,array('usuario','acao','entidade','entidade_id'), 'data_acao');}
+ public function accesses(array$f,$page,$per){return$this->page('acessos_log','data_acesso DESC,id DESC',$f,$page,$per,array('matricula','perfil','sg_unidade'), 'data_acesso');}
+ private function page($table,$order,array$f,$page,$per,array$fields,$date){$page=max(1,(int)$page);$per=max(1,min(100,(int)$per));$w=array();$p=array();foreach($fields as$k)if(!empty($f[$k])){$w[]=$k.' = :'.$k;$p[':'.$k]=$f[$k];}if(!empty($f['dataInicial'])){$w[]=$date.' >= :inicio';$p[':inicio']=$f['dataInicial'];}if(!empty($f['dataFinal'])){$w[]=$date.' <= :fim';$p[':fim']=$f['dataFinal'].'T23:59:59';}$where=$w?' WHERE '.implode(' AND ',$w):'';$c=$this->db->prepare('SELECT COUNT(*) FROM '.$table.$where);$c->execute($p);$total=(int)$c->fetchColumn();$sql='SELECT * FROM '.$table.$where.' ORDER BY '.$order.($this->driver==='sqlsrv'?' OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY':' LIMIT :limit OFFSET :offset');$s=$this->db->prepare($sql);foreach($p as$k=>$v)$s->bindValue($k,$v);$s->bindValue(':offset',($page-1)*$per,PDO::PARAM_INT);$s->bindValue(':limit',$per,PDO::PARAM_INT);$s->execute();$items=$s->fetchAll();if($table==='auditoria')foreach($items as&$item)if($item['entidade']==='configuracoes'&&preg_match('/senha|password|secret|token|credencial/i',$item['entidade_id'])){$item['dados_anteriores_json']='[PROTEGIDO]';$item['dados_novos_json']='[PROTEGIDO]';}return array('items'=>$items,'pagination'=>array('page'=>$page,'perPage'=>$per,'total'=>$total,'pages'=>$total?(int)ceil($total/$per):0));}
+}
