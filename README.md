@@ -46,13 +46,13 @@ O SQLite em `database/indicadores.sqlite` é a origem controlada da migração. 
 
 ```powershell
 # Homologação
-.\migrar-para-sqlserver.bat -Ambiente homologacao -Servidor "SERVIDOR_SQL" -Banco "Estrategia_HML"
+.\migrar-para-sqlserver.bat -Ambiente homologacao -Servidor "DF7436SR439" -Banco "DB5319_IndicadoresEstrategicos"
 
 # Apenas verificar uma carga existente
-.\migrar-para-sqlserver.bat -Ambiente homologacao -Servidor "SERVIDOR_SQL" -Banco "Estrategia_HML" -VerifyOnly
+.\migrar-para-sqlserver.bat -Ambiente homologacao -Servidor "DF7436SR439" -Banco "DB5319_IndicadoresEstrategicos" -VerifyOnly
 
 # Produção — somente após homologação e aceite
-.\migrar-para-sqlserver.bat -Ambiente producao -Servidor "SERVIDOR_SQL" -Banco "DB5319_IndicadoresEstrategicos"
+.\migrar-para-sqlserver.bat -Ambiente producao -Servidor "DF7436SR439" -Banco "DB5319_IndicadoresEstrategicos"
 ```
 
 O migrador cria backup da origem, executa preflight, aplica o schema, copia os dados e reconcilia contagens, IDs, agrupamentos, chaves estrangeiras e JSON. O resultado é salvo em `database/sqlserver/migration-report.json`.

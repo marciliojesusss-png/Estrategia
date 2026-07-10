@@ -144,7 +144,13 @@
       nav.innerHTML = "";
     }
 
-    header.querySelector(".logout-button").addEventListener("click", Auth.logout);
+    header.querySelector(".logout-button").addEventListener("click", () => {
+      if (window.LogoutModal) {
+        window.LogoutModal.open();
+        return;
+      }
+      window.location.href = "/logout";
+    });
 
     const content = document.querySelector(".content");
     if (content) {

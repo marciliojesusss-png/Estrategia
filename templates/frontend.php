@@ -19,7 +19,8 @@ function render_frontend_page($viewFile)
         Auth::currentUserForFrontend(),
         JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
     );
-    $authScript = "<script>window.CAIXA_LOTERIAS_AUTH_USER = {$authUser};</script>\n";
+    $csrfToken = json_encode(Auth::csrfToken(), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+    $authScript = "<script>window.CAIXA_LOTERIAS_AUTH_USER = {$authUser};window.CAIXA_LOTERIAS_CSRF_TOKEN = {$csrfToken};</script>\n<script src=\"/assets/js/logout-modal.js?v=LOGOUT-MODAL-001\" defer></script>\n";
     $html = str_replace('</head>', $authScript . '</head>', $html);
     $html = (string) preg_replace(
         '#assets/css/styles\.css(?:\?v=[^"]*)?#',

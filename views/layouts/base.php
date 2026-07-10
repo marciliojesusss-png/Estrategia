@@ -20,5 +20,6 @@ $contentView = isset($contentView) ? $contentView : null;
       <?php if ($contentView && is_file($contentView)) require $contentView; ?>
     </main>
   </div>
+  <script src="/assets/js/logout-modal.js" defer></script>
 </body>
 </html>
