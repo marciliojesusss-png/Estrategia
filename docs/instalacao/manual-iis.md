@@ -27,7 +27,7 @@
 3. Configure `APP_BASE_PATH=/estrategia` no ambiente do processo FastCGI (este também é o padrão atual do projeto).
 4. Mantenha o `public\web.config` na raiz da aplicação virtual e confirme que o URL Rewrite está instalado.
 
-O login poderá ser acessado por `https://www.gelot.mz.caixa/estrategia/login.php`; a URL canônica usada após a entrada será `https://www.gelot.mz.caixa/estrategia/login`.
+A entrada principal da aplicação é `https://www.gelot.mz.caixa/estrategia/`. Em modo de autenticação local, a própria raiz apresenta o formulário de login. Os demais endereços usam somente rotas limpas, sem extensão `.php`.
 
 ## Diagnóstico rápido
 

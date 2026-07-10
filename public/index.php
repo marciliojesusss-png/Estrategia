@@ -36,7 +36,8 @@ $legacyApi = function ($file) {
 
 $router->get('/', function () {
     if (Auth::isLocal()) {
-        Response::redirect('/login');
+        require APP_ROOT . '/views/auth/login.php';
+        return;
     }
     Response::redirect(Auth::homeForProfile(Auth::authenticate()['perfil']));
 });
@@ -45,9 +46,6 @@ $router->get('/login', function () {
         Response::redirect('/');
     }
     require APP_ROOT . '/views/auth/login.php';
-});
-$router->get('/login.php', function () {
-    Response::redirect('/login');
 });
 $router->post('/login', function () {
     if (!Auth::isLocal()) {
