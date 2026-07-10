@@ -491,7 +491,7 @@
   function isPhpBackend() {
     return typeof window !== "undefined" &&
       window.location?.protocol?.startsWith("http") &&
-      window.location?.pathname?.endsWith(".php");
+      Boolean(window.CAIXA_LOTERIAS_AUTH_USER);
   }
 
   async function phpApiFetch(path, options = {}) {

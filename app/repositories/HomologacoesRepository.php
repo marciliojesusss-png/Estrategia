@@ -33,6 +33,14 @@ final class HomologacoesRepository
 
     public function all(array $filters=array()){return $this->history($filters,1,100)['items'];}
 
+    public function replaceAll(array $items)
+    {
+        $update=$this->db->prepare('UPDATE homologacoes SET lancamento_id=:lancamento,acao=:acao,status_anterior=:anterior,status_novo=:novo,justificativa=:justificativa,usuario=:usuario,perfil_usuario=:perfil,data_acao=:data,created_at=:created WHERE id=:id');
+        $insert=$this->db->prepare('INSERT INTO homologacoes (id,lancamento_id,acao,status_anterior,status_novo,justificativa,usuario,perfil_usuario,data_acao,created_at) VALUES (:id,:lancamento,:acao,:anterior,:novo,:justificativa,:usuario,:perfil,:data,:created)');
+        $this->db->beginTransaction();
+        try{foreach($items as$item){$now=date('c');$p=array(':id'=>(string)(isset($item['id'])?$item['id']:uniqid('homologacao-',true)),':lancamento'=>(string)(isset($item['lancamentoId'])?$item['lancamentoId']:(isset($item['lancamento_id'])?$item['lancamento_id']:'')),':acao'=>isset($item['acao'])?$item['acao']:'registro',':anterior'=>isset($item['statusAnterior'])?$item['statusAnterior']:(isset($item['status_anterior'])?$item['status_anterior']:null),':novo'=>isset($item['statusNovo'])?$item['statusNovo']:(isset($item['status_novo'])?$item['status_novo']:null),':justificativa'=>isset($item['justificativa'])?$item['justificativa']:null,':usuario'=>isset($item['usuario'])?$item['usuario']:null,':perfil'=>isset($item['perfilUsuario'])?$item['perfilUsuario']:(isset($item['perfil_usuario'])?$item['perfil_usuario']:null),':data'=>isset($item['dataAcao'])?$item['dataAcao']:(isset($item['data_acao'])?$item['data_acao']:$now),':created'=>isset($item['createdAt'])?$item['createdAt']:$now);$update->execute($p);if($update->rowCount()===0){$exists=$this->db->prepare('SELECT COUNT(*) FROM homologacoes WHERE id=:id');$exists->execute(array(':id'=>$p[':id']));if((int)$exists->fetchColumn()===0)$insert->execute($p);}}$this->db->commit();}catch(Throwable$error){if($this->db->inTransaction())$this->db->rollBack();throw$error;}
+    }
+
     private function where(array$f,$pending)
     {
         $a=$pending?'l':'h';$conditions=array();$p=array();if($pending)$conditions[]="l.status = :pending";$p[':pending']=$pending?'Enviado para homologacao':null;if(!$pending)unset($p[':pending']);

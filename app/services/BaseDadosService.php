@@ -103,19 +103,17 @@ final class BaseDadosService
             $existingById[(string) $existing['id']] = $existing;
         }
 
-        $unitStatuses = [
-            'Nao iniciado',
-            'NÃ£o iniciado',
+        $unitStatuses = array(
             'Não iniciado',
+            'Nao iniciado',
             'Rascunho',
             'Em preenchimento',
-            'Enviado para homologaÃ§Ã£o',
-            'Enviado para homologacao',
             'Enviado para homologação',
+            'Enviado para homologacao',
             'Devolvido para ajuste',
             'Reaberto',
             'Retificado',
-        ];
+        );
 
         $sanitized = [];
         foreach ($items as $item) {

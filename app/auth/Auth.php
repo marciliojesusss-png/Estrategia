@@ -26,6 +26,19 @@ final class Auth
         'C000002' => array('matricula' => 'C000002', 'nome' => 'Unidade Apuradora Local', 'funcao' => 'Desenvolvimento', 'unidade' => 'SUCOL', 'sg_unidade' => 'SUCOL', 'no_unidade' => 'Unidade SUCOL'),
         'C000003' => array('matricula' => 'C000003', 'nome' => 'Homologador Local', 'funcao' => 'Desenvolvimento', 'unidade' => 'DIFIR', 'sg_unidade' => 'DIFIR', 'no_unidade' => 'Diretoria DIFIR'),
         'C000004' => array('matricula' => 'C000004', 'nome' => 'Usuario Companhia Local', 'funcao' => 'Desenvolvimento', 'unidade' => 'CAIXA', 'sg_unidade' => 'CAIXA', 'no_unidade' => 'CAIXA Loterias'),
+        'ADMIN' => array('matricula' => 'ADMIN', 'nome' => 'Administrador Simulado', 'perfil' => 'administrador', 'sg_unidade' => 'GERAL', 'no_unidade' => 'Escopo geral'),
+        'CONSULTA' => array('matricula' => 'CONSULTA', 'nome' => 'Consulta Gestão', 'perfil' => 'usuario_companhia', 'sg_unidade' => 'GERAL', 'no_unidade' => 'Escopo geral'),
+        'USUARIO-COMPANHIA' => array('matricula' => 'USUARIO-COMPANHIA', 'nome' => 'Usuário da Companhia', 'perfil' => 'usuario_companhia', 'sg_unidade' => 'GERAL', 'no_unidade' => 'CAIXA Loterias'),
+        'UNIDADE-GENOL' => array('matricula' => 'UNIDADE-GENOL', 'nome' => 'Unidade GENOL', 'perfil' => 'unidade_apuradora', 'sg_unidade' => 'GENOL', 'no_unidade' => 'GENOL'),
+        'UNIDADE-GERIN' => array('matricula' => 'UNIDADE-GERIN', 'nome' => 'Unidade GERIN', 'perfil' => 'unidade_apuradora', 'sg_unidade' => 'GERIN', 'no_unidade' => 'GERIN'),
+        'UNIDADE-SUCOL' => array('matricula' => 'UNIDADE-SUCOL', 'nome' => 'Unidade SUCOL', 'perfil' => 'unidade_apuradora', 'sg_unidade' => 'SUCOL', 'no_unidade' => 'SUCOL'),
+        'UNIDADE-SUCTF' => array('matricula' => 'UNIDADE-SUCTF', 'nome' => 'Unidade SUCTF', 'perfil' => 'unidade_apuradora', 'sg_unidade' => 'SUCTF', 'no_unidade' => 'SUCTF'),
+        'UNIDADE-SULOT' => array('matricula' => 'UNIDADE-SULOT', 'nome' => 'Unidade SULOT', 'perfil' => 'unidade_apuradora', 'sg_unidade' => 'SULOT', 'no_unidade' => 'SULOT'),
+        'UNIDADE-SURCI' => array('matricula' => 'UNIDADE-SURCI', 'nome' => 'Unidade SURCI', 'perfil' => 'unidade_apuradora', 'sg_unidade' => 'SURCI', 'no_unidade' => 'SURCI'),
+        'DIRETORIA-DICOT' => array('matricula' => 'DIRETORIA-DICOT', 'nome' => 'Diretoria DICOT', 'perfil' => 'homologador', 'sg_unidade' => 'DICOT', 'no_unidade' => 'DICOT'),
+        'DIRETORIA-DICRI' => array('matricula' => 'DIRETORIA-DICRI', 'nome' => 'Diretoria DICRI', 'perfil' => 'homologador', 'sg_unidade' => 'DICRI', 'no_unidade' => 'DICRI'),
+        'DIRETORIA-DIFIR' => array('matricula' => 'DIRETORIA-DIFIR', 'nome' => 'Diretoria DIFIR', 'perfil' => 'homologador', 'sg_unidade' => 'DIFIR', 'no_unidade' => 'DIFIR'),
+        'DIRETORIA-DILOT' => array('matricula' => 'DIRETORIA-DILOT', 'nome' => 'Diretoria DILOT', 'perfil' => 'homologador', 'sg_unidade' => 'DILOT', 'no_unidade' => 'DILOT'),
     );
 
     public static function authenticate()
@@ -267,9 +280,9 @@ final class Auth
     {
         $profiles = array('C000001' => 'administrador', 'C000002' => 'unidade_apuradora', 'C000003' => 'homologador', 'C000004' => 'usuario_companhia');
         $user = isset(self::$localUsers[$matricula]) ? self::$localUsers[$matricula] : array('matricula' => $matricula, 'nome' => $matricula);
-        $user['perfil'] = isset($profiles[$matricula]) ? $profiles[$matricula] : self::DEFAULT_PROFILE;
-        $user['unidade_apuradora'] = $matricula === 'C000002' ? 'SUCOL' : '';
-        $user['diretoria_responsavel'] = $matricula === 'C000003' ? 'DIFIR' : '';
+        $user['perfil'] = isset($user['perfil']) ? $user['perfil'] : (isset($profiles[$matricula]) ? $profiles[$matricula] : self::DEFAULT_PROFILE);
+        $user['unidade_apuradora'] = $user['perfil'] === 'unidade_apuradora' ? (isset($user['sg_unidade']) ? $user['sg_unidade'] : '') : '';
+        $user['diretoria_responsavel'] = $user['perfil'] === 'homologador' ? (isset($user['sg_unidade']) ? $user['sg_unidade'] : '') : '';
         return $user;
     }
 

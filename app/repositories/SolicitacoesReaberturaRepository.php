@@ -46,8 +46,9 @@ final class SolicitacoesReaberturaRepository
     {
         $this->db->beginTransaction();
         try {
-            $stmt = $this->db->prepare(
-                'INSERT OR REPLACE INTO solicitacoes_reabertura (
+            $update = $this->db->prepare('UPDATE solicitacoes_reabertura SET lancamento_id=:lancamento_id,indicador_id=:indicador_id,competencia=:competencia,solicitante_usuario=:solicitante_usuario,solicitante_perfil=:solicitante_perfil,solicitante_unidade=:solicitante_unidade,tipo_ajuste=:tipo_ajuste,justificativa=:justificativa,observacao_complementar=:observacao_complementar,status_solicitacao=:status_solicitacao,administrador_responsavel=:administrador_responsavel,decisao_administrador=:decisao_administrador,justificativa_decisao=:justificativa_decisao,data_solicitacao=:data_solicitacao,data_decisao=:data_decisao,created_at=:created_at,updated_at=:updated_at WHERE id=:id');
+            $insert = $this->db->prepare(
+                'INSERT INTO solicitacoes_reabertura (
                     id, lancamento_id, indicador_id, competencia, solicitante_usuario,
                     solicitante_perfil, solicitante_unidade, tipo_ajuste, justificativa,
                     observacao_complementar, status_solicitacao, administrador_responsavel,
@@ -63,7 +64,7 @@ final class SolicitacoesReaberturaRepository
             );
             $now = date('c');
             foreach ($items as $item) {
-                $stmt->execute([
+                $params = [
                     ':id' => (string) ($item['id'] ?? uniqid('sol-reab-', true)),
                     ':lancamento_id' => (string) ($item['lancamentoId'] ?? ''),
                     ':indicador_id' => (string) ($item['indicadorId'] ?? ''),
@@ -82,7 +83,13 @@ final class SolicitacoesReaberturaRepository
                     ':data_decisao' => $item['dataDecisao'] ?? null,
                     ':created_at' => $item['createdAt'] ?? $now,
                     ':updated_at' => $item['updatedAt'] ?? $now,
-                ]);
+                ];
+                $update->execute($params);
+                if ($update->rowCount() === 0) {
+                    $exists = $this->db->prepare('SELECT COUNT(*) FROM solicitacoes_reabertura WHERE id=:id');
+                    $exists->execute(array(':id' => $params[':id']));
+                    if ((int) $exists->fetchColumn() === 0) $insert->execute($params);
+                }
             }
             $this->db->commit();
         } catch (Throwable $error) {

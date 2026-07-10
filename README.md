@@ -65,6 +65,12 @@ Execute a regressão completa:
 powershell -ExecutionPolicy Bypass -File scripts\testar-projeto.ps1
 ```
 
+Após alterar arquivos em `assets/`, sincronize a raiz pública:
+
+```powershell
+powershell -File scripts\sincronizar-assets.ps1
+```
+
 No servidor de destino:
 
 ```powershell

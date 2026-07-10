@@ -27,8 +27,9 @@ final class AuditoriaRepository
     {
         $this->db->beginTransaction();
         try {
-            $stmt = $this->db->prepare(
-                'INSERT OR REPLACE INTO auditoria (
+            $update = $this->db->prepare('UPDATE auditoria SET entidade=:entidade,entidade_id=:entidade_id,acao=:acao,descricao=:descricao,dados_anteriores_json=:dados_anteriores_json,dados_novos_json=:dados_novos_json,usuario=:usuario,perfil_usuario=:perfil_usuario,data_acao=:data_acao,created_at=:created_at WHERE id=:id');
+            $insert = $this->db->prepare(
+                'INSERT INTO auditoria (
                     id, entidade, entidade_id, acao, descricao, dados_anteriores_json,
                     dados_novos_json, usuario, perfil_usuario, data_acao, created_at
                  ) VALUES (
@@ -38,7 +39,7 @@ final class AuditoriaRepository
             );
             $now = date('c');
             foreach ($items as $item) {
-                $stmt->execute([
+                $params = [
                     ':id' => (string) ($item['id'] ?? uniqid('auditoria-', true)),
                     ':entidade' => $item['entidade'] ?? null,
                     ':entidade_id' => (string) ($item['registroId'] ?? $item['entidadeId'] ?? ''),
@@ -50,7 +51,13 @@ final class AuditoriaRepository
                     ':perfil_usuario' => $item['perfilUsuario'] ?? null,
                     ':data_acao' => $item['dataHora'] ?? $now,
                     ':created_at' => $now,
-                ]);
+                ];
+                $update->execute($params);
+                if ($update->rowCount() === 0) {
+                    $exists = $this->db->prepare('SELECT COUNT(*) FROM auditoria WHERE id=:id');
+                    $exists->execute(array(':id' => $params[':id']));
+                    if ((int) $exists->fetchColumn() === 0) $insert->execute($params);
+                }
             }
             $this->db->commit();
         } catch (Throwable $error) {
