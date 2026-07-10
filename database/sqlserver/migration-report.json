@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-07T16:18:11.280074+00:00",
+  "generatedAt": "2026-07-07T16:34:29.937374+00:00",
   "sqlite": "C:\\Users\\jonat\\OneDrive\\Documentos\\GitHub\\Estratégia\\database\\indicadores.sqlite",
   "checks": {
     "counts": {
@@ -172,8 +172,24 @@
         "errors": []
       },
       "configuracoes": {
-        "passed": true,
-        "errors": []
+        "passed": false,
+        "errors": [
+          {
+            "id": "ano_referencia",
+            "column": "valor_json",
+            "error": "ISJSON retornou 0"
+          },
+          {
+            "id": "ultima_migracao_json_sql",
+            "column": "valor_json",
+            "error": "ISJSON retornou 0"
+          },
+          {
+            "id": "versao_base",
+            "column": "valor_json",
+            "error": "ISJSON retornou 0"
+          }
+        ]
       },
       "usuarios_validacao": {
         "passed": true,
@@ -195,5 +211,5 @@
       }
     }
   },
-  "status": "ok"
+  "status": "alertas"
 }
