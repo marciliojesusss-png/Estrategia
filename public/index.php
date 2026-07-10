@@ -7,6 +7,11 @@ require_once __DIR__ . '/../app/core/Database.php';
 require_once __DIR__ . '/../app/auth/Auth.php';
 require_once __DIR__ . '/../app/controllers/IndicadorController.php';
 require_once __DIR__ . '/../app/controllers/IndicadorApiController.php';
+require_once __DIR__ . '/../app/controllers/LancamentoApiController.php';
+require_once __DIR__ . '/../app/controllers/LancamentoController.php';
+require_once __DIR__ . '/../app/controllers/EvidenciaController.php';
+require_once __DIR__ . '/../app/controllers/HomologacaoController.php';
+require_once __DIR__ . '/../app/controllers/HomologacaoApiController.php';
 
 $router = new Router();
 $legacyPage = function ($file) {
@@ -29,8 +34,22 @@ $router->get('/indicadores/{id}', array($indicadores, 'show'));
 $router->get('/indicadores/{id}/editar', array($indicadores, 'edit'));
 $router->post('/indicadores/{id}/editar', array($indicadores, 'store'));
 $router->post('/indicadores/{id}/status', array($indicadores, 'status'));
-$router->get('/lancamentos', $legacyPage('lancamentos.php'));
-$router->get('/homologacoes', $legacyPage('homologacao.php'));
+$lancamentos = new LancamentoController();$evidencias = new EvidenciaController();
+$router->get('/lancamentos',array($lancamentos,'index'));
+$router->get('/lancamentos/novo',array($lancamentos,'create'));
+$router->post('/lancamentos/novo',function()use($lancamentos){$lancamentos->save();});
+$router->get('/lancamentos/{id}',array($lancamentos,'show'));
+$router->get('/lancamentos/{id}/editar',array($lancamentos,'edit'));
+$router->post('/lancamentos/{id}/editar',array($lancamentos,'save'));
+$router->post('/lancamentos/{id}/submeter',array($lancamentos,'submit'));
+$router->post('/lancamentos/{id}/excluir',array($lancamentos,'delete'));
+$router->post('/lancamentos/{id}/evidencias',array($evidencias,'upload'));
+$router->get('/evidencias/{id}/download',array($evidencias,'download'));
+$router->post('/evidencias/{id}/remover',array($evidencias,'remove'));
+$homologacoes=new HomologacaoController();
+$router->get('/homologacoes',array($homologacoes,'index'));
+$router->get('/homologacoes/{id}',array($homologacoes,'show'));
+$router->post('/homologacoes/{id}/{action}',array($homologacoes,'decide'));
 $router->get('/relatorios', $legacyPage('relatorios.php'));
 $router->get('/administracao', $legacyPage('administracao.php'));
 $router->any('/logout', $legacyPage('logout.php'));
@@ -40,6 +59,12 @@ foreach (array('database', 'configuracoes', 'homologacoes', 'indicadores', 'lanc
 }
 $indicatorApi = new IndicadorApiController();
 $router->any('/api/indicadores/{id}', array($indicatorApi, 'handle'));
+$launchApi = new LancamentoApiController();
+$router->any('/api/lancamentos/{id}', array($launchApi, 'handle'));
+$router->post('/api/lancamentos/{id}/{action}', array($launchApi, 'handle'));
+$homologacaoApi=new HomologacaoApiController();
+$router->any('/api/homologacoes/{id}',array($homologacaoApi,'handle'));
+$router->post('/api/homologacoes/{id}/{action}',array($homologacaoApi,'handle'));
 
 $router->get('/saude', function () {
     Response::success(array('aplicacao' => 'disponivel', 'php' => PHP_VERSION), 'Aplicacao disponivel.');

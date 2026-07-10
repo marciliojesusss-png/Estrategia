@@ -1,0 +1,9 @@
+<?php
+declare(strict_types=1);
+final class EvidenciaStorage
+{
+    private $mimes=array('pdf'=>array('application/pdf'),'jpg'=>array('image/jpeg'),'jpeg'=>array('image/jpeg'),'png'=>array('image/png'),'xls'=>array('application/vnd.ms-excel','application/octet-stream'),'xlsx'=>array('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','application/zip'),'doc'=>array('application/msword','application/octet-stream'),'docx'=>array('application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/zip'));
+    public function validate(array $f){$e=array();if(!isset($f['error'])||$f['error']!==UPLOAD_ERR_OK)$e[]='Falha no envio.';$name=isset($f['name'])?basename($f['name']):'';$ext=strtolower(pathinfo($name,PATHINFO_EXTENSION));$allowed=array_filter(array_map('trim',explode(',',UPLOAD_ALLOWED_EXTENSIONS)));if(!in_array($ext,$allowed,true)||!isset($this->mimes[$ext]))$e[]='Extensao nao autorizada.';if(empty($f['size'])||$f['size']>UPLOAD_MAX_BYTES)$e[]='Tamanho de arquivo invalido.';$mime='';if(empty($e)&&is_file($f['tmp_name'])){$fi=new finfo(FILEINFO_MIME_TYPE);$mime=(string)$fi->file($f['tmp_name']);if(!in_array($mime,$this->mimes[$ext],true))$e[]='Tipo MIME nao autorizado.';}return array('valid'=>!$e,'errors'=>$e,'extension'=>$ext,'mime'=>$mime,'original'=>$name);}
+    public function store(array $f,array $v){if(!$v['valid']||!is_uploaded_file($f['tmp_name']))throw new RuntimeException('Arquivo de upload invalido.');if(!is_dir(UPLOAD_PATH)&&!mkdir(UPLOAD_PATH,0750,true))throw new RuntimeException('Armazenamento indisponivel.');$stored=bin2hex(random_bytes(24)).'.'.$v['extension'];$path=UPLOAD_PATH.'/'.$stored;if(!move_uploaded_file($f['tmp_name'],$path))throw new RuntimeException('Falha ao armazenar evidencia.');return array('path'=>$path,'stored'=>$stored);}
+    public function remove($path){return is_file($path)?unlink($path):true;}
+}

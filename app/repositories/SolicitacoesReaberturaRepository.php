@@ -7,7 +7,6 @@ final class SolicitacoesReaberturaRepository
     public function __construct(PDO $db)
     {
         $this->db = $db;
-        $this->ensureSchema();
     }
 
     public function all(array $filters = []): array
@@ -90,37 +89,6 @@ final class SolicitacoesReaberturaRepository
             $this->db->rollBack();
             throw $error;
         }
-    }
-
-    private function ensureSchema(): void
-    {
-        $this->db->exec(
-            "CREATE TABLE IF NOT EXISTS solicitacoes_reabertura (
-                id TEXT PRIMARY KEY,
-                lancamento_id TEXT NOT NULL,
-                indicador_id TEXT,
-                competencia TEXT,
-                solicitante_usuario TEXT,
-                solicitante_perfil TEXT,
-                solicitante_unidade TEXT,
-                tipo_ajuste TEXT,
-                justificativa TEXT NOT NULL,
-                observacao_complementar TEXT,
-                status_solicitacao TEXT NOT NULL,
-                administrador_responsavel TEXT,
-                decisao_administrador TEXT,
-                justificativa_decisao TEXT,
-                data_solicitacao TEXT,
-                data_decisao TEXT,
-                created_at TEXT,
-                updated_at TEXT
-            )"
-        );
-        $this->db->exec(
-            "CREATE UNIQUE INDEX IF NOT EXISTS idx_solicitacoes_reabertura_pendente
-             ON solicitacoes_reabertura(lancamento_id)
-             WHERE status_solicitacao = 'Pendente'"
-        );
     }
 
     private function map(array $row): array

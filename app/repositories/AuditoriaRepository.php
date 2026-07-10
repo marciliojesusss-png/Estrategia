@@ -67,7 +67,7 @@ final class AuditoriaRepository
         );
         $now = date('c');
         $stmt->execute(array(
-            ':id' => uniqid('auditoria-', true), ':entidade' => 'indicadores',
+            ':id' => uniqid('auditoria-', true), ':entidade' => isset($item['entidade']) ? $item['entidade'] : 'indicadores',
             ':entidade_id' => (string) $item['registroId'], ':acao' => $item['acao'],
             ':descricao' => isset($item['descricao']) ? $item['descricao'] : null,
             ':anterior' => self::encode(isset($item['valorAnterior']) ? $item['valorAnterior'] : null),

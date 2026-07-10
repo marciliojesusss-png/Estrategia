@@ -1,151 +1,18 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/../services/SituacaoService.php';
-
 final class LancamentosRepository
 {
-    private $db;
-    public function __construct(PDO $db) { $this->db = $db; }
-
-    public function all(array $filters = []): array
-    {
-        $sql = 'SELECT * FROM lancamentos WHERE 1=1';
-        $params = [];
-        $map = [
-            'indicadorId' => 'indicador_id',
-            'ano' => 'ano',
-            'mes' => 'mes',
-            'trimestre' => 'trimestre',
-            'unidadeApuradora' => 'unidade_apuradora',
-            'status' => 'status',
-        ];
-        foreach ($map as $key => $column) {
-            if (($filters[$key] ?? '') !== '' && ($filters[$key] ?? '') !== 'Todos') {
-                $sql .= " AND {$column} = :{$key}";
-                $params[":{$key}"] = $filters[$key];
-            }
-        }
-        $sql .= ' ORDER BY indicador_id, ano, mes';
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute($params);
-        return array_map([$this, 'map'], $stmt->fetchAll());
-    }
-
-    public function replaceAll(array $items): void
-    {
-        $this->db->beginTransaction();
-        try {
-            $stmt = $this->db->prepare(
-                'INSERT OR REPLACE INTO lancamentos (
-                    id, indicador_id, competencia, ano, mes, trimestre, plano, pilar,
-                    unidade_apuradora, diretoria_responsavel, dados_entrada_json,
-                    resultado_calculado, resultado_oficial, meta_referencia,
-                    percentual_atingido, situacao, status, observacao_unidade,
-                    evidencia_id, usuario_responsavel, created_at, updated_at
-                 ) VALUES (
-                    :id, :indicador_id, :competencia, :ano, :mes, :trimestre, :plano, :pilar,
-                    :unidade_apuradora, :diretoria_responsavel, :dados_entrada_json,
-                    :resultado_calculado, :resultado_oficial, :meta_referencia,
-                    :percentual_atingido, :situacao, :status, :observacao_unidade,
-                    :evidencia_id, :usuario_responsavel, :created_at, :updated_at
-                 )'
-            );
-
-            $now = date('c');
-            foreach ($items as $item) {
-                $ano = (int) ($item['ano'] ?? 2026);
-                $mes = (int) ($item['mes'] ?? 1);
-                $competencia = $item['competencia'] ?? sprintf('%04d-%02d', $ano, $mes);
-                $stmt->execute([
-                    ':id' => (string) ($item['id'] ?? uniqid('lancamento-', true)),
-                    ':indicador_id' => (string) ($item['indicadorId'] ?? $item['indicador_id'] ?? ''),
-                    ':competencia' => $competencia,
-                    ':ano' => $ano,
-                    ':mes' => $mes,
-                    ':trimestre' => $item['trimestre'] ?? (ceil($mes / 3) . 'TRI/' . $ano),
-                    ':plano' => $item['plano'] ?? null,
-                    ':pilar' => $item['pilar'] ?? null,
-                    ':unidade_apuradora' => $item['unidadeApuradora'] ?? null,
-                    ':diretoria_responsavel' => $item['diretoriaResponsavel'] ?? null,
-                    ':dados_entrada_json' => json_encode($item['camposEntrada'] ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-                    ':resultado_calculado' => $this->text($item['resultadoMensal'] ?? $item['realizadoMensal'] ?? null),
-                    ':resultado_oficial' => $this->text($item['resultadoOficialAnual'] ?? $item['resultadoAcumulado'] ?? $item['resultadoMensal'] ?? null),
-                    ':meta_referencia' => $this->text($item['metaMensal'] ?? $item['metaReferencia'] ?? null),
-                    ':percentual_atingido' => $this->text($item['percentualAtingidoAnual'] ?? $item['percentualAtingido'] ?? $item['percentualAtingidoMensal'] ?? null),
-                    ':situacao' => SituacaoService::normalizar($item['situacaoCalculada'] ?? null),
-                    ':status' => $item['status'] ?? null,
-                    ':observacao_unidade' => $item['observacaoArea'] ?? $item['justificativa'] ?? null,
-                    ':evidencia_id' => $item['evidenciaId'] ?? null,
-                    ':usuario_responsavel' => $item['preenchidoPor'] ?? $item['usuarioResponsavel'] ?? null,
-                    ':created_at' => $item['created_at'] ?? $item['dataPreenchimento'] ?? $now,
-                    ':updated_at' => $now,
-                ]);
-            }
-            $this->db->commit();
-        } catch (Throwable $error) {
-            $this->db->rollBack();
-            throw $error;
-        }
-    }
-
-    private function map(array $row): array
-    {
-        $campos = json_decode((string) ($row['dados_entrada_json'] ?? '{}'), true);
-        if (!is_array($campos)) {
-            $campos = [];
-        }
-        $resultado = $this->numberOrNull($row['resultado_calculado']);
-        $resultadoOficial = $this->numberOrNull($row['resultado_oficial']);
-        $meta = $this->numberOrNull($row['meta_referencia']);
-        $percentual = $this->numberOrNull($row['percentual_atingido']);
-
-        return [
-            'id' => is_numeric($row['id']) ? (int) $row['id'] : $row['id'],
-            'indicadorId' => (int) $row['indicador_id'],
-            'ano' => (int) $row['ano'],
-            'mes' => (int) $row['mes'],
-            'nomeMes' => $this->monthName((int) $row['mes']),
-            'plano' => $row['plano'],
-            'pilar' => $row['pilar'],
-            'unidadeApuradora' => $row['unidade_apuradora'],
-            'diretoriaResponsavel' => $row['diretoria_responsavel'],
-            'metaMensal' => $meta,
-            'status' => $row['status'],
-            'camposEntrada' => $campos,
-            'realizadoMensal' => $resultado,
-            'resultadoMensal' => $resultado,
-            'resultadoAcumulado' => $resultadoOficial,
-            'resultadoOficialAnual' => $resultadoOficial,
-            'percentualAtingido' => $percentual,
-            'percentualAtingidoMensal' => $percentual,
-            'percentualAtingidoAcumulado' => $percentual,
-            'percentualAtingidoAnual' => $percentual,
-            'situacaoCalculada' => SituacaoService::normalizar($row['situacao']),
-            'observacaoArea' => $row['observacao_unidade'],
-            'evidenciaId' => $row['evidencia_id'],
-            'preenchidoPor' => $row['usuario_responsavel'],
-            'competencia' => $row['competencia'],
-            'trimestre' => $row['trimestre'],
-        ];
-    }
-
-    private function numberOrNull($value)
-    {
-        return $value === null || $value === '' || !is_numeric($value) ? null : (float) $value;
-    }
-
-    private function text($value)
-    {
-        if ($value === null || $value === '') {
-            return null;
-        }
-        return is_scalar($value) ? (string) $value : json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    }
-
-    private function monthName(int $month): string
-    {
-        $names = [1 => 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-        return $names[$month] ?? (string) $month;
-    }
+    private $db; private $driver;
+    public function __construct(PDO $db) { $this->db=$db; $this->driver=(string)$db->getAttribute(PDO::ATTR_DRIVER_NAME); }
+    public function all(array $filters=array()) { $sql='SELECT * FROM lancamentos WHERE 1=1'; $params=array(); $map=array('indicadorId'=>'indicador_id','ano'=>'ano','mes'=>'mes','status'=>'status','unidade_apuradora'=>'unidade_apuradora','diretoria_responsavel'=>'diretoria_responsavel'); foreach($map as $key=>$column){$value=isset($filters[$key])?$filters[$key]:(isset($filters[$column])?$filters[$column]:'');if($value!==''&&$value!=='Todos'){$sql.=' AND '.$column.' = :'.$column;$params[':'.$column]=$value;}} $sql.=' ORDER BY ano DESC, mes DESC, indicador_id, id';$stmt=$this->db->prepare($sql);$stmt->execute($params);return array_map(array($this,'map'),$stmt->fetchAll()); }
+    public function find($id) { $stmt=$this->db->prepare('SELECT * FROM lancamentos WHERE id=:id');$stmt->execute(array(':id'=>(string)$id));$row=$stmt->fetch();return $row?$this->map($row):null; }
+    public function existsForPeriod($indicatorId,$competence,$ignoreId=null){$sql='SELECT COUNT(*) FROM lancamentos WHERE indicador_id=:indicador AND competencia=:competencia';$p=array(':indicador'=>(string)$indicatorId,':competencia'=>$competence);if($ignoreId!==null){$sql.=' AND id<>:id';$p[':id']=(string)$ignoreId;}$s=$this->db->prepare($sql);$s->execute($p);return (int)$s->fetchColumn()>0;}
+    public function create(array $d){$id=uniqid('lancamento-',true);$now=date('c');$s=$this->db->prepare('INSERT INTO lancamentos (id,indicador_id,competencia,ano,mes,trimestre,plano,pilar,unidade_apuradora,diretoria_responsavel,dados_entrada_json,resultado_calculado,resultado_oficial,meta_referencia,percentual_atingido,situacao,status,observacao_unidade,evidencia_id,usuario_responsavel,created_at,updated_at) VALUES (:id,:indicador_id,:competencia,:ano,:mes,:trimestre,:plano,:pilar,:unidade_apuradora,:diretoria_responsavel,:dados,:resultado_calculado,:resultado_oficial,:meta,:percentual,:situacao,:status,:observacao,:evidencia,:usuario,:created,:updated)');$p=$this->params($d);$p[':id']=$id;$p[':created']=$now;$p[':updated']=$now;$s->execute($p);return $this->find($id);}
+    public function update($id,array $d){$s=$this->db->prepare('UPDATE lancamentos SET indicador_id=:indicador_id,competencia=:competencia,ano=:ano,mes=:mes,trimestre=:trimestre,plano=:plano,pilar=:pilar,unidade_apuradora=:unidade_apuradora,diretoria_responsavel=:diretoria_responsavel,dados_entrada_json=:dados,resultado_calculado=:resultado_calculado,resultado_oficial=:resultado_oficial,meta_referencia=:meta,percentual_atingido=:percentual,situacao=:situacao,status=:status,observacao_unidade=:observacao,usuario_responsavel=:usuario,updated_at=:updated WHERE id=:id');$p=$this->params($d);unset($p[':evidencia']);$p[':id']=(string)$id;$p[':updated']=date('c');$s->execute($p);return $this->find($id);}
+    public function updateStatus($id,$expected,$newStatus){$s=$this->db->prepare('UPDATE lancamentos SET status=:novo,updated_at=:data WHERE id=:id AND status=:esperado');$s->execute(array(':novo'=>$newStatus,':data'=>date('c'),':id'=>(string)$id,':esperado'=>$expected));return $s->rowCount()===1;}
+    public function setEvidence($id,$evidenceId){$s=$this->db->prepare('UPDATE lancamentos SET evidencia_id=:evidencia,updated_at=:data WHERE id=:id');$s->execute(array(':evidencia'=>$evidenceId,':data'=>date('c'),':id'=>(string)$id));}
+    public function deleteDraft($id,$status){$s=$this->db->prepare('DELETE FROM lancamentos WHERE id=:id AND status=:status');$s->execute(array(':id'=>(string)$id,':status'=>$status));return $s->rowCount()===1;}
+    private function params(array $d){return array(':indicador_id'=>(string)$d['indicador_id'],':competencia'=>$d['competencia'],':ano'=>(int)$d['ano'],':mes'=>(int)$d['mes'],':trimestre'=>$d['trimestre'],':plano'=>$d['plano'],':pilar'=>$d['pilar'],':unidade_apuradora'=>$d['unidade_apuradora'],':diretoria_responsavel'=>$d['diretoria_responsavel'],':dados'=>json_encode($d['dados_entrada'],JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES),':resultado_calculado'=>$d['resultado_calculado'],':resultado_oficial'=>$d['resultado_oficial'],':meta'=>$d['meta_referencia'],':percentual'=>$d['percentual_atingido'],':situacao'=>$d['situacao'],':status'=>$d['status'],':observacao'=>$d['observacao_unidade'],':evidencia'=>null,':usuario'=>$d['usuario_responsavel']);}
+    public function map(array $r){$dados=json_decode((string)$r['dados_entrada_json'],true);return array('id'=>$r['id'],'indicadorId'=>$r['indicador_id'],'competencia'=>$r['competencia'],'ano'=>(int)$r['ano'],'mes'=>(int)$r['mes'],'trimestre'=>$r['trimestre'],'plano'=>$r['plano'],'pilar'=>$r['pilar'],'unidadeApuradora'=>$r['unidade_apuradora'],'diretoriaResponsavel'=>$r['diretoria_responsavel'],'camposEntrada'=>is_array($dados)?$dados:array(),'resultadoMensal'=>$r['resultado_calculado'],'resultadoOficialAnual'=>$r['resultado_oficial'],'metaReferencia'=>$r['meta_referencia'],'percentualAtingido'=>$r['percentual_atingido'],'situacaoCalculada'=>$r['situacao'],'status'=>$r['status'],'observacaoArea'=>$r['observacao_unidade'],'evidenciaId'=>$r['evidencia_id'],'usuarioResponsavel'=>$r['usuario_responsavel'],'createdAt'=>$r['created_at'],'updatedAt'=>$r['updated_at']);}
 }
