@@ -17,8 +17,8 @@
 6. Conceda leitura ao código e escrita somente em `storage/logs`, `storage/uploads` e `storage/temporarios`.
 7. Confirme no `php.ini`: timezone, limites de upload, sessões seguras, `display_errors=Off`, logging e `extension=pdo_sqlsrv`.
 8. Aplique `database/sqlserver/schema.sql` e execute o migrador em homologação.
-9. Execute `scripts/preflight-publicacao.ps1` no servidor; ele deve terminar sem erros.
-10. Reinicie o pool e execute `scripts/smoke-test.ps1 -BaseUrl https://endereco`.
+9. Valide manualmente a sintaxe PHP, as extensões, as permissões e as rotas principais no servidor.
+10. Reinicie o pool e valide login, dashboard, lançamentos, homologações, uploads e administração.
 
 ### Publicação em `https://www.gelot.mz.caixa/estrategia`
 
@@ -38,4 +38,4 @@ A entrada principal da aplicação é `https://www.gelot.mz.caixa/estrategia/`. 
 - Rotas retornam 404: confirme URL Rewrite e que o Physical Path é `public`.
 - Upload falha: compare limites do IIS, `upload_max_filesize`, `post_max_size` e ACL das pastas.
 
-Não publique enquanto o preflight, o smoke test e o teste autenticado dos perfis não estiverem aprovados.
+Não publique enquanto as validações técnicas e os testes autenticados dos perfis não estiverem aprovados.

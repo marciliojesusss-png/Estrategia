@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CAIXA Loterias | Indicadores Estratégicos</title>
+  <link rel="stylesheet" href="/assets/css/styles.css?v=LOGIN-PHP-002">
+</head>
+<body data-page="login">
+  <main class="login-shell">
+    <section class="login-panel" aria-labelledby="login-title">
+      <div class="brand-block">
+        <span class="brand-mark">CL</span>
+        <div><p class="eyebrow">CAIXA Loterias</p><h1 id="login-title">Indicadores Estratégicos</h1></div>
+      </div>
+
+      <div class="notice info"><strong>Modo validação local ativo.</strong><br>Dados salvos neste perfil do navegador.</div>
+      <div class="notice info"><strong>Modo SQL local ativo.</strong> A base versionável fica em <code>/database/indicadores.sqlite</code> e não substitui o banco corporativo multiusuário.</div>
+      
+      <form method="post" action="/login" class="form-grid" id="loginFormPhp">
+        <input type="hidden" name="_csrf_token" value="b2d11889cc36a06e026c3a22b4f0d5062f9b87e119f9abda05a72e87743650a9">
+        <label>Usuário
+          <select name="matricula" id="usuarioSelectPhp" required>
+                          <option value="ADMIN"
+                data-perfil="Administrador"
+                data-unidade="Todas"
+                data-diretoria="Todas">Administrador Simulado</option>
+                          <option value="CONSULTA"
+                data-perfil="Consulta/Gestão"
+                data-unidade="Todas"
+                data-diretoria="Todas">Consulta Gestão</option>
+                          <option value="USUARIO-COMPANHIA"
+                data-perfil="Usuário Companhia"
+                data-unidade="Todas"
+                data-diretoria="Todas">Usuário da Companhia</option>
+                          <option value="UNIDADE-GENOL"
+                data-perfil="Unidade Apuradora"
+                data-unidade="GENOL"
+                data-diretoria="Todas">Unidade GENOL</option>
+                          <option value="UNIDADE-GERIN"
+                data-perfil="Unidade Apuradora"
+                data-unidade="GERIN"
+                data-diretoria="Todas">Unidade GERIN</option>
+                          <option value="UNIDADE-SUCOL"
+                data-perfil="Unidade Apuradora"
+                data-unidade="SUCOL"
+                data-diretoria="Todas">Unidade SUCOL</option>
+                          <option value="UNIDADE-SUCTF"
+                data-perfil="Unidade Apuradora"
+                data-unidade="SUCTF"
+                data-diretoria="Todas">Unidade SUCTF</option>
+                          <option value="UNIDADE-SULOT"
+                data-perfil="Unidade Apuradora"
+                data-unidade="SULOT"
+                data-diretoria="Todas">Unidade SULOT</option>
+                          <option value="UNIDADE-SURCI"
+                data-perfil="Unidade Apuradora"
+                data-unidade="SURCI"
+                data-diretoria="Todas">Unidade SURCI</option>
+                          <option value="DIRETORIA-DICOT"
+                data-perfil="Diretoria Homologadora"
+                data-unidade="Todas"
+                data-diretoria="DICOT">Diretoria DICOT</option>
+                          <option value="DIRETORIA-DICRI"
+                data-perfil="Diretoria Homologadora"
+                data-unidade="Todas"
+                data-diretoria="DICRI">Diretoria DICRI</option>
+                          <option value="DIRETORIA-DIFIR"
+                data-perfil="Diretoria Homologadora"
+                data-unidade="Todas"
+                data-diretoria="DIFIR">Diretoria DIFIR</option>
+                          <option value="DIRETORIA-DILOT"
+                data-perfil="Diretoria Homologadora"
+                data-unidade="Todas"
+                data-diretoria="DILOT">Diretoria DILOT</option>
+                      </select>
+        </label>
+        <label>Perfil<input id="perfilInputPhp" type="text" readonly></label>
+        <label>Unidade apuradora<input id="unidadeInputPhp" type="text" readonly></label>
+        <label>Diretoria responsável<input id="diretoriaInputPhp" type="text" readonly></label>
+        <button class="primary-action" type="submit">Entrar</button>
+      </form>
+    </section>
+  </main>
+  <script>
+  (function () {
+    var select = document.getElementById('usuarioSelectPhp');
+    function updateFields() {
+      var option = select.options[select.selectedIndex];
+      document.getElementById('perfilInputPhp').value = option.getAttribute('data-perfil') || '';
+      document.getElementById('unidadeInputPhp').value = option.getAttribute('data-unidade') || 'Todas';
+      document.getElementById('diretoriaInputPhp').value = option.getAttribute('data-diretoria') || 'Todas';
+    }
+    select.addEventListener('change', updateFields);
+    updateFields();
+  }());
+  </script>
+</body>
+</html>

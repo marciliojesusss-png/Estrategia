@@ -26,5 +26,6 @@ pnpm-debug.log*
 # Logs da aplicacao e arquivos gerados em tempo de execucao
 /storage/logs/
 /storage/logs/*
+/storage/temporarios/*.pid
 logs/
 *.log

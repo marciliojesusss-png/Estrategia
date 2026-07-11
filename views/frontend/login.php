@@ -4,15 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CAIXA Loterias | Login Simulado</title>
-  <link rel="stylesheet" href="assets/css/styles.css?v=PERSISTENCIA-CENTRAL-008">
+  <link rel="stylesheet" href="<?= APP_BASE_PATH ?>/assets/css/styles.css?v=PERSISTENCIA-CENTRAL-008">
   <script src="/assets/vendor/chart.umd.min.js?v=4.4.7" defer></script>
-  <script src="assets/js/currency.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="assets/js/situations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="assets/js/bootstrap-data.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="assets/js/dataStore.js?v=SOLICITACOES-REABERTURA-001" defer></script>
-  <script src="assets/js/auth.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="assets/js/calculations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="assets/js/app.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
+  <script src="/assets/js/currency.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
+  <script src="/assets/js/situations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
+  <script src="/assets/js/bootstrap-data.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
+  <script src="/assets/js/dataStore.js?v=SOLICITACOES-REABERTURA-001" defer></script>
+  <script src="/assets/js/auth.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
+  <script src="/assets/js/calculations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
+  <script src="/assets/js/app.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
 </head>
 <body data-page="login">
   <main class="login-shell">

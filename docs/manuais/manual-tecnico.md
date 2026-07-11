@@ -12,6 +12,6 @@ A aplicação usa front controller em `public/index.php`, controllers HTTP, serv
 - Segurança: sessão, CSRF, autorização por perfil/escopo, consultas preparadas, escape de saída e validação de uploads.
 - Auditoria: eventos de acesso e alterações persistem autor, data, ação e contexto.
 - Logs: ficam em `storage/logs`; retenção e acesso devem seguir a política corporativa.
-- Testes: execute `powershell -File scripts/testar-projeto.ps1` após qualquer alteração.
+- Testes: execute diretamente os arquivos correspondentes em `tests/` usando PHP, Node.js ou Python após qualquer alteração.
 
 Antes de alterar estados ou permissões, consulte os documentos de arquitetura do módulo. Mudanças de schema devem possuir script reversível, backup, reconciliação e registro de decisão.

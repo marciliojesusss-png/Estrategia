@@ -6,7 +6,7 @@
 - 9 testes PHP aprovados, incluindo módulos, contratos, autorização e segurança de publicação.
 - 12 testes JavaScript aprovados, incluindo cálculos, persistência, escopo, interface e SQLite.
 - Migrador Python compilado sem erro.
-- O executor `scripts/testar-projeto.ps1` terminou com sucesso em 15,2 segundos.
+- O executor automatizado utilizado na data do relatório terminou com sucesso em 15,2 segundos; esse executor foi removido posteriormente.
 
 ## Migração
 

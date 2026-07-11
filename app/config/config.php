@@ -5,7 +5,19 @@ define('APP_ROOT', dirname(__DIR__, 2));
 define('APP_ENV', getenv('APP_ENV') ?: 'production');
 define('APP_DEBUG', filter_var(getenv('APP_DEBUG') ?: 'false', FILTER_VALIDATE_BOOLEAN));
 define('APP_URL', rtrim(getenv('APP_URL') ?: '', '/'));
-define('APP_BASE_PATH', '/' . trim(getenv('APP_BASE_PATH') ?: 'estrategia', '/'));
+
+// Determina APP_BASE_PATH com comportamento diferente para desenvolvimento
+// - Se a variável de ambiente APP_BASE_PATH estiver definida (mesmo vazia), respeita-a
+// - Caso contrário, em produção usa '/estrategia', em outros ambientes usa raiz ('')
+$envBase = getenv('APP_BASE_PATH');
+if ($envBase !== false) {
+	$base = '/' . trim((string) $envBase, '/');
+	// se o env foi definido como '/', considere raiz vazia
+	$base = $base === '/' ? '' : $base;
+} else {
+	$base = (APP_ENV === 'production') ? '/estrategia' : '';
+}
+define('APP_BASE_PATH', $base);
 define('DB_CONNECTION', getenv('DB_CONNECTION') ?: (APP_ENV === 'production' ? 'sqlsrv' : 'sqlite'));
 define('DB_PATH', APP_ROOT . '/database/indicadores.sqlite');
 define('SCHEMA_PATH', APP_ROOT . '/database/schema.sql');

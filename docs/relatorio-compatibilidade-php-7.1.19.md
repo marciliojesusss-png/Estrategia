@@ -15,14 +15,14 @@ Isso não permite afirmar compatibilidade integral com o servidor ainda: o proje
 ## Evidências
 
 | Verificação | Resultado | Observação |
-|---|---|---|
+| --- | --- | --- |
 | Inventário de arquivos | 127 PHP | 11 em `api/`, 52 em `app/`, 21 em `public/`, 4 em `templates/`, 11 em `tests/` e 28 em `views/` |
 | Análise sintática local | Aprovada em 127/127 | Executada com PHP 8.3.31; detecta erros gerais, mas não substitui o parser 7.1 |
 | Recursos posteriores ao PHP 7.1 | Nenhum uso efetivo encontrado | Varredura ampliada para arrow functions, propriedades tipadas, `match`, nullsafe, enums, `readonly`, union/intersection types, trailing comma em chamadas, `??=` e funções nativas posteriores |
 | Recursos usados e aceitos pelo alvo | Compatíveis | `declare(strict_types=1)`, tipos escalares, tipos de retorno, `void`, `Throwable`, closures estáticas, arrays curtos e operador `??` são aceitos no PHP 7.1 |
 | Dependências Composer | Não aplicável | Não há `composer.json` nem `composer.lock` no repositório |
 | Teste interno de publicação | Aprovado | `php tests/security-publication.test.php` |
-| Regressão local completa | Aprovada | `scripts/testar-projeto.ps1`, incluindo 10 testes PHP, testes JavaScript e teste do migrador; executada em PHP 8.3.31 |
+| Regressão local completa | Aprovada historicamente | Execução registrada antes da remoção do antigo executor em `scripts/`; executada em PHP 8.3.31 |
 
 ## Pontos de atenção
 

@@ -4,17 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CAIXA Loterias | Relatórios</title>
-  <link rel="stylesheet" href="assets/css/styles.css?v=PERSISTENCIA-CENTRAL-008">
-  <script src="assets/js/currency.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="assets/js/situations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="assets/js/bootstrap-data.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="assets/js/dataStore.js?v=SOLICITACOES-REABERTURA-001" defer></script>
-  <script src="assets/js/databaseService.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="assets/js/dataService.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="assets/js/auth.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="assets/js/calculations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="assets/js/reports.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="assets/js/app.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
+  <link rel="stylesheet" href="/assets/css/styles.css?v=PERSISTENCIA-CENTRAL-008">
+  <script src="<?= APP_BASE_PATH ?>/assets/js/currency.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/situations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/bootstrap-data.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/dataStore.js?v=SOLICITACOES-REABERTURA-001" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/databaseService.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/dataService.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/auth.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/calculations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/reports.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/app.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
 </head>
 <body data-page="relatorios">
   <div class="app-shell">
