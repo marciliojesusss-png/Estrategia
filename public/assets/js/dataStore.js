@@ -2506,7 +2506,15 @@
       return cache[key];
     }
 
-    const jsonDbValue = await loadFromJsonDb(key);
+    let jsonDbValue = null;
+    try {
+      jsonDbValue = await loadFromJsonDb(key);
+    } catch (error) {
+      // Algumas coleções são restritas ao perfil autenticado. A ausência de
+      // uma coleção opcional não deve impedir o carregamento da página; nesse
+      // caso, segue o fallback local/bootstrap já previsto para a aplicação.
+      console.warn(`Colecao ${key} indisponivel no backend PHP; usando fallback local.`, error);
+    }
     if (jsonDbValue !== null) {
       const localValue = hasLocalData(key) ? readLocal(key) : null;
       cache[key] = normalizeData(key, jsonDbValue);

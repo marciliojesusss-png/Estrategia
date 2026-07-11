@@ -1,30 +1,39 @@
 (function () {
   const SQLITE_PATH = "database/indicadores.sqlite";
   const SCHEMA_PATH = "database/schema.sql";
+  const DATABASE_API_PING = "/api/database.php?ping=1";
+
+  function applicationPath(path) {
+    if (typeof window !== "undefined" && typeof window.appUrl === "function") {
+      return window.appUrl(path);
+    }
+    return path;
+  }
 
   async function inicializarBanco() {
     return criarSchemaSeNecessario();
   }
 
   async function conectarBanco() {
-    const response = await fetch(SQLITE_PATH, { cache: "no-store" });
+    const response = await fetch(applicationPath(DATABASE_API_PING), { cache: "no-store" });
+    const payload = await response.json();
     return {
-      conectado: response.ok,
+      conectado: response.ok && payload?.ok === true && String(payload?.database).toLowerCase() === "sqlite",
       caminho: SQLITE_PATH,
-      tamanhoBytes: response.ok ? Number(response.headers.get("content-length")) || null : null
+      tamanhoBytes: null,
+      modo: payload?.mode || null
     };
   }
 
   async function criarSchemaSeNecessario() {
-    const [dbResponse, schemaResponse] = await Promise.all([
-      fetch(SQLITE_PATH, { cache: "no-store" }).catch(() => null),
-      fetch(SCHEMA_PATH, { cache: "no-store" }).catch(() => null)
-    ]);
+    const dbResponse = await fetch(applicationPath(DATABASE_API_PING), { cache: "no-store" }).catch(() => null);
+    const payload = dbResponse ? await dbResponse.json().catch(() => null) : null;
     return {
-      bancoExiste: Boolean(dbResponse?.ok),
-      schemaExiste: Boolean(schemaResponse?.ok),
+      bancoExiste: Boolean(dbResponse?.ok && payload?.ok === true && String(payload?.database).toLowerCase() === "sqlite"),
+      schemaExiste: Boolean(dbResponse?.ok && payload?.ok === true),
       caminhoBanco: SQLITE_PATH,
-      caminhoSchema: SCHEMA_PATH
+      caminhoSchema: SCHEMA_PATH,
+      modo: payload?.mode || null
     };
   }
 
@@ -166,7 +175,7 @@
     return {
       tipo: "SQLite",
       arquivo: SQLITE_PATH,
-      modo: "Validacao local",
+      modo: connection.modo || "Validacao local",
       conectado: connection.conectado,
       tamanhoBytes: connection.tamanhoBytes,
       indicadores: (data.indicadores || []).length,
@@ -194,7 +203,7 @@
       ["Tipo", info.tipo],
       ["Arquivo", `/${info.arquivo}`],
       ["Modo", info.modo],
-      ["Banco encontrado", info.conectado ? "Sim" : "Nao"],
+      ["Banco acessivel pela API", info.conectado ? "Sim" : "Nao"],
       ["Indicadores", info.indicadores],
       ["Lancamentos", info.lancamentos],
       ["Homologacoes", info.homologacoes],

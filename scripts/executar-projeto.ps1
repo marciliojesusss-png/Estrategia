@@ -77,8 +77,13 @@ if ($Background) {
     Remove-Item $pidFile -Force -ErrorAction SilentlyContinue
   }
 
-  $process = Start-Process -FilePath $phpPath `
-    -ArgumentList @('-S', $address, '-t', $publicPath, $routerPath) `
+  # Windows PowerShell 5.1 não permite informar um ambiente customizado no
+  # Start-Process. O CMD intermediário garante que o PHP em segundo plano
+  # receba o mesmo ambiente local do modo foreground.
+  $safeBasePath = $BasePath.Replace('"', '')
+  $commandLine = 'set "APP_ENV=development" && set "DB_CONNECTION=sqlite" && set "APP_BASE_PATH=' + $safeBasePath + '" && "' + $phpPath + '" -S ' + $address + ' -t "' + $publicPath + '" "' + $routerPath + '"'
+  $process = Start-Process -FilePath $env:ComSpec `
+    -ArgumentList @('/d', '/c', $commandLine) `
     -WorkingDirectory $root `
     -RedirectStandardOutput $stdoutFile `
     -RedirectStandardError $stderrFile `

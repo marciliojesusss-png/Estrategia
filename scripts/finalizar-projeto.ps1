@@ -31,8 +31,10 @@ if (Test-Path $pidFile) {
   if ($registeredPid -gt 0) {
     $registeredProcess = Get-Process -Id $registeredPid -ErrorAction SilentlyContinue
     $registeredDetails = Get-CimInstance Win32_Process -Filter "ProcessId = $registeredPid" -ErrorAction SilentlyContinue
+    $isManagedProcess = $null -ne $registeredProcess -and
+      (($registeredProcess.ProcessName -like 'php*') -or ($registeredProcess.ProcessName -like 'cmd*'))
     if ($null -ne $registeredProcess -and
-        $registeredProcess.ProcessName -like 'php*' -and
+        $isManagedProcess -and
         $null -ne $registeredDetails -and
         $registeredDetails.CommandLine -match $portPattern -and
         $registeredDetails.CommandLine -match $routerPattern) {
@@ -43,7 +45,7 @@ if (Test-Path $pidFile) {
 
 # Também localiza a execução em foreground, que não possui arquivo de PID.
 Get-CimInstance Win32_Process | Where-Object {
-  $_.Name -like 'php*.exe' -and
+  (($_.Name -like 'php*.exe') -or ($_.Name -like 'cmd*.exe')) -and
   $_.CommandLine -match $portPattern -and
   $_.CommandLine -match $routerPattern
 } | ForEach-Object {
@@ -61,7 +63,11 @@ foreach ($processId in $processIds) {
   if ($null -eq $process) { continue }
 
   Write-Host "Finalizando servidor PHP (PID $processId) na porta $Port..." -ForegroundColor Cyan
-  Stop-Process -Id $processId -ErrorAction Stop
+  if ($process.ProcessName -like 'cmd*') {
+    & taskkill.exe /PID $processId /T /F | Out-Null
+  } else {
+    Stop-Process -Id $processId -ErrorAction Stop
+  }
   try {
     Wait-Process -Id $processId -Timeout 5 -ErrorAction SilentlyContinue
   } catch {
