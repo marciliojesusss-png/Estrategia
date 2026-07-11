@@ -11,12 +11,32 @@ Aplicação PHP para gestão de indicadores estratégicos, lançamentos mensais,
 
 ## Executar localmente
 
-No PowerShell, a partir da raiz do projeto:
+Dois modos suportados para desenvolvimento local: manual (variáveis de ambiente) ou via script PowerShell fornecido.
+
+- Manual (PowerShell) — a partir da raiz do projeto:
 
 ```powershell
 $env:APP_ENV='development'
 $env:DB_CONNECTION='sqlite'
 php -S 127.0.0.1:8000 -t public public/router.php
+```
+
+- Usando o script (recomendado):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\start-app.ps1
+```
+
+Opções do script:
+
+- `-Host` (padrão `127.0.0.1`)
+- `-Port` (padrão `8000`)
+- `-BasePath` (padrão vazio, use `/estrategia` para simular a publicação com prefixo)
+
+Exemplo com base path:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\start-app.ps1 -Host 127.0.0.1 -Port 8000 -BasePath '/estrategia'
 ```
 
 Acesse [http://127.0.0.1:8000](http://127.0.0.1:8000).
