@@ -21,6 +21,7 @@ $env:DB_CONNECTION='sqlite'
 php -S 127.0.0.1:8000 -t public public/router.php
 ```
 
+
 - Usando o script (recomendado):
 
 ```powershell
@@ -29,14 +30,15 @@ powershell -ExecutionPolicy Bypass -File .\scripts\start-app.ps1
 
 Opções do script:
 
-- `-Host` (padrão `127.0.0.1`)
+- `-BindHost` (padrão `127.0.0.1`)
 - `-Port` (padrão `8000`)
 - `-BasePath` (padrão vazio, use `/estrategia` para simular a publicação com prefixo)
+- `-DryRun` (imprime o comando que seria executado e não inicia o servidor)
 
-Exemplo com base path:
+Exemplo com base path (e DryRun para teste sem iniciar):
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\start-app.ps1 -Host 127.0.0.1 -Port 8000 -BasePath '/estrategia'
+powershell -ExecutionPolicy Bypass -File .\scripts\start-app.ps1 -BindHost 127.0.0.1 -Port 8000 -BasePath '/estrategia' -DryRun
 ```
 
 Acesse [http://127.0.0.1:8000](http://127.0.0.1:8000).

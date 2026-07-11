@@ -18,13 +18,14 @@ EXAMPLE
 #>
 
 param(
-    [string]$Host = '127.0.0.1',
-    [int]$Port = 8000,
-    [string]$BasePath = ''
+  [string]$BindHost = '127.0.0.1',
+  [int]$Port = 8000,
+  [string]$BasePath = '',
+  [switch]$DryRun = $false
 )
 
 Write-Host "Starting application local server" -ForegroundColor Cyan
-Write-Host "Host: $Host    Port: $Port    APP_BASE_PATH: '$BasePath'" -ForegroundColor Yellow
+Write-Host "Host: $BindHost    Port: $Port    APP_BASE_PATH: '$BasePath'" -ForegroundColor Yellow
 
 # Export environment variables for the current process
 $env:APP_ENV = 'development'
@@ -36,8 +37,15 @@ Write-Host "PHP executable: $(Get-Command php -ErrorAction SilentlyContinue | Se
 Write-Host "PHP Version: $(php -v | Select-Object -First 1)" -ForegroundColor Green
 
 # Inicia o servidor embutido do PHP usando o front controller
-$address = "$Host`:$Port"
+
+$address = "$BindHost`:$Port"
 Write-Host "Executando: php -S $address -t public public/router.php" -ForegroundColor Cyan
+
+if ($DryRun) {
+  Write-Host "DryRun ativado — não iniciando o servidor." -ForegroundColor Yellow
+  Write-Host "Comando que seria executado: php -S $address -t public public/router.php" -ForegroundColor Gray
+  return 0
+}
 
 # Executa em foreground para que o usuário veja logs
 & php -S $address -t public public/router.php
