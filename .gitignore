@@ -22,3 +22,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+
+# Logs da aplicacao e arquivos gerados em tempo de execucao
+/storage/logs/
+/storage/logs/*
+logs/
+*.log
