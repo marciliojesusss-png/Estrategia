@@ -38,11 +38,11 @@ Write-Host "PHP Version: $(php -v | Select-Object -First 1)" -ForegroundColor Gr
 
 # Inicia o servidor embutido do PHP usando o front controller
 
-$address = "$BindHost`:$Port"
+$address = "${BindHost}:$Port"
 Write-Host "Executando: php -S $address -t public public/router.php" -ForegroundColor Cyan
 
 if ($DryRun) {
-  Write-Host "DryRun ativado — não iniciando o servidor." -ForegroundColor Yellow
+  Write-Host "DryRun ativado - não iniciando o servidor." -ForegroundColor Yellow
   Write-Host "Comando que seria executado: php -S $address -t public public/router.php" -ForegroundColor Gray
   return 0
 }
