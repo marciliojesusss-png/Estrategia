@@ -494,6 +494,25 @@
       Boolean(window.CAIXA_LOTERIAS_AUTH_USER);
   }
 
+  function currentProfileCode() {
+    const raw = String(
+      window.CAIXA_LOTERIAS_AUTH_USER?.perfilCodigo ||
+      window.CAIXA_LOTERIAS_AUTH_USER?.perfil ||
+      ""
+    );
+    return raw
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/\s+/g, "_");
+  }
+
+  function isReadRestrictedCollectionForProfile(key) {
+    const profile = currentProfileCode();
+    if (profile === "administrador") return false;
+    return key === "usuarios" || key === "historico";
+  }
+
   async function phpApiFetch(path, options = {}) {
     const csrfToken = window.Auth?.getCurrentUser?.()?.csrfToken || window.CAIXA_LOTERIAS_AUTH_USER?.csrfToken || "";
     const response = await fetch(path, {
@@ -1231,16 +1250,22 @@
 
   async function loadFromJsonDb(key) {
     if (!(await checkJsonDb())) return null;
+    if (isReadRestrictedCollectionForProfile(key)) return null;
     return phpApiFetch(`/api/database.php?collection=${encodeURIComponent(key)}`);
   }
 
   async function saveToJsonDb(key, value) {
     if (!(await checkJsonDb())) return false;
-    const payload = await phpApiFetch("/api/database.php", {
-      method: "POST",
-      body: JSON.stringify({ key, value })
-    });
-    return payload?.ok === true;
+    try {
+      const payload = await phpApiFetch("/api/database.php", {
+        method: "POST",
+        body: JSON.stringify({ key, value })
+      });
+      return payload?.ok === true;
+    } catch (error) {
+      console.warn(`Gravacao central indisponivel para ${key}; mantendo dados locais.`, error);
+      return false;
+    }
   }
 
   function preserveLocalOperationalBackup(key, localValue, centralValue) {
@@ -2372,9 +2397,14 @@
     if (key === "lancamentos" && Array.isArray(value)) {
       return value.map((launch) => normalizarSituacaoLancamento(normalizarCamposMoeda(migrarCampoJogoResponsavelCapacitacaoLegado(migrarCampoVisibilidadeRepassesLegado(migrarCampoIncentivoSocioambientalLegado(migrarCampoApoioSocioambientalLegado(migrarCampoPrincipiosJogoResponsavelLegado(migrarCampoCapacidadeTicLegado(migrarCampoPlataformaJogosLegado(migrarCampoAprimoramentoLegado(migrarCampoCapacitacaoLegado(migrarCampoClimaLegado(migrarCampoNpsLegado(migrarCampoOfertasLegado(migrarCampoRedeLotericaLegado(migrarCampoEcossistemaLegado(migrarCampoRepasseSocialLegado(migrarCampoGgrLegado({
         ...launch,
-        pilar: getCanonicalPillar(Number(launch.indicadorId)),
+        id: /^\d+$/.test(String(launch.id ?? "")) ? Number(launch.id) : launch.id,
+        indicadorId: /^\d+$/.test(String(launch.indicadorId ?? launch.indicador_id ?? ""))
+          ? Number(launch.indicadorId ?? launch.indicador_id)
+          : (launch.indicadorId ?? launch.indicador_id),
+        pilar: getCanonicalPillar(Number(launch.indicadorId ?? launch.indicador_id)),
         competencia: launch.competencia || `${launch.ano}-${String(launch.mes).padStart(2, "0")}`,
         trimestre: launch.trimestre || `${Math.ceil(Number(launch.mes) / 3)}TRI/${launch.ano}`,
+        nomeMes: launch.nomeMes || (MESES.find(([mes]) => mes === Number(launch.mes)) || [null, ""])[1],
         ...(Number(launch.indicadorId) === 9 ? {
           metaMensal: PIX_QUARTER_TARGETS[Math.ceil(Number(launch.mes) / 3) - 1],
           metaAnualDescricao: "Aumentar em 05 p.p. as vendas com o meio de pagamento PIX no canal eletrônico."

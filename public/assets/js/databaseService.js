@@ -17,8 +17,10 @@
   async function conectarBanco() {
     const response = await fetch(applicationPath(DATABASE_API_PING), { cache: "no-store" });
     const payload = await response.json();
+    const databaseEngine = String(payload?.database || "").toLowerCase();
+    const isSupportedDatabase = ["sqlite", "sqlsrv", "sqlserver"].includes(databaseEngine);
     return {
-      conectado: response.ok && payload?.ok === true && String(payload?.database).toLowerCase() === "sqlite",
+      conectado: response.ok && payload?.ok === true && isSupportedDatabase,
       caminho: SQLITE_PATH,
       tamanhoBytes: null,
       modo: payload?.mode || null
@@ -28,8 +30,10 @@
   async function criarSchemaSeNecessario() {
     const dbResponse = await fetch(applicationPath(DATABASE_API_PING), { cache: "no-store" }).catch(() => null);
     const payload = dbResponse ? await dbResponse.json().catch(() => null) : null;
+    const databaseEngine = String(payload?.database || "").toLowerCase();
+    const isSupportedDatabase = ["sqlite", "sqlsrv", "sqlserver"].includes(databaseEngine);
     return {
-      bancoExiste: Boolean(dbResponse?.ok && payload?.ok === true && String(payload?.database).toLowerCase() === "sqlite"),
+      bancoExiste: Boolean(dbResponse?.ok && payload?.ok === true && isSupportedDatabase),
       schemaExiste: Boolean(dbResponse?.ok && payload?.ok === true),
       caminhoBanco: SQLITE_PATH,
       caminhoSchema: SCHEMA_PATH,

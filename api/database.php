@@ -8,9 +8,13 @@ $method = Request::method();
 
 if ($method === 'GET') {
     if (($_GET['ping'] ?? '') !== '') {
+        $connection = strtolower((string) DB_CONNECTION);
+        $mode = $connection === 'sqlsrv' || $connection === 'sqlserver'
+            ? 'php_sqlserver'
+            : 'php_sqlite_local';
         Response::json([
             'ok' => true,
-            'mode' => 'php_sqlite_local',
+            'mode' => $mode,
             'database' => DB_CONNECTION,
         ]);
         return;

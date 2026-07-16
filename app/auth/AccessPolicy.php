@@ -11,11 +11,11 @@ final class AccessPolicy
             'gerenciar' => array('administrador'),
         ),
         'lancamentos' => array(
-            'visualizar' => array('administrador', 'homologador', 'unidade_apuradora'),
+            'visualizar' => array('administrador', 'homologador', 'unidade_apuradora', 'usuario_companhia'),
             'gerenciar' => array('administrador', 'unidade_apuradora'),
         ),
         'homologacoes' => array(
-            'visualizar' => array('administrador', 'homologador', 'unidade_apuradora'),
+            'visualizar' => array('administrador', 'homologador', 'unidade_apuradora', 'usuario_companhia'),
             'decidir' => array('administrador', 'homologador'),
         ),
         'relatorios' => array('visualizar' => array('administrador', 'homologador', 'unidade_apuradora', 'usuario_companhia')),
