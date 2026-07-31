@@ -34,7 +34,7 @@ $csrfToken = Csrf::token();
       </div>
 
       <div class="notice info"><strong>Modo validação local ativo.</strong><br>Dados salvos neste perfil do navegador.</div>
-      <div class="notice info"><strong>Modo SQL local ativo.</strong> A base versionável fica em <code>/database/indicadores.sqlite</code> e não substitui o banco corporativo multiusuário.</div>
+      <div class="notice info"><strong>Modo SQL local ativo.</strong> A base local fica em <code>/database/indicadores.sqlite</code>, é ignorada pelo Git e não substitui o banco corporativo multiusuário.</div>
       <?php if (!empty($loginError)): ?><div class="notice danger"><?= htmlspecialchars($loginError, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
 
       <form method="post" action="/login" class="form-grid" id="loginFormPhp">

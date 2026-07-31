@@ -29,7 +29,7 @@
             <strong>Modo validação local ativo.</strong>
             <span>Dados salvos neste perfil do navegador.</span>
           </summary>
-          <p>Contas/perfis diferentes do Google Chrome possuem armazenamentos locais separados. A base SQL versionada fica no arquivo <code>/database/indicadores.sqlite</code>.</p>
+          <p>Contas/perfis diferentes do Google Chrome possuem armazenamentos locais separados. A base SQL local fica no arquivo <code>/database/indicadores.sqlite</code> e é ignorada pelo Git.</p>
         </details>
       `);
     }
@@ -44,7 +44,7 @@
     messages.push(`
       <div class="notice muted compact-notice sql-local-notice">
         <strong>Modo SQL local ativo.</strong>
-        A base versionavel fica em <code>/database/indicadores.sqlite</code> e nao substitui o banco corporativo multiusuario.
+        A base local fica em <code>/database/indicadores.sqlite</code>, é ignorada pelo Git e nao substitui o banco corporativo multiusuario.
       </div>
     `);
     return messages;

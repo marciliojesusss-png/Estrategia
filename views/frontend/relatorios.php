@@ -34,7 +34,7 @@
             <h2 id="database-local-title">Banco de Dados Local</h2>
           </div>
         </div>
-        <p class="help-text">Modo SQL local ativo. A base está salva no arquivo <strong>/database/indicadores.sqlite</strong> e pode ser versionada no GitHub junto do projeto. Este modo é destinado à validação local e não substitui o banco corporativo.</p>
+        <p class="help-text">Modo SQL local ativo. A base está salva no arquivo <strong>/database/indicadores.sqlite</strong>, é ignorada pelo Git e não substitui o banco corporativo.</p>
         <div id="databaseLocalInfo" class="detail-grid"></div>
         <div class="validation-base-actions">
           <button id="checkSqliteIntegrityButton" class="secondary-action" type="button">Verificar integridade do banco</button>

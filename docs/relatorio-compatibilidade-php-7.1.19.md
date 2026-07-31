@@ -48,7 +48,7 @@ Devem estar habilitados e validados no PHP de produção:
 - `fileinfo`, usado na validação MIME de evidências;
 - `iconv`, usado na normalização de identidade e autorização;
 - `session`, `filter`, `json` e `openssl`/fonte criptográfica adequada para `random_bytes`;
-- arquivo corporativo indicado por `LDAP_PATH`, cuja compatibilidade não pode ser aferida porque ele fica fora do repositório.
+- extensão LDAP do PHP, que deve estar habilitada e compatível com o ambiente corporativo.
 
 ### 5. PHP 7.1 está sem suporte — risco crítico de segurança
 

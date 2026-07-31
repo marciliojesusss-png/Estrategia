@@ -23,7 +23,7 @@
 
 ## Estratégia de preservação e migração
 
-1. Congelar o SQLite versionado como fonte de comparação, sem torná-lo dependência de produção.
+1. Preservar backup controlado do SQLite local como fonte de comparação, sem versioná-lo ou torná-lo dependência de produção.
 2. Extrair e versionar apenas metadados sanitizados do esquema corporativo.
 3. Comparar esquema local, esquema corporativo e modelo usado pelo código.
 4. Adaptar a aplicação ao banco existente; propor alteração apenas mediante documento de limitação, tabela, proposta, justificativa e impacto.

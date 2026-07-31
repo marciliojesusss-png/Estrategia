@@ -1125,7 +1125,7 @@ def print_tls_guidance(args, config):
 def print_next_steps():
     write_step("Proximos passos")
     print("1. Configure a aplicacao no servidor com DB_CONNECTION=sqlsrv e APP_ENV=production.")
-    print("2. Configure LDAP_PATH para o LDAP corporativo.")
+    print("2. Configure LDAP_URI, LDAP_BASE_DN e as credenciais de bind no ambiente corporativo.")
     print("3. Cadastre ou revise os usuarios em dbo.usuarios_acesso.")
     print("4. Teste login, lancamentos, homologacao, relatorios e administracao.")
     print("")

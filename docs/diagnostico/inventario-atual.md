@@ -27,7 +27,7 @@ Essa sobreposição é útil como protótipo, mas hoje não representa a arquite
 | Services | cinco arquivos em `app/services/` | Regras ainda incompletas; o cálculo oficial permanece no frontend. |
 | Frontend | `assets/js`, `assets/css`, `assets/img` | Grande parte da regra de negócio e do workflow ainda está em JavaScript. |
 | Ativos públicos | `public/assets` | Cópia dos ativos da raiz, criando duas fontes de manutenção. |
-| Banco local | `database/indicadores.sqlite`, `database/schema.sql` | Base de validação versionada. Não deve ser o banco de produção. |
+| Banco local | `database/indicadores.sqlite`, `database/schema.sql` | Base local ignorada pelo Git. Não deve ser o banco de produção. |
 | SQL Server | `database/sqlserver/schema.sql`, relatórios e sincronização de usuários | Esquema proposto e migração ensaiada, ainda não validados contra o banco corporativo oficial. |
 | Migração | `migrar-para-sqlserver.bat`, `scripts/migrar-para-sqlserver.py` | Copia e reconcilia SQLite/SQL Server; requer Python, `pyodbc` e ODBC Driver. |
 | Testes | 12 testes Node em `tests/` | Dez passam; dois falham na linha de base atual. Não há suíte automatizada PHP. |
@@ -48,7 +48,7 @@ Essa sobreposição é útil como protótipo, mas hoje não representa a arquite
 
 - PHP atual da máquina: 8.3.31; não há evidência de PHP 7.1.19 instalado.
 - Node atual: 24.16.0, usado apenas nos testes JavaScript.
-- LDAP corporativo esperado por arquivo indicado em `LDAP_PATH`.
+- LDAP corporativo nativo, iniciado a partir de `REMOTE_USER` e configurado por variáveis de ambiente.
 - PDO SQLite como configuração padrão.
 - PDO SQL Server quando `DB_CONNECTION=sqlsrv`.
 - Python, `pyodbc` e Microsoft ODBC Driver para migração.

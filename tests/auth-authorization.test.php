@@ -37,8 +37,19 @@ $approver = array('perfil' => 'homologador', 'diretoria_responsavel' => 'DIFIR')
 assert_auth(AccessPolicy::scopeAllows($approver, array('diretoriaResponsavel' => 'DIFIR')), 'homologador deve acessar sua diretoria');
 assert_auth(!AccessPolicy::scopeAllows($approver, array('diretoriaResponsavel' => 'DICOT')), 'homologador nao deve acessar outra diretoria');
 
-$identity = CorporateIdentity::load(__DIR__ . '/fixtures/ldap-valid.php');
-assert_auth(is_array($identity) && $identity['matricula'] === 'C123456', 'identidade corporativa deve extrair matricula valida');
+$identity = CorporateIdentity::mapEntry(array(
+    'samaccountname' => array(0 => 'c123456'),
+    'displayname' => array(0 => 'Usuario Corporativo'),
+    'title' => array(0 => 'Analista'),
+    'department' => array(0 => 'CAIXA Loterias'),
+    'departmentnumber' => array(0 => 'SUCOL'),
+), 'C123456');
+assert_auth(is_array($identity) && $identity['matricula'] === 'C123456', 'identidade corporativa deve validar atributos LDAP obrigatorios');
+assert_auth(CorporateIdentity::normalizeRemoteUser('DOMINIO\\c123456') === 'C123456', 'REMOTE_USER deve extrair matricula apos o dominio');
+assert_auth(CorporateIdentity::normalizeRemoteUser('invalido com espaco') === null, 'REMOTE_USER invalido deve ser rejeitado');
+assert_auth(CorporateIdentity::buildUserFilter('C123456') === '(sAMAccountName=C123456)', 'filtro LDAP deve usar a matricula normalizada');
+$incompleteIdentity = CorporateIdentity::mapEntry(array('samaccountname' => array(0 => 'C123456')), 'C123456');
+assert_auth($incompleteIdentity === null, 'atributos LDAP obrigatorios ausentes devem ser rejeitados');
 
 Session::start();
 $_SESSION['_last_activity'] = time() - 5;

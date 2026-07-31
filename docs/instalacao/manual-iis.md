@@ -5,6 +5,7 @@
 - Windows Server homologado, IIS com CGI/FastCGI e URL Rewrite.
 - PHP 7.1.19 NTS x64 compatível com a arquitetura do Application Pool.
 - Microsoft ODBC Driver e extensões `sqlsrv`/`pdo_sqlsrv` compatíveis com PHP 7.1.
+- Extensão PHP `ldap` compatível com PHP 7.1 e cadeia de certificados corporativa instalada no servidor.
 - Banco SQL Server criado, schema aplicado e usuário de serviço com privilégio mínimo.
 
 ## Instalação
@@ -19,6 +20,22 @@
 8. Aplique `database/sqlserver/schema.sql` e execute o migrador em homologação.
 9. Valide manualmente a sintaxe PHP, as extensões, as permissões e as rotas principais no servidor.
 10. Reinicie o pool e valide login, dashboard, lançamentos, homologações, uploads e administração.
+
+## Autenticação corporativa e `REMOTE_USER`
+
+1. No IIS Manager, selecione a aplicação e abra **Authentication**.
+2. Desabilite **Anonymous Authentication** e habilite **Windows Authentication**.
+3. Em **Providers**, mantenha `Negotiate` antes de `NTLM`, conforme a política da infraestrutura.
+4. Garanta que a conta do Application Pool possa acessar a configuração do site e que o PHP FastCGI receba a variável de servidor `REMOTE_USER`.
+5. Configure `LDAP_URI`, `LDAP_BASE_DN`, `LDAP_BIND_DN`, `LDAP_BIND_PASSWORD`, `LDAP_USER_FILTER` e os atributos `LDAP_ATTR_*` no ambiente do processo FastCGI. Não grave a senha de bind em arquivos versionados.
+6. Use `ldaps://` ou `LDAP_STARTTLS=true`, mantenha `LDAP_REQUIRE_TLS=true` em produção e instale a CA que assina o certificado LDAP no repositório de confiança do Windows.
+7. Valide com um empregado autenticado que `REMOTE_USER` chega no formato `DOMINIO\matricula` e que a matrícula possui registro ativo em `dbo.usuarios_acesso`.
+
+O servidor web autentica o usuário; o LDAP somente completa os atributos corporativos; a aplicação decide o perfil e o escopo por dados locais.
+
+### Apache HTTP Server
+
+Em instalações Apache, habilite o módulo corporativo de autenticação aprovado pela infraestrutura, como `mod_auth_gssapi` ou `mod_auth_kerb`, exija usuário válido na localização da aplicação e confirme que o FastCGI/PHP recebe `REMOTE_USER`. A aplicação não aceita matrícula enviada por query string, formulário ou cabeçalho HTTP comum como substituto dessa variável de servidor.
 
 ### Publicação em `https://www.gelot.mz.caixa/estrategia`
 

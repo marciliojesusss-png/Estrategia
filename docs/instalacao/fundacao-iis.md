@@ -21,11 +21,17 @@ SQLSERVER_USER=
 SQLSERVER_PASSWORD=
 SQLSERVER_ENCRYPT=yes
 SQLSERVER_TRUST_SERVER_CERTIFICATE=no
-LDAP_PATH=C:\caminho\protegido\LDAP.php
+LDAP_URI=ldaps://ldap.corporativo.interno:636
+LDAP_BASE_DN=OU=Usuarios,DC=corp,DC=empresa,DC=interno
+LDAP_BIND_DN=
+LDAP_BIND_PASSWORD=
+LDAP_USER_FILTER=(sAMAccountName={matricula})
+LDAP_STARTTLS=true
+LDAP_REQUIRE_TLS=true
 SESSION_IDLE_TIMEOUT=1800
 ```
 
-Usuário e senha vazios fazem o PDO usar a identidade integrada disponível ao processo. A estratégia definitiva deve ser confirmada pela infraestrutura.
+Usuário e senha vazios fazem o PDO usar a identidade integrada disponível ao processo. As credenciais de bind LDAP devem ser definidas no ambiente protegido do Application Pool. A estratégia definitiva deve ser confirmada pela infraestrutura.
 
 ## Permissões
 

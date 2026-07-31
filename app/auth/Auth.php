@@ -57,10 +57,6 @@ final class Auth
             }
             Response::redirect('/login');
         }
-        if (empty($_SESSION['_auth_initialized'])) {
-            Session::regenerate();
-            $_SESSION['_auth_initialized'] = true;
-        }
         $corporate = self::loadCorporateData();
         $matricula = trim(isset($corporate['matricula']) ? (string) $corporate['matricula'] : '');
         if ($matricula === '') {
@@ -73,16 +69,20 @@ final class Auth
         if ($access === null) {
             $access = self::localAccess($matricula);
         }
+        if (empty($_SESSION['_auth_initialized'])) {
+            Session::regenerate();
+            $_SESSION['_auth_initialized'] = true;
+        }
         $profile = self::normalizeProfile(isset($access['perfil']) ? $access['perfil'] : self::DEFAULT_PROFILE);
         $_SESSION['matricula'] = $matricula;
-        $_SESSION['nome'] = isset($access['nome']) ? (string) $access['nome'] : (isset($corporate['nome']) ? (string) $corporate['nome'] : $matricula);
+        $_SESSION['nome'] = isset($corporate['nome']) ? (string) $corporate['nome'] : $matricula;
         $_SESSION['funcao'] = isset($corporate['funcao']) ? (string) $corporate['funcao'] : '';
         $_SESSION['unidade'] = isset($corporate['unidade']) ? (string) $corporate['unidade'] : '';
-        $_SESSION['sg_unidade'] = isset($access['sg_unidade']) ? (string) $access['sg_unidade'] : (isset($corporate['sg_unidade']) ? (string) $corporate['sg_unidade'] : '');
-        $_SESSION['no_unidade'] = isset($access['no_unidade']) ? (string) $access['no_unidade'] : (isset($corporate['no_unidade']) ? (string) $corporate['no_unidade'] : '');
+        $_SESSION['sg_unidade'] = isset($corporate['sg_unidade']) ? (string) $corporate['sg_unidade'] : '';
+        $_SESSION['no_unidade'] = isset($corporate['no_unidade']) ? (string) $corporate['no_unidade'] : '';
         $_SESSION['perfil'] = $profile;
-        $_SESSION['unidade_apuradora'] = $profile === 'unidade_apuradora' && isset($access['sg_unidade']) ? (string) $access['sg_unidade'] : '';
-        $_SESSION['diretoria_responsavel'] = $profile === 'homologador' && isset($access['sg_unidade']) ? (string) $access['sg_unidade'] : '';
+        $_SESSION['unidade_apuradora'] = $profile === 'unidade_apuradora' ? self::accessScope($access, 'unidade_apuradora') : '';
+        $_SESSION['diretoria_responsavel'] = $profile === 'homologador' ? self::accessScope($access, 'diretoria_responsavel') : '';
         if (empty($_SESSION['_access_logged'])) {
             self::logAccess();
             $_SESSION['_access_logged'] = true;
@@ -264,12 +264,11 @@ final class Auth
 
     private static function loadCorporateData()
     {
-        if (is_file(LDAP_PATH)) {
-            $identity = CorporateIdentity::load(LDAP_PATH);
-            if ($identity === null) self::deny('Identidade corporativa invalida.');
+        if (!self::isLocalEnvironment()) {
+            $identity = CorporateIdentity::load();
+            if ($identity === null) self::deny('Identidade corporativa indisponivel ou invalida.');
             return $identity;
         }
-        if (!self::isLocalEnvironment()) self::deny('Autenticacao corporativa indisponivel.');
         $selected = isset($_GET['dev_user']) ? $_GET['dev_user'] : (getenv('AUTH_LOCAL_USER') ?: (isset($_SESSION['dev_user']) ? $_SESSION['dev_user'] : 'C000004'));
         $selected = strtoupper((string) $selected);
         $_SESSION['dev_user'] = $selected;
@@ -295,7 +294,7 @@ final class Auth
     private static function findAccess($matricula)
     {
         try {
-            $stmt = Database::getConnection()->prepare('SELECT matricula, nome, perfil, sg_unidade, no_unidade, ativo FROM usuarios_acesso WHERE matricula = :matricula AND ativo = 1');
+            $stmt = Database::getConnection()->prepare('SELECT matricula, nome, perfil, sg_unidade, no_unidade, unidade_apuradora, diretoria_responsavel, ativo FROM usuarios_acesso WHERE matricula = :matricula AND ativo = 1');
             $stmt->execute(array(':matricula' => $matricula));
             $row = $stmt->fetch();
             return is_array($row) ? $row : null;
@@ -308,15 +307,26 @@ final class Auth
 
     private static function logAccess()
     {
-        AccessLogger::record('login', self::sessionUser());
+        AccessLogger::record('login', self::sessionUser(), array('recurso' => self::requestResource()));
     }
 
     private static function deny($message)
     {
         AccessLogger::record('autenticacao_negada', array(), array('recurso' => self::requestResource()));
+        if (strpos(self::requestResource(), '/api/') !== false) {
+            Response::error($message, 401);
+            exit;
+        }
         http_response_code(401);
-        echo htmlspecialchars($message, ENT_QUOTES, 'UTF-8');
+        $errorMessage = $message;
+        require APP_ROOT . '/views/erros/401.php';
         exit;
+    }
+
+    private static function accessScope(array $access, $field)
+    {
+        if (!empty($access[$field])) return (string) $access[$field];
+        return isset($access['sg_unidade']) ? (string) $access['sg_unidade'] : '';
     }
 
     private static function profileLabel($profile)

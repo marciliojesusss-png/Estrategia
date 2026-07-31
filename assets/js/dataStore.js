@@ -2667,7 +2667,7 @@
 
   async function publicarDadosLocaisNaBaseCentral() {
     if (!(await checkJsonDb())) {
-      throw new Error("Publicacao em base JSON foi desativada. Use o SQLite local versionado.");
+      throw new Error("Publicacao em base JSON foi desativada. Use o SQLite local.");
     }
 
     const publishedKeys = [];
