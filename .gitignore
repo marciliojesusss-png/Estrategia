@@ -1,6 +1,11 @@
-﻿# Banco SQLite local de validacao versionado no projeto.
-!/database/indicadores.sqlite
+﻿# Bancos SQLite locais e artefatos de migração podem ser recriados.
+*.sqlite
 !/database/schema.sql
+
+# Segredos de ambiente locais. O modelo versionado não contém credenciais.
+/.env
+/.env.*
+!/.env.example
 
 # Backups locais gerados pelo script de migracao podem ser recriados.
 database/backups/*.sqlite

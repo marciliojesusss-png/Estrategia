@@ -60,6 +60,17 @@ O router encaminha as rotas da aplicação ao front controller e entrega CSS, Ja
 
 ## Configuração do SQL Server
 
+O carregador interno lê opcionalmente o arquivo `.env` na raiz antes da
+configuração da aplicação. O arquivo local `.env` é ignorado pelo Git; use
+`.env.example` como modelo e nunca versione valores reais de senha. Variáveis
+definidas no ambiente do IIS/FastCGI prevalecem sobre o arquivo.
+
+`DB_HOST`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD` e
+`DB_PDO_SUBDRIVER=sqlsrv` são mapeadas para a conexão SQL Server existente.
+As variáveis `LDAP_SERVER`, `LDAP_TREE`, `LDAP_PORT`, `LDAP_USERNAME` e
+`LDAP_PASSWORD` ficam disponíveis à configuração, mas a autenticação atual
+continua usando o adaptador corporativo apontado por `LDAP_PATH`.
+
 Defina as variáveis antes de iniciar a aplicação:
 
 ```powershell
