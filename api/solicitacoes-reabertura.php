@@ -17,9 +17,7 @@ $usuario = (string) ($user['matricula'] ?? $user['nome'] ?? 'Usuario nao informa
 
 function append_audit(AuditoriaRepository $auditoria, array $entry): void
 {
-    $items = $auditoria->all();
-    $items[] = [
-        'id' => $entry['id'] ?? uniqid('audit-', true),
+    $auditoria->append([
         'entidade' => $entry['entidade'] ?? 'solicitacoes_reabertura',
         'registroId' => $entry['registroId'] ?? '',
         'acao' => $entry['acao'] ?? '',
@@ -28,19 +26,7 @@ function append_audit(AuditoriaRepository $auditoria, array $entry): void
         'valorNovo' => $entry['valorNovo'] ?? null,
         'usuario' => $entry['usuario'] ?? '',
         'perfilUsuario' => $entry['perfilUsuario'] ?? '',
-        'dataHora' => $entry['dataHora'] ?? date('c'),
-    ];
-    $auditoria->replaceAll($items);
-}
-
-function save_solicitacoes(SolicitacoesReaberturaRepository $repository, array $items): void
-{
-    $repository->replaceAll($items);
-}
-
-function save_lancamentos(LancamentosRepository $repository, array $items): void
-{
-    $repository->replaceAll($items);
+    ]);
 }
 
 function launch_in_user_scope(LancamentosRepository $repository, string $lancamentoId): bool
@@ -73,12 +59,9 @@ if ($action === 'criar') {
         return;
     }
 
-    $items = $solicitacoes->all();
-    foreach ($items as $item) {
-        if ((string) $item['lancamentoId'] === $lancamentoId && $item['statusSolicitacao'] === 'Pendente') {
-            Response::error('Ja existe uma solicitacao de reabertura pendente para este lancamento.', 409);
-            return;
-        }
+    if ($solicitacoes->hasPendingForLaunch($lancamentoId)) {
+        Response::error('Ja existe uma solicitacao de reabertura pendente para este lancamento.', 409);
+        return;
     }
 
     $now = date('c');
@@ -103,17 +86,26 @@ if ($action === 'criar') {
         'updatedAt' => $now,
     ];
 
-    $items[] = $request;
-    save_solicitacoes($solicitacoes, $items);
-    append_audit($auditoria, [
-        'acao' => 'solicitacao_reabertura_criada',
-        'descricao' => 'Solicitacao de reabertura criada pelo homologador.',
-        'registroId' => $request['id'],
-        'valorNovo' => $request,
-        'usuario' => $usuario,
-        'perfilUsuario' => $perfilLabel,
-    ]);
-    Response::json(['ok' => true, 'solicitacao' => $request], 201);
+    try {
+        $db->beginTransaction();
+        $created = $solicitacoes->create($request);
+        append_audit($auditoria, [
+            'acao' => 'solicitacao_reabertura_criada',
+            'descricao' => 'Solicitacao de reabertura criada pelo homologador.',
+            'registroId' => $created['id'],
+            'valorNovo' => $created,
+            'usuario' => $usuario,
+            'perfilUsuario' => $perfilLabel,
+        ]);
+        $db->commit();
+        Response::json(['ok' => true, 'solicitacao' => $created], 201);
+    } catch (PDOException $error) {
+        if ($db->inTransaction()) $db->rollBack();
+        Response::error('Ja existe uma solicitacao de reabertura pendente para este lancamento.', 409);
+    } catch (Throwable $error) {
+        if ($db->inTransaction()) $db->rollBack();
+        Response::error('Nao foi possivel criar a solicitacao de reabertura.', 500);
+    }
     return;
 }
 
@@ -143,14 +135,7 @@ if ($id === '' || $justificativaDecisao === '') {
     return;
 }
 
-$items = $solicitacoes->all();
-$current = null;
-foreach ($items as $item) {
-    if ((string) $item['id'] === $id) {
-        $current = $item;
-        break;
-    }
-}
+$current = $solicitacoes->find($id);
 if (!$current || $current['statusSolicitacao'] !== 'Pendente') {
     Response::error('Solicitacao pendente nao encontrada.', 404);
     return;
@@ -166,38 +151,53 @@ $updatedRequest = array_merge($current, [
     'dataDecisao' => $now,
     'updatedAt' => $now,
 ]);
-$items = array_map(static function (array $item) use ($id, $updatedRequest) { return (string) $item['id'] === $id ? $updatedRequest : $item; }, $items);
-save_solicitacoes($solicitacoes, $items);
 
 $updatedLaunch = null;
-if ($action === 'aprovar') {
-    $launches = $lancamentos->all();
-    $launches = array_map(static function (array $item) use ($current, $usuario, $now, &$updatedLaunch): array {
-        if ((string) $item['id'] !== (string) $current['lancamentoId']) {
-            return $item;
+try {
+    $db->beginTransaction();
+    if (!$solicitacoes->decidePending(
+        $id,
+        $status,
+        $usuario,
+        $action === 'aprovar' ? 'Aprovar e reabrir' : 'Negar',
+        $justificativaDecisao,
+        $now
+    )) {
+        $db->rollBack();
+        Response::error('Solicitacao pendente ja foi processada por outra requisicao.', 409);
+        return;
+    }
+
+    $updatedRequest = $solicitacoes->find($id);
+    if ($action === 'aprovar') {
+        $launchBefore = $lancamentos->find($current['lancamentoId']);
+        if (!$launchBefore) {
+            $db->rollBack();
+            Response::error('Lancamento da solicitacao nao encontrado.', 404);
+            return;
         }
-        $updatedLaunch = array_merge($item, [
-            'status' => 'Reaberto',
-            'homologadoPor' => '',
-            'dataHomologacao' => '',
-            'reabertoPor' => $usuario,
-            'dataReabertura' => $now,
-        ]);
-        return $updatedLaunch;
-    }, $launches);
-    save_lancamentos($lancamentos, $launches);
+        if (!$lancamentos->updateStatus($current['lancamentoId'], $launchBefore['status'], 'Reaberto')) {
+            $db->rollBack();
+            Response::error('Lancamento ja foi processado por outra requisicao.', 409);
+            return;
+        }
+        $updatedLaunch = $lancamentos->find($current['lancamentoId']);
+    }
+
+    append_audit($auditoria, [
+        'acao' => $action === 'aprovar' ? 'solicitacao_reabertura_aprovada' : 'solicitacao_reabertura_negada',
+        'descricao' => $action === 'aprovar'
+            ? 'Solicitacao aprovada pelo Administrador e lancamento reaberto para edicao.'
+            : 'Solicitacao de reabertura negada pelo Administrador.',
+        'registroId' => $id,
+        'valorAnterior' => $current,
+        'valorNovo' => ['solicitacao' => $updatedRequest, 'lancamento' => $updatedLaunch],
+        'usuario' => $usuario,
+        'perfilUsuario' => $perfilLabel,
+    ]);
+    $db->commit();
+    Response::json(['ok' => true, 'solicitacao' => $updatedRequest, 'lancamento' => $updatedLaunch]);
+} catch (Throwable $error) {
+    if ($db->inTransaction()) $db->rollBack();
+    Response::error('Nao foi possivel processar a solicitacao de reabertura.', 500);
 }
-
-append_audit($auditoria, [
-    'acao' => $action === 'aprovar' ? 'solicitacao_reabertura_aprovada' : 'solicitacao_reabertura_negada',
-    'descricao' => $action === 'aprovar'
-        ? 'Solicitacao aprovada pelo Administrador e lancamento reaberto para edicao.'
-        : 'Solicitacao de reabertura negada pelo Administrador.',
-    'registroId' => $id,
-    'valorAnterior' => $current,
-    'valorNovo' => ['solicitacao' => $updatedRequest, 'lancamento' => $updatedLaunch],
-    'usuario' => $usuario,
-    'perfilUsuario' => $perfilLabel,
-]);
-
-Response::json(['ok' => true, 'solicitacao' => $updatedRequest, 'lancamento' => $updatedLaunch]);

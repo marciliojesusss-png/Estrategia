@@ -93,7 +93,10 @@
   }
 
   function canAdjustOfficialPerformance() {
-    return ["Administrador", "GERIN"].includes(state.user?.perfil);
+    return state.user?.perfilCodigo === "administrador" ||
+      state.user?.perfil === "Administrador" ||
+      state.user?.sgUnidade === "GERIN" ||
+      state.user?.unidadeApuradora === "GERIN";
   }
 
   function getMetaLabel(regra) {

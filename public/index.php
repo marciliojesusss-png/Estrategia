@@ -19,11 +19,7 @@ require_once __DIR__ . '/../app/controllers/AdministracaoApiController.php';
 // Mantém links, formulários e assets sob a aplicação virtual configurada no IIS.
 ob_start(function ($content) {
     if (strpos($content, '<') === false) return $content;
-    return str_replace(
-        array('href="/', 'src="/', 'action="/', 'content="0;url=/'),
-        array('href="' . APP_BASE_PATH . '/', 'src="' . APP_BASE_PATH . '/', 'action="' . APP_BASE_PATH . '/', 'content="0;url=' . APP_BASE_PATH . '/'),
-        $content
-    );
+    return prefix_app_base_path_urls($content);
 });
 
 $router = new Router();

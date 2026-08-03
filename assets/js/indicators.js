@@ -728,7 +728,7 @@
     const isRepasseSocial = Number(indicador.id) === 17;
     const isAccumulatedGoalCurve = regra?.parametrosCalculo?.metaTipo === "curva_acumulada_por_competencia";
     const launches = state.data.lancamentos
-      .filter((item) => item.indicadorId === indicador.id && Number(item.ano) === 2026)
+      .filter((item) => String(item.indicadorId) === String(indicador.id) && Number(item.ano) === 2026)
       .sort((a, b) => Number(a.mes) - Number(b.mes));
     const byMonth = Object.fromEntries(launches.map((item) => [Number(item.mes), item]));
 

@@ -42,6 +42,67 @@ final class SolicitacoesReaberturaRepository
         return array_map([$this, 'map'], $stmt->fetchAll());
     }
 
+    public function find($id)
+    {
+        $stmt = $this->db->prepare('SELECT * FROM solicitacoes_reabertura WHERE id=:id');
+        $stmt->execute(array(':id' => (string) $id));
+        $row = $stmt->fetch();
+        return $row ? $this->map($row) : null;
+    }
+
+    public function hasPendingForLaunch($lancamentoId): bool
+    {
+        $stmt = $this->db->prepare("SELECT COUNT(*) FROM solicitacoes_reabertura WHERE lancamento_id=:lancamento_id AND status_solicitacao='Pendente'");
+        $stmt->execute(array(':lancamento_id' => (string) $lancamentoId));
+        return (int) $stmt->fetchColumn() > 0;
+    }
+
+    public function create(array $item): array
+    {
+        $stmt = $this->db->prepare(
+            'INSERT INTO solicitacoes_reabertura (
+                id, lancamento_id, indicador_id, competencia, solicitante_usuario,
+                solicitante_perfil, solicitante_unidade, tipo_ajuste, justificativa,
+                observacao_complementar, status_solicitacao, administrador_responsavel,
+                decisao_administrador, justificativa_decisao, data_solicitacao,
+                data_decisao, created_at, updated_at
+             ) VALUES (
+                :id, :lancamento_id, :indicador_id, :competencia, :solicitante_usuario,
+                :solicitante_perfil, :solicitante_unidade, :tipo_ajuste, :justificativa,
+                :observacao_complementar, :status_solicitacao, :administrador_responsavel,
+                :decisao_administrador, :justificativa_decisao, :data_solicitacao,
+                :data_decisao, :created_at, :updated_at
+             )'
+        );
+        $params = $this->params($item);
+        $stmt->execute($params);
+        return $this->find($params[':id']);
+    }
+
+    public function decidePending($id, $status, $administrador, $decisao, $justificativa, $now): bool
+    {
+        $stmt = $this->db->prepare(
+            "UPDATE solicitacoes_reabertura
+             SET status_solicitacao=:status_solicitacao,
+                 administrador_responsavel=:administrador_responsavel,
+                 decisao_administrador=:decisao_administrador,
+                 justificativa_decisao=:justificativa_decisao,
+                 data_decisao=:data_decisao,
+                 updated_at=:updated_at
+             WHERE id=:id AND status_solicitacao='Pendente'"
+        );
+        $stmt->execute(array(
+            ':id' => (string) $id,
+            ':status_solicitacao' => $status,
+            ':administrador_responsavel' => $administrador,
+            ':decisao_administrador' => $decisao,
+            ':justificativa_decisao' => $justificativa,
+            ':data_decisao' => $now,
+            ':updated_at' => $now,
+        ));
+        return $stmt->rowCount() === 1;
+    }
+
     public function replaceAll(array $items): void
     {
         $this->db->beginTransaction();
@@ -62,28 +123,8 @@ final class SolicitacoesReaberturaRepository
                     :data_decisao, :created_at, :updated_at
                  )'
             );
-            $now = date('c');
             foreach ($items as $item) {
-                $params = [
-                    ':id' => (string) ($item['id'] ?? uniqid('sol-reab-', true)),
-                    ':lancamento_id' => (string) ($item['lancamentoId'] ?? ''),
-                    ':indicador_id' => (string) ($item['indicadorId'] ?? ''),
-                    ':competencia' => $item['competencia'] ?? null,
-                    ':solicitante_usuario' => $item['solicitanteUsuario'] ?? null,
-                    ':solicitante_perfil' => $item['solicitantePerfil'] ?? null,
-                    ':solicitante_unidade' => $item['solicitanteUnidade'] ?? null,
-                    ':tipo_ajuste' => $item['tipoAjuste'] ?? null,
-                    ':justificativa' => $item['justificativa'] ?? '',
-                    ':observacao_complementar' => $item['observacaoComplementar'] ?? null,
-                    ':status_solicitacao' => $item['statusSolicitacao'] ?? 'Pendente',
-                    ':administrador_responsavel' => $item['administradorResponsavel'] ?? null,
-                    ':decisao_administrador' => $item['decisaoAdministrador'] ?? null,
-                    ':justificativa_decisao' => $item['justificativaDecisao'] ?? null,
-                    ':data_solicitacao' => $item['dataSolicitacao'] ?? $now,
-                    ':data_decisao' => $item['dataDecisao'] ?? null,
-                    ':created_at' => $item['createdAt'] ?? $now,
-                    ':updated_at' => $item['updatedAt'] ?? $now,
-                ];
+                $params = $this->params($item);
                 $update->execute($params);
                 if ($update->rowCount() === 0) {
                     $exists = $this->db->prepare('SELECT COUNT(*) FROM solicitacoes_reabertura WHERE id=:id');
@@ -96,6 +137,31 @@ final class SolicitacoesReaberturaRepository
             $this->db->rollBack();
             throw $error;
         }
+    }
+
+    private function params(array $item): array
+    {
+        $now = date('c');
+        return [
+            ':id' => (string) ($item['id'] ?? uniqid('sol-reab-', true)),
+            ':lancamento_id' => (string) ($item['lancamentoId'] ?? ''),
+            ':indicador_id' => (string) ($item['indicadorId'] ?? ''),
+            ':competencia' => $item['competencia'] ?? null,
+            ':solicitante_usuario' => $item['solicitanteUsuario'] ?? null,
+            ':solicitante_perfil' => $item['solicitantePerfil'] ?? null,
+            ':solicitante_unidade' => $item['solicitanteUnidade'] ?? null,
+            ':tipo_ajuste' => $item['tipoAjuste'] ?? null,
+            ':justificativa' => $item['justificativa'] ?? '',
+            ':observacao_complementar' => $item['observacaoComplementar'] ?? null,
+            ':status_solicitacao' => $item['statusSolicitacao'] ?? 'Pendente',
+            ':administrador_responsavel' => $item['administradorResponsavel'] ?? null,
+            ':decisao_administrador' => $item['decisaoAdministrador'] ?? null,
+            ':justificativa_decisao' => $item['justificativaDecisao'] ?? null,
+            ':data_solicitacao' => $item['dataSolicitacao'] ?? $now,
+            ':data_decisao' => $item['dataDecisao'] ?? null,
+            ':created_at' => $item['createdAt'] ?? $now,
+            ':updated_at' => $item['updatedAt'] ?? $now,
+        ];
     }
 
     private function map(array $row): array

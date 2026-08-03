@@ -15,6 +15,16 @@
     return [...new Set(values.filter(Boolean))];
   }
 
+  function monthName(value) {
+    const months = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+    const month = Number(value);
+    return months[month - 1] || "";
+  }
+
+  function launchMonthName(launch) {
+    return launch?.nomeMes || monthName(launch?.mes);
+  }
+
   function escapeHtml(value) {
     return String(value ?? "")
       .replaceAll("&", "&amp;")
@@ -58,7 +68,7 @@
   }
 
   function getSelectedLaunch() {
-    return state.lancamentos.find((item) => item.id === state.selectedId);
+    return state.lancamentos.find((item) => String(item.id) === String(state.selectedId));
   }
 
   function isEditable(lancamento) {
@@ -83,7 +93,10 @@
   }
 
   function canAdjustOfficialPerformance() {
-    return ["Administrador", "GERIN"].includes(state.user?.perfil);
+    return state.user?.perfilCodigo === "administrador" ||
+      state.user?.perfil === "Administrador" ||
+      state.user?.sgUnidade === "GERIN" ||
+      state.user?.unidadeApuradora === "GERIN";
   }
 
   function getMetaLabel(regra) {
@@ -257,7 +270,7 @@
 
   function fillFilters(lancamentos) {
     const values = {
-      mes: ["Todos", ...unique(lancamentos.map((item) => item.nomeMes))],
+      mes: ["Todos", ...unique(lancamentos.map((item) => launchMonthName(item)))],
       status: ["Todos", ...unique(lancamentos.map((item) => item.status))]
     };
 
@@ -275,7 +288,7 @@
       [...document.querySelectorAll("[data-filter]")].map((select) => [select.dataset.filter, select.value])
     );
     return state.lancamentos.filter((item) => (
-      (values.mes === "Todos" || item.nomeMes === values.mes) &&
+      (values.mes === "Todos" || launchMonthName(item) === values.mes) &&
       (values.status === "Todos" || item.status === values.status)
     ));
   }
@@ -301,7 +314,7 @@
       return `
         <tr>
           <td>${escapeHtml(indicador ? indicador.indicador : item.indicadorId)}</td>
-          <td>${escapeHtml(item.nomeMes)}/${escapeHtml(item.ano)}</td>
+          <td>${escapeHtml(launchMonthName(item))}/${escapeHtml(item.ano)}</td>
           <td>${escapeHtml(formatDisplayMeta(regra, item))}</td>
           <td>${Calculations.formatarValor(resultadoMensal, regra && regra.unidadeMedida)}</td>
           <td>${escapeHtml(situacao)}</td>
@@ -623,7 +636,7 @@
     }
 
     panel.hidden = false;
-    document.getElementById("launchEditorTitle").textContent = `${indicador.indicador} - ${lancamento.nomeMes}/${lancamento.ano}`;
+    document.getElementById("launchEditorTitle").textContent = `${indicador.indicador} - ${launchMonthName(lancamento)}/${lancamento.ano}`;
     document.getElementById("launchStatusBadge").textContent = lancamento.status;
     document.getElementById("launchStatusBadge").className = `badge ${badgeClass(lancamento.status)}`;
     renderReference(indicador, lancamento, regra);
@@ -979,7 +992,7 @@
     document.getElementById("lancamentosTable").addEventListener("click", (event) => {
       const button = event.target.closest("button[data-id]");
       if (!button) return;
-      state.selectedId = Number(button.dataset.id);
+      state.selectedId = button.dataset.id;
       renderEditor();
       document.getElementById("launchEditorPanel").scrollIntoView({ behavior: "smooth", block: "start" });
     });
@@ -1030,8 +1043,8 @@
     bindEvents();
     refresh();
 
-    const requestedId = Number(new URLSearchParams(window.location.search).get("lancamentoId"));
-    if (requestedId && state.lancamentos.some((item) => item.id === requestedId)) {
+    const requestedId = new URLSearchParams(window.location.search).get("lancamentoId");
+    if (requestedId && state.lancamentos.some((item) => String(item.id) === requestedId)) {
       state.selectedId = requestedId;
       renderEditor();
       document.getElementById("launchEditorPanel").scrollIntoView({ block: "start" });

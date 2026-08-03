@@ -8,7 +8,7 @@ require_once __DIR__ . '/core/Response.php';
 require_once __DIR__ . '/helpers/helpers.php';
 
 ErrorHandler::register();
-date_default_timezone_set('America/Sao_Paulo');
+date_default_timezone_set(APP_TIMEZONE);
 
 header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: SAMEORIGIN');

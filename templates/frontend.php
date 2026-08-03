@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../app/auth/Auth.php';
+require_once __DIR__ . '/../app/helpers/helpers.php';
 
 function render_frontend_page($viewFile)
 {
@@ -31,7 +32,7 @@ function render_frontend_page($viewFile)
         'assets/css/styles.css?v=' . $assetVersion,
         $html
     );
-    $html = str_replace(array('href="/', 'src="/', 'action="/'), array('href="' . APP_BASE_PATH . '/', 'src="' . APP_BASE_PATH . '/', 'action="' . APP_BASE_PATH . '/'), $html);
+    $html = prefix_app_base_path_urls($html);
     $html = (string) preg_replace(
         '#assets/js/auth\.js(?:\?v=[^"]*)?#',
         'assets/js/auth.js?v=' . $assetVersion,
