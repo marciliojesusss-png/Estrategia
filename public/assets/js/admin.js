@@ -95,23 +95,19 @@
       ...options
     });
     const payload = await response.json().catch(() => ({}));
-    if (!response.ok || payload.ok === false) {
-      throw new Error(payload.error || `Falha na API (${response.status}).`);
+    if (!response.ok || payload.ok === false || payload.sucesso === false) {
+      throw new Error(payload.error || payload.mensagem || `Falha na API (${response.status}).`);
     }
-    return payload;
+    return Object.prototype.hasOwnProperty.call(payload, "dados") ? payload.dados : payload;
   }
 
   async function loadAccessUsers() {
     if (state.loadingAccessUsers) return;
     state.loadingAccessUsers = true;
     try {
-      const payload = await adminApi("/api/usuarios-acesso.php");
-      state.accessStorage = payload.storage || null;
-      state.accessUsers = payload.usuarios || [];
-      if (state.accessStorage && state.accessStorage.driver !== "sqlsrv" && !state.accessStorageWarned) {
-        showMessage("Aba Acessos usando SQLite local. O SQL Server nao sera alterado neste modo.", "warning");
-        state.accessStorageWarned = true;
-      }
+      const payload = await adminApi("/api/administracao/usuarios");
+      state.accessStorage = null;
+      state.accessUsers = payload.items || payload.usuarios || [];
     } catch (error) {
       state.accessUsers = [];
       showMessage(error.message || "Nao foi possivel carregar os acessos.", "warning");
@@ -121,12 +117,21 @@
   }
 
   async function saveAccessUser(payload) {
-    const response = await adminApi("/api/usuarios-acesso.php", {
+    const id = payload.id ? String(payload.id) : "";
+    const response = await adminApi(id ? `/api/administracao/usuarios/${encodeURIComponent(id)}` : "/api/administracao/usuarios", {
       method: payload.id ? "PUT" : "POST",
       body: JSON.stringify(payload)
     });
-    state.accessStorage = response.storage || state.accessStorage;
-    state.accessUsers = response.usuarios || [];
+    state.accessStorage = null;
+    const saved = response.item || response;
+    if (saved && saved.id !== undefined) {
+      state.accessUsers = state.accessUsers || [];
+      state.accessUsers = state.accessUsers.some((item) => String(item.id) === String(saved.id))
+        ? state.accessUsers.map((item) => String(item.id) === String(saved.id) ? saved : item)
+        : [...state.accessUsers, saved];
+    } else {
+      await loadAccessUsers();
+    }
   }
 
   function nextNumericId(items) {
@@ -485,7 +490,7 @@
     state.data[config.key] = state.editingId === null
       ? [...state.data[config.key], record]
       : state.data[config.key].map((item) => item.id === state.editingId ? record : item);
-    await DataStore.saveLocal(config.key, state.data[config.key]);
+    const persisted = await DataStore.saveLocal(config.key, state.data[config.key]);
     await DataStore.appendHistory({
       usuario: state.user.email || state.user.nome,
       acao: state.editingId === null ? `criacao_${config.key}` : `alteracao_${config.key}`,
@@ -495,7 +500,10 @@
       valorNovo: record
     });
     state.data.historico = await DataStore.loadJson("historico");
-    showMessage("Registro salvo em armazenamento local.");
+    showMessage(
+      persisted ? "Registro salvo na base central." : "Registro salvo localmente. A base central nao foi alterada por esta tela.",
+      persisted ? "info" : "warning"
+    );
     document.getElementById("adminForm").hidden = true;
     renderCards();
     renderModule();
@@ -575,7 +583,7 @@
     state.data.metas = state.editingId === null
       ? [...state.data.metas, record]
       : state.data.metas.map((item) => item.id === state.editingId ? record : item);
-    await DataStore.saveLocal("metas", state.data.metas);
+    const persisted = await DataStore.saveLocal("metas", state.data.metas);
     await DataStore.appendHistory({
       usuario: state.user.email || state.user.nome,
       acao: state.editingId === null ? "criacao_meta" : "alteracao_meta",
@@ -585,7 +593,10 @@
       valorNovo: record
     });
     state.data.historico = await DataStore.loadJson("historico");
-    showMessage("Meta salva em armazenamento local.");
+    showMessage(
+      persisted ? "Meta salva na base central." : "Meta salva localmente. A base central nao foi alterada por esta tela.",
+      persisted ? "info" : "warning"
+    );
     document.getElementById("adminForm").hidden = true;
     renderCards();
     renderModule();
@@ -703,70 +714,36 @@
   async function decideReopenRequest(id, decision) {
     const request = (state.data.solicitacoesReabertura || []).find((item) => item.id === id);
     if (!request || request.statusSolicitacao !== "Pendente") return;
-    const label = decision === "approve" ? "aprovação" : "negativa";
+    const label = decision === "approve" ? "aprovacao" : "negativa";
     const justificativaDecisao = window.prompt(`Informe a justificativa da ${label}:`);
     if (!justificativaDecisao || !justificativaDecisao.trim()) {
-      showMessage("A justificativa da decisão do Administrador é obrigatória.", "warning");
+      showMessage("A justificativa da decisao do Administrador e obrigatoria.", "warning");
       return;
     }
 
-    const now = new Date().toISOString();
-    const originalRequest = { ...request };
-    const updatedRequest = {
-      ...request,
-      statusSolicitacao: decision === "approve" ? "Aprovada" : "Negada",
-      administradorResponsavel: state.user.email || state.user.nome,
-      decisaoAdministrador: decision === "approve" ? "Aprovar e reabrir" : "Negar",
-      justificativaDecisao: justificativaDecisao.trim(),
-      dataDecisao: now,
-      updatedAt: now
-    };
-
-    let updatedLaunch = null;
-    if (decision === "approve") {
-      const launch = state.data.lancamentos.find((item) => String(item.id) === String(request.lancamentoId));
-      if (!launch || launch.status !== "Homologado") {
-        showMessage("Lançamento homologado não encontrado para reabertura.", "warning");
-        return;
-      }
-      updatedLaunch = {
-        ...launch,
-        status: "Reaberto",
-        homologadoPor: "",
-        dataHomologacao: "",
-        reabertoPor: state.user.email || state.user.nome,
-        dataReabertura: now,
-        solicitacaoReabertura: {
-          ...(launch.solicitacaoReabertura || {}),
-          status: "Atendida",
-          solicitacaoId: request.id,
-          dataAtendimento: now
-        }
-      };
-      state.data.lancamentos = state.data.lancamentos.map((item) => String(item.id) === String(updatedLaunch.id) ? updatedLaunch : item);
-    }
-
-    state.data.solicitacoesReabertura = (state.data.solicitacoesReabertura || []).map((item) => item.id === id ? updatedRequest : item);
-    await Promise.all([
-      DataStore.saveLocal("solicitacoesReabertura", state.data.solicitacoesReabertura),
-      decision === "approve" ? DataStore.salvarLancamentos(state.data.lancamentos) : Promise.resolve()
-    ]);
-    await DataStore.appendHistory({
-      usuario: state.user.email || state.user.nome,
-      acao: decision === "approve" ? "solicitacao_reabertura_aprovada" : "solicitacao_reabertura_negada",
-      descricao: decision === "approve"
-        ? "Solicitação aprovada pelo Administrador e lançamento reaberto para edição."
-        : "Solicitação de reabertura negada pelo Administrador.",
-      entidade: "solicitacoes_reabertura",
-      registroId: id,
-      valorAnterior: originalRequest,
-      valorNovo: { solicitacao: updatedRequest, lancamento: updatedLaunch }
+    const payload = await adminApi("/api/solicitacoes-reabertura.php", {
+      method: "POST",
+      body: JSON.stringify({
+        action: decision === "approve" ? "aprovar" : "negar",
+        id,
+        justificativaDecisao: justificativaDecisao.trim()
+      })
     });
+    if (payload.solicitacao) {
+      state.data.solicitacoesReabertura = (state.data.solicitacoesReabertura || []).map((item) => (
+        item.id === id ? payload.solicitacao : item
+      ));
+    }
+    if (payload.lancamento) {
+      state.data.lancamentos = state.data.lancamentos.map((item) => (
+        String(item.id) === String(payload.lancamento.id) ? payload.lancamento : item
+      ));
+    }
     state.data.historico = await DataStore.loadJson("historico");
     showMessage(
       decision === "approve"
-        ? "Solicitação aprovada. O lançamento foi reaberto para edição."
-        : "Solicitação negada. O lançamento permanece homologado.",
+        ? "Solicitacao aprovada. O lancamento foi reaberto para edicao."
+        : "Solicitacao negada. O lancamento permanece homologado.",
       "info"
     );
     renderCards();

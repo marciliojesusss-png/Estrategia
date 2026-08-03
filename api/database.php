@@ -38,6 +38,7 @@ if ($method === 'GET') {
     if ($collection === 'indicadores') Auth::requirePermission('indicadores', 'visualizar', true);
     if ($collection === 'lancamentos') Auth::requirePermission('lancamentos', 'visualizar', true);
     if ($collection === 'homologacoes') Auth::requirePermission('homologacoes', 'visualizar', true);
+    if ($collection === 'solicitacoesReabertura') Auth::requirePermission('reaberturas', 'solicitar', true);
 
     $value = $service->collection($collection, Auth::scopeFilters(api_filters($_GET)));
     if ($value === null) {

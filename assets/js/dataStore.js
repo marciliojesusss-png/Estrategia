@@ -2560,6 +2560,12 @@
       return cache[key];
     }
 
+    if (isPhpBackend() && isReadRestrictedCollectionForProfile(key)) {
+      cache[key] = normalizeData(key, []);
+      localStorage.removeItem(storageKey(key));
+      return cache[key];
+    }
+
     const parsedLocal = await readLocalJsonDb(key);
     if (parsedLocal !== null) {
       if (!(key === "lancamentos" && Array.isArray(parsedLocal) && parsedLocal.length === 0)) {

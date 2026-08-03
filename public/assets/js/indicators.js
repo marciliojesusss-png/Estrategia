@@ -1559,7 +1559,7 @@
     };
 
     state.indicadores = state.indicadores.map((item) => item.id === id ? updated : item);
-    await DataStore.saveLocal("indicadores", state.indicadores);
+    const persisted = await DataStore.saveLocal("indicadores", state.indicadores);
     await DataStore.appendHistory({
       usuario: state.user.email || state.user.nome,
       acao: "alteracao_indicador",
@@ -1570,7 +1570,10 @@
     });
 
     state.editMode = false;
-    showMessage("Cadastro do indicador salvo em armazenamento local.", "info");
+    showMessage(
+      persisted ? "Cadastro do indicador salvo na base central." : "Cadastro do indicador salvo localmente. A base central nao foi alterada por esta tela.",
+      persisted ? "info" : "warning"
+    );
     refresh();
   }
 

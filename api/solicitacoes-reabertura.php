@@ -101,7 +101,14 @@ if ($action === 'criar') {
         Response::json(['ok' => true, 'solicitacao' => $created], 201);
     } catch (PDOException $error) {
         if ($db->inTransaction()) $db->rollBack();
-        Response::error('Ja existe uma solicitacao de reabertura pendente para este lancamento.', 409);
+        $sqlState = (string) $error->getCode();
+        $message = $error->getMessage();
+        if ($sqlState === '23000' || stripos($message, 'UNIQUE') !== false || stripos($message, 'duplicate') !== false) {
+            Response::error('Ja existe uma solicitacao de reabertura pendente para este lancamento.', 409);
+            return;
+        }
+        Logger::error('Falha de banco ao criar solicitacao de reabertura.', array('tipo' => get_class($error), 'codigo' => $sqlState));
+        Response::error('Nao foi possivel criar a solicitacao de reabertura.', 500);
     } catch (Throwable $error) {
         if ($db->inTransaction()) $db->rollBack();
         Response::error('Nao foi possivel criar a solicitacao de reabertura.', 500);

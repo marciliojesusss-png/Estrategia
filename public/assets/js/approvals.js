@@ -38,6 +38,24 @@
     target.hidden = false;
   }
 
+  async function apiJson(path, options = {}) {
+    const csrfToken = window.Auth?.getCurrentUser?.()?.csrfToken || window.CAIXA_LOTERIAS_AUTH_USER?.csrfToken || "";
+    const response = await fetch(path, {
+      cache: "no-store",
+      headers: {
+        "Content-Type": "application/json",
+        ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {}),
+        ...(options.headers || {})
+      },
+      ...options
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || payload.sucesso === false || payload.ok === false) {
+      throw new Error(payload.mensagem || payload.error || `Falha na API (${response.status}).`);
+    }
+    return Object.prototype.hasOwnProperty.call(payload, "dados") ? payload.dados : payload;
+  }
+
   function getIndicatorMap() {
     return Object.fromEntries(state.indicadores.map((item) => [item.id, item]));
   }
@@ -310,71 +328,35 @@
   async function submitReopenRequest() {
     const lancamento = getSelectedLaunch();
     if (!lancamento || !canRequestReopen(lancamento)) {
-      showMessage("Já existe uma solicitação de reabertura pendente para este lançamento.", "warning");
+      showMessage("Ja existe uma solicitacao de reabertura pendente para este lancamento.", "warning");
       return;
     }
 
     const justificativa = document.getElementById("reopenRequestJustification").value.trim();
     if (!justificativa) {
-      showMessage("Informe a justificativa da solicitação.", "warning");
+      showMessage("Informe a justificativa da solicitacao.", "warning");
       return;
     }
 
-    const now = new Date().toISOString();
-    const request = {
-      id: `sol-reab-${Date.now()}`,
-      lancamentoId: lancamento.id,
-      indicadorId: lancamento.indicadorId,
-      competencia: lancamento.competencia || `${lancamento.ano}-${String(lancamento.mes).padStart(2, "0")}`,
-      solicitanteUsuario: state.user.email || state.user.nome,
-      solicitantePerfil: state.user.perfil,
-      solicitanteUnidade: state.user.diretoriaResponsavel || state.user.unidadeApuradora || "",
-      tipoAjuste: document.getElementById("reopenRequestType").value,
-      justificativa,
-      observacaoComplementar: document.getElementById("reopenRequestObservation").value.trim(),
-      statusSolicitacao: "Pendente",
-      administradorResponsavel: "",
-      decisaoAdministrador: "",
-      justificativaDecisao: "",
-      dataSolicitacao: now,
-      dataDecisao: "",
-      createdAt: now,
-      updatedAt: now
-    };
-
-    const updatedLaunch = {
-      ...lancamento,
-      solicitacaoReabertura: {
-        status: "Pendente",
-        solicitadaPor: request.solicitanteUsuario,
-        dataSolicitacao: now,
-        solicitacaoId: request.id,
-        tipoAjuste: request.tipoAjuste,
-        justificativa
-      }
-    };
-    state.solicitacoesReabertura = [...state.solicitacoesReabertura, request];
-    state.lancamentos = state.lancamentos.map((item) => item.id === updatedLaunch.id ? updatedLaunch : item);
-    const mergedLaunches = mergeScopedLaunches();
-    state.data.lancamentos = mergedLaunches;
-    state.data.solicitacoesReabertura = state.solicitacoesReabertura;
-    await Promise.all([
-      DataStore.salvarLancamentos(mergedLaunches),
-      DataStore.saveLocal("solicitacoesReabertura", state.solicitacoesReabertura)
-    ]);
-    await DataStore.appendHistory({
-      usuario: state.user.email || state.user.nome,
-      acao: "solicitacao_reabertura_criada",
-      descricao: "Solicitação de reabertura criada pelo Diretor/Homologador.",
-      entidade: "solicitacoes_reabertura",
-      registroId: request.id,
-      valorAnterior: null,
-      valorNovo: request
+    const result = await apiJson("/api/solicitacoes-reabertura.php", {
+      method: "POST",
+      body: JSON.stringify({
+        action: "criar",
+        lancamentoId: lancamento.id,
+        indicadorId: lancamento.indicadorId,
+        competencia: lancamento.competencia || `${lancamento.ano}-${String(lancamento.mes).padStart(2, "0")}`,
+        tipoAjuste: document.getElementById("reopenRequestType").value,
+        justificativa,
+        observacaoComplementar: document.getElementById("reopenRequestObservation").value.trim()
+      })
     });
+    const createdRequest = result.solicitacao || result;
+    state.solicitacoesReabertura = [...state.solicitacoesReabertura, createdRequest];
+    state.data.solicitacoesReabertura = state.solicitacoesReabertura;
     document.getElementById("reopenRequestDialog").close();
-    showMessage("Solicitação de reabertura enviada ao Administrador.", "info");
+    showMessage("Solicitacao de reabertura enviada ao Administrador.", "info");
     refresh();
-    state.selectedId = updatedLaunch.id;
+    state.selectedId = lancamento.id;
     renderPanel();
   }
 
