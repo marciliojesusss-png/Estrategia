@@ -30,20 +30,14 @@ $legacyApi = function ($file) {
     return function () use ($file) { require __DIR__ . '/../api/' . $file; };
 };
 
-$router->get('/', function () {
+$renderLogin = function () {
     if (Auth::isLocal()) {
         require APP_ROOT . '/views/auth/login.php';
         return;
     }
     Response::redirect(Auth::homeForProfile(Auth::authenticate()['perfil']));
-});
-$router->get('/login', function () {
-    if (!Auth::isLocal()) {
-        Response::redirect('/');
-    }
-    require APP_ROOT . '/views/auth/login.php';
-});
-$router->post('/login', function () {
+};
+$submitLogin = function () {
     if (!Auth::isLocal()) {
         Response::redirect('/');
     }
@@ -56,7 +50,9 @@ $router->post('/login', function () {
     }
     $user = Auth::loginLocal(isset($_POST['matricula']) ? $_POST['matricula'] : '');
     Response::redirect(Auth::homeForProfile($user['perfil']));
-});
+};
+$router->get('/', $renderLogin);
+$router->post('/', $submitLogin);
 $router->get('/dashboard',$frontendPage('resumo-executivo.php'));
 $router->get('/resumo-executivo',$frontendPage('resumo-executivo.php'));
 $router->get('/visao-trimestral', $frontendPage('visao-trimestral.php'));

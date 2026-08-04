@@ -24,6 +24,7 @@ $uploadConfig = contents($root . '/uploads/web.config');
 $config = contents($root . '/app/config/config.php');
 $helpers = contents($root . '/app/helpers/helpers.php');
 $routerScript = contents($root . '/public/router.php');
+$indexSource = contents($root . '/public/index.php');
 $databaseSource = contents($root . '/app/core/Database.php');
 $authSource = contents($root . '/app/auth/Auth.php');
 
@@ -46,7 +47,11 @@ check(strpos($routerScript, '$hasBasePathPrefix') !== false, 'Router local nao i
 check(strpos($routerScript, "header('Content-Type: '") !== false, 'Router local nao define MIME dos assets com caminho-base.');
 check(strpos($routerScript, 'readfile($file)') !== false, 'Router local nao entrega assets com caminho-base.');
 check(strpos($databaseSource, 'CharacterSet=') === false, 'DSN PDO_SQLSRV contem keyword CharacterSet incompativel.');
-check(strpos($authSource, "Response::redirect('/login')") !== false, 'Rotas locais nao autenticadas nao redirecionam ao login.');
+check(strpos($authSource, "Response::redirect('/')") !== false, 'Rotas locais nao autenticadas nao retornam a entrada principal.');
+check(strpos($indexSource, "\$router->get('/login'") === false, 'Rota legada /login ainda esta publicada.');
+check(strpos($indexSource, "\$router->post('/login'") === false, 'POST legado /login ainda esta publicado.');
+check(strpos($indexSource, "\$router->get('/', \$renderLogin)") !== false, 'Entrada principal nao apresenta o login local.');
+check(strpos($indexSource, "\$router->post('/', \$submitLogin)") !== false, 'Entrada principal nao recebe o POST de login.');
 
 foreach (array('database', 'storage', 'uploads', 'app', '.env', 'composer.json') as $privatePath) {
     check(!file_exists($root . '/public/' . $privatePath), 'Recurso interno exposto no public/: ' . $privatePath);

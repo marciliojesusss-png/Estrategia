@@ -27,7 +27,7 @@ Essas rotas não são subdomínios. Um subdomínio teria outra estrutura, como `
 ## Principais URLs
 
 | Funcionalidade | URL |
-|---|---|
+| --- | --- |
 | Entrada e login | `https://www.gelot.mz.caixa/estrategia/` |
 | Dashboard | `https://www.gelot.mz.caixa/estrategia/dashboard` |
 | Resumo executivo | `https://www.gelot.mz.caixa/estrategia/resumo-executivo` |
@@ -143,12 +143,13 @@ Sem o módulo URL Rewrite, essas rotas poderão retornar HTTP 404. Portanto, ele
 Não devem ser divulgados ou utilizados como entrada oficial:
 
 ```text
-https://www.gelot.mz.caixa/estrategia/login.php
+https://www.gelot.mz.caixa/estrategia/login
 https://www.gelot.mz.caixa/Estrategia/public/
 https://www.gelot.mz.caixa/Estrategia/app/
 https://www.gelot.mz.caixa/Estrategia/database/
 ```
 
+A entrada oficial é sempre `/estrategia/`; não existe uma rota de login separada.
 A diferença entre letras maiúsculas e minúsculas pode variar conforme servidor e proxy. O padrão oficial deve ser sempre `/estrategia`, em letras minúsculas.
 
 ## Validação após a publicação

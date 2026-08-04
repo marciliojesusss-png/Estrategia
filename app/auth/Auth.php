@@ -55,7 +55,7 @@ final class Auth
             if (strpos($resource, '/api/') === 0) {
                 self::deny('Autenticacao local necessaria.');
             }
-            Response::redirect('/login');
+            Response::redirect('/');
         }
         $corporate = self::loadCorporateData();
         $matricula = trim(isset($corporate['matricula']) ? (string) $corporate['matricula'] : '');

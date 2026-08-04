@@ -11,7 +11,8 @@ Aplicação PHP para gestão de indicadores estratégicos, lançamentos mensais,
 
 ## Executar localmente
 
-Use o único script operacional da pasta `scripts/` a partir da raiz do projeto:
+Use o único script operacional da pasta `scripts/` a partir da raiz do projeto.
+Por padrão, ele inicia a aplicação com o prefixo `/estrategia`:
 
 ```powershell
 .\scripts\servidor.ps1 executar
@@ -38,18 +39,19 @@ Para reiniciar, finalizando a execução atual e iniciando outra em segundo plan
 
 Para simular qualquer ação sem alterar processos, use `-DryRun`.
 
-Quando a aplicação for acessada pelo endereço `/estrategia`, informe o mesmo
-prefixo ao iniciar ou reiniciar:
+Para executar deliberadamente na raiz, informe `-BasePath '/'` ao iniciar ou
+reiniciar:
 
 ```powershell
-.\scripts\servidor.ps1 reiniciar -BasePath '/estrategia'
+.\scripts\servidor.ps1 reiniciar -BasePath '/'
 ```
 
 Opções disponíveis: `-BindHost` (padrão `127.0.0.1`), `-Port` (padrão `8000`),
-`-BasePath` (padrão vazio), `-Background` e `-DryRun`.
+`-BasePath` (padrão `/estrategia`), `-Background` e `-DryRun`.
 
-Acesse [http://127.0.0.1:8000](http://127.0.0.1:8000) ou, usando o prefixo,
-[http://127.0.0.1:8000/estrategia/](http://127.0.0.1:8000/estrategia/).
+Acesse [http://127.0.0.1:8000/estrategia/](http://127.0.0.1:8000/estrategia/).
+Não existe uma rota de login separada; a própria entrada `/estrategia/`
+apresenta o formulário e recebe o POST de autenticação.
 
 O router encaminha as rotas da aplicação ao front controller e entrega CSS,
 JavaScript e imagens diretamente.

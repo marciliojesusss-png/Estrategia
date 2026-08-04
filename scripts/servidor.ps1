@@ -16,7 +16,7 @@
   Porta (padrão: 8000).
 
 .PARAMETER BasePath
-  Valor de APP_BASE_PATH. Use '/estrategia' para simular a publicação.
+  Valor de APP_BASE_PATH (padrão: '/estrategia'). Use '/' para executar na raiz.
 
 .PARAMETER Background
   Executa o servidor em segundo plano. A ação reiniciar sempre inicia em
@@ -33,7 +33,7 @@ param(
   [string]$Acao = 'executar',
   [string]$BindHost = '127.0.0.1',
   [int]$Port = 8000,
-  [string]$BasePath = '',
+  [string]$BasePath = '/estrategia',
   [switch]$Background = $false,
   [switch]$DryRun = $false
 )
