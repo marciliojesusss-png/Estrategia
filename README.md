@@ -11,77 +11,48 @@ Aplicação PHP para gestão de indicadores estratégicos, lançamentos mensais,
 
 ## Executar localmente
 
-Dois modos suportados para desenvolvimento local: manual (variáveis de ambiente) ou via script PowerShell fornecido.
-
-- Manual (PowerShell) — a partir da raiz do projeto:
+Use o único script operacional da pasta `scripts/` a partir da raiz do projeto:
 
 ```powershell
-$env:APP_ENV='development'
-$env:DB_CONNECTION='sqlite'
-php -S 127.0.0.1:8000 -t public public/router.php
+.\scripts\servidor.ps1 executar
 ```
 
-- Usando o script (recomendado):
+O servidor inicia em primeiro plano; pressione `Ctrl+C` para finalizá-lo.
+Para iniciar em segundo plano, use:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\executar-projeto.ps1
+.\scripts\servidor.ps1 executar -Background
 ```
 
-Por padrão, o servidor permanece em primeiro plano; pressione `Ctrl+C` para
-finalizá-lo. Para iniciar em segundo plano:
+Para finalizar o servidor:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\executar-projeto.ps1 -Background
+.\scripts\servidor.ps1 finalizar
 ```
 
-Para finalizar uma execução em segundo plano ou iniciada em outro terminal:
+Para reiniciar, finalizando a execução atual e iniciando outra em segundo plano:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\finalizar-projeto.ps1 -Port 8000
+.\scripts\servidor.ps1 reiniciar
 ```
 
-Para reiniciar o servidor (finaliza a execução atual e inicia outra em
-segundo plano):
+Para simular qualquer ação sem alterar processos, use `-DryRun`.
+
+Quando a aplicação for acessada pelo endereço `/estrategia`, informe o mesmo
+prefixo ao iniciar ou reiniciar:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\reiniciar-projeto.ps1 -Port 8000
+.\scripts\servidor.ps1 reiniciar -BasePath '/estrategia'
 ```
 
-O restart aceita as mesmas opções de host e base path da inicialização:
+Opções disponíveis: `-BindHost` (padrão `127.0.0.1`), `-Port` (padrão `8000`),
+`-BasePath` (padrão vazio), `-Background` e `-DryRun`.
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\reiniciar-projeto.ps1 `
-  -BindHost 127.0.0.1 -Port 8000 -BasePath '/estrategia'
-```
+Acesse [http://127.0.0.1:8000](http://127.0.0.1:8000) ou, usando o prefixo,
+[http://127.0.0.1:8000/estrategia/](http://127.0.0.1:8000/estrategia/).
 
-Para simular o restart sem finalizar nem iniciar o servidor, use `-DryRun`.
-
-Importante: para acessar a aplicação pelo endereço `/estrategia`, o servidor
-deve ser iniciado com `-BasePath '/estrategia'`. Sem esse parâmetro, a execução
-local usa a raiz e deve ser acessada por `/login`.
-
-Opções do script:
-
-- `-BindHost` (padrão `127.0.0.1`)
-- `-Port` (padrão `8000`)
-- `-BasePath` (padrão vazio, use `/estrategia` para simular a publicação com prefixo)
-- `-DryRun` (imprime o comando que seria executado e não inicia o servidor)
-- `-Background` (inicia o servidor em segundo plano)
-
-O script `finalizar-projeto.ps1` encerra o servidor pela porta e também
-localiza execuções em primeiro plano. O script `reiniciar-projeto.ps1` sempre
-inicia a nova execução em segundo plano e grava o PID em
-`storage/temporarios/php-server-<porta>.pid`.
-
-Exemplo com base path (e DryRun para teste sem iniciar):
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\executar-projeto.ps1 -BindHost 127.0.0.1 -Port 8000 -BasePath '/estrategia' -DryRun
-```
-
-Acesse [http://127.0.0.1:8000](http://127.0.0.1:8000).
-
-O router encaminha as rotas da aplicação ao front controller e entrega CSS, JavaScript e imagens diretamente. A primeira página será `/login` no ambiente local.
+O router encaminha as rotas da aplicação ao front controller e entrega CSS,
+JavaScript e imagens diretamente.
 
 ## Configuração do SQL Server
 
@@ -153,7 +124,7 @@ assets/              CSS, JavaScript e imagens-fonte
 database/            SQLite de origem e schemas SQL
 docs/                arquitetura, instalação, testes e publicação
 public/              única raiz pública e front controller
-scripts/             migração, testes e publicação
+scripts/             migração SQL Server e servidor local
 storage/             logs, temporários e arquivos operacionais
 tests/               testes PHP, JavaScript e Python
 uploads/             evidências fora da raiz pública
