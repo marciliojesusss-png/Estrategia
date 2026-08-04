@@ -40,6 +40,26 @@ Para finalizar uma execução em segundo plano ou iniciada em outro terminal:
 powershell -ExecutionPolicy Bypass -File .\scripts\finalizar-projeto.ps1 -Port 8000
 ```
 
+Para reiniciar o servidor (finaliza a execução atual e inicia outra em
+segundo plano):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\reiniciar-projeto.ps1 -Port 8000
+```
+
+O restart aceita as mesmas opções de host e base path da inicialização:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\reiniciar-projeto.ps1 `
+  -BindHost 127.0.0.1 -Port 8000 -BasePath '/estrategia'
+```
+
+Para simular o restart sem finalizar nem iniciar o servidor, use `-DryRun`.
+
+Importante: para acessar a aplicação pelo endereço `/estrategia`, o servidor
+deve ser iniciado com `-BasePath '/estrategia'`. Sem esse parâmetro, a execução
+local usa a raiz e deve ser acessada por `/login`.
+
 Opções do script:
 
 - `-BindHost` (padrão `127.0.0.1`)
@@ -47,6 +67,11 @@ Opções do script:
 - `-BasePath` (padrão vazio, use `/estrategia` para simular a publicação com prefixo)
 - `-DryRun` (imprime o comando que seria executado e não inicia o servidor)
 - `-Background` (inicia o servidor em segundo plano)
+
+O script `finalizar-projeto.ps1` encerra o servidor pela porta e também
+localiza execuções em primeiro plano. O script `reiniciar-projeto.ps1` sempre
+inicia a nova execução em segundo plano e grava o PID em
+`storage/temporarios/php-server-<porta>.pid`.
 
 Exemplo com base path (e DryRun para teste sem iniciar):
 

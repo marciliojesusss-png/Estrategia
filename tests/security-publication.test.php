@@ -40,6 +40,11 @@ check(strpos($config, "APP_ENV === 'production' ? 'sqlsrv' : 'sqlite'") !== fals
 check(strpos($helpers, 'htmlspecialchars') !== false, 'Helper de escape HTML ausente.');
 check(strpos($routerScript, 'return false') !== false, 'Router local nao libera assets estaticos.');
 check(strpos($routerScript, 'realpath') !== false, 'Router local nao restringe arquivos ao public.');
+check(strpos($routerScript, "getenv('APP_BASE_PATH')") !== false, 'Router local nao considera o caminho-base.');
+check(strpos($routerScript, '$path = substr($path, strlen($basePath));') !== false, 'Router local nao remove o caminho-base dos assets.');
+check(strpos($routerScript, '$hasBasePathPrefix') !== false, 'Router local nao identifica assets com caminho-base.');
+check(strpos($routerScript, "header('Content-Type: '") !== false, 'Router local nao define MIME dos assets com caminho-base.');
+check(strpos($routerScript, 'readfile($file)') !== false, 'Router local nao entrega assets com caminho-base.');
 check(strpos($databaseSource, 'CharacterSet=') === false, 'DSN PDO_SQLSRV contem keyword CharacterSet incompativel.');
 check(strpos($authSource, "Response::redirect('/login')") !== false, 'Rotas locais nao autenticadas nao redirecionam ao login.');
 
