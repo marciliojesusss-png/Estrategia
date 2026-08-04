@@ -37,7 +37,8 @@ foreach (array('storage', 'uploads', 'database', 'app') as $segment) {
 check(strpos($uploadConfig, 'fileExtension=".php" allowed="false"') !== false, 'Upload permite PHP.');
 check(strpos($uploadConfig, 'fileExtension=".phtml" allowed="false"') !== false, 'Upload permite PHTML.');
 check(strpos($config, "getenv('APP_DEBUG') ?: 'false'") !== false, 'Debug nao possui padrao seguro.');
-check(strpos($config, "APP_ENV === 'production' ? 'sqlsrv' : 'sqlite'") !== false, 'SQL Server nao e o driver padrao de producao.');
+check(strpos($config, "APP_ENV === 'production' ? 'pdo_sqlsrv' : 'sqlite'") !== false, 'PDO SQL Server nao e o driver padrao de producao.');
+check(strpos($config, "in_array(DB_DRIVER, array('pdo_sqlsrv', 'sqlsrv'), true) ? 'sqlsrv' : DB_DRIVER") !== false, 'DB_CONNECTION nao preserva compatibilidade com SQL Server.');
 check(strpos($helpers, 'htmlspecialchars') !== false, 'Helper de escape HTML ausente.');
 check(strpos($routerScript, 'return false') !== false, 'Router local nao libera assets estaticos.');
 check(strpos($routerScript, 'realpath') !== false, 'Router local nao restringe arquivos ao public.');

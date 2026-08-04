@@ -4,6 +4,70 @@ declare(strict_types=1);
 require_once __DIR__ . '/Dotenv.php';
 
 define('APP_ROOT', dirname(__DIR__, 2));
+
+function config_has_env(array $names)
+{
+    foreach ($names as $name) {
+        if (getenv($name) !== false) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function config_set_env_group(array $names, $value)
+{
+    if (config_has_env($names) || is_array($value) || is_object($value)) {
+        return;
+    }
+    $value = is_bool($value) ? ($value ? 'true' : 'false') : (string) $value;
+    foreach ($names as $name) {
+        putenv($name . '=' . $value);
+        $_ENV[$name] = $value;
+        if (!isset($_SERVER[$name])) {
+            $_SERVER[$name] = $value;
+        }
+    }
+}
+
+function config_apply_server_file($path)
+{
+    if (!is_file($path) || !is_readable($path)) {
+        return;
+    }
+    $values = require $path;
+    if (!is_array($values)) {
+        return;
+    }
+
+    $mapping = array(
+        'app_env' => array('APP_ENV'),
+        'app_base_path' => array('APP_BASE_PATH'),
+        'db_host' => array('SQLSERVER_HOST', 'DB_HOST'),
+        'db_database' => array('SQLSERVER_DATABASE', 'DB_DATABASE'),
+        'db_auth_mode' => array('DB_AUTH_MODE'),
+        'db_username' => array('SQLSERVER_USER', 'DB_USERNAME'),
+        'db_password' => array('SQLSERVER_PASSWORD', 'DB_PASSWORD'),
+        'auth_provider' => array('AUTH_PROVIDER'),
+        'ldap_legacy_path' => array('LDAP_LEGACY_PATH'),
+    );
+
+    foreach ($mapping as $key => $names) {
+        if (array_key_exists($key, $values)) {
+            config_set_env_group($names, $values[$key]);
+        }
+    }
+
+    if (array_key_exists('db_driver', $values) && !config_has_env(array('DB_DRIVER', 'DB_CONNECTION', 'DB_PDO_SUBDRIVER'))) {
+        $driver = strtolower(trim((string) $values['db_driver']));
+        if ($driver !== '') {
+            config_set_env_group(array('DB_DRIVER'), $driver);
+            config_set_env_group(array('DB_CONNECTION'), in_array($driver, array('pdo_sqlsrv', 'sqlsrv'), true) ? 'sqlsrv' : $driver);
+        }
+    }
+}
+
+config_apply_server_file(APP_ROOT . '/app/config/servidor.local.php');
 Dotenv::load(APP_ROOT . '/.env');
 define('APP_ENV', getenv('APP_ENV') ?: 'production');
 define('APP_DEBUG', filter_var(getenv('APP_DEBUG') ?: 'false', FILTER_VALIDATE_BOOLEAN));
@@ -27,7 +91,22 @@ if ($envBase !== false) {
 define('APP_BASE_PATH', $base);
 $dbSubdriver = getenv('DB_PDO_SUBDRIVER');
 define('DB_PDO_SUBDRIVER', $dbSubdriver ?: '');
-define('DB_CONNECTION', getenv('DB_CONNECTION') ?: (DB_PDO_SUBDRIVER ?: (APP_ENV === 'production' ? 'sqlsrv' : 'sqlite')));
+$dbConnection = getenv('DB_CONNECTION');
+$dbDriver = getenv('DB_DRIVER');
+if ($dbDriver === false || $dbDriver === '') {
+    if ($dbConnection === 'sqlsrv' || $dbConnection === 'sqlserver' || DB_PDO_SUBDRIVER === 'sqlsrv') {
+        $dbDriver = 'pdo_sqlsrv';
+    } elseif ($dbConnection !== false && $dbConnection !== '') {
+        $dbDriver = $dbConnection;
+    } else {
+        $dbDriver = APP_ENV === 'production' ? 'pdo_sqlsrv' : 'sqlite';
+    }
+}
+define('DB_DRIVER', strtolower((string) $dbDriver));
+if ($dbConnection === false || $dbConnection === '') {
+    $dbConnection = in_array(DB_DRIVER, array('pdo_sqlsrv', 'sqlsrv'), true) ? 'sqlsrv' : DB_DRIVER;
+}
+define('DB_CONNECTION', $dbConnection);
 define('DB_PATH', APP_ROOT . '/database/indicadores.sqlite');
 define('SCHEMA_PATH', APP_ROOT . '/database/schema.sql');
 define('STORAGE_PATH', APP_ROOT . '/storage');
@@ -48,11 +127,14 @@ define('LDAP_ATTR_SG_UNIDADE', getenv('LDAP_ATTR_SG_UNIDADE') ?: 'departmentNumb
 define('LDAP_ATTR_NO_UNIDADE', getenv('LDAP_ATTR_NO_UNIDADE') ?: 'department');
 define('LDAP_STARTTLS', filter_var(getenv('LDAP_STARTTLS') ?: 'true', FILTER_VALIDATE_BOOLEAN));
 define('LDAP_REQUIRE_TLS', filter_var(getenv('LDAP_REQUIRE_TLS') ?: (APP_ENV === 'production' ? 'true' : 'false'), FILTER_VALIDATE_BOOLEAN));
+define('AUTH_PROVIDER', getenv('AUTH_PROVIDER') ?: 'legacy_file');
+define('LDAP_LEGACY_PATH', getenv('LDAP_LEGACY_PATH') ?: '');
 define('SQLSERVER_HOST', getenv('SQLSERVER_HOST') ?: (getenv('DB_HOST') ?: 'DF7436SR439'));
 define('SQLSERVER_DATABASE', getenv('SQLSERVER_DATABASE') ?: (getenv('DB_DATABASE') ?: 'DB5319_IndicadoresEstrategicos'));
 define('SQLSERVER_PORT', getenv('SQLSERVER_PORT') ?: '');
 define('SQLSERVER_USER', getenv('SQLSERVER_USER') ?: (getenv('DB_USERNAME') ?: ''));
 define('SQLSERVER_PASSWORD', getenv('SQLSERVER_PASSWORD') ?: (getenv('DB_PASSWORD') ?: ''));
+define('DB_AUTH_MODE', getenv('DB_AUTH_MODE') ?: (SQLSERVER_USER !== '' ? 'sql' : 'integrated'));
 define('SQLSERVER_ENCRYPT', getenv('SQLSERVER_ENCRYPT') ?: 'yes');
 define('SQLSERVER_TRUST_SERVER_CERTIFICATE', getenv('SQLSERVER_TRUST_SERVER_CERTIFICATE') ?: 'no');
 define('SESSION_IDLE_TIMEOUT', (int) (getenv('SESSION_IDLE_TIMEOUT') ?: 1800));
