@@ -18,7 +18,6 @@ require_once __DIR__ . '/../app/repositories/SolicitacoesReaberturaRepository.ph
 if (defined('API_LEGACY_ALIAS')) {
     header('Deprecation: true');
     header('Sunset: Thu, 31 Dec 2026 23:59:59 GMT');
-    header('Link: </api/documentacao>; rel="deprecation"');
 }
 header('Vary: Cookie, Accept');
 

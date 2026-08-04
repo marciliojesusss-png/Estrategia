@@ -124,7 +124,6 @@ app/                 núcleo, autenticação, controllers, services e repositori
 api/                 endpoints compatíveis
 assets/              CSS, JavaScript e imagens-fonte
 database/            SQLite de origem e schemas SQL
-docs/                arquitetura, instalação, testes e publicação
 public/              única raiz pública e front controller
 scripts/             migração SQL Server e servidor local
 storage/             logs, temporários e arquivos operacionais
@@ -135,12 +134,3 @@ views/               layouts, componentes, formulários e detalhes server-side
 ```
 
 Não existem páginas HTML soltas na raiz. Todas as requisições públicas devem entrar por `public/index.php`.
-
-## Documentação
-
-- [API](docs/api.md)
-- [Instalação no IIS](docs/instalacao/manual-iis.md)
-- [Manual técnico](docs/manuais/manual-tecnico.md)
-- [Plano de implantação e rollback](docs/publicacao/plano-implantacao.md)
-- [Checklist de go-live](docs/publicacao/checklist-go-live.md)
-- [Matriz de rastreabilidade](docs/testes/matriz-rastreabilidade.md)
