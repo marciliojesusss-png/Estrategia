@@ -100,3 +100,48 @@ Status em 2026-08-04:
 - [x] Teste automatizado adicionado com fixture de arquivo legado.
 
 Pendencia externa: validar o formato real do arquivo corporativo indicado por `LDAP_LEGACY_PATH` no servidor.
+
+## Fase 4 - Compatibilidade Com IIS
+
+Status em 2026-08-04:
+
+- [x] Estrutura preferencial preservada com raiz publica em `public/`.
+- [x] `public/web.config` validado com documento padrao `index.php` e front controller.
+- [x] Plano alternativo criado na raiz com `index.php`.
+- [x] Plano alternativo criado na raiz com `web.config`.
+- [x] `web.config` da raiz bloqueia `app`, `database`, `storage`, `uploads`, `.env` e `.git`.
+- [x] `web.config` da raiz encaminha rotas para `public/index.php`.
+- [x] Teste automatizado atualizado para validar o modo alternativo.
+
+Pendencias externas:
+
+- [ ] Converter `/estrategia` em aplicacao no IIS.
+- [ ] Associar ao Application Pool correto.
+- [ ] Confirmar PHP 7.1.19 no FastCGI.
+- [ ] Confirmar URL Rewrite instalado.
+- [ ] Confirmar Autenticacao Windows e `REMOTE_USER`.
+- [ ] Configurar `APP_BASE_PATH=/estrategia` no ambiente.
+
+## Fase 5 - Permissoes, Logs, Sessoes E Uploads
+
+Status em 2026-08-04:
+
+- [x] `storage/logs` preservado com `.gitkeep`.
+- [x] `.gitignore` ajustado para ignorar logs gerados e versionar `.gitkeep`.
+- [x] Logger alterado para usar `error_log($mensagem)` quando nao puder gravar arquivo.
+- [x] `EvidenciaStorage` valida permissao de escrita em `uploads/evidencias`.
+- [x] Script criado em `scripts/verificar-permissoes.php`.
+- [x] Script valida escrita real em `storage/logs`, `storage/temporarios`, `storage/backups` e `uploads/evidencias`.
+- [x] Script valida disponibilidade de sessao PHP.
+
+Saida validada do script:
+
+```text
+storage/logs: gravavel
+storage/temporarios: gravavel
+storage/backups: gravavel
+uploads/evidencias: gravavel
+sessao PHP: disponivel
+```
+
+Pendencia externa: conceder permissao de modificacao ao Application Pool nas pastas gravaveis no servidor IIS.

@@ -20,6 +20,7 @@ function contents($path)
 }
 
 $webConfig = contents($root . '/public/web.config');
+$rootWebConfig = contents($root . '/web.config');
 $uploadConfig = contents($root . '/uploads/web.config');
 $config = contents($root . '/app/config/config.php');
 $helpers = contents($root . '/app/helpers/helpers.php');
@@ -34,6 +35,12 @@ foreach (array('X-Content-Type-Options', 'X-Frame-Options', 'Referrer-Policy', '
 foreach (array('storage', 'uploads', 'database', 'app') as $segment) {
     check(strpos($webConfig, 'segment="' . $segment . '"') !== false, 'Segmento nao oculto: ' . $segment);
 }
+check(file_exists($root . '/index.php'), 'Index alternativo da raiz ausente.');
+check(strpos(contents($root . '/index.php'), "require __DIR__ . '/public/index.php';") !== false, 'Index alternativo nao encaminha para public/index.php.');
+foreach (array('storage', 'uploads', 'database', 'app', '.env') as $segment) {
+    check(strpos($rootWebConfig, 'segment="' . $segment . '"') !== false, 'Segmento nao oculto no web.config raiz: ' . $segment);
+}
+check(strpos($rootWebConfig, 'public/index.php?rota=/{R:1}') !== false, 'web.config raiz nao encaminha para public/index.php.');
 check(strpos($uploadConfig, 'fileExtension=".php" allowed="false"') !== false, 'Upload permite PHP.');
 check(strpos($uploadConfig, 'fileExtension=".phtml" allowed="false"') !== false, 'Upload permite PHTML.');
 check(strpos($config, "getenv('APP_DEBUG') ?: 'false'") !== false, 'Debug nao possui padrao seguro.');

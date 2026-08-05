@@ -27,18 +27,22 @@ sqlsrv
 
 O modo principal continuará sendo `pdo_sqlsrv`. O modo `sqlsrv` será usado como compatibilidade quando o servidor não possuir o driver PDO.
 
+Status: implementado no código por `DB_DRIVER=pdo_sqlsrv` e `DB_DRIVER=sqlsrv`.
+
 ---
 
 ## Fase 2.1 — Testar primeiro o PDO_SQLSRV
 
 ### Ações
 
-* [ ] Verificar se `pdo_sqlsrv` aparece em `PDO::getAvailableDrivers()`.
-* [ ] Testar conexão com usuário SQL explícito.
-* [ ] Testar conexão com identidade integrada separadamente.
-* [ ] Executar `SELECT 1`.
-* [ ] Executar uma consulta em `dbo.indicadores`.
-* [ ] Registrar o erro real no log, sem registrar senha ou DSN.
+* [ ] Verificar se `pdo_sqlsrv` aparece em `PDO::getAvailableDrivers()` no servidor.
+* [ ] Testar conexão com usuário SQL explícito no servidor.
+* [ ] Testar conexão com identidade integrada separadamente no servidor.
+* [ ] Executar `SELECT 1` no SQL Server corporativo.
+* [ ] Executar uma consulta em `dbo.indicadores` no SQL Server corporativo.
+* [x] Registrar o erro real no log, sem registrar senha ou DSN.
+
+Itens de conexão seguem pendentes porque dependem do servidor SQL Server corporativo e das extensões PHP instaladas nele.
 
 ### Modificação em `Database.php`
 
@@ -50,6 +54,8 @@ connectSqlsrvNative()
 connectSqlite()
 ```
 
+Status: implementado em `app/core/Database.php`.
+
 Adicionar uma exceção mais informativa:
 
 ```text
@@ -58,6 +64,8 @@ PDO_SQLSRV_INDISPONIVEL
 
 em vez de uma mensagem genérica.
 
+Status: implementado em `app/core/Database.php`.
+
 ### Critério de conclusão
 
 O seguinte teste deverá retornar sucesso:
@@ -65,6 +73,8 @@ O seguinte teste deverá retornar sucesso:
 ```sql
 SELECT 1 AS conexao;
 ```
+
+Status: pendente de execução no servidor SQL Server. O script `scripts/testar-sqlserver.php` foi criado para essa validação.
 
 ---
 
@@ -78,6 +88,8 @@ Esta fase somente será necessária se a infraestrutura não puder instalar ou h
 app/core/database/SqlsrvConnectionAdapter.php
 app/core/database/SqlsrvStatementAdapter.php
 ```
+
+Status: implementado.
 
 ## Finalidade
 
@@ -110,6 +122,8 @@ rollBack
 rowCount
 ```
 
+Status: implementado no adapter, incluindo `fetchColumn`, `bindValue`, `inTransaction` e `lastInsertId` para compatibilidade com os usos atuais.
+
 Há uso de transações em serviços de indicadores, lançamentos, homologações, evidências e administração.
 
 ## Nova configuração
@@ -117,6 +131,8 @@ Há uso de transações em serviços de indicadores, lançamentos, homologaçõe
 ```text
 DB_DRIVER=sqlsrv
 ```
+
+Status: suportado pela configuração e por `Database::getConnection()`.
 
 ## Regra de seleção
 
@@ -128,17 +144,21 @@ if (DB_DRIVER === 'pdo_sqlsrv') {
 }
 ```
 
+Status: implementado em `app/core/Database.php`.
+
 ## Critério de conclusão
 
 Executar com sucesso:
 
-* consulta simples;
-* consulta com parâmetro;
-* inclusão;
-* alteração;
-* transação com commit;
-* transação com rollback;
-* consulta com `fetchAll`.
+* [ ] consulta simples no SQL Server corporativo;
+* [ ] consulta com parâmetro no SQL Server corporativo;
+* [ ] inclusão no SQL Server corporativo;
+* [ ] alteração no SQL Server corporativo;
+* [ ] transação com commit no SQL Server corporativo;
+* [ ] transação com rollback no SQL Server corporativo;
+* [ ] consulta com `fetchAll` no SQL Server corporativo.
+
+Validação local realizada: a suíte PHP passou com os repositories/services aceitando o novo contrato de conexão. A validação real do adapter `sqlsrv` depende da extensão `sqlsrv` e de acesso ao banco.
 
 ---
 

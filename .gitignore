@@ -30,8 +30,8 @@ yarn-error.log*
 pnpm-debug.log*
 
 # Logs da aplicacao e arquivos gerados em tempo de execucao
-/storage/logs/
 /storage/logs/*
+!/storage/logs/.gitkeep
 /storage/temporarios/*.pid
-logs/
+/logs/
 *.log
