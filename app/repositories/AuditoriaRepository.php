@@ -4,7 +4,7 @@ declare(strict_types=1);
 final class AuditoriaRepository
 {
     private $db;
-    public function __construct(PDO $db) { $this->db = $db; }
+    public function __construct($db) { $this->db = $db; }
 
     public function all(): array
     {
@@ -102,3 +102,5 @@ final class AuditoriaRepository
         return json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 }
+
+

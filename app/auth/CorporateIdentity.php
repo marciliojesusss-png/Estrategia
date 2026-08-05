@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../core/Logger.php';
+require_once __DIR__ . '/providers/IdentityProviderFactory.php';
 
 final class CorporateIdentity
 {
@@ -15,7 +16,8 @@ final class CorporateIdentity
             return null;
         }
 
-        return self::loadFromLdap($matricula);
+        $provider = IdentityProviderFactory::create(AUTH_PROVIDER);
+        return $provider->load($matricula);
     }
 
     public static function normalizeRemoteUser($remoteUser)
@@ -72,71 +74,7 @@ final class CorporateIdentity
         );
     }
 
-    private static function loadFromLdap($matricula)
-    {
-        if (!function_exists('ldap_connect')) {
-            Logger::error('Extensao LDAP indisponivel no PHP.');
-            return null;
-        }
-        if (LDAP_URI === '' || LDAP_BASE_DN === '' || LDAP_BIND_DN === '' || LDAP_BIND_PASSWORD === '') {
-            Logger::error('Configuracao LDAP corporativa incompleta.');
-            return null;
-        }
-
-        $isLdaps = stripos(LDAP_URI, 'ldaps://') === 0;
-        if (LDAP_REQUIRE_TLS && !$isLdaps && !LDAP_STARTTLS) {
-            Logger::error('LDAP corporativo exige canal TLS.');
-            return null;
-        }
-
-        $connection = @ldap_connect(LDAP_URI);
-        if ($connection === false) {
-            Logger::error('Nao foi possivel conectar ao LDAP corporativo.');
-            return null;
-        }
-
-        @ldap_set_option($connection, LDAP_OPT_PROTOCOL_VERSION, 3);
-        @ldap_set_option($connection, LDAP_OPT_REFERRALS, 0);
-        if (!$isLdaps && LDAP_STARTTLS && !@ldap_start_tls($connection)) {
-            @ldap_close($connection);
-            Logger::error('Nao foi possivel iniciar TLS no LDAP corporativo.');
-            return null;
-        }
-        if (!@ldap_bind($connection, LDAP_BIND_DN, LDAP_BIND_PASSWORD)) {
-            @ldap_close($connection);
-            Logger::error('Falha de bind no LDAP corporativo.');
-            return null;
-        }
-
-        $filter = self::buildUserFilter($matricula);
-        if ($filter === null) {
-            @ldap_close($connection);
-            Logger::error('Filtro LDAP corporativo invalido.');
-            return null;
-        }
-        $attributes = array_values(array_unique(array(
-            LDAP_ATTR_MATRICULA, LDAP_ATTR_NOME, LDAP_ATTR_FUNCAO,
-            LDAP_ATTR_UNIDADE, LDAP_ATTR_SG_UNIDADE, LDAP_ATTR_NO_UNIDADE,
-        )));
-        $search = @ldap_search($connection, LDAP_BASE_DN, $filter, $attributes, 0, 2);
-        if ($search === false) {
-            @ldap_close($connection);
-            Logger::error('Consulta ao LDAP corporativo falhou.');
-            return null;
-        }
-        $entries = @ldap_get_entries($connection, $search);
-        @ldap_close($connection);
-        if (!is_array($entries) || !isset($entries['count']) || (int) $entries['count'] !== 1) {
-            Logger::error('Matricula corporativa nao localizada de forma univoca no LDAP.');
-            return null;
-        }
-
-        $identity = self::mapEntry($entries[0], $matricula);
-        if ($identity === null) Logger::error('Atributos corporativos LDAP invalidos ou incompletos.');
-        return $identity;
-    }
-
-    private static function normalizeMatricula($value)
+    public static function normalizeMatricula($value)
     {
         $value = strtoupper(trim((string) $value));
         return preg_match('/^[A-Z0-9._-]{2,50}$/', $value) ? $value : null;

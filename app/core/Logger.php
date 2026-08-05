@@ -17,21 +17,28 @@ final class Logger
 
     private static function write($level, $message, array $context)
     {
-        self::ensureDirectory();
+        $safe = self::sanitize($context);
+        $line = sprintf("[%s] %s %s %s\n", date('c'), $level, self::cleanMessage($message), json_encode($safe));
         $file = LOG_PATH . '/aplicacao.log';
+
+        if (!self::ensureDirectory()) {
+            error_log($line);
+            return;
+        }
         if (is_file($file) && filesize($file) >= LOG_MAX_BYTES) {
             @rename($file, LOG_PATH . '/aplicacao-' . date('Ymd-His') . '.log');
         }
-        $safe = self::sanitize($context);
-        $line = sprintf("[%s] %s %s %s\n", date('c'), $level, self::cleanMessage($message), json_encode($safe));
-        error_log($line, 3, $file);
+        if (@error_log($line, 3, $file) === false) {
+            error_log($line);
+        }
     }
 
     private static function ensureDirectory()
     {
         if (!is_dir(LOG_PATH) && !@mkdir(LOG_PATH, 0750, true) && !is_dir(LOG_PATH)) {
-            throw new RuntimeException('Diretorio de logs indisponivel.');
+            return false;
         }
+        return is_writable(LOG_PATH);
     }
 
     private static function sanitize(array $context)

@@ -4,7 +4,7 @@ declare(strict_types=1);
 final class UsuariosRepository
 {
     private $db;
-    public function __construct(PDO $db) { $this->db = $db; }
+    public function __construct($db) { $this->db = $db; }
 
     public function all(): array
     {
@@ -30,3 +30,5 @@ final class UsuariosRepository
         return json_last_error() === JSON_ERROR_NONE ? $decoded : [];
     }
 }
+
+

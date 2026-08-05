@@ -2,6 +2,8 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/Logger.php';
+require_once __DIR__ . '/database/SqlsrvConnectionAdapter.php';
 
 final class Database
 {
@@ -13,8 +15,13 @@ final class Database
             return self::$connection;
         }
 
-        if (in_array(strtolower((string) DB_CONNECTION), ['sqlserver', 'sqlsrv'], true)) {
-            self::$connection = self::connectSqlServer();
+        if (DB_DRIVER === 'pdo_sqlsrv') {
+            self::$connection = self::connectPdoSqlsrv();
+            return self::$connection;
+        }
+
+        if (DB_DRIVER === 'sqlsrv') {
+            self::$connection = self::connectSqlsrvNative();
             return self::$connection;
         }
 
@@ -44,10 +51,14 @@ final class Database
         return $pdo;
     }
 
-    private static function connectSqlServer()
+    private static function connectPdoSqlsrv()
     {
         if (!in_array('sqlsrv', PDO::getAvailableDrivers(), true)) {
-            throw new RuntimeException('Driver PDO sqlsrv nao esta instalado no PHP.');
+            Logger::error('[DATABASE] Driver pdo_sqlsrv indisponivel.', array(
+                'codigo' => 'PDO_SQLSRV_INDISPONIVEL',
+                'driver' => DB_DRIVER,
+            ));
+            throw new RuntimeException('PDO_SQLSRV_INDISPONIVEL: Driver PDO sqlsrv nao esta instalado no PHP.');
         }
 
         $server = SQLSERVER_HOST . (SQLSERVER_PORT !== '' ? ',' . SQLSERVER_PORT : '');
@@ -59,13 +70,60 @@ final class Database
             SQLSERVER_TRUST_SERVER_CERTIFICATE
         );
 
-        $pdo = SQLSERVER_USER !== ''
-            ? new PDO($dsn, SQLSERVER_USER, SQLSERVER_PASSWORD)
-            : new PDO($dsn);
+        try {
+            $pdo = SQLSERVER_USER !== ''
+                ? new PDO($dsn, SQLSERVER_USER, SQLSERVER_PASSWORD)
+                : new PDO($dsn);
+        } catch (Exception $error) {
+            Logger::error('[DATABASE] Falha ao conectar via pdo_sqlsrv.', array(
+                'tipo' => get_class($error),
+                'codigo' => $error->getCode(),
+                'servidor' => SQLSERVER_HOST !== '' ? 'configurado' : 'nao configurado',
+                'banco' => SQLSERVER_DATABASE !== '' ? 'configurado' : 'nao configurado',
+                'auth_mode' => DB_AUTH_MODE,
+            ));
+            throw $error;
+        }
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
         $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
 
         return $pdo;
+    }
+
+    private static function connectSqlsrvNative()
+    {
+        if (!function_exists('sqlsrv_connect')) {
+            Logger::error('[DATABASE] Extensao sqlsrv indisponivel.', array('driver' => DB_DRIVER));
+            throw new RuntimeException('SQLSRV_INDISPONIVEL: extensao sqlsrv nao esta instalada no PHP.');
+        }
+
+        $server = SQLSERVER_HOST . (SQLSERVER_PORT !== '' ? ',' . SQLSERVER_PORT : '');
+        $options = array(
+            'Database' => SQLSERVER_DATABASE,
+        );
+
+        if (SQLSERVER_USER !== '' || DB_AUTH_MODE === 'sql') {
+            $options['UID'] = SQLSERVER_USER;
+            $options['PWD'] = SQLSERVER_PASSWORD;
+        }
+        if (SQLSERVER_ENCRYPT !== '') {
+            $options['Encrypt'] = SQLSERVER_ENCRYPT;
+        }
+        if (SQLSERVER_TRUST_SERVER_CERTIFICATE !== '') {
+            $options['TrustServerCertificate'] = SQLSERVER_TRUST_SERVER_CERTIFICATE;
+        }
+
+        $connection = sqlsrv_connect($server, $options);
+        if ($connection === false) {
+            Logger::error('[DATABASE] Falha ao conectar via sqlsrv nativo.', array(
+                'servidor' => SQLSERVER_HOST !== '' ? 'configurado' : 'nao configurado',
+                'banco' => SQLSERVER_DATABASE !== '' ? 'configurado' : 'nao configurado',
+                'auth_mode' => DB_AUTH_MODE,
+            ));
+            throw new RuntimeException('SQLSRV_CONEXAO_FALHOU: ' . SqlsrvConnectionAdapter::lastError());
+        }
+
+        return new SqlsrvConnectionAdapter($connection);
     }
 }

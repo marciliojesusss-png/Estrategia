@@ -3,7 +3,7 @@ declare(strict_types=1);
 require_once __DIR__.'/../repositories/DashboardRepository.php';require_once __DIR__.'/SituacaoService.php';
 final class ResumoExecutivoService
 {
-    private $repo;public function __construct($dependency=null){if($dependency instanceof DashboardRepository)$this->repo=$dependency;elseif($dependency instanceof PDO)$this->repo=new DashboardRepository($dependency);else$this->repo=new DashboardRepository(Database::getConnection());}
+    private $repo;public function __construct($dependency=null){if($dependency instanceof DashboardRepository)$this->repo=$dependency;elseif($dependency!==null)$this->repo=new DashboardRepository($dependency);else$this->repo=new DashboardRepository(Database::getConnection());}
     public function resumo(array $filters=array())
     {
         $ind=$this->repo->indicators($filters);$lan=$this->repo->launches($filters);$latest=array();$statusCounts=array();$monthly=array();$percentages=array();

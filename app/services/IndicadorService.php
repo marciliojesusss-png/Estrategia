@@ -8,7 +8,7 @@ require_once __DIR__ . '/../validators/IndicadorValidator.php';
 final class IndicadorService
 {
     private $db; private $repository; private $audit; private $validator;
-    public function __construct(PDO $db)
+    public function __construct($db)
     {
         $this->db = $db; $this->repository = new IndicadoresRepository($db);
         $this->audit = new AuditoriaRepository($db); $this->validator = new IndicadorValidator();
@@ -71,3 +71,5 @@ final class IndicadorService
         catch (Exception $error) { if ($this->db->inTransaction()) $this->db->rollBack(); throw $error; }
     }
 }
+
+

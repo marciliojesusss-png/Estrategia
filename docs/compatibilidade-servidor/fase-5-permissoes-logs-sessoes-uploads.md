@@ -13,14 +13,16 @@ uploads/evidencias
 
 ## Ações
 
-* [ ] Criar `storage/logs`.
-* [ ] Adicionar um `.gitkeep` para preservar a pasta.
+* [x] Criar `storage/logs`.
+* [x] Adicionar um `.gitkeep` para preservar a pasta.
 * [ ] Conceder permissão de modificação ao Application Pool.
 * [ ] Conceder permissão de modificação em `uploads/evidencias`.
 * [ ] Manter apenas leitura nas demais pastas.
-* [ ] Testar criação de sessão.
-* [ ] Testar criação de arquivo temporário.
+* [x] Testar criação de sessão.
+* [x] Testar criação de arquivo temporário.
 * [ ] Testar upload e download de evidência.
+
+Itens pendentes dependem do ambiente IIS/Application Pool ou de homologação com upload HTTP real no servidor.
 
 ## Alteração no Logger
 
@@ -31,6 +33,8 @@ error_log($mensagem);
 ```
 
 Isso evitará que uma falha de permissão no log esconda o erro principal.
+
+Status: implementado em `app/core/Logger.php`.
 
 ## Novo script
 
@@ -48,16 +52,28 @@ uploads/evidencias: gravável
 sessão PHP: disponível
 ```
 
+Status: implementado em `scripts/verificar-permissoes.php`.
+
+Saída validada localmente:
+
+```text
+storage/logs: gravavel
+storage/temporarios: gravavel
+storage/backups: gravavel
+uploads/evidencias: gravavel
+sessao PHP: disponivel
+```
+
 ## Critério de conclusão
 
 O sistema deverá:
 
-* criar sessão;
-* escrever log;
-* criar temporário;
-* gravar evidência;
-* remover evidência;
-* funcionar sem erro de permissão.
+* [x] criar sessão;
+* [x] escrever log;
+* [x] criar temporário;
+* [ ] gravar evidência em upload HTTP real no IIS;
+* [ ] remover evidência em upload HTTP real no IIS;
+* [ ] funcionar sem erro de permissão no Application Pool definitivo.
 
 ---
 
