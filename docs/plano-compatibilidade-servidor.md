@@ -186,3 +186,44 @@ Pendencias externas:
 - [ ] Executar `scripts/preflight-servidor.php` no servidor corporativo.
 - [ ] Acessar temporariamente `public/diagnostico-iis.php` pelo IIS.
 - [ ] Remover `public/diagnostico-iis.php` apos homologacao.
+
+## Fase 8 - Homologacao Funcional
+
+Status em 2026-08-04:
+
+- [x] Roteiro criado em `docs/homologacao-funcional-checklist.md`.
+- [x] Script criado em `scripts/validar-homologacao.php`.
+- [x] Script valida URLs quando recebe `--base-url`.
+- [x] Script valida a existencia dos artefatos tecnicos necessarios.
+- [x] Checklist cobre infraestrutura, perfis e seguranca.
+- [x] Suite automatizada local executada nas fases anteriores sem falhas.
+
+Pendencias externas:
+
+- [ ] Executar `scripts/validar-homologacao.php --base-url=http://servidor/estrategia`.
+- [ ] Validar login corporativo no IIS.
+- [ ] Validar fluxos reais por perfil.
+- [ ] Validar upload/download real via navegador.
+- [ ] Registrar evidencias e aceite da homologacao.
+
+## Fase 9 - Publicacao E Rollback
+
+Status em 2026-08-04:
+
+- [x] Runbook criado em `docs/publicacao-rollback-runbook.md`.
+- [x] Script criado em `scripts/checklist-publicacao.php`.
+- [x] Checklist confere artefatos obrigatorios antes da publicacao.
+- [x] Runbook documenta preparacao, publicacao e rollback.
+- [x] Pendencias operacionais obrigatorias foram listadas.
+
+Pendencias externas:
+
+- [ ] Definir janela de publicacao.
+- [ ] Fazer backup do banco.
+- [ ] Fazer backup da aplicacao anterior.
+- [ ] Fazer backup de `servidor.local.php`.
+- [ ] Preservar uploads existentes.
+- [ ] Alterar caminho fisico no IIS.
+- [ ] Reciclar Application Pool.
+- [ ] Executar validacoes pos-publicacao.
+- [ ] Executar rollback se houver falha impeditiva.

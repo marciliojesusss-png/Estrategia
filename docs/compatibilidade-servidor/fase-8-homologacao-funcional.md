@@ -2,14 +2,18 @@
 
 ## Testes de infraestrutura
 
-* [ ] `/estrategia/saude` responde.
-* [ ] banco responde.
-* [ ] usuário corporativo é identificado.
-* [ ] sessão é criada.
-* [ ] logs são gravados.
-* [ ] rotas internas funcionam.
-* [ ] assets carregam.
-* [ ] uploads funcionam.
+* [x] Criar roteiro de homologação funcional.
+* [x] Criar script para validar URLs e artefatos de homologação.
+* [ ] `/estrategia/saude` responde em homologação.
+* [ ] banco responde em homologação.
+* [ ] usuário corporativo é identificado em homologação.
+* [ ] sessão é criada em homologação.
+* [ ] logs são gravados em homologação.
+* [ ] rotas internas funcionam em homologação.
+* [ ] assets carregam em homologação.
+* [ ] uploads funcionam em homologação.
+
+Status: roteiro criado em `docs/homologacao-funcional-checklist.md` e script criado em `scripts/validar-homologacao.php`.
 
 ## Testes por perfil
 
@@ -22,6 +26,8 @@
 * [ ] administrar usuários;
 * [ ] reabrir lançamento.
 
+Status: coberto pelo roteiro de homologação; execução depende de usuário administrador no ambiente.
+
 ### Unidade apuradora
 
 * [ ] visualizar indicadores da unidade;
@@ -30,6 +36,8 @@
 * [ ] anexar evidência;
 * [ ] submeter para homologação.
 
+Status: coberto pelo roteiro de homologação; execução depende de usuário `unidade_apuradora` no ambiente.
+
 ### Homologador
 
 * [ ] visualizar fila;
@@ -37,21 +45,25 @@
 * [ ] rejeitar lançamento;
 * [ ] consultar histórico.
 
+Status: coberto pelo roteiro de homologação; execução depende de usuário `homologador` no ambiente.
+
 ### Usuário companhia
 
 * [ ] consultar dashboard;
 * [ ] consultar relatórios;
 * [ ] não acessar funções administrativas.
 
+Status: coberto pelo roteiro de homologação; execução depende de usuário `usuario_companhia` no ambiente.
+
 ## Testes de segurança
 
 * [ ] usuário sem cadastro recebe acesso negado;
-* [ ] diretório `app` não abre;
-* [ ] diretório `database` não abre;
-* [ ] `.env` não pode ser baixado;
-* [ ] usuário de uma unidade não vê dados de outra;
-* [ ] token CSRF é exigido em alterações;
-* [ ] mensagens não exibem credenciais.
+* [x] diretório `app` não abre, conforme teste automatizado de publicação;
+* [x] diretório `database` não abre, conforme teste automatizado de publicação;
+* [x] `.env` não pode ser baixado, conforme regras versionadas;
+* [ ] usuário de uma unidade não vê dados de outra em homologação;
+* [x] token CSRF é exigido em alterações, conforme testes e controllers;
+* [x] mensagens não exibem credenciais, conforme sanitização de logs e diagnósticos.
 
 ## Critério de conclusão
 
@@ -61,6 +73,8 @@ Todos os fluxos essenciais deverão funcionar em homologação usando:
 * a mesma versão PHP;
 * o mesmo modelo de autenticação corporativa;
 * o SQL Server corporativo.
+
+Status: pendente de execução no ambiente de homologação real. Preparação local validada com a suíte automatizada.
 
 ---
 

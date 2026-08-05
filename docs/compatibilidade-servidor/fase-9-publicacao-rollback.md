@@ -9,16 +9,22 @@ C:\Sistemas\Estrategia_nova
 C:\Sistemas\Estrategia_anterior
 ```
 
+Status: roteiro criado em `docs/publicacao-rollback-runbook.md`. A criação real das pastas depende do servidor.
+
 ## Antes da publicação
 
 * [ ] backup do banco;
 * [ ] backup da aplicação;
 * [ ] backup do arquivo de configuração local;
-* [ ] execução do preflight;
-* [ ] teste da URL de saúde;
+* [x] script de checklist de publicação criado;
+* [x] roteiro de publicação e rollback criado;
+* [ ] execução do preflight no servidor;
+* [ ] teste da URL de saúde no servidor;
 * [ ] validação com usuário administrador;
 * [ ] validação com unidade apuradora;
 * [ ] validação com homologador.
+
+Status: script criado em `scripts/checklist-publicacao.php`.
 
 ## Publicação
 
@@ -34,6 +40,8 @@ C:\Sistemas\Estrategia_anterior
 * [ ] executar teste de consulta;
 * [ ] executar teste de gravação.
 
+Status: passos documentados no runbook. Execução depende da janela de publicação.
+
 ## Rollback
 
 Se houver falha:
@@ -44,15 +52,19 @@ Se houver falha:
 4. confirmar a versão anterior;
 5. preservar os logs da tentativa para diagnóstico.
 
+Status: procedimento documentado em `docs/publicacao-rollback-runbook.md`.
+
 ## Critério de conclusão
 
 A implantação estará concluída quando:
 
-* usuários acessarem o sistema;
-* banco permitir leitura e gravação;
-* autenticação funcionar;
-* perfis forem respeitados;
-* logs não apresentarem erros críticos.
+* [ ] usuários acessarem o sistema em produção;
+* [ ] banco permitir leitura e gravação em produção;
+* [ ] autenticação funcionar em produção;
+* [ ] perfis forem respeitados em produção;
+* [ ] logs não apresentarem erros críticos em produção.
+
+Status: publicação e rollback não foram executados localmente. A fase está preparada com roteiro e checklist, mas sua conclusão depende da implantação real.
 
 ---
 
