@@ -145,3 +145,44 @@ sessao PHP: disponivel
 ```
 
 Pendencia externa: conceder permissao de modificacao ao Application Pool nas pastas gravaveis no servidor IIS.
+
+## Fase 6 - Banco, Schema E Usuarios
+
+Status em 2026-08-04:
+
+- [x] Script criado em `scripts/validar-banco-schema-usuarios.php`.
+- [x] Validador confere tabelas esperadas.
+- [x] Validador confere chaves estrangeiras.
+- [x] Validador confere indices esperados.
+- [x] Validador exibe contagens de `indicadores`, `lancamentos`, `usuarios_acesso` e `acessos_log`.
+- [x] Validador confere administrador ativo.
+- [x] Validador confere perfis `administrador`, `unidade_apuradora`, `homologador` e `usuario_companhia`.
+- [x] Validador confere padrao de matriculas.
+- [x] Modelo ficticio de usuarios iniciais criado em `database/sqlserver/usuarios-acesso.example.sql`.
+
+Pendencias externas:
+
+- [ ] Executar `database/sqlserver/schema.sql` no SQL Server corporativo.
+- [ ] Migrar dados do SQLite para SQL Server.
+- [ ] Executar `scripts/validar-banco-schema-usuarios.php` apontado para SQL Server.
+- [ ] Cadastrar usuarios reais com matriculas confirmadas pelo LDAP corporativo.
+- [ ] Validar login, perfil e escopo em homologacao.
+
+## Fase 7 - Diagnostico Tecnico
+
+Status em 2026-08-04:
+
+- [x] Script criado em `scripts/preflight-servidor.php`.
+- [x] Preflight verifica PHP, `php.ini`, extensoes, drivers PDO e configuracao.
+- [x] Preflight verifica arquivo LDAP legado quando `AUTH_PROVIDER=legacy_file`.
+- [x] Preflight verifica diretorios gravaveis.
+- [x] Preflight tenta conexao com banco, `SELECT 1` e existencia das tabelas principais.
+- [x] Diagnostico IIS criado em `public/diagnostico-iis.php`.
+- [x] Diagnostico IIS exibe apenas informacoes nao sensiveis.
+- [x] Mensagens do preflight usam marcadores por etapa.
+
+Pendencias externas:
+
+- [ ] Executar `scripts/preflight-servidor.php` no servidor corporativo.
+- [ ] Acessar temporariamente `public/diagnostico-iis.php` pelo IIS.
+- [ ] Remover `public/diagnostico-iis.php` apos homologacao.

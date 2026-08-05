@@ -2,16 +2,18 @@
 
 ## Ações
 
-* [ ] Confirmar que o banco do Estrategia existe.
-* [ ] Executar o `database/sqlserver/schema.sql`.
-* [ ] Confirmar criação das tabelas.
-* [ ] Confirmar chaves estrangeiras.
-* [ ] Confirmar índices.
-* [ ] Migrar os dados do SQLite.
-* [ ] Comparar quantidade de registros.
-* [ ] Cadastrar um administrador inicial.
-* [ ] Cadastrar usuários de homologação.
-* [ ] Confirmar que as matrículas possuem o mesmo padrão retornado pelo LDAP.
+* [ ] Confirmar que o banco do Estrategia existe no SQL Server corporativo.
+* [ ] Executar o `database/sqlserver/schema.sql` no SQL Server corporativo.
+* [x] Criar script para confirmar criação das tabelas.
+* [x] Criar script para confirmar chaves estrangeiras.
+* [x] Criar script para confirmar índices.
+* [ ] Migrar os dados do SQLite para o SQL Server corporativo.
+* [x] Criar script para comparar quantidade de registros.
+* [x] Criar modelo de cadastro de administrador inicial.
+* [x] Criar modelo de cadastro de usuários de homologação.
+* [x] Criar validação do padrão das matrículas.
+
+Status: implementado o validador `scripts/validar-banco-schema-usuarios.php` e o modelo fictício `database/sqlserver/usuarios-acesso.example.sql`. A execução real contra SQL Server segue pendente do ambiente corporativo.
 
 ## Consultas de validação
 
@@ -21,6 +23,8 @@ SELECT COUNT(*) FROM dbo.lancamentos;
 SELECT COUNT(*) FROM dbo.usuarios_acesso;
 SELECT COUNT(*) FROM dbo.acessos_log;
 ```
+
+Status: coberto por `scripts/validar-banco-schema-usuarios.php`.
 
 ## Cadastro inicial
 
@@ -40,6 +44,8 @@ unidade ou diretoria
 ativo = 1
 ```
 
+Status: modelo fictício disponível em `database/sqlserver/usuarios-acesso.example.sql`. O cadastro real deve usar matrículas confirmadas pelo LDAP corporativo.
+
 ## Perfis a validar
 
 ```text
@@ -49,13 +55,17 @@ homologador
 usuario_companhia
 ```
 
+Status: o validador confirma a existência de ao menos um usuário ativo para cada perfil.
+
 ## Critério de conclusão
 
-* conexão funcionando;
-* tabelas disponíveis;
-* dados migrados;
-* usuário administrador autenticado;
-* perfil e escopo aplicados corretamente.
+* [ ] conexão funcionando no SQL Server corporativo;
+* [ ] tabelas disponíveis no SQL Server corporativo;
+* [ ] dados migrados para o SQL Server corporativo;
+* [ ] usuário administrador autenticado no ambiente corporativo;
+* [ ] perfil e escopo aplicados corretamente em homologação.
+
+Validação local realizada com SQLite para conferir a lógica do script. A conclusão da fase depende da execução no banco SQL Server final.
 
 ---
 
