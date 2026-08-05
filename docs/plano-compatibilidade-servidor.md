@@ -51,3 +51,52 @@ Autenticacao: legacy_file
 ```
 
 Observacao: `servidor.local.php` nao foi criado no workspace para evitar ativar valores locais ficticios. Ele deve ser criado apenas no servidor ou em ambiente local controlado, a partir de `servidor.example.php`.
+
+## Fase 2 - Compatibilidade Com SQL Server
+
+Status em 2026-08-04:
+
+- [x] `Database.php` separado em `connectPdoSqlsrv()`, `connectSqlsrvNative()` e `connectSqlite()`.
+- [x] Driver principal preservado como `DB_DRIVER=pdo_sqlsrv`.
+- [x] Erro especifico `PDO_SQLSRV_INDISPONIVEL` adicionado quando o driver PDO nao existir.
+- [x] Falhas de conexao registradas no log sem senha ou DSN.
+- [x] Fallback `DB_DRIVER=sqlsrv` implementado com adapter nativo.
+- [x] Arquivo criado: `app/core/database/SqlsrvConnectionAdapter.php`.
+- [x] Arquivo criado: `app/core/database/SqlsrvStatementAdapter.php`.
+- [x] Contrato de repositories/services ajustado para aceitar PDO ou adapter.
+- [x] Script de teste criado em `scripts/testar-sqlserver.php`.
+
+Operacoes suportadas pelo adapter:
+
+```text
+prepare
+query
+execute
+fetch
+fetchAll
+fetchColumn
+bindValue
+beginTransaction
+commit
+rollBack
+inTransaction
+rowCount
+lastInsertId
+```
+
+Pendencia externa: os testes reais de `SELECT 1 AS conexao` e `dbo.indicadores` devem ser executados no servidor com `pdo_sqlsrv` ou `sqlsrv` instalado e acesso ao banco corporativo.
+
+## Fase 3 - Autenticacao Corporativa
+
+Status em 2026-08-04:
+
+- [x] Provider `legacy_file` criado em `app/auth/providers/LegacyIdentityProvider.php`.
+- [x] Provider `native_ldap` criado em `app/auth/providers/NativeLdapIdentityProvider.php`.
+- [x] Factory criada em `app/auth/providers/IdentityProviderFactory.php`.
+- [x] `CorporateIdentity.php` alterado para delegar a identidade ao provider configurado por `AUTH_PROVIDER`.
+- [x] Implementacao LDAP nativa preservada no provider `native_ldap`.
+- [x] Provider legado valida e padroniza `matricula`, `nome`, `funcao`, `unidade`, `sg_unidade` e `no_unidade`.
+- [x] Controle de perfil permanece em `usuarios_acesso`.
+- [x] Teste automatizado adicionado com fixture de arquivo legado.
+
+Pendencia externa: validar o formato real do arquivo corporativo indicado por `LDAP_LEGACY_PATH` no servidor.

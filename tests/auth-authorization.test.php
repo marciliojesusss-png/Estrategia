@@ -50,6 +50,9 @@ assert_auth(CorporateIdentity::normalizeRemoteUser('invalido com espaco') === nu
 assert_auth(CorporateIdentity::buildUserFilter('C123456') === '(sAMAccountName=C123456)', 'filtro LDAP deve usar a matricula normalizada');
 $incompleteIdentity = CorporateIdentity::mapEntry(array('samaccountname' => array(0 => 'C123456')), 'C123456');
 assert_auth($incompleteIdentity === null, 'atributos LDAP obrigatorios ausentes devem ser rejeitados');
+$legacyProvider = new LegacyIdentityProvider(__DIR__ . '/fixtures/legacy-valid.php');
+$legacyIdentity = $legacyProvider->load('C123456');
+assert_auth(is_array($legacyIdentity) && $legacyIdentity['nome'] === 'Usuario Legado', 'provider legado deve mapear arquivo corporativo externo');
 
 Session::start();
 $_SESSION['_last_activity'] = time() - 5;

@@ -6,7 +6,7 @@ final class IndicadoresRepository
     private $db;
     private $driver;
 
-    public function __construct(PDO $db)
+    public function __construct($db)
     {
         $this->db = $db;
         $this->driver = (string) $db->getAttribute(PDO::ATTR_DRIVER_NAME);
@@ -170,3 +170,5 @@ final class IndicadoresRepository
         );
     }
 }
+
+

@@ -4,7 +4,7 @@ declare(strict_types=1);
 final class HomologacoesRepository
 {
     private $db; private $driver;
-    public function __construct(PDO $db){$this->db=$db;$this->driver=(string)$db->getAttribute(PDO::ATTR_DRIVER_NAME);}
+    public function __construct($db){$this->db=$db;$this->driver=(string)$db->getAttribute(PDO::ATTR_DRIVER_NAME);}
 
     public function queue(array $filters,$page,$perPage)
     {
@@ -49,3 +49,5 @@ final class HomologacoesRepository
         return array($conditions?' WHERE '.implode(' AND ',$conditions):'',$p);
     }
 }
+
+

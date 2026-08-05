@@ -4,7 +4,7 @@ declare(strict_types=1);
 final class DashboardRepository
 {
     private $db;
-    public function __construct(PDO $db){$this->db=$db;}
+    public function __construct($db){$this->db=$db;}
 
     public function indicators(array $filters)
     {
@@ -33,3 +33,5 @@ final class DashboardRepository
         $items=$this->launches($filters);usort($items,function($a,$b){return strcmp((string)$b['updated_at'],(string)$a['updated_at']);});return array_slice($items,0,max(1,min(25,(int)$limit)));
     }
 }
+
+
