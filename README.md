@@ -1,135 +1,325 @@
-# Indicadores Estratégicos — CAIXA Loterias
+# Indicadores Estrategicos - CAIXA Loterias
 
-Aplicação PHP para gestão de indicadores estratégicos, lançamentos mensais, evidências, homologações, visão trimestral, relatórios, administração de acessos e auditoria.
+Aplicacao PHP para gestao de indicadores estrategicos, lancamentos mensais,
+evidencias, homologacoes, visao trimestral, relatorios, administracao de
+acessos e auditoria.
+
+## Estado Atual
+
+- PHP 7.1.19 no ambiente corporativo.
+- IIS com FastCGI.
+- Roteamento por `index.php?route=...`, sem dependencia do modulo URL Rewrite.
+- `public/index.php` como front controller da aplicacao.
+- Configuracoes locais em `app/config/servidor.local.php`, sem Dotenv.
+- SQL Server pela extensao nativa `sqlsrv`, usando `sqlsrv_connect()`.
+- `pdo_sqlsrv` nao e necessario para a aplicacao.
+- LDAP legado carregado por arquivo compartilhado em `../acessoldap/LDAP.php`.
+- Credenciais, caminhos absolutos de servidor e informacoes corporativas locais
+  nao devem ser versionados.
 
 ## Requisitos
 
-- PHP 7.1.19 no ambiente corporativo, com PDO.
-- SQL Server com a extensão nativa `sqlsrv` para homologação e produção.
-- IIS com FastCGI e URL Rewrite para publicação.
-- Python, `pyodbc` e Microsoft ODBC Driver somente para a migração SQLite → SQL Server.
+- PHP 7.1.19 com FastCGI no IIS.
+- Extensao PHP `sqlsrv` habilitada.
+- Microsoft ODBC Driver for SQL Server compativel com a extensao `sqlsrv`.
+- SQL Server acessivel pela identidade/configuracao definida no servidor.
+- Arquivo LDAP compartilhado fora do projeto:
 
-## Executar localmente
+```text
+pasta-raiz/
++-- Estrategia/
++-- acessoldap/
+    +-- LDAP.php
+```
 
-Use o único script operacional da pasta `scripts/` a partir da raiz do projeto.
-Por padrão, ele inicia a aplicação com o prefixo `/estrategia`:
+- Python, `pyodbc` e Microsoft ODBC Driver sao usados somente para migracao
+  SQLite -> SQL Server.
+
+## Roteamento
+
+A aplicacao nao depende de rotas amigaveis nem de URL Rewrite. Toda navegacao
+deve passar por:
+
+```text
+/estrategia/index.php?route=NOME_DA_ROTA
+```
+
+Exemplos:
+
+```text
+/estrategia/index.php?route=login
+/estrategia/index.php?route=dashboard
+/estrategia/index.php?route=indicadores
+/estrategia/index.php?route=lancamentos
+/estrategia/index.php?route=homologacoes
+/estrategia/index.php?route=api/indicadores
+/estrategia/index.php?route=api/lancamentos
+```
+
+A rota padrao e `dashboard` quando o parametro `route` esta vazio. Links,
+formularios, redirecionamentos e chamadas JavaScript devem usar os helpers
+centrais:
+
+```php
+app_url('indicadores')
+asset_url('assets/css/styles.css')
+```
+
+O `web.config` deve permanecer apenas com documento padrao, filtros de
+seguranca, tratamento de erros e headers. Nao inclua regras de rewrite.
+
+## Executar Localmente
+
+Use o script operacional da pasta `scripts/` a partir da raiz do projeto. Por
+padrao, ele inicia a aplicacao com o prefixo `/estrategia`:
 
 ```powershell
 .\scripts\servidor.ps1 executar
 ```
 
-O servidor inicia em primeiro plano; pressione `Ctrl+C` para finalizá-lo.
-Para iniciar em segundo plano, use:
+Para iniciar em segundo plano:
 
 ```powershell
 .\scripts\servidor.ps1 executar -Background
 ```
 
-Para finalizar o servidor:
+Para finalizar:
 
 ```powershell
 .\scripts\servidor.ps1 finalizar
 ```
 
-Para reiniciar, finalizando a execução atual e iniciando outra em segundo plano:
+Para reiniciar em segundo plano:
 
 ```powershell
 .\scripts\servidor.ps1 reiniciar
 ```
 
-Para simular qualquer ação sem alterar processos, use `-DryRun`.
-
-Para executar deliberadamente na raiz, informe `-BasePath '/'` ao iniciar ou
-reiniciar:
+Para executar deliberadamente na raiz:
 
 ```powershell
 .\scripts\servidor.ps1 reiniciar -BasePath '/'
 ```
 
-Opções disponíveis: `-BindHost` (padrão `127.0.0.1`), `-Port` (padrão `8000`),
-`-BasePath` (padrão `/estrategia`), `-Background` e `-DryRun`.
+Opcoes disponiveis: `-BindHost`, `-Port`, `-BasePath`, `-Background` e
+`-DryRun`.
 
-Acesse [http://127.0.0.1:8000/estrategia/](http://127.0.0.1:8000/estrategia/).
-Não existe uma rota de login separada; a própria entrada `/estrategia/`
-apresenta o formulário e recebe o POST de autenticação.
+Acesse:
 
-O router encaminha as rotas da aplicação ao front controller e entrega CSS,
-JavaScript e imagens diretamente.
-
-## Configuração do SQL Server
-
-Use `app/config/servidor.local.php` no servidor para configurações locais; este
-arquivo é ignorado pelo Git e não deve ser publicado no repositório. Variáveis
-definidas no ambiente do IIS/FastCGI também são aceitas e prevalecem sobre o
-arquivo local.
-
-`DB_HOST`, `DB_DATABASE`, `DB_USERNAME` e `DB_PASSWORD` são mantidas por
-compatibilidade com a conexão SQL Server existente. A conexão SQL Server da
-aplicação usa criptografia fixa com `Encrypt=yes` e
-`TrustServerCertificate=no`. A autenticação corporativa usa `REMOTE_USER`, fornecido pelo
-IIS após a Autenticação do Windows, e consulta o LDAP com configuração externa.
-Defina `LDAP_URI`, `LDAP_BASE_DN`, `LDAP_BIND_DN`, `LDAP_BIND_PASSWORD`,
-`LDAP_USER_FILTER` e os atributos `LDAP_ATTR_*` no ambiente seguro do IIS.
-Use `ldaps://` ou `LDAP_STARTTLS=true`; em produção, mantenha
-`LDAP_REQUIRE_TLS=true`.
-
-Exemplo de variáveis antes de iniciar a aplicação:
-
-```powershell
-$env:APP_ENV='production'
-$env:DB_CONNECTION='sqlsrv'
-$env:SQLSERVER_HOST='SERVIDOR_SQL'
-$env:SQLSERVER_DATABASE='NOME_DO_BANCO'
-$env:LDAP_URI='ldaps://ldap.exemplo.interno:636'
-$env:LDAP_BASE_DN='OU=Usuarios,DC=exemplo,DC=interno'
-$env:LDAP_USER_FILTER='(sAMAccountName={matricula})'
-$env:LDAP_REQUIRE_TLS='true'
-php -S 127.0.0.1:8000 -t public public/router.php
+```text
+http://127.0.0.1:8000/estrategia/index.php?route=dashboard
 ```
 
-Configure `LDAP_BIND_DN` e `LDAP_BIND_PASSWORD` somente no ambiente do IIS/FastCGI. Credenciais não devem ser gravadas no repositório. Em produção, a autenticação é corporativa: o IIS identifica o empregado, o LDAP valida e completa seus atributos, e `dbo.usuarios_acesso` define perfil e escopo.
+Em ambiente local sem usuario autenticado, use:
 
-## Migração para SQL Server
+```text
+http://127.0.0.1:8000/estrategia/index.php?route=login
+```
 
-O SQLite local em `database/indicadores.sqlite` é usado como origem da migração e permanece ignorado pelo Git. Faça backup antes da migração; o schema de destino fica em `database/sqlserver/schema.sql`, e o `.bat` chama `scripts/migrar-para-sqlserver.py`.
+## Configuracao Local Do Servidor
+
+Use `app/config/servidor.local.php` no servidor. Esse arquivo e ignorado pelo
+Git e nao deve ser publicado no repositorio.
+
+Modelo resumido:
+
+```php
+<?php
+return array(
+    'app_env' => 'production',
+    'app_base_path' => '/estrategia',
+    'db_driver' => 'sqlsrv',
+    'db_host' => 'SERVIDOR_SQL',
+    'db_database' => 'NOME_DO_BANCO',
+    'db_auth_mode' => 'sql',
+    'db_username' => 'USUARIO_SQL',
+    'db_password' => 'SENHA_SQL',
+    'auth_provider' => 'legacy_file',
+    'ldap_legacy_path' => dirname(dirname(__DIR__)) . '/../acessoldap/LDAP.php',
+);
+```
+
+O caminho LDAP padrao da aplicacao ja e calculado como:
+
+```php
+dirname(APP_ROOT) . '/acessoldap/LDAP.php'
+```
+
+Use valor customizado somente se a estrutura fisica do servidor for diferente.
+
+Nunca versionar:
+
+- `app/config/servidor.local.php`
+- senhas de banco;
+- credenciais LDAP;
+- tokens;
+- nomes reais de servidores internos;
+- caminhos absolutos corporativos.
+
+## SQL Server
+
+A aplicacao usa exclusivamente a extensao nativa `sqlsrv`, via
+`sqlsrv_connect()`.
+
+Configuracoes esperadas:
+
+- `db_driver`: `sqlsrv`
+- `db_auth_mode`: `sql` ou `integrated`
+- `SQLSERVER_ENCRYPT`: fixo como `yes`
+- `SQLSERVER_TRUST_SERVER_CERTIFICATE`: fixo como `no`
+
+Tabelas essenciais esperadas pelo diagnostico:
+
+- `indicadores`
+- `lancamentos`
+- `usuarios_acesso`
+- `acessos_log`
+
+## LDAP Legado
+
+O provedor esperado e:
+
+```php
+'auth_provider' => 'legacy_file'
+```
+
+O arquivo LDAP nao deve ser copiado para dentro do projeto. Ele deve existir
+fora da pasta `Estrategia`, em estrutura equivalente a:
+
+```text
+../acessoldap/LDAP.php
+```
+
+O carregamento valida `is_file()` e `is_readable()` antes de incluir o arquivo.
+Em caso de falha, a aplicacao registra mensagem em:
+
+```text
+storage/logs/aplicacao.log
+```
+
+## Diagnostico Do Servidor
+
+Execute o diagnostico completo no servidor:
 
 ```powershell
-# Homologação
+php scripts\diagnostico-servidor.php
+```
+
+O script verifica PHP, FastCGI/IIS, `servidor.local.php`, rotas, SQL Server,
+tabelas, LDAP legado, permissoes, logs recentes, ausencia de URL Rewrite e
+sintaxe PHP. Ele continua ate o fim mesmo quando encontra falhas.
+
+Cada item e exibido como:
+
+```text
+OK
+AVISO
+FALHA
+```
+
+O relatorio tambem e gravado em:
+
+```text
+storage/logs/diagnostico-servidor-AAAA-MM-DD-HHMMSS.log
+```
+
+Codigo de saida:
+
+- `0`: sem falha critica;
+- `1`: uma ou mais falhas criticas encontradas.
+
+Para uma verificacao mais curta, use:
+
+```powershell
+php scripts\preflight-servidor.php
+```
+
+## Diagnostico Web Temporario
+
+O diagnostico web existe para validar IIS, FastCGI, `REMOTE_USER` e roteamento
+pelo proprio navegador. Ele fica desabilitado por padrao.
+
+Para habilitar temporariamente, adicione exclusivamente em
+`app/config/servidor.local.php`:
+
+```php
+'diagnostico_web_habilitado' => true,
+'diagnostico_web_chave' => 'CHAVE_LONGA_TEMPORARIA',
+```
+
+Acesse:
+
+```text
+/estrategia/index.php?route=diagnostico-servidor&chave=CHAVE_LONGA_TEMPORARIA
+```
+
+Para desabilitar, remova essas chaves ou defina:
+
+```php
+'diagnostico_web_habilitado' => false,
+```
+
+O modo web nunca deve permanecer habilitado depois da homologacao. Ele nao
+exibe senhas, tokens, credenciais completas, usuario SQL completo, host SQL
+completo ou banco SQL completo.
+
+## Migracao Para SQL Server
+
+O SQLite local em `database/indicadores.sqlite` e usado como origem de migracao
+e permanece ignorado pelo Git. Faca backup antes de migrar. O schema de destino
+fica em `database/sqlserver/schema.sql`.
+
+```powershell
 .\migrar-para-sqlserver.bat -Ambiente homologacao -Servidor "SERVIDOR_SQL" -Banco "NOME_DO_BANCO"
-
-# Apenas verificar uma carga existente
 .\migrar-para-sqlserver.bat -Ambiente homologacao -Servidor "SERVIDOR_SQL" -Banco "NOME_DO_BANCO" -VerifyOnly
-
-# Produção — somente após homologação e aceite
 .\migrar-para-sqlserver.bat -Ambiente producao -Servidor "SERVIDOR_SQL" -Banco "NOME_DO_BANCO"
 ```
 
-O migrador cria backup da origem, executa preflight, aplica o schema, copia os dados e reconcilia contagens, IDs, agrupamentos, chaves estrangeiras e JSON. O resultado é salvo em `database/sqlserver/migration-report.json`.
+O migrador cria backup da origem, executa preflight, aplica schema, copia dados
+e reconcilia contagens, IDs, agrupamentos, chaves estrangeiras e JSON.
 
-## Testes e publicação
+## Testes E Publicacao
 
-Os testes podem ser executados diretamente pelos arquivos em `tests/`, usando
-PHP, Node.js e Python conforme o tipo de teste. Antes da publicação, valide
-manualmente a sintaxe, as extensões do PHP, as permissões do IIS, o login, as
-rotas principais, os uploads e os fluxos de homologação.
+Testes principais:
 
-Após alterar arquivos em `assets/`, replique manualmente as alterações
-correspondentes em `public/assets/`.
+```powershell
+php tests\security-publication.test.php
+php tests\api-contract.test.php
+node tests\backend-routing.test.js
+```
+
+Antes de publicar, valide:
+
+- `php scripts\diagnostico-servidor.php`;
+- login/autenticacao no IIS;
+- rotas por `index.php?route=...`;
+- acesso SQL Server;
+- leitura do LDAP legado;
+- escrita em `storage/logs`, `storage/temporarios`, `storage/backups` e
+  `uploads/evidencias`;
+- upload e download de evidencias;
+- fluxos de lancamento e homologacao.
+
+Ao alterar arquivos em `assets/`, replique as alteracoes correspondentes em
+`public/assets/`.
 
 ## Estrutura
 
 ```text
-app/                 núcleo, autenticação, controllers, services e repositories
-api/                 endpoints compatíveis
+app/                 nucleo, autenticacao, controllers, services e repositories
+api/                 endpoints compativeis chamados pelo front controller
 assets/              CSS, JavaScript e imagens-fonte
 database/            SQLite de origem e schemas SQL
-public/              única raiz pública e front controller
-scripts/             migração SQL Server e servidor local
-storage/             logs, temporários e arquivos operacionais
+public/              raiz publica, assets publicados e front controller
+scripts/             servidor local, diagnostico, preflight e migracao
+storage/             logs, temporarios, backups e arquivos operacionais
+templates/           renderizacao do shell frontend
 tests/               testes PHP, JavaScript e Python
-uploads/             evidências fora da raiz pública
-views/frontend/      páginas visuais completas integradas ao backend PHP
-views/               layouts, componentes, formulários e detalhes server-side
+uploads/             evidencias fora da raiz publica
+views/               layouts, componentes, formularios e paginas server-side
+views/frontend/      paginas visuais integradas ao backend PHP
 ```
 
-Não existem páginas HTML soltas na raiz. Todas as requisições públicas devem entrar por `public/index.php`.
+Nao existem paginas HTML soltas na raiz. Requisicoes da aplicacao devem entrar
+por `public/index.php` ou pelo `index.php` alternativo da raiz, sempre usando o
+parametro `route`.
