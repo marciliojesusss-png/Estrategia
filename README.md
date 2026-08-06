@@ -77,6 +77,13 @@ padrao, ele inicia a aplicacao com o prefixo `/estrategia`:
 .\scripts\servidor.ps1 executar
 ```
 
+Para iniciar em segundo plano e abrir o navegador automaticamente na rota local
+correta:
+
+```powershell
+.\scripts\cmd\iniciar-local.bat
+```
+
 Para iniciar em segundo plano:
 
 ```powershell
@@ -115,6 +122,10 @@ Em ambiente local sem usuario autenticado, use:
 ```text
 http://127.0.0.1:8000/estrategia/index.php?route=login
 ```
+
+Nao abra `index.php` diretamente pelo Explorador de Arquivos nem por `file://`.
+Se o navegador baixar `index.php`, a requisicao nao passou pelo PHP. Use o
+servidor local acima ou configure o FastCGI do IIS.
 
 ## Configuracao Local Do Servidor
 
@@ -202,7 +213,7 @@ storage/logs/aplicacao.log
 Execute o diagnostico completo no servidor:
 
 ```powershell
-php scripts\diagnostico-servidor.php
+.\scripts\cmd\diagnostico-servidor.bat
 ```
 
 O script verifica PHP, FastCGI/IIS, `servidor.local.php`, rotas, SQL Server,
@@ -231,8 +242,12 @@ Codigo de saida:
 Para uma verificacao mais curta, use:
 
 ```powershell
-php scripts\preflight-servidor.php
+.\scripts\cmd\preflight-servidor.bat
 ```
+
+Os wrappers `.bat` ficam em `scripts/cmd/` e usam `pushd` antes de executar o
+PHP. Isso evita o erro do CMD em publicacoes abertas por caminho UNC, por exemplo
+`\\servidor\compartilhamento\Estrategia`.
 
 ## Diagnostico Web Temporario
 
@@ -270,9 +285,9 @@ e permanece ignorado pelo Git. Faca backup antes de migrar. O schema de destino
 fica em `database/sqlserver/schema.sql`.
 
 ```powershell
-.\migrar-para-sqlserver.bat -Ambiente homologacao -Servidor "SERVIDOR_SQL" -Banco "NOME_DO_BANCO"
-.\migrar-para-sqlserver.bat -Ambiente homologacao -Servidor "SERVIDOR_SQL" -Banco "NOME_DO_BANCO" -VerifyOnly
-.\migrar-para-sqlserver.bat -Ambiente producao -Servidor "SERVIDOR_SQL" -Banco "NOME_DO_BANCO"
+.\scripts\cmd\migrar-para-sqlserver.bat -Ambiente homologacao -Servidor "SERVIDOR_SQL" -Banco "NOME_DO_BANCO"
+.\scripts\cmd\migrar-para-sqlserver.bat -Ambiente homologacao -Servidor "SERVIDOR_SQL" -Banco "NOME_DO_BANCO" -VerifyOnly
+.\scripts\cmd\migrar-para-sqlserver.bat -Ambiente producao -Servidor "SERVIDOR_SQL" -Banco "NOME_DO_BANCO"
 ```
 
 O migrador cria backup da origem, executa preflight, aplica schema, copia dados
@@ -290,7 +305,7 @@ node tests\backend-routing.test.js
 
 Antes de publicar, valide:
 
-- `php scripts\diagnostico-servidor.php`;
+- `.\scripts\cmd\diagnostico-servidor.bat`;
 - login/autenticacao no IIS;
 - rotas por `index.php?route=...`;
 - acesso SQL Server;
@@ -312,6 +327,7 @@ assets/              CSS, JavaScript e imagens-fonte
 database/            SQLite de origem e schemas SQL
 public/              raiz publica, assets publicados e front controller
 scripts/             servidor local, diagnostico, preflight e migracao
+scripts/cmd/         wrappers .bat seguros para CMD e caminhos UNC
 storage/             logs, temporarios, backups e arquivos operacionais
 templates/           renderizacao do shell frontend
 tests/               testes PHP, JavaScript e Python

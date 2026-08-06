@@ -60,6 +60,7 @@ check(strpos($routerScript, '$path = substr($path, strlen($basePath));') !== fal
 check(strpos($routerScript, '$hasBasePathPrefix') !== false, 'Router local nao identifica assets com caminho-base.');
 check(strpos($routerScript, "header('Content-Type: '") !== false, 'Router local nao define MIME dos assets com caminho-base.');
 check(strpos($routerScript, 'readfile($file)') !== false, 'Router local nao entrega assets com caminho-base.');
+check(strpos($routerScript, 'pathinfo($file, PATHINFO_EXTENSION)) === \'php\'') !== false, 'Router local nao deve servir arquivos PHP como asset estatico.');
 check(strpos($databaseSource, 'connect' . 'Pdo' . 'Sqlsrv') === false, 'Conexao SQL Server nao deve manter caminho PDO.');
 check(strpos($databaseSource, "sqlsrv:Server=") === false, 'Conexao SQL Server nao deve montar DSN PDO.');
 check(strpos($databaseSource, 'sqlsrv_connect') !== false, 'Conexao SQL Server nativa deve usar sqlsrv_connect.');

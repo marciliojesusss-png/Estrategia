@@ -23,6 +23,10 @@ $file = realpath(__DIR__ . str_replace('/', DIRECTORY_SEPARATOR, rawurldecode($p
 
 if ($path !== '/' && $file !== false && is_file($file)
     && strpos($file, $publicRoot . DIRECTORY_SEPARATOR) === 0) {
+    if (strtolower(pathinfo($file, PATHINFO_EXTENSION)) === 'php') {
+        require __DIR__ . '/index.php';
+        exit;
+    }
     if ($hasBasePathPrefix) {
         $mimeTypes = array(
             'css' => 'text/css; charset=utf-8',

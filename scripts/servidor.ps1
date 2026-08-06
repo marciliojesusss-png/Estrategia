@@ -1,29 +1,29 @@
 <#
 .SYNOPSIS
-  Executa, finaliza ou reinicia o servidor local da aplicação.
+  Executa, finaliza ou reinicia o servidor local da aplicacao.
 
 .DESCRIPTION
-  Este é o único script operacional da pasta scripts. O servidor PHP embutido
+  Este e o unico script operacional da pasta scripts. O servidor PHP embutido
   usa public/router.php e pode ser executado em primeiro ou segundo plano.
 
 .PARAMETER Acao
-  Ação: executar, finalizar ou reiniciar. Também aceita start, stop e restart.
+  Acao: executar, finalizar ou reiniciar. Tambem aceita start, stop e restart.
 
 .PARAMETER BindHost
-  Endereço de bind (padrão: 127.0.0.1).
+  Endereco de bind (padrao: 127.0.0.1).
 
 .PARAMETER Port
-  Porta (padrão: 8000).
+  Porta (padrao: 8000).
 
 .PARAMETER BasePath
-  Valor de APP_BASE_PATH (padrão: '/estrategia'). Use '/' para executar na raiz.
+  Valor de APP_BASE_PATH (padrao: '/estrategia'). Use '/' para executar na raiz.
 
 .PARAMETER Background
-  Executa o servidor em segundo plano. A ação reiniciar sempre inicia em
+  Executa o servidor em segundo plano. A acao reiniciar sempre inicia em
   segundo plano.
 
 .PARAMETER DryRun
-  Exibe a ação sem iniciar ou finalizar processos.
+  Exibe a acao sem iniciar ou finalizar processos.
 #>
 
 [CmdletBinding()]
@@ -35,7 +35,8 @@ param(
   [int]$Port = 8000,
   [string]$BasePath = '/estrategia',
   [switch]$Background = $false,
-  [switch]$DryRun = $false
+  [switch]$DryRun = $false,
+  [switch]$OpenBrowser = $false
 )
 
 $ErrorActionPreference = 'Stop'
@@ -90,12 +91,16 @@ function Get-ApplicationProcessIds {
     }
   }
 
-  Get-CimInstance Win32_Process | Where-Object {
-    (($_.Name -like 'php*.exe') -or ($_.Name -like 'cmd*.exe')) -and
-    $_.CommandLine -match $portPattern -and
-    $_.CommandLine -match $routerPattern
-  } | ForEach-Object {
-    [void]$processIds.Add([int]$_.ProcessId)
+  try {
+    Get-CimInstance Win32_Process -ErrorAction Stop | Where-Object {
+      (($_.Name -like 'php*.exe') -or ($_.Name -like 'cmd*.exe')) -and
+      $_.CommandLine -match $portPattern -and
+      $_.CommandLine -match $routerPattern
+    } | ForEach-Object {
+      [void]$processIds.Add([int]$_.ProcessId)
+    }
+  } catch {
+    Write-Host "Aviso: nao foi possivel enumerar processos via CIM. Usando apenas o PID registrado." -ForegroundColor Yellow
   }
 
   return ($processIds | ForEach-Object { [int]$_ })
@@ -136,7 +141,7 @@ function Start-ApplicationServer {
   $address = "${BindHost}:$Port"
 
   New-Item -ItemType Directory -Force -Path $runtimePath, $logPath | Out-Null
-  Write-Host "Executável PHP: $phpPath" -ForegroundColor Green
+  Write-Host "Executavel PHP: $phpPath" -ForegroundColor Green
   Write-Host "Executando: php -S $address -t public public/router.php" -ForegroundColor Cyan
 
   if ($Background) {
@@ -154,17 +159,29 @@ function Start-ApplicationServer {
     $safeBasePath = $BasePath.Replace('"', '')
     $environmentBasePath = '/' + $safeBasePath.Trim('/')
     if ($environmentBasePath -eq '/') {
-      # O CMD remove a variável quando recebe valor vazio. A barra impede que
-      # a configuração normalize APP_BASE_PATH para raiz sem depender de valor vazio.
+      # O CMD remove a variavel quando recebe valor vazio. A barra impede que
+      # a configuracao normalize APP_BASE_PATH para raiz sem depender de valor vazio.
       $environmentBasePath = '/'
     }
-    $commandLine = 'set "APP_ENV=development" && set "DB_CONNECTION=sqlite" && set "APP_BASE_PATH=' + $environmentBasePath + '" && "' + $phpPath + '" -S ' + $address + ' -t "' + $publicPath + '" "' + $routerPath + '"'
-    $process = Start-Process -FilePath $env:ComSpec `
-      -ArgumentList @('/d', '/c', $commandLine) `
-      -WorkingDirectory $root `
-      -RedirectStandardOutput $stdoutFile `
-      -RedirectStandardError $stderrFile `
-      -PassThru
+    $oldAppEnv = $env:APP_ENV
+    $oldDbConnection = $env:DB_CONNECTION
+    $oldAppBasePath = $env:APP_BASE_PATH
+    try {
+      $env:APP_ENV = 'development'
+      $env:DB_CONNECTION = 'sqlite'
+      $env:APP_BASE_PATH = $environmentBasePath
+      $process = Start-Process -FilePath $phpPath `
+        -ArgumentList @('-S', $address, '-t', $publicPath, $routerPath) `
+        -WorkingDirectory $root `
+        -RedirectStandardOutput $stdoutFile `
+        -RedirectStandardError $stderrFile `
+        -WindowStyle Hidden `
+        -PassThru
+    } finally {
+      if ($null -eq $oldAppEnv) { Remove-Item Env:APP_ENV -ErrorAction SilentlyContinue } else { $env:APP_ENV = $oldAppEnv }
+      if ($null -eq $oldDbConnection) { Remove-Item Env:DB_CONNECTION -ErrorAction SilentlyContinue } else { $env:DB_CONNECTION = $oldDbConnection }
+      if ($null -eq $oldAppBasePath) { Remove-Item Env:APP_BASE_PATH -ErrorAction SilentlyContinue } else { $env:APP_BASE_PATH = $oldAppBasePath }
+    }
 
     Set-Content -Path $pidFile -Value $process.Id -Encoding ASCII
     Write-Host "Servidor iniciado em segundo plano. PID: $($process.Id)" -ForegroundColor Green
@@ -176,14 +193,57 @@ function Start-ApplicationServer {
   Write-Host 'Servidor finalizado.' -ForegroundColor Cyan
 }
 
+function Get-ApplicationUrl {
+  param([string]$Route = 'login')
+
+  $normalizedBasePath = '/' + $BasePath.Trim('/')
+  if ($normalizedBasePath -eq '/') { $normalizedBasePath = '' }
+  return "http://$BindHost`:$Port$normalizedBasePath/index.php?route=$Route"
+}
+
+function Wait-ApplicationReady {
+  param([string]$Url)
+
+  for ($attempt = 1; $attempt -le 10; $attempt++) {
+    try {
+      $response = Invoke-WebRequest -Uri $Url -UseBasicParsing -TimeoutSec 3
+      $content = [string]$response.Content
+      $contentType = [string]$response.Headers['Content-Type']
+      if ($contentType -match 'application/octet-stream') {
+        Write-Host 'Atencao: a URL respondeu application/octet-stream. O PHP nao foi interpretado; verifique public/router.php ou FastCGI.' -ForegroundColor Red
+        return $false
+      }
+      if ($content.TrimStart().StartsWith('<?php')) {
+        Write-Host 'Atencao: o servidor respondeu o codigo PHP cru. Use o servidor PHP embutido ou configure FastCGI no IIS.' -ForegroundColor Red
+        return $false
+      }
+      Write-Host "Aplicacao respondeu HTTP $($response.StatusCode). Content-Type: $contentType" -ForegroundColor Green
+      return $true
+    } catch {
+      Start-Sleep -Milliseconds 500
+    }
+  }
+
+  Write-Host "Nao foi possivel confirmar a aplicacao em $Url. Consulte os logs em storage\logs." -ForegroundColor Yellow
+  return $false
+}
+
+function Open-ApplicationBrowser {
+  param([string]$Url)
+
+  Write-Host "Abrindo navegador em $Url" -ForegroundColor Cyan
+  Start-Process $Url
+}
+
 function Show-DryRun {
   switch ($Acao) {
     'executar' {
       $backgroundText = if ($Background) { ' -Background' } else { '' }
-      Write-Host "Executaria: .\scripts\servidor.ps1 executar -BindHost $BindHost -Port $Port -BasePath '$BasePath'$backgroundText" -ForegroundColor Gray
+      $browserText = if ($OpenBrowser) { ' -OpenBrowser' } else { '' }
+      Write-Host "Executaria: .\scripts\servidor.ps1 executar -BindHost $BindHost -Port $Port -BasePath '$BasePath'$backgroundText$browserText" -ForegroundColor Gray
     }
     'finalizar' {
-      Write-Host "Finalizaria o servidor PHP da aplicação na porta $Port." -ForegroundColor Gray
+      Write-Host "Finalizaria o servidor PHP da aplicacao na porta $Port." -ForegroundColor Gray
     }
     'reiniciar' {
       Write-Host "Finalizaria e iniciaria em segundo plano na porta $Port com BasePath '$BasePath'." -ForegroundColor Gray
@@ -196,14 +256,23 @@ if ($DryRun) {
   return
 }
 
-Write-Host "Ação: $Acao | Host: $BindHost | Porta: $Port | APP_BASE_PATH: '$BasePath'" -ForegroundColor Yellow
+Write-Host "Acao: $Acao | Host: $BindHost | Porta: $Port | APP_BASE_PATH: '$BasePath'" -ForegroundColor Yellow
 
 switch ($Acao) {
   'executar' {
     $env:APP_ENV = 'development'
     $env:DB_CONNECTION = 'sqlite'
     $env:APP_BASE_PATH = $BasePath
-    Start-ApplicationServer
+    $applicationUrl = Get-ApplicationUrl 'login'
+    Write-Host "URL local: $applicationUrl" -ForegroundColor Green
+    if ($Background) {
+      Start-ApplicationServer
+      Wait-ApplicationReady $applicationUrl | Out-Null
+      if ($OpenBrowser) { Open-ApplicationBrowser $applicationUrl }
+    } else {
+      Write-Host 'Abra essa URL no navegador. Nao abra public/index.php diretamente pelo Explorador.' -ForegroundColor Yellow
+      Start-ApplicationServer
+    }
   }
   'finalizar' {
     Stop-ApplicationServer
@@ -215,9 +284,9 @@ switch ($Acao) {
     $env:DB_CONNECTION = 'sqlite'
     $env:APP_BASE_PATH = $BasePath
     Start-ApplicationServer
-    $normalizedBasePath = '/' + $BasePath.Trim('/')
-    if ($normalizedBasePath -eq '/') { $normalizedBasePath = '' }
-    $applicationUrlPath = if ($normalizedBasePath -eq '') { '/' } else { $normalizedBasePath + '/' }
-    Write-Host "Restart concluído. Acesse http://$BindHost`:$Port$applicationUrlPath" -ForegroundColor Green
+    $applicationUrl = Get-ApplicationUrl 'login'
+    Wait-ApplicationReady $applicationUrl | Out-Null
+    Write-Host "Restart concluido. Acesse $applicationUrl" -ForegroundColor Green
+    if ($OpenBrowser) { Open-ApplicationBrowser $applicationUrl }
   }
 }
