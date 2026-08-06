@@ -323,6 +323,41 @@ O modo web nunca deve permanecer habilitado depois da homologacao. Ele nao
 exibe senhas, tokens, credenciais completas, usuario SQL completo, host SQL
 completo ou banco SQL completo.
 
+## Diagnostico Comparativo Do IIS
+
+Para comparar a configuracao IIS/FastCGI/PHP entre Sistema-Expedientes e
+Estrategia, use:
+
+```powershell
+.\scripts\diagnostico-iis.ps1 `
+  -SiteName "NOME_DO_SITE" `
+  -ExpedientesApplication "/Sistema-Expedientes" `
+  -EstrategiaApplication "/estrategia"
+```
+
+Com diagnosticos web temporarios habilitados nas aplicacoes:
+
+```powershell
+.\scripts\diagnostico-iis.ps1 `
+  -SiteName "NOME_DO_SITE" `
+  -ExpedientesApplication "/Sistema-Expedientes" `
+  -EstrategiaApplication "/estrategia" `
+  -ExpedientesDiagnosticUrl "http://localhost/Sistema-Expedientes/index.php?route=diagnostico-servidor" `
+  -EstrategiaDiagnosticUrl "http://localhost/estrategia/index.php?route=diagnostico-servidor" `
+  -DiagnosticKey "CHAVE_LONGA_TEMPORARIA"
+```
+
+O script e somente diagnostico: nao recicla Pools, nao altera IIS, nao muda
+permissoes e nao habilita recursos. Para consultar Application Pools,
+handlers, FastCGI, autenticacao, logs do IIS e eventos do Windows com maior
+precisao, execute o PowerShell como administrador no servidor.
+
+O relatorio e gravado em:
+
+```text
+storage/logs/diagnostico-iis-AAAA-MM-DD-HHMMSS.log
+```
+
 ## Migracao Para SQL Server
 
 O SQLite local em `database/indicadores.sqlite` e usado como origem de migracao
