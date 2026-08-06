@@ -70,6 +70,9 @@ $runtimePath = Join-Path $root 'storage\temporarios'
 $logPath = Join-Path $root 'storage\logs'
 $pidFile = Join-Path $runtimePath ("php-server-{0}.pid" -f $Port)
 $routerPattern = [regex]::Escape($routerPath)
+$routerRelativePattern = '(?i)(^|\s|")public[\\/]+router\.php("|\s|$)'
+$publicPathPattern = [regex]::Escape($publicPath)
+$publicRelativePattern = '(?i)(^|\s|")public("|\s|$)'
 $portPattern = '(?i)(^|\s)-S\s+\S*:' + $Port + '(\s|$)'
 
 function Resolve-PhpExecutable {
@@ -87,6 +90,54 @@ function Resolve-PhpExecutable {
   return (Get-Command php -ErrorAction Stop).Source
 }
 
+function Test-ApplicationCommandLine {
+  param([string]$CommandLine)
+
+  if ([string]::IsNullOrWhiteSpace($CommandLine)) {
+    return $false
+  }
+  if ($CommandLine -notmatch $portPattern) {
+    return $false
+  }
+
+  return $CommandLine -match $routerPattern -or
+    $CommandLine -match $routerRelativePattern -or
+    $CommandLine -match $publicPathPattern -or
+    $CommandLine -match $publicRelativePattern
+}
+
+function Get-ListeningProcessIdsByPort {
+  $ids = New-Object System.Collections.Generic.HashSet[int]
+
+  try {
+    if ($null -ne (Get-Command Get-NetTCPConnection -ErrorAction SilentlyContinue)) {
+      Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction Stop | ForEach-Object {
+        if ($_.OwningProcess -gt 0) {
+          [void]$ids.Add([int]$_.OwningProcess)
+        }
+      }
+    }
+  } catch {
+    # Algumas instalacoes bloqueiam Get-NetTCPConnection. O netstat cobre esse caso.
+  }
+
+  if ($ids.Count -eq 0) {
+    try {
+      $portSuffix = ':' + $Port
+      & netstat.exe -ano -p tcp | ForEach-Object {
+        $line = [string]$_
+        if ($line -match '^\s*TCP\s+\S+' -and $line -match [regex]::Escape($portSuffix) -and $line -match '\s+LISTENING\s+(\d+)\s*$') {
+          [void]$ids.Add([int]$Matches[1])
+        }
+      }
+    } catch {
+      # Sem fallback de porta, a busca por linha de comando ainda sera usada.
+    }
+  }
+
+  return ($ids | ForEach-Object { [int]$_ })
+}
+
 function Get-ApplicationProcessIds {
   $processIds = New-Object System.Collections.Generic.HashSet[int]
 
@@ -100,9 +151,8 @@ function Get-ApplicationProcessIds {
         (($registeredProcess.ProcessName -like 'php*') -or ($registeredProcess.ProcessName -like 'cmd*'))
       if ($null -ne $registeredProcess -and
           $isManagedProcess -and
-          $null -ne $registeredDetails -and
-          $registeredDetails.CommandLine -match $portPattern -and
-          $registeredDetails.CommandLine -match $routerPattern) {
+          (($null -ne $registeredDetails -and (Test-ApplicationCommandLine $registeredDetails.CommandLine)) -or
+           ($null -eq $registeredDetails))) {
         [void]$processIds.Add($registeredPid)
       }
     }
@@ -111,8 +161,7 @@ function Get-ApplicationProcessIds {
   try {
     Get-CimInstance Win32_Process -ErrorAction Stop | Where-Object {
       (($_.Name -like 'php*.exe') -or ($_.Name -like 'cmd*.exe')) -and
-      $_.CommandLine -match $portPattern -and
-      $_.CommandLine -match $routerPattern
+      (Test-ApplicationCommandLine $_.CommandLine)
     } | ForEach-Object {
       [void]$processIds.Add([int]$_.ProcessId)
     }
@@ -120,11 +169,18 @@ function Get-ApplicationProcessIds {
     Write-Host "Aviso: nao foi possivel enumerar processos via CIM. Usando apenas o PID registrado." -ForegroundColor Yellow
   }
 
+  foreach ($portProcessId in (Get-ListeningProcessIdsByPort)) {
+    $portProcess = Get-Process -Id $portProcessId -ErrorAction SilentlyContinue
+    if ($null -ne $portProcess -and $portProcess.ProcessName -like 'php*') {
+      [void]$processIds.Add([int]$portProcessId)
+    }
+  }
+
   return ($processIds | ForEach-Object { [int]$_ })
 }
 
 function Stop-ApplicationServer {
-  $processIds = Get-ApplicationProcessIds
+  $processIds = @(Get-ApplicationProcessIds)
   if ($processIds.Count -eq 0) {
     Remove-Item $pidFile -Force -ErrorAction SilentlyContinue
     Write-Host "Nenhum servidor local encontrado na porta $Port." -ForegroundColor Yellow
@@ -169,12 +225,12 @@ function Start-ApplicationServer {
   Write-Host "Executando: $phpPath -S $address -t $publicArgument $routerArgument" -ForegroundColor Cyan
 
   if ($Background) {
+    $activeProcessIds = @(Get-ApplicationProcessIds)
+    if ($activeProcessIds.Count -gt 0) {
+      throw "Ja existe um servidor local na porta $Port (PID $($activeProcessIds -join ', ')). Use .\scripts\servidor.ps1 finalizar -Port $Port."
+    }
+
     if (Test-Path $pidFile) {
-      $oldPid = 0
-      [int]::TryParse((Get-Content $pidFile -Raw).Trim(), [ref]$oldPid) | Out-Null
-      if ($oldPid -gt 0 -and (Get-Process -Id $oldPid -ErrorAction SilentlyContinue)) {
-        throw "Ja existe um servidor registrado na porta $Port (PID $oldPid). Use .\scripts\servidor.ps1 finalizar."
-      }
       Remove-Item $pidFile -Force -ErrorAction SilentlyContinue
     }
 
