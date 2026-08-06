@@ -210,10 +210,10 @@ def configure_environment(args):
     servidor = env_default(args.servidor, "localhost")
     banco = env_default(args.banco, "Estrategia")
     driver = env_default(args.driver, "ODBC Driver 18 for SQL Server")
-    encrypt = env_default(args.encrypt, "yes")
+    encrypt = env_default(args.encrypt, "no")
     trust_cert = args.trust_server_certificate
-    if trust_cert in (None, ""):
-        trust_cert = "no"
+    if trust_cert is None:
+        trust_cert = ""
 
     os.environ["SQLSERVER_HOST"] = servidor
     os.environ["SQLSERVER_DATABASE"] = banco
@@ -262,7 +262,7 @@ def print_header(args, config):
     print(f"Banco SQL Server: {config['banco']}")
     print(f"Driver ODBC: {config['driver']}")
     print(f"Encrypt: {config['encrypt']}")
-    print(f"TrustServerCertificate: {config['trustServerCertificate']}")
+    print(f"TrustServerCertificate: {config['trustServerCertificate'] or 'nao configurado'}")
     print(f"SQLite origem: {args.sqlite}")
 
 
@@ -272,14 +272,6 @@ def validate_options(args, config):
             raise SystemExit("Por seguranca, este migrador nao permite -Truncate em producao.")
         if args.seed_auth_users:
             raise SystemExit("Por seguranca, este migrador nao permite -SeedAuthUsers em producao.")
-        if is_yes(config["trustServerCertificate"]):
-            write_warn(
-                "TrustServerCertificate=yes desativa a validacao da cadeia do certificado TLS."
-            )
-            confirm_step(
-                "Voce esta prestes a executar migracao em PRODUCAO sem validar o certificado do SQL Server.",
-                args.yes,
-            )
         confirm_step("Voce esta prestes a executar migracao em PRODUCAO.", args.yes)
 
     if args.truncate:
@@ -322,17 +314,19 @@ def sqlserver_connection_string(database=None):
     host = os.getenv("SQLSERVER_HOST", "localhost")
     target_database = database or sqlserver_database_name()
     driver = os.getenv("SQLSERVER_DRIVER", "ODBC Driver 18 for SQL Server")
-    encrypt = os.getenv("SQLSERVER_ENCRYPT", "yes")
-    trust_cert = os.getenv("SQLSERVER_TRUST_SERVER_CERTIFICATE", "no")
+    encrypt = os.getenv("SQLSERVER_ENCRYPT", "no")
+    trust_cert = os.getenv("SQLSERVER_TRUST_SERVER_CERTIFICATE", "")
 
     parts = [
         f"DRIVER={{{driver}}}",
         f"SERVER={host}",
         f"DATABASE={target_database}",
         "Trusted_Connection=yes",
-        f"Encrypt={encrypt}",
-        f"TrustServerCertificate={trust_cert}",
     ]
+    if encrypt:
+        parts.append(f"Encrypt={encrypt}")
+    if trust_cert:
+        parts.append(f"TrustServerCertificate={trust_cert}")
     return ";".join(parts) + ";"
 
 
@@ -1102,16 +1096,16 @@ def is_tls_certificate_error(error):
 
 def print_tls_guidance(args, config):
     print("")
-    write_warn("Falha de certificado TLS na conexao com o SQL Server.")
+    write_warn("Falha de TLS/certificado na conexao com o SQL Server.")
     print(
         "O driver ODBC esta com "
         f"Encrypt={config['encrypt']} e "
-        f"TrustServerCertificate={config['trustServerCertificate']}."
+        f"TrustServerCertificate={config['trustServerCertificate'] or 'nao configurado'}."
     )
     print("")
-    print("Instale ou confie no certificado do SQL Server e mantenha:")
-    print("Encrypt=yes")
-    print("TrustServerCertificate=no")
+    print("O padrao atual do projeto e conectar ao SQL Server sem criptografia:")
+    print("Encrypt=no")
+    print("TrustServerCertificate nao configurado")
     print("")
 
 

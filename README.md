@@ -195,13 +195,16 @@ Configuracoes esperadas:
 
 - `db_driver`: `sqlsrv`
 - `db_auth_mode`: `sql` ou `integrated`
-- `SQLSERVER_ENCRYPT`: fixo como `yes`
-- `SQLSERVER_TRUST_SERVER_CERTIFICATE`: fixo como `no`
+- `SQLSERVER_ENCRYPT`: fixo como `no`
+- `SQLSERVER_TRUST_SERVER_CERTIFICATE`: nao configurado
 
 Nao use `pdo_sqlsrv` em `db_driver`, `db_connection`, `DB_DRIVER` ou
 `DB_CONNECTION`. A configuracao central ainda normaliza valores antigos para
 `sqlsrv` para evitar falha imediata, mas o diagnostico aponta qualquer
 configuracao legada para limpeza.
+
+A conexao SQL Server da aplicacao nao usa criptografia TLS nem validacao de
+certificado no driver. O diagnostico espera `Encrypt=no`.
 
 Tabelas essenciais esperadas pelo diagnostico:
 

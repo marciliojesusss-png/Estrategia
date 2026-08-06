@@ -173,8 +173,9 @@ final class DiagnosticoServidor
             $this->add('SQL', 'senha SQL', SQLSERVER_PASSWORD !== '' ? self::OK : self::FALHA, SQLSERVER_PASSWORD !== '' ? 'configurada' : 'ausente', 'Informe db_password em servidor.local.php.');
         }
 
-        $this->add('SQL', 'criptografia SQL', SQLSERVER_ENCRYPT === 'yes' ? self::OK : self::FALHA, SQLSERVER_ENCRYPT, 'Mantenha SQLSERVER_ENCRYPT como yes.');
-        $this->add('SQL', 'validacao certificado SQL', SQLSERVER_TRUST_SERVER_CERTIFICATE === 'no' ? self::OK : self::FALHA, SQLSERVER_TRUST_SERVER_CERTIFICATE, 'Mantenha SQLSERVER_TRUST_SERVER_CERTIFICATE como no e instale a cadeia de certificados correta.');
+        $this->add('SQL', 'criptografia SQL', SQLSERVER_ENCRYPT === 'no' ? self::OK : self::FALHA, SQLSERVER_ENCRYPT, 'Mantenha SQLSERVER_ENCRYPT como no para desabilitar criptografia na conexao SQL Server.');
+        $certificateDetail = SQLSERVER_TRUST_SERVER_CERTIFICATE === '' ? 'nao configurado' : SQLSERVER_TRUST_SERVER_CERTIFICATE;
+        $this->add('SQL', 'certificado SQL', SQLSERVER_TRUST_SERVER_CERTIFICATE === '' ? self::OK : self::AVISO, $certificateDetail, 'Nao configure TrustServerCertificate quando SQLSERVER_ENCRYPT estiver desabilitado.', false);
     }
 
     private function legacyPdoSqlsrvSources()
@@ -225,7 +226,7 @@ final class DiagnosticoServidor
                 $this->add('BANCO', 'tabela ' . $table, $exists ? self::OK : self::FALHA, $exists ? 'existe' : 'ausente', 'Execute o schema/migracao para criar a tabela ' . $table . '.');
             }
         } catch (Exception $error) {
-            $this->add('BANCO', 'conexao SQL Server', self::FALHA, $error->getMessage(), 'Revise sqlsrv, servidor, banco, autenticacao, criptografia/certificado e firewall.');
+            $this->add('BANCO', 'conexao SQL Server', self::FALHA, $error->getMessage(), 'Revise sqlsrv, servidor, banco, autenticacao e firewall.');
         }
     }
 

@@ -51,8 +51,8 @@ check(!file_exists($root . '/app/config/Dotenv.php'), 'Arquivo Dotenv.php nao de
 check(strpos($config, "APP_ENV === 'production' ? 'sqlsrv' : 'sqlite'") !== false, 'SQL Server nativo nao e o driver padrao de producao.');
 check(strpos($config, "config_normalize_db_driver") !== false, 'DB_CONNECTION nao normaliza drivers legados para SQL Server nativo.');
 check(strpos($config, "pdo_sqlsrv") !== false, 'Compatibilidade de leitura para configuracao legada pdo_sqlsrv ausente.');
-check(strpos($config, "define('SQLSERVER_ENCRYPT', 'yes');") !== false, 'Criptografia SQL Server deve permanecer ativa.');
-check(strpos($config, "define('SQLSERVER_TRUST_SERVER_CERTIFICATE', 'no');") !== false, 'Validacao do certificado SQL Server deve permanecer ativa.');
+check(strpos($config, "define('SQLSERVER_ENCRYPT', 'no');") !== false, 'Criptografia SQL Server deve permanecer desabilitada.');
+check(strpos($config, "define('SQLSERVER_TRUST_SERVER_CERTIFICATE', '');") !== false, 'TrustServerCertificate nao deve ser configurado quando a criptografia estiver desabilitada.');
 check(strpos($helpers, 'htmlspecialchars') !== false, 'Helper de escape HTML ausente.');
 check(strpos($routerScript, 'return false') !== false, 'Router local nao libera assets estaticos.');
 check(strpos($routerScript, 'realpath') !== false, 'Router local nao restringe arquivos ao public.');
