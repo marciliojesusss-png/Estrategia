@@ -204,6 +204,18 @@ Informacoes gerais do servidor:
 .\scripts\informacoes-servidor.ps1
 ```
 
+Ler o `php.ini` carregado por um PHP:
+
+```powershell
+.\scripts\cmd\ler-php-ini.ps1
+```
+
+Ler o `php.ini` de um executavel especifico:
+
+```powershell
+.\scripts\cmd\ler-php-ini.ps1 -PhpExe 'C:\Sistemas\toolsphp8.3\php-8.3.24-nts-Win32-vs16-x64\php.exe'
+```
+
 Diagnostico exclusivo do SQL Server:
 
 ```powershell
@@ -222,6 +234,7 @@ Relatorios gerados:
 ```text
 storage/logs/diagnostico-servidor-AAAA-MM-DD-HHMMSS.log
 storage/logs/informacoes-servidor-AAAA-MM-DD-HHMMSS.log
+storage/logs/php-ini-AAAA-MM-DD-HHMMSS.log
 storage/logs/diagnostico-sqlserver-AAAA-MM-DD-HHMMSS.log
 ```
 
