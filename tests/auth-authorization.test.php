@@ -53,6 +53,9 @@ assert_auth($incompleteIdentity === null, 'atributos LDAP obrigatorios ausentes 
 $legacyProvider = new LegacyIdentityProvider(__DIR__ . '/fixtures/legacy-valid.php');
 $legacyIdentity = $legacyProvider->load('C123456');
 assert_auth(is_array($legacyIdentity) && $legacyIdentity['nome'] === 'Usuario Legado', 'provider legado deve mapear arquivo corporativo externo');
+$relativeLegacyProvider = new LegacyIdentityProvider(__DIR__ . '/fixtures/legacy-relative/LDAP.php');
+$relativeLegacyIdentity = $relativeLegacyProvider->load('C654321');
+assert_auth(is_array($relativeLegacyIdentity) && $relativeLegacyIdentity['nome'] === 'Usuario Legado Relativo', 'provider legado deve carregar includes relativos ao diretorio do LDAP');
 
 Session::start();
 $_SESSION['_last_activity'] = time() - 5;

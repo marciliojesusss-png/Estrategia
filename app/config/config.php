@@ -128,7 +128,7 @@ define('LDAP_ATTR_NO_UNIDADE', getenv('LDAP_ATTR_NO_UNIDADE') ?: 'department');
 define('LDAP_STARTTLS', filter_var(getenv('LDAP_STARTTLS') ?: 'true', FILTER_VALIDATE_BOOLEAN));
 define('LDAP_REQUIRE_TLS', filter_var(getenv('LDAP_REQUIRE_TLS') ?: (APP_ENV === 'production' ? 'true' : 'false'), FILTER_VALIDATE_BOOLEAN));
 define('AUTH_PROVIDER', getenv('AUTH_PROVIDER') ?: 'legacy_file');
-define('LDAP_LEGACY_PATH', getenv('LDAP_LEGACY_PATH') ?: '');
+define('LDAP_LEGACY_PATH', getenv('LDAP_LEGACY_PATH') ?: dirname(APP_ROOT) . '/acessoldap/LDAP.php');
 define('SQLSERVER_HOST', getenv('SQLSERVER_HOST') ?: (getenv('DB_HOST') ?: 'DF7436SR439'));
 define('SQLSERVER_DATABASE', getenv('SQLSERVER_DATABASE') ?: (getenv('DB_DATABASE') ?: 'DB5319_IndicadoresEstrategicos'));
 define('SQLSERVER_PORT', getenv('SQLSERVER_PORT') ?: '');

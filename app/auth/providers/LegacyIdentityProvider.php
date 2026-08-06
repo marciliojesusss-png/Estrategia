@@ -26,6 +26,8 @@ final class LegacyIdentityProvider
         if ($this->path === '' || !is_file($this->path) || !is_readable($this->path)) {
             Logger::error('[AUTH] Arquivo LDAP legado nao localizado ou inacessivel.', array(
                 'configurado' => $this->path !== '' ? 'sim' : 'nao',
+                'esperado' => '../acessoldap/LDAP.php',
+                'motivo' => $this->path === '' ? 'caminho vazio' : (!is_file($this->path) ? 'arquivo inexistente' : 'arquivo sem leitura'),
             ));
             return null;
         }
@@ -47,14 +49,27 @@ final class LegacyIdentityProvider
     {
         $loader = function ($legacyPath) {
             $dados = null;
-            $result = require $legacyPath;
-            if (is_array($result)) {
-                return $result;
+            $previousDirectory = getcwd();
+            $legacyDirectory = dirname($legacyPath);
+
+            try {
+                if ($legacyDirectory !== '' && is_dir($legacyDirectory)) {
+                    chdir($legacyDirectory);
+                }
+
+                $result = require $legacyPath;
+                if (is_array($result)) {
+                    return $result;
+                }
+                if (is_array($dados)) {
+                    return $dados;
+                }
+                return isset($GLOBALS['dados']) && is_array($GLOBALS['dados']) ? $GLOBALS['dados'] : null;
+            } finally {
+                if ($previousDirectory !== false) {
+                    chdir($previousDirectory);
+                }
             }
-            if (is_array($dados)) {
-                return $dados;
-            }
-            return isset($GLOBALS['dados']) && is_array($GLOBALS['dados']) ? $GLOBALS['dados'] : null;
         };
 
         try {
