@@ -85,7 +85,8 @@
 
   async function adminApi(path, options = {}) {
     const csrfToken = window.Auth?.getCurrentUser?.()?.csrfToken || window.CAIXA_LOTERIAS_AUTH_USER?.csrfToken || "";
-    const response = await fetch(path, {
+    const target = window.appUrl ? window.appUrl(path) : path;
+    const response = await fetch(target, {
       cache: "no-store",
       headers: {
         "Content-Type": "application/json",
@@ -105,7 +106,7 @@
     if (state.loadingAccessUsers) return;
     state.loadingAccessUsers = true;
     try {
-      const payload = await adminApi("/api/administracao/usuarios");
+      const payload = await adminApi("api/administracao/usuarios");
       state.accessStorage = null;
       state.accessUsers = payload.items || payload.usuarios || [];
     } catch (error) {
@@ -118,7 +119,7 @@
 
   async function saveAccessUser(payload) {
     const id = payload.id ? String(payload.id) : "";
-    const response = await adminApi(id ? `/api/administracao/usuarios/${encodeURIComponent(id)}` : "/api/administracao/usuarios", {
+    const response = await adminApi(id ? `api/administracao/usuarios/${encodeURIComponent(id)}` : "api/administracao/usuarios", {
       method: payload.id ? "PUT" : "POST",
       body: JSON.stringify(payload)
     });
@@ -721,7 +722,7 @@
       return;
     }
 
-    const payload = await adminApi("/api/solicitacoes-reabertura.php", {
+      const payload = await adminApi("api/solicitacoes-reabertura", {
       method: "POST",
       body: JSON.stringify({
         action: decision === "approve" ? "aprovar" : "negar",

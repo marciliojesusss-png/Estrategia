@@ -3,10 +3,10 @@ $headerUser = Auth::currentUserForFrontend();
 ?>
 <header class="app-header">
   <div class="header-top">
-    <a class="brand-block header-brand" href="/dashboard" aria-label="Página inicial">
-      <img class="brand-logo-caixa-loterias" src="/assets/img/caixa-loterias-logo-negativa.png" alt="CAIXA Loterias">
+    <a class="brand-block header-brand" href="<?= e(app_url('dashboard')) ?>" aria-label="Pagina inicial">
+      <img class="brand-logo-caixa-loterias" src="<?= e(asset_url('assets/img/caixa-loterias-logo-negativa.png')) ?>" alt="CAIXA Loterias">
       <span class="brand-divider" aria-hidden="true"></span>
-      <span class="brand-system-name">Indicadores Estratégicos</span>
+      <span class="brand-system-name">Indicadores Estrategicos</span>
     </a>
     <div class="header-actions">
       <span class="header-chip"><?= e($headerUser['nome']) ?></span>
@@ -17,11 +17,11 @@ $headerUser = Auth::currentUserForFrontend();
   </div>
 </header>
 <dialog class="logout-modal" data-logout-modal aria-labelledby="logout-modal-title">
-  <form class="logout-modal-card" method="post" action="/logout">
+  <form class="logout-modal-card" method="post" action="<?= e(app_url('logout')) ?>">
     <button class="logout-modal-close" type="button" data-close-logout aria-label="Fechar">&times;</button>
     <span class="logout-modal-icon" aria-hidden="true">&#8594;</span>
-    <h2 id="logout-modal-title">Encerrar sessão?</h2>
-    <p>Você será desconectado do sistema e precisará entrar novamente para continuar.</p>
+    <h2 id="logout-modal-title">Encerrar sessao?</h2>
+    <p>Voce sera desconectado do sistema e precisara entrar novamente para continuar.</p>
     <input type="hidden" name="_csrf_token" value="<?= e(Auth::csrfToken()) ?>">
     <div class="logout-modal-actions">
       <button class="secondary-action" type="button" data-close-logout>Cancelar</button>

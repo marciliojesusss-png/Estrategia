@@ -55,7 +55,7 @@ final class Auth
             if (strpos($resource, '/api/') === 0) {
                 self::deny('Autenticacao local necessaria.');
             }
-            Response::redirect('/');
+            Response::redirect(app_url('login'));
         }
         $corporate = self::loadCorporateData();
         $matricula = trim(isset($corporate['matricula']) ? (string) $corporate['matricula'] : '');
@@ -216,12 +216,12 @@ final class Auth
     {
         $normalized = self::normalizeProfile($profile !== null ? $profile : (isset($_SESSION['perfil']) ? $_SESSION['perfil'] : self::DEFAULT_PROFILE));
         if ($normalized === 'unidade_apuradora') {
-            return '/lancamentos';
+            return app_url('lancamentos');
         }
         if ($normalized === 'homologador') {
-            return '/homologacoes';
+            return app_url('homologacoes');
         }
-        return '/dashboard';
+        return app_url('dashboard');
     }
 
     public static function scopeFilters(array $filters = array())
@@ -343,6 +343,6 @@ final class Auth
 
     private static function requestResource()
     {
-        return isset($_SERVER['REQUEST_URI']) ? parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) : '';
+        return '/' . current_route('dashboard');
     }
 }

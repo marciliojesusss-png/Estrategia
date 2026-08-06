@@ -24,9 +24,10 @@
     if (dialog) return dialog;
     dialog = document.querySelector("[data-logout-modal]");
     if (!dialog) {
+      const logoutUrl = window.appUrl ? window.appUrl("logout") : `${window.APP_BASE_PATH || ""}/index.php?route=logout`;
       document.body.insertAdjacentHTML("beforeend", `
         <dialog class="logout-modal" data-logout-modal aria-labelledby="logout-modal-title">
-          <form class="logout-modal-card" method="post" action="${window.APP_BASE_PATH || ""}/logout">
+          <form class="logout-modal-card" method="post" action="${logoutUrl}">
             <button class="logout-modal-close" type="button" data-close-logout aria-label="Fechar">&times;</button>
             <span class="logout-modal-icon" aria-hidden="true">&#8594;</span>
             <h2 id="logout-modal-title">Encerrar sessão?</h2>

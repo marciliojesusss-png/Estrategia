@@ -46,8 +46,25 @@ final class Response
 
     public static function redirect($location, $status = 302)
     {
-        if (defined('APP_BASE_PATH') && strpos($location, '/') === 0 && strpos($location, '//') !== 0 && strpos($location, APP_BASE_PATH . '/') !== 0) {
-            $location = APP_BASE_PATH . $location;
+        $location = (string) $location;
+        if (!preg_match('#^[a-z][a-z0-9+.-]*://#i', $location) && strpos($location, '//') !== 0 && function_exists('app_url_from_path')) {
+            $base = defined('APP_BASE_PATH') ? APP_BASE_PATH : '';
+            if ($base !== '' && strpos($location, $base . '/index.php?route=') === 0) {
+                header('Location: ' . $location, true, $status);
+                exit;
+            }
+            if ($base !== '' && strpos($location, $base . '/') === 0) {
+                $location = substr($location, strlen($base) + 1);
+                if (strpos($location, 'index.php?route=') === 0) {
+                    $location = $base . '/' . $location;
+                } else {
+                    $location = app_url_from_path($location);
+                }
+            } elseif (strpos($location, 'index.php?route=') === 0) {
+                $location = $base . '/' . $location;
+            } elseif (strpos($location, '/') === 0) {
+                $location = app_url_from_path(ltrim($location, '/'));
+            }
         }
         header('Location: ' . $location, true, $status);
         exit;

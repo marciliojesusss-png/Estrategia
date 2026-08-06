@@ -515,7 +515,8 @@
 
   async function phpApiFetch(path, options = {}) {
     const csrfToken = window.Auth?.getCurrentUser?.()?.csrfToken || window.CAIXA_LOTERIAS_AUTH_USER?.csrfToken || "";
-    const response = await fetch(path, {
+    const target = window.appUrl ? window.appUrl(path) : path;
+    const response = await fetch(target, {
       cache: "no-store",
       headers: {
         "Content-Type": "application/json",
@@ -1236,7 +1237,7 @@
     }
 
     try {
-      const payload = await phpApiFetch("/api/database.php?ping=1");
+      const payload = await phpApiFetch("api/database?ping=1");
       jsonDbAvailable = payload?.ok === true;
       localStorage.setItem(STORAGE_MODE_KEY, jsonDbAvailable ? "php_sqlite_local" : "sql_local");
       return jsonDbAvailable;
@@ -1251,13 +1252,13 @@
   async function loadFromJsonDb(key) {
     if (!(await checkJsonDb())) return null;
     if (isReadRestrictedCollectionForProfile(key)) return null;
-    return phpApiFetch(`/api/database.php?collection=${encodeURIComponent(key)}`);
+    return phpApiFetch(`api/database?collection=${encodeURIComponent(key)}`);
   }
 
   async function saveToJsonDb(key, value) {
     if (!(await checkJsonDb())) return false;
     try {
-      const payload = await phpApiFetch("/api/database.php", {
+      const payload = await phpApiFetch("api/database", {
         method: "POST",
         body: JSON.stringify({ key, value })
       });

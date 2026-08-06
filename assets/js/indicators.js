@@ -347,13 +347,12 @@
   }
 
   function indicatorDetailTarget(indicadorId, launchId = null) {
-    const target = window.AppRoutes ? window.AppRoutes.page("indicadores") : "/indicadores";
     const params = new URLSearchParams({
       view: "detalhe",
       id: String(indicadorId)
     });
     if (launchId) params.set("lancamentoId", String(launchId));
-    return `${target}?${params.toString()}`;
+    return window.AppRoutes ? window.AppRoutes.page("indicadores", params) : `/indicadores?${params.toString()}`;
   }
 
   function monthlyAction(lancamento) {

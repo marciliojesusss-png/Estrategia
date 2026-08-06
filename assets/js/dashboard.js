@@ -572,8 +572,8 @@
     const params = new URLSearchParams({ indicadorId: indicador.id });
     if (lancamento) params.set("lancamentoId", lancamento.id);
     if (modifier) params.set("acao", modifier);
-    const target = window.AppRoutes ? window.AppRoutes.page(page) : page;
-    return `<a class="secondary-action table-action dashboard-action" href="${target}?${params}">${label}</a>`;
+    const target = window.AppRoutes ? window.AppRoutes.page(page, params) : `${page}?${params}`;
+    return `<a class="secondary-action table-action dashboard-action" href="${target}">${label}</a>`;
   }
 
   function renderActions(item) {

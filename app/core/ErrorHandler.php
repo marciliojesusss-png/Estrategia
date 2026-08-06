@@ -64,8 +64,8 @@ final class ErrorHandler
 
     private static function expectsJson()
     {
-        $uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
+        $route = function_exists('current_route') ? current_route('dashboard') : '';
         $accept = isset($_SERVER['HTTP_ACCEPT']) ? $_SERVER['HTTP_ACCEPT'] : '';
-        return strpos($uri, '/api/') !== false || strpos($accept, 'application/json') !== false;
+        return strpos('/' . $route, '/api/') === 0 || strpos($accept, 'application/json') !== false;
     }
 }

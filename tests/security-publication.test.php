@@ -37,10 +37,12 @@ foreach (array('storage', 'uploads', 'database', 'app') as $segment) {
 }
 check(file_exists($root . '/index.php'), 'Index alternativo da raiz ausente.');
 check(strpos(contents($root . '/index.php'), "require __DIR__ . '/public/index.php';") !== false, 'Index alternativo nao encaminha para public/index.php.');
+check(strpos(contents($root . '/index.php'), "APP_PUBLIC_URL_PREFIX") !== false, 'Index alternativo nao informa prefixo publico dos assets.');
 foreach (array('storage', 'uploads', 'database', 'app', '.env') as $segment) {
     check(strpos($rootWebConfig, 'segment="' . $segment . '"') !== false, 'Segmento nao oculto no web.config raiz: ' . $segment);
 }
-check(strpos($rootWebConfig, 'public/index.php?rota=/{R:1}') !== false, 'web.config raiz nao encaminha para public/index.php.');
+check(strpos($rootWebConfig, '<rewrite>') === false && strpos($webConfig, '<rewrite>') === false, 'web.config nao deve depender de URL Rewrite.');
+check(strpos($rootWebConfig, 'rota=') === false && strpos($webConfig, 'rota=') === false, 'Parametro legado rota ainda aparece no web.config.');
 check(strpos($uploadConfig, 'fileExtension=".php" allowed="false"') !== false, 'Upload permite PHP.');
 check(strpos($uploadConfig, 'fileExtension=".phtml" allowed="false"') !== false, 'Upload permite PHTML.');
 check(strpos($config, "getenv('APP_DEBUG') ?: 'false'") !== false, 'Debug nao possui padrao seguro.');
@@ -61,11 +63,13 @@ check(strpos($routerScript, 'readfile($file)') !== false, 'Router local nao entr
 check(strpos($databaseSource, 'connect' . 'Pdo' . 'Sqlsrv') === false, 'Conexao SQL Server nao deve manter caminho PDO.');
 check(strpos($databaseSource, "sqlsrv:Server=") === false, 'Conexao SQL Server nao deve montar DSN PDO.');
 check(strpos($databaseSource, 'sqlsrv_connect') !== false, 'Conexao SQL Server nativa deve usar sqlsrv_connect.');
-check(strpos($authSource, "Response::redirect('/')") !== false, 'Rotas locais nao autenticadas nao retornam a entrada principal.');
-check(strpos($indexSource, "\$router->get('/login'") === false, 'Rota legada /login ainda esta publicada.');
-check(strpos($indexSource, "\$router->post('/login'") === false, 'POST legado /login ainda esta publicado.');
-check(strpos($indexSource, "\$router->get('/', \$renderLogin)") !== false, 'Entrada principal nao apresenta o login local.');
-check(strpos($indexSource, "\$router->post('/', \$submitLogin)") !== false, 'Entrada principal nao recebe o POST de login.');
+check(strpos($authSource, "app_url('login')") !== false, 'Rotas locais nao autenticadas devem ir para route=login.');
+check(strpos($indexSource, "\$_GET['route']") !== false, 'Front controller deve ler a rota por $_GET[route].');
+check(strpos($indexSource, "REQUEST_URI") === false, 'Front controller nao deve identificar rota por REQUEST_URI.');
+check(strpos($indexSource, "\$_GET['rota']") === false, 'Parametro legado rota nao deve ser lido pelo front controller.');
+check(strpos($indexSource, "\$route = 'dashboard';") !== false, 'Rota padrao dashboard ausente.');
+check(strpos($indexSource, "\$router->get('/login'") !== false, 'Rota login por parametro ausente.');
+check(strpos($indexSource, "\$router->post('/login'") !== false, 'POST login por parametro ausente.');
 
 foreach (array('database', 'storage', 'uploads', 'app', '.env', 'composer.json') as $privatePath) {
     check(!file_exists($root . '/public/' . $privatePath), 'Recurso interno exposto no public/: ' . $privatePath);

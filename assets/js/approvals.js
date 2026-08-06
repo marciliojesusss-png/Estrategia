@@ -40,7 +40,8 @@
 
   async function apiJson(path, options = {}) {
     const csrfToken = window.Auth?.getCurrentUser?.()?.csrfToken || window.CAIXA_LOTERIAS_AUTH_USER?.csrfToken || "";
-    const response = await fetch(path, {
+    const target = window.appUrl ? window.appUrl(path) : path;
+    const response = await fetch(target, {
       cache: "no-store",
       headers: {
         "Content-Type": "application/json",
@@ -338,7 +339,7 @@
       return;
     }
 
-    const result = await apiJson("/api/solicitacoes-reabertura.php", {
+    const result = await apiJson("api/solicitacoes-reabertura", {
       method: "POST",
       body: JSON.stringify({
         action: "criar",

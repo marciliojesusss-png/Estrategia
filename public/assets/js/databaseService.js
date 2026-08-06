@@ -1,7 +1,7 @@
 (function () {
   const SQLITE_PATH = "database/indicadores.sqlite";
   const SCHEMA_PATH = "database/schema.sql";
-  const DATABASE_API_PING = "/api/database.php?ping=1";
+  const DATABASE_API_PING = "api/database?ping=1";
 
   function applicationPath(path) {
     if (typeof window !== "undefined" && typeof window.appUrl === "function") {

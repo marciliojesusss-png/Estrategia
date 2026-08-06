@@ -39,7 +39,7 @@ $renderLogin = function () {
 };
 $submitLogin = function () {
     if (!Auth::isLocal()) {
-        Response::redirect('/');
+        Response::redirect(Auth::homeForProfile());
     }
     $token = isset($_POST['_csrf_token']) ? (string) $_POST['_csrf_token'] : '';
     if (!Csrf::validate($token)) {
@@ -51,8 +51,8 @@ $submitLogin = function () {
     $user = Auth::loginLocal(isset($_POST['matricula']) ? $_POST['matricula'] : '');
     Response::redirect(Auth::homeForProfile($user['perfil']));
 };
-$router->get('/', $renderLogin);
-$router->post('/', $submitLogin);
+$router->get('/login', $renderLogin);
+$router->post('/login', $submitLogin);
 $router->get('/dashboard',$frontendPage('resumo-executivo.php'));
 $router->get('/resumo-executivo',$frontendPage('resumo-executivo.php'));
 $router->get('/visao-trimestral', $frontendPage('visao-trimestral.php'));
@@ -121,8 +121,8 @@ $router->get('/saude/banco', function () {
     }
 });
 
-$fallback = isset($_GET['rota']) ? (string) $_GET['rota'] : '';
-$uri = $fallback !== '' ? $fallback : parse_url(isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '/', PHP_URL_PATH);
-if (strpos($uri, APP_BASE_PATH . '/') === 0) $uri = substr($uri, strlen(APP_BASE_PATH));
-elseif ($uri === APP_BASE_PATH) $uri = '/';
-$router->dispatch(Request::method(), $uri);
+$route = isset($_GET['route']) ? trim((string) $_GET['route'], '/') : '';
+if ($route === '') {
+    $route = 'dashboard';
+}
+$router->dispatch(Request::method(), '/' . $route);

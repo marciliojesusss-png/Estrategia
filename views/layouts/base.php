@@ -8,7 +8,7 @@ $contentView = isset($contentView) ? $contentView : null;
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><?= e($pageTitle) ?> | CAIXA Loterias</title>
-  <link rel="stylesheet" href="/assets/css/styles.css">
+  <link rel="stylesheet" href="<?= e(asset_url('assets/css/styles.css')) ?>">
 </head>
 <body>
   <div class="app-shell">
@@ -20,6 +20,6 @@ $contentView = isset($contentView) ? $contentView : null;
       <?php if ($contentView && is_file($contentView)) require $contentView; ?>
     </main>
   </div>
-  <script src="/assets/js/logout-modal.js" defer></script>
+  <script src="<?= e(asset_url('assets/js/logout-modal.js')) ?>" defer></script>
 </body>
 </html>

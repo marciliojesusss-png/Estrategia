@@ -56,13 +56,13 @@
     localStorage.removeItem(SESSION_KEY);
     localStorage.removeItem(PROFILE_KEY);
     localStorage.removeItem(PERMISSIONS_KEY);
-    window.location.href = `${window.APP_BASE_PATH || ""}/logout`;
+    window.location.href = window.appUrl ? window.appUrl("logout") : `${window.APP_BASE_PATH || ""}/index.php?route=logout`;
   }
 
   function requireAuth() {
     const user = getCurrentUser();
     if (!user && document.body.dataset.page !== "login") {
-      window.location.href = "/";
+      window.location.href = window.appUrl ? window.appUrl("login") : `${window.APP_BASE_PATH || ""}/index.php?route=login`;
       return null;
     }
     return user;

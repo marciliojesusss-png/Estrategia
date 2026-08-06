@@ -1,10 +1,14 @@
 ﻿(function () {
-  function pageUrl(page) {
-    const basePath = String(window.APP_BASE_PATH || "").replace(/\/$/, "");
+  function pageUrl(page, params) {
     const cleanPage = String(page).replace(/\.(html|php)$/i, "");
-    if (cleanPage === "index") return `${basePath}/`;
-    if (cleanPage === "homologacao") return `${basePath}/homologacoes`;
-    return `${basePath}/${cleanPage.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}`;
+    const route = cleanPage === "index"
+      ? "dashboard"
+      : cleanPage === "homologacao"
+        ? "homologacoes"
+        : cleanPage.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
+    if (window.appUrl) return window.appUrl(route, params);
+    const query = params ? `&${new URLSearchParams(params).toString()}` : "";
+    return `${window.APP_BASE_PATH || ""}/index.php?route=${encodeURIComponent(route).replace(/%2F/g, "/")}${query}`;
   }
 
   window.AppRoutes = { page: pageUrl };
@@ -120,11 +124,14 @@
         `<a class="nav-link ${key === page ? "active" : ""}" href="${href}">${label}</a>`
       ))
       .join("");
+    const logoUrl = window.assetUrl
+      ? window.assetUrl("assets/img/caixa-loterias-logo-negativa.png?v=2")
+      : `${window.APP_BASE_PATH || ""}/assets/img/caixa-loterias-logo-negativa.png?v=2`;
 
     header.innerHTML = `
       <div class="header-top">
         <div class="brand-block header-brand">
-          <img class="brand-logo-caixa-loterias" src="${window.APP_BASE_PATH || ""}/assets/img/caixa-loterias-logo-negativa.png?v=2" alt="CAIXA Loterias">
+          <img class="brand-logo-caixa-loterias" src="${logoUrl}" alt="CAIXA Loterias">
           <span class="brand-divider" aria-hidden="true"></span>
           <span class="brand-system-name">Indicadores Estratégicos</span>
         </div>
@@ -150,7 +157,7 @@
         window.LogoutModal.open();
         return;
       }
-      window.location.href = `${window.APP_BASE_PATH || ""}/logout`;
+      window.location.href = window.appUrl ? window.appUrl("logout") : `${window.APP_BASE_PATH || ""}/index.php?route=logout`;
     });
 
     const content = document.querySelector(".content");
