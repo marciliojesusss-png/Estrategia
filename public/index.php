@@ -53,6 +53,7 @@ $submitLogin = function () {
 };
 $router->get('/login', $renderLogin);
 $router->post('/login', $submitLogin);
+$router->get('/diagnostico-servidor', function () { require __DIR__ . '/diagnostico-iis.php'; });
 $router->get('/dashboard',$frontendPage('resumo-executivo.php'));
 $router->get('/resumo-executivo',$frontendPage('resumo-executivo.php'));
 $router->get('/visao-trimestral', $frontendPage('visao-trimestral.php'));
