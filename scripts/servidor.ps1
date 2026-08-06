@@ -155,7 +155,7 @@ function Start-ApplicationServer {
     $environmentBasePath = '/' + $safeBasePath.Trim('/')
     if ($environmentBasePath -eq '/') {
       # O CMD remove a variável quando recebe valor vazio. A barra impede que
-      # o Dotenv carregue APP_BASE_PATH do .env e depois é normalizada para raiz.
+      # a configuração normalize APP_BASE_PATH para raiz sem depender de valor vazio.
       $environmentBasePath = '/'
     }
     $commandLine = 'set "APP_ENV=development" && set "DB_CONNECTION=sqlite" && set "APP_BASE_PATH=' + $environmentBasePath + '" && "' + $phpPath + '" -S ' + $address + ' -t "' + $publicPath + '" "' + $routerPath + '"'

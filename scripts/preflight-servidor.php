@@ -51,6 +51,16 @@ preflight_line('BOOT', 'drivers PDO disponiveis', 'ok', implode(',', PDO::getAva
 $ok = preflight_line('CONFIG', 'configuracao carregada', defined('APP_ROOT') && defined('DB_DRIVER') && defined('AUTH_PROVIDER') ? 'ok' : 'falha') && $ok;
 preflight_line('CONFIG', 'APP_BASE_PATH', APP_BASE_PATH === '/estrategia' ? 'ok' : 'aviso', APP_BASE_PATH === '' ? '/' : APP_BASE_PATH);
 preflight_line('CONFIG', 'DB_DRIVER', 'ok', DB_DRIVER);
+if (DB_DRIVER === 'sqlsrv') {
+    $ok = preflight_line('CONFIG', 'SQLSERVER_HOST', SQLSERVER_HOST !== '' ? 'ok' : 'falha', SQLSERVER_HOST !== '' ? 'configurado' : 'ausente') && $ok;
+    $ok = preflight_line('CONFIG', 'SQLSERVER_DATABASE', SQLSERVER_DATABASE !== '' ? 'ok' : 'falha', SQLSERVER_DATABASE !== '' ? 'configurado' : 'ausente') && $ok;
+    if (DB_AUTH_MODE === 'sql') {
+        $ok = preflight_line('CONFIG', 'SQLSERVER_USER', SQLSERVER_USER !== '' ? 'ok' : 'falha', SQLSERVER_USER !== '' ? 'configurado' : 'ausente') && $ok;
+        $ok = preflight_line('CONFIG', 'SQLSERVER_PASSWORD', SQLSERVER_PASSWORD !== '' ? 'ok' : 'falha', SQLSERVER_PASSWORD !== '' ? 'configurado' : 'ausente') && $ok;
+    }
+    $ok = preflight_line('CONFIG', 'SQLSERVER_ENCRYPT', SQLSERVER_ENCRYPT === 'yes' ? 'ok' : 'falha', SQLSERVER_ENCRYPT) && $ok;
+    $ok = preflight_line('CONFIG', 'SQLSERVER_TRUST_SERVER_CERTIFICATE', SQLSERVER_TRUST_SERVER_CERTIFICATE === 'no' ? 'ok' : 'falha', SQLSERVER_TRUST_SERVER_CERTIFICATE) && $ok;
+}
 preflight_line('AUTH', 'AUTH_PROVIDER', 'ok', AUTH_PROVIDER);
 if (AUTH_PROVIDER === 'legacy_file') {
     $legacyOk = LDAP_LEGACY_PATH !== '' && is_file(LDAP_LEGACY_PATH) && is_readable(LDAP_LEGACY_PATH);

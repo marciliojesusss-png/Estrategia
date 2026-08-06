@@ -1,8 +1,6 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/Dotenv.php';
-
 define('APP_ROOT', dirname(__DIR__, 2));
 
 function config_has_env(array $names)
@@ -71,7 +69,6 @@ function config_apply_server_file($path)
 }
 
 config_apply_server_file(APP_ROOT . '/app/config/servidor.local.php');
-Dotenv::load(APP_ROOT . '/.env');
 define('APP_ENV', getenv('APP_ENV') ?: 'production');
 define('APP_DEBUG', filter_var(getenv('APP_DEBUG') ?: 'false', FILTER_VALIDATE_BOOLEAN));
 define('APP_KEY', getenv('APP_KEY') ?: '');
@@ -135,14 +132,14 @@ define('LDAP_STARTTLS', filter_var(getenv('LDAP_STARTTLS') ?: 'true', FILTER_VAL
 define('LDAP_REQUIRE_TLS', filter_var(getenv('LDAP_REQUIRE_TLS') ?: (APP_ENV === 'production' ? 'true' : 'false'), FILTER_VALIDATE_BOOLEAN));
 define('AUTH_PROVIDER', getenv('AUTH_PROVIDER') ?: 'legacy_file');
 define('LDAP_LEGACY_PATH', getenv('LDAP_LEGACY_PATH') ?: dirname(APP_ROOT) . '/acessoldap/LDAP.php');
-define('SQLSERVER_HOST', getenv('SQLSERVER_HOST') ?: (getenv('DB_HOST') ?: 'DF7436SR439'));
-define('SQLSERVER_DATABASE', getenv('SQLSERVER_DATABASE') ?: (getenv('DB_DATABASE') ?: 'DB5319_IndicadoresEstrategicos'));
+define('SQLSERVER_HOST', getenv('SQLSERVER_HOST') ?: (getenv('DB_HOST') ?: ''));
+define('SQLSERVER_DATABASE', getenv('SQLSERVER_DATABASE') ?: (getenv('DB_DATABASE') ?: ''));
 define('SQLSERVER_PORT', getenv('SQLSERVER_PORT') ?: '');
 define('SQLSERVER_USER', getenv('SQLSERVER_USER') ?: (getenv('DB_USERNAME') ?: ''));
 define('SQLSERVER_PASSWORD', getenv('SQLSERVER_PASSWORD') ?: (getenv('DB_PASSWORD') ?: ''));
 define('DB_AUTH_MODE', getenv('DB_AUTH_MODE') ?: (SQLSERVER_USER !== '' ? 'sql' : 'integrated'));
-define('SQLSERVER_ENCRYPT', getenv('SQLSERVER_ENCRYPT') ?: 'yes');
-define('SQLSERVER_TRUST_SERVER_CERTIFICATE', getenv('SQLSERVER_TRUST_SERVER_CERTIFICATE') ?: 'no');
+define('SQLSERVER_ENCRYPT', 'yes');
+define('SQLSERVER_TRUST_SERVER_CERTIFICATE', 'no');
 define('SESSION_IDLE_TIMEOUT', (int) (getenv('SESSION_IDLE_TIMEOUT') ?: 1800));
 define('LOG_MAX_BYTES', (int) (getenv('LOG_MAX_BYTES') ?: 5242880));
 define('UPLOAD_MAX_BYTES', (int) (getenv('UPLOAD_MAX_BYTES') ?: 10485760));

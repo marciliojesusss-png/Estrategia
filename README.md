@@ -58,30 +58,30 @@ JavaScript e imagens diretamente.
 
 ## Configuração do SQL Server
 
-O carregador interno lê opcionalmente o arquivo `.env` na raiz antes da
-configuração da aplicação. O arquivo local `.env` é ignorado pelo Git; use
-`.env.example` como modelo e nunca versione valores reais de senha. Variáveis
-definidas no ambiente do IIS/FastCGI prevalecem sobre o arquivo.
+Use `app/config/servidor.local.php` no servidor para configurações locais; este
+arquivo é ignorado pelo Git e não deve ser publicado no repositório. Variáveis
+definidas no ambiente do IIS/FastCGI também são aceitas e prevalecem sobre o
+arquivo local.
 
 `DB_HOST`, `DB_DATABASE`, `DB_USERNAME` e `DB_PASSWORD` são mantidas por
-compatibilidade com a conexão SQL Server existente. A autenticação corporativa usa `REMOTE_USER`, fornecido pelo
+compatibilidade com a conexão SQL Server existente. A conexão SQL Server da
+aplicação usa criptografia fixa com `Encrypt=yes` e
+`TrustServerCertificate=no`. A autenticação corporativa usa `REMOTE_USER`, fornecido pelo
 IIS após a Autenticação do Windows, e consulta o LDAP com configuração externa.
 Defina `LDAP_URI`, `LDAP_BASE_DN`, `LDAP_BIND_DN`, `LDAP_BIND_PASSWORD`,
 `LDAP_USER_FILTER` e os atributos `LDAP_ATTR_*` no ambiente seguro do IIS.
 Use `ldaps://` ou `LDAP_STARTTLS=true`; em produção, mantenha
 `LDAP_REQUIRE_TLS=true`.
 
-Defina as variáveis antes de iniciar a aplicação:
+Exemplo de variáveis antes de iniciar a aplicação:
 
 ```powershell
 $env:APP_ENV='production'
 $env:DB_CONNECTION='sqlsrv'
 $env:SQLSERVER_HOST='SERVIDOR_SQL'
-$env:SQLSERVER_DATABASE='DB5319_IndicadoresEstrategicos'
-$env:SQLSERVER_ENCRYPT='yes'
-$env:SQLSERVER_TRUST_SERVER_CERTIFICATE='no'
-$env:LDAP_URI='ldaps://ldap.corporativo.interno:636'
-$env:LDAP_BASE_DN='OU=Usuarios,DC=corp,DC=empresa,DC=interno'
+$env:SQLSERVER_DATABASE='NOME_DO_BANCO'
+$env:LDAP_URI='ldaps://ldap.exemplo.interno:636'
+$env:LDAP_BASE_DN='OU=Usuarios,DC=exemplo,DC=interno'
 $env:LDAP_USER_FILTER='(sAMAccountName={matricula})'
 $env:LDAP_REQUIRE_TLS='true'
 php -S 127.0.0.1:8000 -t public public/router.php
@@ -95,13 +95,13 @@ O SQLite local em `database/indicadores.sqlite` é usado como origem da migraç�
 
 ```powershell
 # Homologação
-.\migrar-para-sqlserver.bat -Ambiente homologacao -Servidor "DF7436SR439" -Banco "DB5319_IndicadoresEstrategicos"
+.\migrar-para-sqlserver.bat -Ambiente homologacao -Servidor "SERVIDOR_SQL" -Banco "NOME_DO_BANCO"
 
 # Apenas verificar uma carga existente
-.\migrar-para-sqlserver.bat -Ambiente homologacao -Servidor "DF7436SR439" -Banco "DB5319_IndicadoresEstrategicos" -VerifyOnly
+.\migrar-para-sqlserver.bat -Ambiente homologacao -Servidor "SERVIDOR_SQL" -Banco "NOME_DO_BANCO" -VerifyOnly
 
 # Produção — somente após homologação e aceite
-.\migrar-para-sqlserver.bat -Ambiente producao -Servidor "DF7436SR439" -Banco "DB5319_IndicadoresEstrategicos"
+.\migrar-para-sqlserver.bat -Ambiente producao -Servidor "SERVIDOR_SQL" -Banco "NOME_DO_BANCO"
 ```
 
 O migrador cria backup da origem, executa preflight, aplica o schema, copia os dados e reconcilia contagens, IDs, agrupamentos, chaves estrangeiras e JSON. O resultado é salvo em `database/sqlserver/migration-report.json`.

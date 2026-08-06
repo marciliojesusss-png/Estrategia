@@ -52,6 +52,21 @@ final class Database
 
     private static function connectSqlsrvNative()
     {
+        if (SQLSERVER_HOST === '' || SQLSERVER_DATABASE === '') {
+            Logger::error('[DATABASE] Configuracao SQL Server incompleta.', array(
+                'host' => SQLSERVER_HOST !== '' ? 'configurado' : 'ausente',
+                'database' => SQLSERVER_DATABASE !== '' ? 'configurado' : 'ausente',
+                'auth_mode' => DB_AUTH_MODE,
+            ));
+            throw new RuntimeException('SQLSERVER_CONFIG_INCOMPLETA: informe db_host e db_database em app/config/servidor.local.php ou no ambiente do IIS.');
+        }
+        if (DB_AUTH_MODE === 'sql' && (SQLSERVER_USER === '' || SQLSERVER_PASSWORD === '')) {
+            Logger::error('[DATABASE] Credenciais SQL Server ausentes para autenticacao SQL.', array(
+                'usuario' => SQLSERVER_USER !== '' ? 'configurado' : 'ausente',
+                'senha' => SQLSERVER_PASSWORD !== '' ? 'configurada' : 'ausente',
+            ));
+            throw new RuntimeException('SQLSERVER_CREDENCIAIS_AUSENTES: informe db_username e db_password em app/config/servidor.local.php ou no ambiente do IIS.');
+        }
         if (!function_exists('sqlsrv_connect')) {
             Logger::error('[DATABASE] Extensao sqlsrv indisponivel.', array('driver' => DB_DRIVER));
             throw new RuntimeException('SQLSRV_INDISPONIVEL: extensao sqlsrv nao esta instalada no PHP.');

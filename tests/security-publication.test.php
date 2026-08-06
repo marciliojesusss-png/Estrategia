@@ -44,8 +44,12 @@ check(strpos($rootWebConfig, 'public/index.php?rota=/{R:1}') !== false, 'web.con
 check(strpos($uploadConfig, 'fileExtension=".php" allowed="false"') !== false, 'Upload permite PHP.');
 check(strpos($uploadConfig, 'fileExtension=".phtml" allowed="false"') !== false, 'Upload permite PHTML.');
 check(strpos($config, "getenv('APP_DEBUG') ?: 'false'") !== false, 'Debug nao possui padrao seguro.');
+check(strpos($config, 'Dotenv') === false, 'Carregador .env ainda esta ativo.');
+check(!file_exists($root . '/app/config/Dotenv.php'), 'Arquivo Dotenv.php nao deve existir.');
 check(strpos($config, "APP_ENV === 'production' ? 'sqlsrv' : 'sqlite'") !== false, 'SQL Server nativo nao e o driver padrao de producao.');
 check(strpos($config, "in_array(DB_DRIVER, array('sqlsrv', 'sqlserver'), true) ? 'sqlsrv' : DB_DRIVER") !== false, 'DB_CONNECTION nao preserva compatibilidade com SQL Server nativo.');
+check(strpos($config, "define('SQLSERVER_ENCRYPT', 'yes');") !== false, 'Criptografia SQL Server deve permanecer ativa.');
+check(strpos($config, "define('SQLSERVER_TRUST_SERVER_CERTIFICATE', 'no');") !== false, 'Validacao do certificado SQL Server deve permanecer ativa.');
 check(strpos($helpers, 'htmlspecialchars') !== false, 'Helper de escape HTML ausente.');
 check(strpos($routerScript, 'return false') !== false, 'Router local nao libera assets estaticos.');
 check(strpos($routerScript, 'realpath') !== false, 'Router local nao restringe arquivos ao public.');

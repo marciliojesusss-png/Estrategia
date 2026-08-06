@@ -213,7 +213,7 @@ def configure_environment(args):
     encrypt = env_default(args.encrypt, "yes")
     trust_cert = args.trust_server_certificate
     if trust_cert in (None, ""):
-        trust_cert = "yes" if args.ambiente == "homologacao" else "no"
+        trust_cert = "no"
 
     os.environ["SQLSERVER_HOST"] = servidor
     os.environ["SQLSERVER_DATABASE"] = banco
@@ -323,7 +323,7 @@ def sqlserver_connection_string(database=None):
     target_database = database or sqlserver_database_name()
     driver = os.getenv("SQLSERVER_DRIVER", "ODBC Driver 18 for SQL Server")
     encrypt = os.getenv("SQLSERVER_ENCRYPT", "yes")
-    trust_cert = os.getenv("SQLSERVER_TRUST_SERVER_CERTIFICATE", "yes")
+    trust_cert = os.getenv("SQLSERVER_TRUST_SERVER_CERTIFICATE", "no")
 
     parts = [
         f"DRIVER={{{driver}}}",
@@ -1109,14 +1109,7 @@ def print_tls_guidance(args, config):
         f"TrustServerCertificate={config['trustServerCertificate']}."
     )
     print("")
-    if args.ambiente == "homologacao":
-        print("Para homologacao/local, voce pode repetir usando:")
-        print(".\\migrar-para-sqlserver.bat -Ambiente homologacao -TrustServerCertificate yes")
-    else:
-        print("Se isto for um teste local, execute como homologacao:")
-        print(".\\migrar-para-sqlserver.bat -Ambiente homologacao -TrustServerCertificate yes")
-    print("")
-    print("Para producao, o recomendado e instalar/confiar no certificado do SQL Server e manter:")
+    print("Instale ou confie no certificado do SQL Server e mantenha:")
     print("Encrypt=yes")
     print("TrustServerCertificate=no")
     print("")
