@@ -90,9 +90,20 @@ final class DiagnosticoServidor
 
     private function checkPhp()
     {
-        $phpStatus = PHP_VERSION === '7.1.19' ? self::OK : self::FALHA;
-        $this->add('PHP', 'Versao do PHP', $phpStatus, PHP_VERSION, 'Configure o FastCGI/IIS para usar exatamente PHP 7.1.19.', true);
-        $this->add('PHP', 'executavel PHP', defined('PHP_BINARY') && PHP_BINARY !== '' ? self::OK : self::AVISO, defined('PHP_BINARY') ? PHP_BINARY : 'nao informado', 'Execute o diagnostico com PHP_EXE apontando para o php.exe 7.1.19.', false);
+        $targetVersion = defined('DIAGNOSTICO_PHP_VERSION') ? trim((string) DIAGNOSTICO_PHP_VERSION) : '';
+        if ($targetVersion !== '') {
+            $phpStatus = PHP_VERSION === $targetVersion ? self::OK : self::AVISO;
+            $detail = PHP_VERSION . ' (alvo=' . $targetVersion . ')';
+            $correction = 'Se precisar validar a mesma versao do IIS, ajuste PHP_EXE ou diagnostico_php_version em servidor.local.php.';
+            $critical = false;
+        } else {
+            $phpStatus = version_compare(PHP_VERSION, '7.1.19', '>=') ? self::OK : self::FALHA;
+            $detail = PHP_VERSION . ' (sem versao alvo fixa)';
+            $correction = 'Use PHP 7.1.19 ou superior para executar o diagnostico; configure diagnostico_php_version para validar uma versao especifica.';
+            $critical = $phpStatus === self::FALHA;
+        }
+        $this->add('PHP', 'Versao do PHP', $phpStatus, $detail, $correction, $critical);
+        $this->add('PHP', 'executavel PHP', defined('PHP_BINARY') && PHP_BINARY !== '' ? self::OK : self::AVISO, defined('PHP_BINARY') ? PHP_BINARY : 'nao informado', 'Use PHP_EXE apenas quando quiser escolher manualmente o php.exe.', false);
         $this->add('PHP', 'SAPI', PHP_SAPI === 'cli' || stripos(PHP_SAPI, 'cgi') !== false || stripos(PHP_SAPI, 'fastcgi') !== false ? self::OK : self::AVISO, PHP_SAPI, 'No IIS, confirme que a execucao esta pelo FastCGI correto.', false);
 
         $ini = php_ini_loaded_file();

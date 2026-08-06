@@ -13,4 +13,6 @@ return array(
 
     'auth_provider' => 'legacy_file',
     'ldap_legacy_path' => dirname(APP_ROOT) . '/acessoldap/LDAP.php',
+
+    'diagnostico_php_version' => '',
 );

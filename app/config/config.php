@@ -57,6 +57,7 @@ function config_apply_server_file($path)
         'db_password' => array('SQLSERVER_PASSWORD', 'DB_PASSWORD'),
         'auth_provider' => array('AUTH_PROVIDER'),
         'ldap_legacy_path' => array('LDAP_LEGACY_PATH'),
+        'diagnostico_php_version' => array('DIAGNOSTICO_PHP_VERSION'),
     );
 
     foreach ($mapping as $key => $names) {
@@ -155,5 +156,6 @@ define('LOG_MAX_BYTES', (int) (getenv('LOG_MAX_BYTES') ?: 5242880));
 define('UPLOAD_MAX_BYTES', (int) (getenv('UPLOAD_MAX_BYTES') ?: 10485760));
 define('UPLOAD_ALLOWED_EXTENSIONS', getenv('UPLOAD_ALLOWED_EXTENSIONS') ?: 'pdf,jpg,jpeg,png,xls,xlsx,doc,docx');
 define('API_MAX_PAYLOAD_BYTES', (int) (getenv('API_MAX_PAYLOAD_BYTES') ?: 1048576));
+define('DIAGNOSTICO_PHP_VERSION', getenv('DIAGNOSTICO_PHP_VERSION') ?: '');
 
 date_default_timezone_set(APP_TIMEZONE);

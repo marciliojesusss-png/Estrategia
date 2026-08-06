@@ -96,6 +96,15 @@ Para finalizar:
 .\scripts\servidor.ps1 finalizar
 ```
 
+Se o servidor foi iniciado em outra porta:
+
+```powershell
+.\scripts\servidor.ps1 finalizar -Port 8000
+```
+
+O comando de finalizacao usa o PID salvo, a linha de comando do PHP e a porta
+TCP para localizar o processo local.
+
 Para reiniciar em segundo plano:
 
 ```powershell
@@ -112,7 +121,8 @@ Opcoes disponiveis: `-BindHost`, `-Port`, `-BasePath`, `-Background` e
 `-DryRun`.
 
 Se houver mais de uma versao do PHP instalada, informe o executavel desejado
-antes de iniciar:
+antes de iniciar. Se `PHP_EXE` nao for informado, os scripts tentam localizar
+`php.exe` automaticamente pelo `PATH` e por pastas comuns do Windows:
 
 ```powershell
 $env:PHP_EXE = 'C:\caminho\php-7.1.19\php.exe'
@@ -155,6 +165,7 @@ return array(
     'db_password' => 'SENHA_SQL',
     'auth_provider' => 'legacy_file',
     'ldap_legacy_path' => dirname(dirname(__DIR__)) . '/../acessoldap/LDAP.php',
+    'diagnostico_php_version' => '',
 );
 ```
 
@@ -226,14 +237,29 @@ storage/logs/aplicacao.log
 Execute o diagnostico completo no servidor:
 
 ```powershell
-$env:PHP_EXE = 'C:\caminho\php-7.1.19\php.exe'
 .\scripts\cmd\diagnostico-servidor.ps1
 ```
 
-O diagnostico deve ser executado com o mesmo PHP 7.1.19 configurado no FastCGI
-do IIS. O script verifica PHP, FastCGI/IIS, `servidor.local.php`, rotas, SQL
-Server, tabelas, LDAP legado, permissoes, logs recentes, ausencia de URL
-Rewrite e sintaxe PHP. Ele continua ate o fim mesmo quando encontra falhas.
+Se houver mais de um PHP instalado e voce quiser forcar um executavel:
+
+```powershell
+$env:PHP_EXE = 'C:\caminho\php.exe'
+.\scripts\cmd\diagnostico-servidor.ps1
+```
+
+O diagnostico roda com o PHP encontrado, independentemente da versao. Para
+comparar contra uma versao alvo especifica, configure em
+`app/config/servidor.local.php`:
+
+```php
+'diagnostico_php_version' => '7.1.19',
+```
+
+Quando essa chave nao existe ou esta vazia, o diagnostico apenas exige PHP
+7.1.19 ou superior para conseguir executar as verificacoes. O script verifica
+PHP, FastCGI/IIS, `servidor.local.php`, rotas, SQL Server, tabelas, LDAP
+legado, permissoes, logs recentes, ausencia de URL Rewrite e sintaxe PHP. Ele
+continua ate o fim mesmo quando encontra falhas.
 
 Cada item e exibido como:
 
@@ -257,7 +283,6 @@ Codigo de saida:
 Para uma verificacao mais curta, use:
 
 ```powershell
-$env:PHP_EXE = 'C:\caminho\php-7.1.19\php.exe'
 .\scripts\cmd\preflight-servidor.ps1
 ```
 

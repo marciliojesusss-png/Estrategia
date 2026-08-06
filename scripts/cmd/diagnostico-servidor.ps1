@@ -13,7 +13,28 @@ function Resolve-PhpExecutable {
     throw "PHP_EXE nao encontrado: $env:PHP_EXE"
   }
 
-  return (Get-Command php -ErrorAction Stop).Source
+  $command = Get-Command php -ErrorAction SilentlyContinue
+  if ($null -ne $command) {
+    return $command.Source
+  }
+
+  $patterns = @(
+    'C:\php\php.exe',
+    'C:\Sistemas\toolsphp*\php*\php.exe',
+    'C:\Sistemas\php*\php.exe',
+    'C:\tools\php*\php.exe',
+    'C:\Program Files\PHP\*\php.exe',
+    'C:\Program Files (x86)\PHP\*\php.exe'
+  )
+
+  foreach ($pattern in $patterns) {
+    $matches = @(Get-ChildItem -Path $pattern -ErrorAction SilentlyContinue | Sort-Object FullName -Descending)
+    if ($matches.Count -gt 0) {
+      return $matches[0].FullName
+    }
+  }
+
+  throw 'php.exe nao encontrado. Configure PHP_EXE com o caminho completo do PHP do servidor.'
 }
 
 $php = Resolve-PhpExecutable
