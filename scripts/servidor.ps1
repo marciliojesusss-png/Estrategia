@@ -64,6 +64,8 @@ if ($actionMap.ContainsKey($Acao)) {
 
 $publicPath = Join-Path $root 'public'
 $routerPath = Join-Path $publicPath 'router.php'
+$publicArgument = 'public'
+$routerArgument = 'public/router.php'
 $runtimePath = Join-Path $root 'storage\temporarios'
 $logPath = Join-Path $root 'storage\logs'
 $pidFile = Join-Path $runtimePath ("php-server-{0}.pid" -f $Port)
@@ -140,9 +142,17 @@ function Start-ApplicationServer {
   $phpPath = $php.Source
   $address = "${BindHost}:$Port"
 
+  if (-not (Test-Path $publicPath -PathType Container)) {
+    throw "Pasta public nao encontrada em: $publicPath"
+  }
+  if (-not (Test-Path $routerPath -PathType Leaf)) {
+    throw "Router local nao encontrado em: $routerPath"
+  }
+
   New-Item -ItemType Directory -Force -Path $runtimePath, $logPath | Out-Null
   Write-Host "Executavel PHP: $phpPath" -ForegroundColor Green
-  Write-Host "Executando: php -S $address -t public public/router.php" -ForegroundColor Cyan
+  Write-Host "Executando em: $root" -ForegroundColor Green
+  Write-Host "Executando: php -S $address -t $publicArgument $routerArgument" -ForegroundColor Cyan
 
   if ($Background) {
     if (Test-Path $pidFile) {
@@ -171,7 +181,7 @@ function Start-ApplicationServer {
       $env:DB_CONNECTION = 'sqlite'
       $env:APP_BASE_PATH = $environmentBasePath
       $process = Start-Process -FilePath $phpPath `
-        -ArgumentList @('-S', $address, '-t', $publicPath, $routerPath) `
+        -ArgumentList @('-S', $address, '-t', $publicArgument, $routerArgument) `
         -WorkingDirectory $root `
         -RedirectStandardOutput $stdoutFile `
         -RedirectStandardError $stderrFile `
@@ -189,7 +199,7 @@ function Start-ApplicationServer {
     return
   }
 
-  & $phpPath -S $address -t $publicPath $routerPath
+  & $phpPath -S $address -t $publicArgument $routerArgument
   Write-Host 'Servidor finalizado.' -ForegroundColor Cyan
 }
 
