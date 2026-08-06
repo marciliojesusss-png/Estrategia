@@ -289,6 +289,75 @@ Para uma verificacao mais curta, use:
 .\scripts\cmd\preflight-servidor.ps1
 ```
 
+### Diagnostico SQL Server
+
+Quando o erro parece estar somente na conexao com o SQL Server, execute o
+diagnostico especifico. Ele usa a mesma configuracao carregada pela aplicacao em
+`app/config/servidor.local.php` e tenta conectar usando a extensao nativa
+`sqlsrv`.
+
+No servidor, abra o PowerShell na raiz do projeto e execute:
+
+```powershell
+.\scripts\cmd\diagnostico-sqlserver.ps1
+```
+
+Se houver mais de um PHP instalado, ou se o `php` do terminal for diferente do
+PHP configurado no IIS/FastCGI, informe o executavel manualmente:
+
+```powershell
+$env:PHP_EXE = 'C:\caminho\php.exe'
+.\scripts\cmd\diagnostico-sqlserver.ps1
+```
+
+Exemplo apontando para um PHP especifico:
+
+```powershell
+$env:PHP_EXE = 'C:\php\php.exe'
+.\scripts\cmd\diagnostico-sqlserver.ps1
+```
+
+O diagnostico verifica:
+
+- PHP, SAPI, `PHP_BINARY` e `php.ini`;
+- extensao `sqlsrv`;
+- funcao `sqlsrv_connect()`;
+- `DB_DRIVER` e `DB_CONNECTION`;
+- servidor, banco, modo de autenticacao e opcoes da conexao, sem exibir senha;
+- erro exato retornado por `sqlsrv_errors()`;
+- `SELECT 1`;
+- banco atual;
+- login SQL atual;
+- versao do SQL Server;
+- tabelas essenciais: `indicadores`, `lancamentos`, `usuarios_acesso` e
+  `acessos_log`.
+
+O relatorio tambem e gravado em:
+
+```text
+storage/logs/diagnostico-sqlserver-AAAA-MM-DD-HHMMSS.log
+```
+
+Codigo de saida:
+
+- `0`: sem falha critica;
+- `1`: uma ou mais falhas criticas encontradas.
+
+O script nao altera banco, permissoes ou configuracoes. Ele apenas le a
+configuracao local, tenta conectar e executa consultas de validacao.
+
+Falhas comuns:
+
+- `extensao sqlsrv: ausente`: habilite a extensao no `php.ini` usado pelo PHP
+  executado.
+- `funcao sqlsrv_connect: indisponivel`: o driver Microsoft PHP para SQL Server
+  nao esta carregado nesse PHP.
+- `Login failed`: revise `db_username`, `db_password`, banco padrao e permissoes
+  do login.
+- `Cannot open database`: o banco configurado nao existe ou o login nao tem
+  permissao.
+- `tabela ... ausente`: aplique o schema/migracao no banco correto.
+
 Os wrappers ficam em `scripts/cmd/`. Em PowerShell, prefira os `.ps1`, pois eles
 executam em publicacoes abertas por caminho UNC sem iniciar o CMD. Os `.bat`
 continuam disponiveis para uso direto no `cmd.exe` e tambem usam `pushd`.
@@ -322,41 +391,6 @@ Para desabilitar, remova essas chaves ou defina:
 O modo web nunca deve permanecer habilitado depois da homologacao. Ele nao
 exibe senhas, tokens, credenciais completas, usuario SQL completo, host SQL
 completo ou banco SQL completo.
-
-## Diagnostico Comparativo Do IIS
-
-Para comparar a configuracao IIS/FastCGI/PHP entre Sistema-Expedientes e
-Estrategia, use:
-
-```powershell
-.\scripts\diagnostico-iis.ps1 `
-  -SiteName "NOME_DO_SITE" `
-  -ExpedientesApplication "/Sistema-Expedientes" `
-  -EstrategiaApplication "/estrategia"
-```
-
-Com diagnosticos web temporarios habilitados nas aplicacoes:
-
-```powershell
-.\scripts\diagnostico-iis.ps1 `
-  -SiteName "NOME_DO_SITE" `
-  -ExpedientesApplication "/Sistema-Expedientes" `
-  -EstrategiaApplication "/estrategia" `
-  -ExpedientesDiagnosticUrl "http://localhost/Sistema-Expedientes/index.php?route=diagnostico-servidor" `
-  -EstrategiaDiagnosticUrl "http://localhost/estrategia/index.php?route=diagnostico-servidor" `
-  -DiagnosticKey "CHAVE_LONGA_TEMPORARIA"
-```
-
-O script e somente diagnostico: nao recicla Pools, nao altera IIS, nao muda
-permissoes e nao habilita recursos. Para consultar Application Pools,
-handlers, FastCGI, autenticacao, logs do IIS e eventos do Windows com maior
-precisao, execute o PowerShell como administrador no servidor.
-
-O relatorio e gravado em:
-
-```text
-storage/logs/diagnostico-iis-AAAA-MM-DD-HHMMSS.log
-```
 
 ## Migracao Para SQL Server
 
