@@ -49,7 +49,8 @@ check(strpos($config, "getenv('APP_DEBUG') ?: 'false'") !== false, 'Debug nao po
 check(strpos($config, 'Dotenv') === false, 'Carregador .env ainda esta ativo.');
 check(!file_exists($root . '/app/config/Dotenv.php'), 'Arquivo Dotenv.php nao deve existir.');
 check(strpos($config, "APP_ENV === 'production' ? 'sqlsrv' : 'sqlite'") !== false, 'SQL Server nativo nao e o driver padrao de producao.');
-check(strpos($config, "in_array(DB_DRIVER, array('sqlsrv', 'sqlserver'), true) ? 'sqlsrv' : DB_DRIVER") !== false, 'DB_CONNECTION nao preserva compatibilidade com SQL Server nativo.');
+check(strpos($config, "config_normalize_db_driver") !== false, 'DB_CONNECTION nao normaliza drivers legados para SQL Server nativo.');
+check(strpos($config, "pdo_sqlsrv") !== false, 'Compatibilidade de leitura para configuracao legada pdo_sqlsrv ausente.');
 check(strpos($config, "define('SQLSERVER_ENCRYPT', 'yes');") !== false, 'Criptografia SQL Server deve permanecer ativa.');
 check(strpos($config, "define('SQLSERVER_TRUST_SERVER_CERTIFICATE', 'no');") !== false, 'Validacao do certificado SQL Server deve permanecer ativa.');
 check(strpos($helpers, 'htmlspecialchars') !== false, 'Helper de escape HTML ausente.');

@@ -89,7 +89,7 @@ assert.match(app, /\/database\/indicadores\.sqlite/);
 assert.match(readme, /database\/indicadores\.sqlite/);
 assert.match(readme, /migrar-para-sqlserver\.py/);
 assert.equal(fs.existsSync(path.join(root, "scripts", "migrar-para-sqlserver.py")), true);
-assert.equal(fs.existsSync(path.join(root, "migrar-para-sqlserver.bat")), true);
+assert.equal(fs.existsSync(path.join(root, "scripts", "cmd", "migrar-para-sqlserver.bat")), true);
 assert.match(gitignore, /^\*\.sqlite$/m);
 assert.doesNotMatch(gitignore, /!\/database\/indicadores\.sqlite/);
 assert.doesNotMatch(adminHtml, /migrateJsonToSqlButton|exportSqlJsonBackupButton|backupSqliteButton|downloadSqliteButton/);

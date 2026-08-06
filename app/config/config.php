@@ -28,6 +28,15 @@ function config_set_env_group(array $names, $value)
     }
 }
 
+function config_normalize_db_driver($driver)
+{
+    $driver = strtolower(trim((string) $driver));
+    if ($driver === 'sqlserver' || $driver === 'pdo_sqlsrv') {
+        return 'sqlsrv';
+    }
+    return $driver;
+}
+
 function config_apply_server_file($path)
 {
     if (!is_file($path) || !is_readable($path)) {
@@ -57,13 +66,17 @@ function config_apply_server_file($path)
     }
 
     if (array_key_exists('db_driver', $values) && !config_has_env(array('DB_DRIVER', 'DB_CONNECTION'))) {
-        $driver = strtolower(trim((string) $values['db_driver']));
+        $driver = config_normalize_db_driver($values['db_driver']);
         if ($driver !== '') {
-            if ($driver === 'sqlserver') {
-                $driver = 'sqlsrv';
-            }
             config_set_env_group(array('DB_DRIVER'), $driver);
-            config_set_env_group(array('DB_CONNECTION'), in_array($driver, array('sqlsrv', 'sqlserver'), true) ? 'sqlsrv' : $driver);
+            config_set_env_group(array('DB_CONNECTION'), $driver === 'sqlsrv' ? 'sqlsrv' : $driver);
+        }
+    }
+
+    if (array_key_exists('db_connection', $values) && !config_has_env(array('DB_CONNECTION'))) {
+        $connection = config_normalize_db_driver($values['db_connection']);
+        if ($connection !== '') {
+            config_set_env_group(array('DB_CONNECTION'), $connection);
         }
     }
 }
@@ -89,10 +102,12 @@ if ($envBase !== false) {
 	$base = (APP_ENV === 'production') ? '/estrategia' : '';
 }
 define('APP_BASE_PATH', $base);
-$dbConnection = getenv('DB_CONNECTION');
-$dbDriver = getenv('DB_DRIVER');
+$dbConnectionValue = getenv('DB_CONNECTION');
+$dbDriverValue = getenv('DB_DRIVER');
+$dbConnection = $dbConnectionValue === false ? false : config_normalize_db_driver($dbConnectionValue);
+$dbDriver = $dbDriverValue === false ? false : config_normalize_db_driver($dbDriverValue);
 if ($dbDriver === false || $dbDriver === '') {
-    if ($dbConnection === 'sqlsrv' || $dbConnection === 'sqlserver') {
+    if ($dbConnection === 'sqlsrv') {
         $dbDriver = 'sqlsrv';
     } elseif ($dbConnection !== false && $dbConnection !== '') {
         $dbDriver = $dbConnection;
@@ -100,16 +115,11 @@ if ($dbDriver === false || $dbDriver === '') {
         $dbDriver = APP_ENV === 'production' ? 'sqlsrv' : 'sqlite';
     }
 }
-if ($dbDriver === 'sqlserver') {
-    $dbDriver = 'sqlsrv';
-}
 define('DB_DRIVER', strtolower((string) $dbDriver));
 if ($dbConnection === false || $dbConnection === '') {
-    $dbConnection = in_array(DB_DRIVER, array('sqlsrv', 'sqlserver'), true) ? 'sqlsrv' : DB_DRIVER;
-} elseif ($dbConnection === 'sqlserver') {
-    $dbConnection = 'sqlsrv';
+    $dbConnection = DB_DRIVER === 'sqlsrv' ? 'sqlsrv' : DB_DRIVER;
 }
-define('DB_CONNECTION', $dbConnection);
+define('DB_CONNECTION', strtolower((string) $dbConnection));
 define('DB_PATH', APP_ROOT . '/database/indicadores.sqlite');
 define('SCHEMA_PATH', APP_ROOT . '/database/schema.sql');
 define('STORAGE_PATH', APP_ROOT . '/storage');

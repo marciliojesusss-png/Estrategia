@@ -12,7 +12,7 @@ acessos e auditoria.
 - `public/index.php` como front controller da aplicacao.
 - Configuracoes locais em `app/config/servidor.local.php`, sem Dotenv.
 - SQL Server pela extensao nativa `sqlsrv`, usando `sqlsrv_connect()`.
-- `pdo_sqlsrv` nao e necessario para a aplicacao.
+- `pdo_sqlsrv` nao deve ser configurado como driver da aplicacao.
 - LDAP legado carregado por arquivo compartilhado em `../acessoldap/LDAP.php`.
 - Credenciais, caminhos absolutos de servidor e informacoes corporativas locais
   nao devem ser versionados.
@@ -81,7 +81,7 @@ Para iniciar em segundo plano e abrir o navegador automaticamente na rota local
 correta:
 
 ```powershell
-.\scripts\cmd\iniciar-local.bat
+.\scripts\cmd\iniciar-local.ps1
 ```
 
 Para iniciar em segundo plano:
@@ -110,6 +110,14 @@ Para executar deliberadamente na raiz:
 
 Opcoes disponiveis: `-BindHost`, `-Port`, `-BasePath`, `-Background` e
 `-DryRun`.
+
+Se houver mais de uma versao do PHP instalada, informe o executavel desejado
+antes de iniciar:
+
+```powershell
+$env:PHP_EXE = 'C:\caminho\php-7.1.19\php.exe'
+.\scripts\servidor.ps1 executar
+```
 
 Acesse:
 
@@ -179,6 +187,11 @@ Configuracoes esperadas:
 - `SQLSERVER_ENCRYPT`: fixo como `yes`
 - `SQLSERVER_TRUST_SERVER_CERTIFICATE`: fixo como `no`
 
+Nao use `pdo_sqlsrv` em `db_driver`, `db_connection`, `DB_DRIVER` ou
+`DB_CONNECTION`. A configuracao central ainda normaliza valores antigos para
+`sqlsrv` para evitar falha imediata, mas o diagnostico aponta qualquer
+configuracao legada para limpeza.
+
 Tabelas essenciais esperadas pelo diagnostico:
 
 - `indicadores`
@@ -213,12 +226,14 @@ storage/logs/aplicacao.log
 Execute o diagnostico completo no servidor:
 
 ```powershell
-.\scripts\cmd\diagnostico-servidor.bat
+$env:PHP_EXE = 'C:\caminho\php-7.1.19\php.exe'
+.\scripts\cmd\diagnostico-servidor.ps1
 ```
 
-O script verifica PHP, FastCGI/IIS, `servidor.local.php`, rotas, SQL Server,
-tabelas, LDAP legado, permissoes, logs recentes, ausencia de URL Rewrite e
-sintaxe PHP. Ele continua ate o fim mesmo quando encontra falhas.
+O diagnostico deve ser executado com o mesmo PHP 7.1.19 configurado no FastCGI
+do IIS. O script verifica PHP, FastCGI/IIS, `servidor.local.php`, rotas, SQL
+Server, tabelas, LDAP legado, permissoes, logs recentes, ausencia de URL
+Rewrite e sintaxe PHP. Ele continua ate o fim mesmo quando encontra falhas.
 
 Cada item e exibido como:
 
@@ -242,11 +257,13 @@ Codigo de saida:
 Para uma verificacao mais curta, use:
 
 ```powershell
-.\scripts\cmd\preflight-servidor.bat
+$env:PHP_EXE = 'C:\caminho\php-7.1.19\php.exe'
+.\scripts\cmd\preflight-servidor.ps1
 ```
 
-Os wrappers `.bat` ficam em `scripts/cmd/` e usam `pushd` antes de executar o
-PHP. Isso evita o erro do CMD em publicacoes abertas por caminho UNC, por exemplo
+Os wrappers ficam em `scripts/cmd/`. Em PowerShell, prefira os `.ps1`, pois eles
+executam em publicacoes abertas por caminho UNC sem iniciar o CMD. Os `.bat`
+continuam disponiveis para uso direto no `cmd.exe` e tambem usam `pushd`.
 `\\servidor\compartilhamento\Estrategia`.
 
 ## Diagnostico Web Temporario
@@ -282,12 +299,13 @@ completo ou banco SQL completo.
 
 O SQLite local em `database/indicadores.sqlite` e usado como origem de migracao
 e permanece ignorado pelo Git. Faca backup antes de migrar. O schema de destino
-fica em `database/sqlserver/schema.sql`.
+fica em `database/sqlserver/schema.sql`. Os wrappers abaixo executam o migrador
+`scripts/migrar-para-sqlserver.py`.
 
 ```powershell
-.\scripts\cmd\migrar-para-sqlserver.bat -Ambiente homologacao -Servidor "SERVIDOR_SQL" -Banco "NOME_DO_BANCO"
-.\scripts\cmd\migrar-para-sqlserver.bat -Ambiente homologacao -Servidor "SERVIDOR_SQL" -Banco "NOME_DO_BANCO" -VerifyOnly
-.\scripts\cmd\migrar-para-sqlserver.bat -Ambiente producao -Servidor "SERVIDOR_SQL" -Banco "NOME_DO_BANCO"
+.\scripts\cmd\migrar-para-sqlserver.ps1 -Ambiente homologacao -Servidor "SERVIDOR_SQL" -Banco "NOME_DO_BANCO"
+.\scripts\cmd\migrar-para-sqlserver.ps1 -Ambiente homologacao -Servidor "SERVIDOR_SQL" -Banco "NOME_DO_BANCO" -VerifyOnly
+.\scripts\cmd\migrar-para-sqlserver.ps1 -Ambiente producao -Servidor "SERVIDOR_SQL" -Banco "NOME_DO_BANCO"
 ```
 
 O migrador cria backup da origem, executa preflight, aplica schema, copia dados
@@ -305,7 +323,7 @@ node tests\backend-routing.test.js
 
 Antes de publicar, valide:
 
-- `.\scripts\cmd\diagnostico-servidor.bat`;
+- `.\scripts\cmd\diagnostico-servidor.ps1`;
 - login/autenticacao no IIS;
 - rotas por `index.php?route=...`;
 - acesso SQL Server;
@@ -327,7 +345,7 @@ assets/              CSS, JavaScript e imagens-fonte
 database/            SQLite de origem e schemas SQL
 public/              raiz publica, assets publicados e front controller
 scripts/             servidor local, diagnostico, preflight e migracao
-scripts/cmd/         wrappers .bat seguros para CMD e caminhos UNC
+scripts/cmd/         wrappers .ps1/.bat seguros para PowerShell, CMD e UNC
 storage/             logs, temporarios, backups e arquivos operacionais
 templates/           renderizacao do shell frontend
 tests/               testes PHP, JavaScript e Python

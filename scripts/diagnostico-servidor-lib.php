@@ -90,10 +90,9 @@ final class DiagnosticoServidor
 
     private function checkPhp()
     {
-        $phpStatus = version_compare(PHP_VERSION, '7.1.19', '<')
-            ? self::FALHA
-            : (version_compare(PHP_VERSION, '7.2.0', '>=') ? self::AVISO : self::OK);
-        $this->add('PHP', 'Versao do PHP', $phpStatus, PHP_VERSION, 'Configure o FastCGI/IIS para usar PHP 7.1.19.', $phpStatus === self::FALHA);
+        $phpStatus = PHP_VERSION === '7.1.19' ? self::OK : self::FALHA;
+        $this->add('PHP', 'Versao do PHP', $phpStatus, PHP_VERSION, 'Configure o FastCGI/IIS para usar exatamente PHP 7.1.19.', true);
+        $this->add('PHP', 'executavel PHP', defined('PHP_BINARY') && PHP_BINARY !== '' ? self::OK : self::AVISO, defined('PHP_BINARY') ? PHP_BINARY : 'nao informado', 'Execute o diagnostico com PHP_EXE apontando para o php.exe 7.1.19.', false);
         $this->add('PHP', 'SAPI', PHP_SAPI === 'cli' || stripos(PHP_SAPI, 'cgi') !== false || stripos(PHP_SAPI, 'fastcgi') !== false ? self::OK : self::AVISO, PHP_SAPI, 'No IIS, confirme que a execucao esta pelo FastCGI correto.', false);
 
         $ini = php_ini_loaded_file();
@@ -152,6 +151,8 @@ final class DiagnosticoServidor
     {
         $this->add('SQL', 'DB_DRIVER', DB_DRIVER === 'sqlsrv' ? self::OK : self::FALHA, DB_DRIVER, 'Configure db_driver como sqlsrv em servidor.local.php.');
         $this->add('SQL', 'DB_CONNECTION', DB_CONNECTION === 'sqlsrv' ? self::OK : self::FALHA, DB_CONNECTION, 'Mantenha DB_CONNECTION resolvido para sqlsrv.');
+        $legacySources = $this->legacyPdoSqlsrvSources();
+        $this->add('SQL', 'configuracao legada pdo_sqlsrv', !$legacySources ? self::OK : self::AVISO, !$legacySources ? 'nao encontrada' : implode(', ', $legacySources), 'Remova pdo_sqlsrv de servidor.local.php, DB_DRIVER e DB_CONNECTION; use sqlsrv.', false);
         $this->add('SQL', 'servidor SQL Server', SQLSERVER_HOST !== '' ? self::OK : self::FALHA, SQLSERVER_HOST !== '' ? $this->maskValue(SQLSERVER_HOST) : 'ausente', 'Informe db_host em servidor.local.php.');
         $this->add('SQL', 'banco SQL Server', SQLSERVER_DATABASE !== '' ? self::OK : self::FALHA, SQLSERVER_DATABASE !== '' ? $this->maskValue(SQLSERVER_DATABASE) : 'ausente', 'Informe db_database em servidor.local.php.');
         $this->add('SQL', 'modo de autenticacao', in_array(DB_AUTH_MODE, array('sql', 'integrated'), true) ? self::OK : self::FALHA, DB_AUTH_MODE, 'Use db_auth_mode como sql ou integrated.');
@@ -163,7 +164,31 @@ final class DiagnosticoServidor
 
         $this->add('SQL', 'criptografia SQL', SQLSERVER_ENCRYPT === 'yes' ? self::OK : self::FALHA, SQLSERVER_ENCRYPT, 'Mantenha SQLSERVER_ENCRYPT como yes.');
         $this->add('SQL', 'validacao certificado SQL', SQLSERVER_TRUST_SERVER_CERTIFICATE === 'no' ? self::OK : self::FALHA, SQLSERVER_TRUST_SERVER_CERTIFICATE, 'Mantenha SQLSERVER_TRUST_SERVER_CERTIFICATE como no e instale a cadeia de certificados correta.');
-        $this->add('SQL', 'pdo_sqlsrv nao requerido', extension_loaded('pdo_sqlsrv') ? self::AVISO : self::OK, extension_loaded('pdo_sqlsrv') ? 'carregado, mas nao usado' : 'ausente', 'A aplicacao usa somente sqlsrv_connect; pdo_sqlsrv pode permanecer desabilitado.', false);
+    }
+
+    private function legacyPdoSqlsrvSources()
+    {
+        $sources = array();
+        foreach (array('DB_DRIVER', 'DB_CONNECTION') as $name) {
+            $value = getenv($name);
+            if ($value !== false && strtolower(trim((string) $value)) === 'pdo_sqlsrv') {
+                $sources[] = 'ambiente ' . $name;
+            }
+        }
+
+        $path = APP_ROOT . '/app/config/servidor.local.php';
+        if (is_file($path) && is_readable($path)) {
+            $values = $this->loadServerLocalValues($path);
+            if (is_array($values)) {
+                foreach (array('db_driver', 'db_connection') as $key) {
+                    if (isset($values[$key]) && strtolower(trim((string) $values[$key])) === 'pdo_sqlsrv') {
+                        $sources[] = 'servidor.local.php:' . $key;
+                    }
+                }
+            }
+        }
+
+        return $sources;
     }
 
     private function checkDatabase()

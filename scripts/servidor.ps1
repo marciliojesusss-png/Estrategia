@@ -72,6 +72,21 @@ $pidFile = Join-Path $runtimePath ("php-server-{0}.pid" -f $Port)
 $routerPattern = [regex]::Escape($routerPath)
 $portPattern = '(?i)(^|\s)-S\s+\S*:' + $Port + '(\s|$)'
 
+function Resolve-PhpExecutable {
+  if ($env:PHP_EXE -and $env:PHP_EXE.Trim() -ne '') {
+    if (Test-Path $env:PHP_EXE -PathType Leaf) {
+      return (Resolve-Path $env:PHP_EXE).Path
+    }
+    $command = Get-Command $env:PHP_EXE -ErrorAction SilentlyContinue
+    if ($null -ne $command) {
+      return $command.Source
+    }
+    throw "PHP_EXE nao encontrado: $env:PHP_EXE"
+  }
+
+  return (Get-Command php -ErrorAction Stop).Source
+}
+
 function Get-ApplicationProcessIds {
   $processIds = New-Object System.Collections.Generic.HashSet[int]
 
@@ -138,8 +153,7 @@ function Stop-ApplicationServer {
 }
 
 function Start-ApplicationServer {
-  $php = Get-Command php -ErrorAction Stop
-  $phpPath = $php.Source
+  $phpPath = Resolve-PhpExecutable
   $address = "${BindHost}:$Port"
 
   if (-not (Test-Path $publicPath -PathType Container)) {
@@ -152,7 +166,7 @@ function Start-ApplicationServer {
   New-Item -ItemType Directory -Force -Path $runtimePath, $logPath | Out-Null
   Write-Host "Executavel PHP: $phpPath" -ForegroundColor Green
   Write-Host "Executando em: $root" -ForegroundColor Green
-  Write-Host "Executando: php -S $address -t $publicArgument $routerArgument" -ForegroundColor Cyan
+  Write-Host "Executando: $phpPath -S $address -t $publicArgument $routerArgument" -ForegroundColor Cyan
 
   if ($Background) {
     if (Test-Path $pidFile) {
