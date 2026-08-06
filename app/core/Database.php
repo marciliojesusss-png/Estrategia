@@ -15,14 +15,13 @@ final class Database
             return self::$connection;
         }
 
-        if (DB_DRIVER === 'pdo_sqlsrv') {
-            self::$connection = self::connectPdoSqlsrv();
-            return self::$connection;
-        }
-
         if (DB_DRIVER === 'sqlsrv') {
             self::$connection = self::connectSqlsrvNative();
             return self::$connection;
+        }
+
+        if (DB_DRIVER !== 'sqlite') {
+            throw new RuntimeException('DB_DRIVER_INCOMPATIVEL: configure DB_DRIVER=sqlsrv ou DB_DRIVER=sqlite.');
         }
 
         self::$connection = self::connectSqlite();
@@ -47,46 +46,6 @@ final class Database
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
         $pdo->exec('PRAGMA foreign_keys = ON');
-
-        return $pdo;
-    }
-
-    private static function connectPdoSqlsrv()
-    {
-        if (!in_array('sqlsrv', PDO::getAvailableDrivers(), true)) {
-            Logger::error('[DATABASE] Driver pdo_sqlsrv indisponivel.', array(
-                'codigo' => 'PDO_SQLSRV_INDISPONIVEL',
-                'driver' => DB_DRIVER,
-            ));
-            throw new RuntimeException('PDO_SQLSRV_INDISPONIVEL: Driver PDO sqlsrv nao esta instalado no PHP.');
-        }
-
-        $server = SQLSERVER_HOST . (SQLSERVER_PORT !== '' ? ',' . SQLSERVER_PORT : '');
-        $dsn = sprintf(
-            'sqlsrv:Server=%s;Database=%s;Encrypt=%s;TrustServerCertificate=%s',
-            $server,
-            SQLSERVER_DATABASE,
-            SQLSERVER_ENCRYPT,
-            SQLSERVER_TRUST_SERVER_CERTIFICATE
-        );
-
-        try {
-            $pdo = SQLSERVER_USER !== ''
-                ? new PDO($dsn, SQLSERVER_USER, SQLSERVER_PASSWORD)
-                : new PDO($dsn);
-        } catch (Exception $error) {
-            Logger::error('[DATABASE] Falha ao conectar via pdo_sqlsrv.', array(
-                'tipo' => get_class($error),
-                'codigo' => $error->getCode(),
-                'servidor' => SQLSERVER_HOST !== '' ? 'configurado' : 'nao configurado',
-                'banco' => SQLSERVER_DATABASE !== '' ? 'configurado' : 'nao configurado',
-                'auth_mode' => DB_AUTH_MODE,
-            ));
-            throw $error;
-        }
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-        $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
 
         return $pdo;
     }

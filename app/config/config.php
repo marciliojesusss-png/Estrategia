@@ -58,11 +58,14 @@ function config_apply_server_file($path)
         }
     }
 
-    if (array_key_exists('db_driver', $values) && !config_has_env(array('DB_DRIVER', 'DB_CONNECTION', 'DB_PDO_SUBDRIVER'))) {
+    if (array_key_exists('db_driver', $values) && !config_has_env(array('DB_DRIVER', 'DB_CONNECTION'))) {
         $driver = strtolower(trim((string) $values['db_driver']));
         if ($driver !== '') {
+            if ($driver === 'sqlserver') {
+                $driver = 'sqlsrv';
+            }
             config_set_env_group(array('DB_DRIVER'), $driver);
-            config_set_env_group(array('DB_CONNECTION'), in_array($driver, array('pdo_sqlsrv', 'sqlsrv'), true) ? 'sqlsrv' : $driver);
+            config_set_env_group(array('DB_CONNECTION'), in_array($driver, array('sqlsrv', 'sqlserver'), true) ? 'sqlsrv' : $driver);
         }
     }
 }
@@ -89,22 +92,25 @@ if ($envBase !== false) {
 	$base = (APP_ENV === 'production') ? '/estrategia' : '';
 }
 define('APP_BASE_PATH', $base);
-$dbSubdriver = getenv('DB_PDO_SUBDRIVER');
-define('DB_PDO_SUBDRIVER', $dbSubdriver ?: '');
 $dbConnection = getenv('DB_CONNECTION');
 $dbDriver = getenv('DB_DRIVER');
 if ($dbDriver === false || $dbDriver === '') {
-    if ($dbConnection === 'sqlsrv' || $dbConnection === 'sqlserver' || DB_PDO_SUBDRIVER === 'sqlsrv') {
-        $dbDriver = 'pdo_sqlsrv';
+    if ($dbConnection === 'sqlsrv' || $dbConnection === 'sqlserver') {
+        $dbDriver = 'sqlsrv';
     } elseif ($dbConnection !== false && $dbConnection !== '') {
         $dbDriver = $dbConnection;
     } else {
-        $dbDriver = APP_ENV === 'production' ? 'pdo_sqlsrv' : 'sqlite';
+        $dbDriver = APP_ENV === 'production' ? 'sqlsrv' : 'sqlite';
     }
+}
+if ($dbDriver === 'sqlserver') {
+    $dbDriver = 'sqlsrv';
 }
 define('DB_DRIVER', strtolower((string) $dbDriver));
 if ($dbConnection === false || $dbConnection === '') {
-    $dbConnection = in_array(DB_DRIVER, array('pdo_sqlsrv', 'sqlsrv'), true) ? 'sqlsrv' : DB_DRIVER;
+    $dbConnection = in_array(DB_DRIVER, array('sqlsrv', 'sqlserver'), true) ? 'sqlsrv' : DB_DRIVER;
+} elseif ($dbConnection === 'sqlserver') {
+    $dbConnection = 'sqlsrv';
 }
 define('DB_CONNECTION', $dbConnection);
 define('DB_PATH', APP_ROOT . '/database/indicadores.sqlite');

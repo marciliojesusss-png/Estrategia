@@ -5,7 +5,7 @@ Aplicação PHP para gestão de indicadores estratégicos, lançamentos mensais,
 ## Requisitos
 
 - PHP 7.1.19 no ambiente corporativo, com PDO.
-- SQL Server com `pdo_sqlsrv` e `sqlsrv` para homologação e produção.
+- SQL Server com a extensão nativa `sqlsrv` para homologação e produção.
 - IIS com FastCGI e URL Rewrite para publicação.
 - Python, `pyodbc` e Microsoft ODBC Driver somente para a migração SQLite → SQL Server.
 
@@ -63,9 +63,8 @@ configuração da aplicação. O arquivo local `.env` é ignorado pelo Git; use
 `.env.example` como modelo e nunca versione valores reais de senha. Variáveis
 definidas no ambiente do IIS/FastCGI prevalecem sobre o arquivo.
 
-`DB_HOST`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD` e
-`DB_PDO_SUBDRIVER=sqlsrv` são mantidas por compatibilidade com a conexão SQL
-Server existente. A autenticação corporativa usa `REMOTE_USER`, fornecido pelo
+`DB_HOST`, `DB_DATABASE`, `DB_USERNAME` e `DB_PASSWORD` são mantidas por
+compatibilidade com a conexão SQL Server existente. A autenticação corporativa usa `REMOTE_USER`, fornecido pelo
 IIS após a Autenticação do Windows, e consulta o LDAP com configuração externa.
 Defina `LDAP_URI`, `LDAP_BASE_DN`, `LDAP_BIND_DN`, `LDAP_BIND_PASSWORD`,
 `LDAP_USER_FILTER` e os atributos `LDAP_ATTR_*` no ambiente seguro do IIS.

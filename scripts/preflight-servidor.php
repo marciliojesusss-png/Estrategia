@@ -45,7 +45,6 @@ $ini = php_ini_loaded_file();
 $ok = preflight_line('BOOT', 'php.ini carregado', $ini ? 'ok' : 'aviso', $ini ?: 'nao informado') && $ok;
 
 $ok = preflight_line('BOOT', 'extensao sqlsrv', extension_loaded('sqlsrv') ? 'ok' : 'aviso') && $ok;
-$ok = preflight_line('BOOT', 'extensao pdo_sqlsrv', in_array('sqlsrv', PDO::getAvailableDrivers(), true) ? 'ok' : 'aviso') && $ok;
 $ok = preflight_line('BOOT', 'extensao ldap', extension_loaded('ldap') ? 'ok' : 'aviso') && $ok;
 preflight_line('BOOT', 'drivers PDO disponiveis', 'ok', implode(',', PDO::getAvailableDrivers()));
 
