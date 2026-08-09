@@ -1,5 +1,5 @@
 <?php
-declare(strict_types=1);
+//declare(strict_types=1);
 
 require_once __DIR__ . '/../app/bootstrap.php';
 require_once __DIR__ . '/../app/core/Router.php';
@@ -37,6 +37,8 @@ $renderLogin = function () {
     }
     Response::redirect(Auth::homeForProfile(Auth::authenticate()['perfil']));
 };
+
+
 $submitLogin = function () {
     if (!Auth::isLocal()) {
         Response::redirect(Auth::homeForProfile());
@@ -51,12 +53,26 @@ $submitLogin = function () {
     $user = Auth::loginLocal(isset($_POST['matricula']) ? $_POST['matricula'] : '');
     Response::redirect(Auth::homeForProfile($user['perfil']));
 };
+
 $router->get('/login', $renderLogin);
 $router->post('/login', $submitLogin);
 $router->get('/diagnostico-servidor', function () { require __DIR__ . '/diagnostico-iis.php'; });
 $router->get('/dashboard',$frontendPage('resumo-executivo.php'));
 $router->get('/resumo-executivo',$frontendPage('resumo-executivo.php'));
 $router->get('/visao-trimestral', $frontendPage('visao-trimestral.php'));
+
+ini_set('display_errors', '1');
+error_reporting(E_ALL||E_STRICT||E_DEPRECATED||E_PARSE||E_WARNING||E_ERROR);
+
+set_error_handler(function($severity, $message, $filename, $lineno) {
+    // Se o erro foi silenciado com @, respeita e não para o código
+    if (!(error_reporting() & $severity)) {
+        return false;
+    }
+    // Transforma qualquer aviso/erro em uma exceção interrupiva
+    throw new ErrorException($message, 0, $severity, $filename, $lineno);
+});
+
 $indicadores = new IndicadorController();
 $router->get('/indicadores', $frontendPage('indicadores.php'));
 $router->get('/indicadores/novo', array($indicadores, 'create'));

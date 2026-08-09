@@ -1,5 +1,5 @@
 <?php
-declare(strict_types=1);
+//declare(strict_types=1);
 
 require_once __DIR__ . '/../services/IndicadorService.php';
 
@@ -12,7 +12,7 @@ final class IndicadorController
     {
         Auth::requirePermission('indicadores', 'visualizar');
         $filters = Auth::scopeFilters($_GET);
-        $result = $this->service->listItems($filters, isset($_GET['page']) ? $_GET['page'] : 1, isset($_GET['perPage']) ? $_GET['perPage'] : 25);
+        $result = $this->service->listItems($filters, isset($_GET['page']) ? (int) $_GET['page'] : 1, isset($_GET['perPage']) ? (int) $_GET['perPage'] : 25);
         $this->render('index', array('result' => $result, 'filters' => $filters, 'canManage' => AccessPolicy::allows(Auth::authenticate()['perfil'], 'indicadores', 'gerenciar')));
     }
 

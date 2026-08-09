@@ -87,7 +87,10 @@ final class Database
         if (SQLSERVER_TRUST_SERVER_CERTIFICATE !== '') {
             $options['TrustServerCertificate'] = SQLSERVER_TRUST_SERVER_CERTIFICATE;
         }
-
+        
+        // inserido por william 07/08
+        $options['TrustServerCertificate'] = "yes";
+        
         $connection = sqlsrv_connect($server, $options);
         if ($connection === false) {
             Logger::error('[DATABASE] Falha ao conectar via sqlsrv nativo.', array(
