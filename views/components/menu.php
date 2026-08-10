@@ -12,7 +12,7 @@ $menuItems = array(
 ?>
 <nav class="header-nav" aria-label="Navegacao principal">
   <?php foreach ($menuItems as $menuItem): ?>
-    <?php if (AccessPolicy::allows($menuUser['perfilCodigo'], $menuItem[2], $menuItem[3])): ?>
+    <?php if (AccessPolicy::allowsPage($menuUser['perfilCodigo'], $menuItem[2], $menuItem[3])): ?>
       <a class="nav-link" href="<?= e(app_url($menuItem[0])) ?>"><?= e($menuItem[1]) ?></a>
     <?php endif; ?>
   <?php endforeach; ?>

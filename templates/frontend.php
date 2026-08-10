@@ -15,7 +15,7 @@ function render_frontend_page($viewFile)
 
     header('Content-Type: text/html; charset=utf-8');
     $html = (string) file_get_contents($path);
-    $assetVersion = 'AUTH-CORPORATIVA-001';
+    $assetVersion = 'AUTH-CORPORATIVA-002';
     $authUser = json_encode(
         Auth::currentUserForFrontend(),
         JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
