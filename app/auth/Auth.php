@@ -63,11 +63,21 @@ final class Auth
             self::deny('Usuario corporativo nao identificado.');
         }
         $access = self::findAccess($matricula);
-        if ($access === null && !self::isLocalEnvironment()) {
-            self::deny('Usuario sem acesso cadastrado.');
-        }
         if ($access === null) {
-            $access = self::localAccess($matricula);
+            if (self::isLocalEnvironment()) {
+                $access = self::localAccess($matricula);
+            } else {
+                // Todo usuário corporativo sem cadastro de perfil especial é
+                // tratado como usuário da companhia, conforme a regra de
+                // acesso institucional.
+                $access = array(
+                    'matricula' => $matricula,
+                    'nome' => isset($corporate['nome']) ? (string) $corporate['nome'] : $matricula,
+                    'perfil' => self::DEFAULT_PROFILE,
+                    'sg_unidade' => isset($corporate['sg_unidade']) ? (string) $corporate['sg_unidade'] : '',
+                    'no_unidade' => isset($corporate['no_unidade']) ? (string) $corporate['no_unidade'] : '',
+                );
+            }
         }
         if (empty($_SESSION['_auth_initialized'])) {
             Session::regenerate();
@@ -300,7 +310,15 @@ final class Auth
     private static function isLocalEnvironment()
     {
         $env = strtolower((string) APP_ENV);
-        return in_array($env, array('local', 'development', 'dev'), true);
+        if (!in_array($env, array('local', 'development', 'dev'), true)) return false;
+
+        // Identidades simuladas nunca devem ser aceitas por um host publicado.
+        // Isso evita que uma configuração APP_ENV=local no IIS exponha o
+        // usuário ADMIN ou permita escolher perfis pelo formulário local.
+        if (PHP_SAPI === 'cli') return true;
+        $host = strtolower((string) (isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : (isset($_SERVER['SERVER_NAME']) ? $_SERVER['SERVER_NAME'] : '')));
+        $host = preg_replace('/:\d+$/', '', $host);
+        return in_array($host, array('', 'localhost', '127.0.0.1', '::1'), true);
     }
 
     private static function findAccess($matricula)

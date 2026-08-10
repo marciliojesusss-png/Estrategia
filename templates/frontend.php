@@ -16,6 +16,7 @@ function render_frontend_page($viewFile)
     header('Content-Type: text/html; charset=utf-8');
     $html = (string) file_get_contents($path);
     $assetVersion = 'AUTH-CORPORATIVA-002';
+    $isLocal = Auth::isLocal() ? 'true' : 'false';
     $authUser = json_encode(
         Auth::currentUserForFrontend(),
         JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
@@ -28,6 +29,7 @@ function render_frontend_page($viewFile)
 <script>
 window.CAIXA_LOTERIAS_AUTH_USER = {$authUser};
 window.CAIXA_LOTERIAS_CSRF_TOKEN = {$csrfToken};
+window.CAIXA_LOTERIAS_IS_LOCAL = {$isLocal};
 window.APP_BASE_PATH = {$basePath};
 window.APP_PUBLIC_URL_PREFIX = {$publicPrefix};
 window.normalizeAppRoute = function(route) {

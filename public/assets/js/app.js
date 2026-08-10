@@ -45,12 +45,14 @@
         </div>
       `);
     }
-    messages.push(`
-      <div class="notice muted compact-notice sql-local-notice">
-        <strong>Modo SQL local ativo.</strong>
-        A base local fica em <code>/database/indicadores.sqlite</code>, é ignorada pelo Git e nao substitui o banco corporativo multiusuario.
-      </div>
-    `);
+    if (window.CAIXA_LOTERIAS_IS_LOCAL === true) {
+      messages.push(`
+        <div class="notice muted compact-notice sql-local-notice">
+          <strong>Modo SQL local ativo.</strong>
+          A base local fica em <code>/database/indicadores.sqlite</code>, é ignorada pelo Git e nao substitui o banco corporativo multiusuario.
+        </div>
+      `);
+    }
     return messages;
   }
 
