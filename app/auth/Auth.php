@@ -163,6 +163,18 @@ final class Auth
         return $user;
     }
 
+    public static function requirePagePermission($module, $action)
+    {
+        $user = self::authenticate();
+        if (!AccessPolicy::allowsPage($user['perfil'], $module, $action)) {
+            AccessLogger::record('acesso_negado', $user, array('recurso' => $module . '/' . $action));
+            http_response_code(403);
+            require APP_ROOT . '/views/erros/403.php';
+            exit;
+        }
+        return $user;
+    }
+
     public static function authorizeRecord(array $record, $api = true)
     {
         $user = self::authenticate();

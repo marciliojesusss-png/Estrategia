@@ -10,7 +10,7 @@ final class IndicadorController
 
     public function index()
     {
-        Auth::requirePermission('indicadores', 'visualizar');
+        Auth::requirePagePermission('indicadores', 'visualizar');
         $filters = Auth::scopeFilters($_GET);
         $result = $this->service->listItems($filters, isset($_GET['page']) ? (int) $_GET['page'] : 1, isset($_GET['perPage']) ? (int) $_GET['perPage'] : 25);
         $this->render('index', array('result' => $result, 'filters' => $filters, 'canManage' => AccessPolicy::allows(Auth::authenticate()['perfil'], 'indicadores', 'gerenciar')));
@@ -18,19 +18,19 @@ final class IndicadorController
 
     public function show($id)
     {
-        $user = Auth::requirePermission('indicadores', 'visualizar');
+        $user = Auth::requirePagePermission('indicadores', 'visualizar');
         $item = $this->service->find($id);
         if (!$item) return ErrorHandler::renderError(404);
         if ($user['perfil'] !== 'administrador' && $user['perfil'] !== 'usuario_companhia') Auth::authorizeRecord($item, false);
         $this->render('show', array('item' => $item, 'canManage' => AccessPolicy::allows($user['perfil'], 'indicadores', 'gerenciar')));
     }
 
-    public function create() { Auth::requirePermission('indicadores', 'gerenciar'); $this->form(null, array()); }
-    public function edit($id) { Auth::requirePermission('indicadores', 'gerenciar'); $item = $this->service->find($id); if (!$item) return ErrorHandler::renderError(404); $this->form($item, array()); }
+    public function create() { Auth::requirePagePermission('indicadores', 'gerenciar'); $this->form(null, array()); }
+    public function edit($id) { Auth::requirePagePermission('indicadores', 'gerenciar'); $item = $this->service->find($id); if (!$item) return ErrorHandler::renderError(404); $this->form($item, array()); }
 
     public function store($id = null)
     {
-        $user = Auth::requirePermission('indicadores', 'gerenciar'); Auth::requireCsrf();
+        $user = Auth::requirePagePermission('indicadores', 'gerenciar'); Auth::requireCsrf();
         try {
             $item = $id === null ? $this->service->create($_POST, $user) : $this->service->update($id, $_POST, $user);
             $_SESSION['_flash'] = $id === null ? 'Indicador cadastrado.' : 'Indicador atualizado.';
@@ -42,7 +42,7 @@ final class IndicadorController
 
     public function status($id)
     {
-        $user = Auth::requirePermission('indicadores', 'gerenciar'); Auth::requireCsrf();
+        $user = Auth::requirePagePermission('indicadores', 'gerenciar'); Auth::requireCsrf();
         $active = isset($_POST['ativo']) && $_POST['ativo'] === '1';
         try { $this->service->setActive($id, $active, $user); $_SESSION['_flash'] = $active ? 'Indicador ativado.' : 'Indicador inativado.'; Response::redirect('/indicadores/' . rawurlencode((string) $id)); }
         catch (OutOfBoundsException $error) { ErrorHandler::renderError(404); }
@@ -50,7 +50,7 @@ final class IndicadorController
 
     public function export()
     {
-        Auth::requirePermission('indicadores', 'visualizar');
+        Auth::requirePagePermission('indicadores', 'visualizar');
         $filters = Auth::scopeFilters($_GET);
         header('Content-Type: text/csv; charset=utf-8');
         header('Content-Disposition: attachment; filename="indicadores.csv"');

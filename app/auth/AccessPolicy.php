@@ -35,6 +35,15 @@ final class AccessPolicy
             && in_array($profile, self::$matrix[$module][$action], true);
     }
 
+    public static function allowsPage($profile, $module, $action)
+    {
+        $profile = Auth::normalizeProfile($profile);
+        if ($profile === 'usuario_companhia') {
+            return $module === 'dashboard' && $action === 'visualizar';
+        }
+        return self::allows($profile, $module, $action);
+    }
+
     public static function scopeAllows(array $user, array $record)
     {
         $profile = isset($user['perfil']) ? Auth::normalizeProfile($user['perfil']) : Auth::DEFAULT_PROFILE;

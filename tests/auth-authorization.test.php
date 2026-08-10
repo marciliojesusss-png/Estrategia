@@ -29,6 +29,12 @@ assert_auth(AccessPolicy::allows('unidade_apuradora', 'lancamentos', 'gerenciar'
 assert_auth(!AccessPolicy::allows('homologador', 'lancamentos', 'gerenciar'), 'homologador nao deve editar lancamentos');
 assert_auth(AccessPolicy::allows('homologador', 'homologacoes', 'decidir'), 'homologador deve decidir homologacao');
 assert_auth(!AccessPolicy::allows('usuario_companhia', 'homologacoes', 'decidir'), 'usuario companhia nao deve homologar');
+assert_auth(AccessPolicy::allowsPage('usuario_companhia', 'dashboard', 'visualizar'), 'usuario companhia deve visualizar apenas o resumo executivo');
+foreach (array('visao_trimestral', 'indicadores', 'lancamentos', 'homologacoes', 'relatorios') as $module) {
+    assert_auth(!AccessPolicy::allowsPage('usuario_companhia', $module, 'visualizar'), 'usuario companhia nao deve visualizar a pagina ' . $module);
+}
+assert_auth(Auth::normalizeProfile('perfil_nao_cadastrado') === 'usuario_companhia', 'perfil desconhecido deve assumir usuario companhia');
+assert_auth(!AccessPolicy::allowsPage('perfil_nao_cadastrado', 'indicadores', 'visualizar'), 'perfil desconhecido nao deve acessar a pagina de indicadores');
 
 $unitUser = array('perfil' => 'unidade_apuradora', 'unidade_apuradora' => 'SUCOL');
 assert_auth(AccessPolicy::scopeAllows($unitUser, array('unidadeApuradora' => ' sucol ')), 'escopo de unidade deve normalizar caixa e espacos');

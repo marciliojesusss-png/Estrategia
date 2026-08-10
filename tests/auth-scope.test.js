@@ -53,6 +53,14 @@ assert.deepEqual(scopedLaunches.map((item) => item.id), [253]);
 
 assert.equal(context.window.Auth.canAccess("lancamentos", user), true);
 
+const companyUser = { perfil: "Usuario Companhia" };
+assert.equal(context.window.Auth.canAccess("resumoExecutivo", companyUser), true);
+for (const page of ["visaoTrimestral", "indicadores", "lancamentos", "homologacao", "relatorios", "administracao"]) {
+  assert.equal(context.window.Auth.canAccess(page, companyUser), false, page);
+}
+context.window.location.search = "?id=22";
+assert.equal(context.window.Auth.canAccess("indicadores", companyUser, { allowIndicatorDetail: true }), false);
+
 const bootstrap = loadBootstrapData(root);
 const sucolUser = bootstrap.usuarios.find((item) => item.nome === "Unidade SUCOL");
 const bootstrapIndicators = context.window.Auth.filterIndicatorsByUser(bootstrap.indicadores, sucolUser);

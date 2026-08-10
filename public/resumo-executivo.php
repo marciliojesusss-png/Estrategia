@@ -2,5 +2,5 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../templates/frontend.php';
-Auth::requirePermission('dashboard', 'visualizar');
+Auth::requirePagePermission('dashboard', 'visualizar');
 render_frontend_page('resumo-executivo.php');

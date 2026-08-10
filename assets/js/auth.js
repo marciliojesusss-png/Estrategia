@@ -6,14 +6,14 @@
 
   const PAGE_ACCESS = {
     resumoExecutivo: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consulta/Gestao", "Consulta/Gest\u00e3o", "Usuario Companhia", "Usu\u00e1rio Companhia"],
-    visaoTrimestral: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consulta/Gestao", "Consulta/Gest\u00e3o", "Usuario Companhia", "Usu\u00e1rio Companhia"],
-    indicadores: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consulta/Gestao", "Consulta/Gest\u00e3o", "Usuario Companhia", "Usu\u00e1rio Companhia"],
+    visaoTrimestral: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consulta/Gestao", "Consulta/Gest\u00e3o"],
+    indicadores: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consulta/Gestao", "Consulta/Gest\u00e3o"],
     lancamentos: ["Administrador", "Unidade Apuradora"],
     homologacao: ["Administrador", "Diretoria Homologadora"],
-    relatorios: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consulta/Gestao", "Consulta/Gest\u00e3o", "Usuario Companhia", "Usu\u00e1rio Companhia"],
+    relatorios: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consulta/Gestao", "Consulta/Gest\u00e3o"],
     administracao: ["Administrador"]
   };
-  const USER_COMPANY_ALLOWED_PAGES = ["resumoExecutivo", "visaoTrimestral"];
+  const USER_COMPANY_ALLOWED_PAGES = ["resumoExecutivo"];
 
   function normalizeText(value) {
     return String(value || "")
@@ -78,10 +78,6 @@
     }
 
     if (isUsuarioCompanhia(user.perfil)) {
-      if (options.allowIndicatorDetail && page === "indicadores") {
-        const params = new URLSearchParams(window.location.search);
-        return params.has("indicadorId") || params.has("id");
-      }
       return USER_COMPANY_ALLOWED_PAGES.includes(page);
     }
 
