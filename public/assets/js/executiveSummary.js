@@ -14,20 +14,6 @@
   ];
   const SITUATIONS = ["Atingido", "Abaixo da meta", "Sem dados", "Em andamento", "Sem cálculo"];
   const PLAN_ORDER = { PEI: 1, PN: 2 };
-  const HIGHLIGHT_LIMIT = 12;
-  const HIGHLIGHT_INDICATORS = [
-    "ggr",
-    "lucro liquido recorrente",
-    "ieo recorrente",
-    "vendas com meio de pagamento pix",
-    "vendas provenientes de canais digitais",
-    "nps",
-    "clima organizacional",
-    "repasse social",
-    "principios de jogo responsavel",
-    "arrecadacao gerada com o ecossistema",
-    "participacao da rede loterica nos negocios"
-  ];
   const SUMMARY_CARD_FILTERS = {
     atingido: { label: "Indicadores atingidos", situation: "Atingido" },
     abaixo_da_meta: { label: "Indicadores abaixo da meta", situation: "Abaixo da meta" },
@@ -46,12 +32,17 @@
       situacao: null
     },
     summaryCardFilter: null,
-    highlightFilterId: null,
-    highlightsPaused: false
+    indicatorFilterId: null
   };
 
   function unique(values) {
     return [...new Set(values.filter(Boolean))];
+  }
+
+  function toFiniteNumber(value) {
+    if (value === null || value === undefined || value === "") return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
   }
 
   function escapeHtml(value) {
@@ -65,6 +56,124 @@
 
   function limparNomeIndicador(nome) {
     return String(nome || "").replace(/^\s*\d+\.\s*/, "").trim();
+  }
+
+  function indicatorNumberLabel(indicator) {
+    const number = Number(indicator?.numero);
+    if (!Number.isFinite(number)) return "--";
+    return String(number).padStart(2, "0");
+  }
+
+  function shortIndicatorName(indicator) {
+    const name = limparNomeIndicador(indicator?.indicador);
+    const normalized = normalizeText(name);
+    const displayNames = [
+      { match: "gross gaming revenue", label: "GGR" },
+      { match: "lucro liquido recorrente", label: "Lucro Recorrente" },
+      { match: "indice de eficiencia operacional", label: "IEO" },
+      { match: "vendas com meio de pagamento pix", label: "Vendas Pix" },
+      { match: "vendas provenientes de canais digitais", label: "Vendas Canais Digitais" },
+      { match: "indice de satisfacao de clientes", label: "NPS" },
+      { match: "indice de ofertas personalizadas", label: "Índ. Ofertas Personalizadas" },
+      { match: "indice de clientes ativos em canais digitais", label: "Canais Digitais" },
+      { match: "aprimoramento da experiencia do cliente", label: "Experiência do Cliente" },
+      { match: "share da plataforma de jogos", label: "Share Plataforma Jogos" },
+      { match: "ampliar capacidade de desenvolvimento", label: "Capacidade TIC" },
+      { match: "disponibilidade", label: "Disponibilidade Sistemas" },
+      { match: "backlog", label: "Backlog de TI" },
+      { match: "clima organizacional", label: "Clima Organizacional" },
+      { match: "engajamento", label: "Engajamento" },
+      { match: "mulheres chefes de unidade", label: "Mulheres Gestoras" },
+      { match: "gestores negros", label: "Gestores Diversidade/PcD" },
+      { match: "capacitacao dos empregados", label: "Treinamento p/ Colaborador" },
+      { match: "treinamento", label: "Treinamento p/ Colaborador" },
+      { match: "inovacao e novos produtos", label: "Inovação e Novos Produtos" },
+      { match: "agilidade no atendimento", label: "Agilidade Atendimento RH" },
+      { match: "apoio ao desenvolvimento socioambiental", label: "Apoio Socioambiental" },
+      { match: "repasse social", label: "Repasse Social" },
+      { match: "principios de jogo responsavel", label: "Jogo Responsável" },
+      { match: "incentivo socioambiental", label: "Incentivo Socioambiental" },
+      { match: "visibilidade dos repasses sociais", label: "Visibilidade Repasses Sociais" },
+      { match: "jogo responsavel 2026", label: "Jogo Responsável 2026" },
+      { match: "arrecadacao gerada com o ecossistema", label: "Arrecadação Ecossistema" },
+      { match: "pegada de carbono", label: "Pegada de Carbono" },
+      { match: "pdvs parceiros", label: "PDVs Parceiros" },
+      { match: "parcerias estrategicas", label: "Parcerias Estratégicas" },
+      { match: "participacao da rede loterica", label: "Participação Rede Lotérica" },
+      { match: "rede loterica", label: "Rede Lotérica" }
+    ];
+    const mapped = displayNames.find((item) => normalized.includes(item.match));
+    if (mapped) return mapped.label;
+    const parentheticalAcronym = name.match(/\(([A-Z0-9]{2,10})\)/);
+    if (parentheticalAcronym) return parentheticalAcronym[1].trim();
+    const dashAcronym = name.match(/[—-]\s*([A-Z0-9]{2,10})\s*$/);
+    if (dashAcronym) return dashAcronym[1].trim();
+    const leadingAcronym = name.match(/^([A-Z0-9]{2,10})(?=\s|$)/);
+    if (leadingAcronym) return leadingAcronym[1].trim();
+    return name;
+  }
+
+  function nomeIndicadorMapa(indicator) {
+    return shortIndicatorName(indicator);
+  }
+
+  function performanceToneByPercent(percentual) {
+    const percent = toFiniteNumber(percentual);
+    if (percent === null) return "cinza";
+    if (percent >= 1) return "verde";
+    if (percent > 0.8) return "amarelo";
+    return "vermelho";
+  }
+
+  function performanceToneLabel(tone) {
+    if (tone === "verde") return "Meta atingida";
+    if (tone === "amarelo") return "Atenção";
+    if (tone === "vermelho") return "Crítico";
+    return "Sem dados";
+  }
+
+  function performanceToneRank(tone) {
+    if (tone === "verde") return 0;
+    if (tone === "amarelo") return 1;
+    if (tone === "vermelho") return 2;
+    return 3;
+  }
+
+  function performancePercentLabel(percentual) {
+    const percent = toFiniteNumber(percentual);
+    if (percent === null) return "Sem percentual";
+    return `${Calculations.formatarPercentual(percent)} da meta`;
+  }
+
+  function performancePercentValue(percentual) {
+    const percent = toFiniteNumber(percentual);
+    return percent === null ? "Sem percentual" : Calculations.formatarPercentual(percent);
+  }
+
+  function performanceMapSize(result, index) {
+    const number = Number(result?.indicador?.numero);
+    if ([3].includes(number)) return "tall";
+    if ([13, 15, 17, 18, 21].includes(number)) return "wide";
+    if (index < 6) return "featured";
+    return "normal";
+  }
+
+  function performanceVariation(currentPercent, previousPercent) {
+    const current = toFiniteNumber(currentPercent);
+    const previous = toFiniteNumber(previousPercent);
+    if (current === null || previous === null) return null;
+    const diff = (current - previous) * 100;
+    if (Math.abs(diff) < 0.05) return { value: 0, direction: "flat" };
+    return { value: diff, direction: diff > 0 ? "up" : "down" };
+  }
+
+  function formatPerformanceVariation(variation) {
+    if (!variation) return "—";
+    const abs = Math.abs(variation.value);
+    const value = abs.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+    if (variation.direction === "up") return `▲ +${value} p.p.`;
+    if (variation.direction === "down") return `▼ -${value} p.p.`;
+    return `→ ${value} p.p.`;
   }
 
   function badgeClass(value) {
@@ -108,7 +217,7 @@
       value === "consulta gestao";
   }
 
-  function shouldShowOperationalStatusInHighlights() {
+  function shouldShowOperationalStatusInPerformanceMap() {
     const perfil = state.user?.perfil;
     return !isUsuarioCompanhia(perfil) && !isConsultaInstitucional(perfil);
   }
@@ -220,69 +329,53 @@
     scrollToExecutiveTable();
   }
 
-  function hasHighlightFilter() {
-    return Boolean(state.highlightFilterId);
+  function hasIndicatorFilter() {
+    return Boolean(state.indicatorFilterId);
   }
 
-  function clearHighlightFilter() {
-    state.highlightFilterId = null;
+  function clearIndicatorFilter() {
+    state.indicatorFilterId = null;
     refresh();
   }
 
-  function applyHighlightFilter(indicadorId) {
-    if (state.highlightFilterId === indicadorId) {
-      clearHighlightFilter();
+  function applyIndicatorFilter(indicadorId) {
+    if (state.indicatorFilterId === indicadorId) {
+      clearIndicatorFilter();
       return;
     }
-    state.highlightFilterId = indicadorId;
+    state.indicatorFilterId = indicadorId;
     refresh();
     scrollToExecutiveTable();
   }
 
-  function filterResultsByHighlight(results) {
-    if (!hasHighlightFilter()) return results;
-    return results.filter((result) => Number(result.indicador.id) === Number(state.highlightFilterId));
+  function filterResultsByIndicator(results) {
+    if (!hasIndicatorFilter()) return results;
+    return results.filter((result) => Number(result.indicador.id) === Number(state.indicatorFilterId));
   }
 
-  function clearInteractiveFilters() {
-    state.chartFilter = { pilar: null, situacao: null };
-    state.summaryCardFilter = null;
-    state.highlightFilterId = null;
-    refresh();
-    scrollToExecutiveTable();
-  }
-
-  function highlightPriority(result) {
-    const situation = normalizeSituation(displaySituation(result));
-    if (situation === "Abaixo da meta") return 0;
-    if (situation === "Sem dados") return 1;
-    if (normalizeText(displaySituation(result)) === "em acompanhamento") return 2;
-    if (normalizeText(displaySituation(result)) === "em andamento") return 3;
-    if (situation === "Atingido") return 4;
-    return 5;
-  }
-
-  function suggestedHighlightPriority(result) {
-    const name = normalizeText(limparNomeIndicador(result.indicador.indicador));
-    const index = HIGHLIGHT_INDICATORS.findIndex((item) => name.includes(item));
-    return index === -1 ? 99 : index;
-  }
-
-  function selectedHighlightResults(results) {
-    const used = new Set();
-    return [...results]
-      .filter((result) => {
-        if (used.has(result.indicador.id)) return false;
-        used.add(result.indicador.id);
-        return true;
-      })
-      .sort((a, b) => (
-        highlightPriority(a) - highlightPriority(b) ||
-        suggestedHighlightPriority(a) - suggestedHighlightPriority(b) ||
-        (PLAN_ORDER[a.indicador.plano] || 99) - (PLAN_ORDER[b.indicador.plano] || 99) ||
-        Number(a.indicador.numero) - Number(b.indicador.numero)
-      ))
-      .slice(0, HIGHLIGHT_LIMIT);
+  function previousMonthlyResult(result) {
+    const filters = selectedFilters();
+    const launch = result?.lancamento;
+    if (filters.periodo !== "Mensal" || !result?.indicador || !launch) return null;
+    const year = Number(launch.ano);
+    const month = Number(launch.mes);
+    if (!Number.isFinite(year) || !Number.isFinite(month)) return null;
+    const previousLaunches = state.launches.filter((item) => (
+      Number(item.indicadorId) === Number(result.indicador.id) &&
+      (
+        Number(item.ano) < year ||
+        (Number(item.ano) === year && Number(item.mes) < month)
+      )
+    ));
+    if (!previousLaunches.length) return null;
+    const summary = StrategicResults.calcularDashboard({
+      indicadores: [result.indicador],
+      lancamentos: previousLaunches,
+      regras: state.rules
+    });
+    const previous = summary.resultadosOficiais[0] || null;
+    if (!previous || !previous.lancamento || toFiniteNumber(previous.percentualAtingido) === null) return null;
+    return previous;
   }
 
   function selectedFilters() {
@@ -768,65 +861,78 @@
     });
   }
 
-  function highlightCard(result, duplicate = false) {
+  function performanceMapCard(result, index = 0) {
     const name = limparNomeIndicador(result.indicador.indicador);
-    const officialResult = result.lancamento ? StrategicResults.formatOfficialResult(result) : "-";
+    const shortName = nomeIndicadorMapa(result.indicador);
+    const officialResult = (result.lancamento || result.trimestral) ? StrategicResults.formatOfficialResult(result) : "-";
     const meta = StrategicResults.formatOfficialMeta(result);
     const situation = displaySituation(result);
     const status = displayStatus(result);
     const competence = result.competencia || "-";
-    const active = Number(result.indicador.id) === Number(state.highlightFilterId);
-    const showOperationalStatus = shouldShowOperationalStatusInHighlights();
+    const previous = previousMonthlyResult(result);
+    const variation = performanceVariation(result.percentualAtingido, previous?.percentualAtingido);
+    const variationLabel = formatPerformanceVariation(variation);
+    const percentLabel = performancePercentLabel(result.percentualAtingido);
+    const percentValue = performancePercentValue(result.percentualAtingido);
+    const tone = performanceToneByPercent(result.percentualAtingido);
+    const toneLabel = performanceToneLabel(tone);
+    const active = Number(result.indicador.id) === Number(state.indicatorFilterId);
+    const size = performanceMapSize(result, index);
+    const showOperationalStatus = shouldShowOperationalStatusInPerformanceMap();
     const tooltipLines = [
       `Indicador: ${name}`,
       `Resultado oficial: ${officialResult}`,
       `Meta: ${meta}`,
-      `Situacao: ${situation}`
+      `Percentual de atingimento: ${percentLabel}`,
+      `Competência: ${competence}`,
+      `Resultado anterior: ${previous ? StrategicResults.formatOfficialResult(previous) : "-"}`,
+      `Percentual anterior: ${previous ? performancePercentLabel(previous.percentualAtingido) : "Sem comparação"}`,
+      `Variação: ${variationLabel}`,
+      `Situação: ${situation}`
     ];
     if (showOperationalStatus) {
       tooltipLines.push(`Status: ${status}`);
     }
-    tooltipLines.push(`Ultima competencia: ${competence}`);
     const tooltip = tooltipLines.join("\n");
     return `
       <button
-        class="executive-highlight-card ${active ? "is-active" : ""}"
+        class="executive-performance-card executive-performance-${tone} executive-performance-size-${size} ${active ? "is-active" : ""}"
         type="button"
-        data-highlight-indicator-id="${result.indicador.id}"
+        data-indicator-id="${result.indicador.id}"
+        data-map-index="${index}"
+        data-map-size="${size}"
         title="${escapeHtml(tooltip)}"
-        ${duplicate ? 'aria-hidden="true" tabindex="-1"' : ""}
+        aria-pressed="${active ? "true" : "false"}"
+        aria-label="${escapeHtml(`${indicatorNumberLabel(result.indicador)}. ${name}: ${toneLabel}`)}"
       >
-        <span class="executive-highlight-name">${escapeHtml(name)}</span>
-        <strong>${officialResult}</strong>
-        <span class="badge ${badgeClass(situation)}">${escapeHtml(situation)}</span>
-        <span class="executive-highlight-footer">
-          <span>${escapeHtml(competence)}</span>
-          ${showOperationalStatus ? `<span class="badge ${badgeClass(status)}">${escapeHtml(status)}</span>` : ""}
+        <span class="executive-performance-name">${escapeHtml(`${indicatorNumberLabel(result.indicador)}. ${shortName}`)}</span>
+        <span class="executive-performance-main">
+          <strong>${officialResult}</strong>
+          <span class="executive-performance-percent">
+            <b>${escapeHtml(percentValue)}</b>
+            ${toFiniteNumber(result.percentualAtingido) === null ? "" : "<small>da meta</small>"}
+          </span>
+        </span>
+        <span class="executive-performance-footer">
+          <span class="executive-performance-variation executive-performance-variation-${variation?.direction || "none"}">${escapeHtml(variationLabel)}</span>
         </span>
       </button>
     `;
   }
 
-  function renderHighlights(results) {
-    const section = document.getElementById("executiveHighlights");
-    const track = document.getElementById("executiveHighlightsTrack");
-    const empty = document.getElementById("executiveHighlightsEmpty");
-    const toggle = document.getElementById("toggleExecutiveHighlights");
-    if (!section || !track || !empty || !toggle) return;
+  function renderPerformanceMap(results) {
+    const target = document.getElementById("executivePerformanceMapGroups");
+    const empty = document.getElementById("executivePerformanceMapEmpty");
+    if (!target || !empty) return;
 
-    const highlights = selectedHighlightResults(results);
-    section.hidden = false;
-    empty.hidden = Boolean(highlights.length);
-    toggle.disabled = highlights.length < 2;
-    toggle.textContent = state.highlightsPaused ? "Continuar" : "Pausar";
-    track.classList.toggle("is-paused", state.highlightsPaused);
-    track.classList.toggle("is-static", highlights.length < 2);
-    track.innerHTML = highlights.length
-      ? [
-        ...highlights.map((result) => highlightCard(result)),
-        ...highlights.map((result) => highlightCard(result, true))
-      ].join("")
-      : "";
+    const ordered = [...results].sort((a, b) => (
+      Number(b.percentualAtingido !== null && b.percentualAtingido !== undefined) - Number(a.percentualAtingido !== null && a.percentualAtingido !== undefined) ||
+      performanceToneRank(performanceToneByPercent(a.percentualAtingido)) - performanceToneRank(performanceToneByPercent(b.percentualAtingido)) ||
+      (PLAN_ORDER[a.indicador.plano] || 99) - (PLAN_ORDER[b.indicador.plano] || 99) ||
+      Number(a.indicador.numero) - Number(b.indicador.numero)
+    ));
+    empty.hidden = Boolean(ordered.length);
+    target.innerHTML = ordered.map((result, index) => performanceMapCard(result, index)).join("");
   }
 
   function renderChartFilterBanner() {
@@ -834,7 +940,7 @@
     const text = document.getElementById("executiveChartFilterText");
     const clearChart = document.getElementById("clearExecutiveChartFilter");
     const clearSummaryCard = document.getElementById("clearExecutiveSummaryCardFilter");
-    const clearHighlight = document.getElementById("clearExecutiveHighlightFilter");
+    const clearIndicator = document.getElementById("clearExecutiveIndicatorFilter");
     if (!banner || !text) return;
     const filters = [];
     const summarySituation = SUMMARY_CARD_FILTERS[state.summaryCardFilter]?.situation || null;
@@ -848,8 +954,8 @@
     if (hasSummaryCardFilter() && !(hasChartFilter() && summarySituation && !state.chartFilter.situacao)) {
       filters.push(SUMMARY_CARD_FILTERS[state.summaryCardFilter]?.label || "Filtro dos cards");
     }
-    if (hasHighlightFilter()) {
-      const indicator = state.indicators.find((item) => Number(item.id) === Number(state.highlightFilterId));
+    if (hasIndicatorFilter()) {
+      const indicator = state.indicators.find((item) => Number(item.id) === Number(state.indicatorFilterId));
       filters.push(limparNomeIndicador(indicator?.indicador || "Indicador selecionado"));
     }
 
@@ -858,14 +964,14 @@
       text.textContent = "";
       if (clearChart) clearChart.hidden = true;
       if (clearSummaryCard) clearSummaryCard.hidden = true;
-      if (clearHighlight) clearHighlight.hidden = true;
+      if (clearIndicator) clearIndicator.hidden = true;
       return;
     }
     banner.hidden = false;
     text.textContent = `Filtro aplicado: ${filters.join(" | ")}`;
     if (clearChart) clearChart.hidden = !hasChartFilter();
     if (clearSummaryCard) clearSummaryCard.hidden = !hasSummaryCardFilter();
-    if (clearHighlight) clearHighlight.hidden = !hasHighlightFilter();
+    if (clearIndicator) clearIndicator.hidden = !hasIndicatorFilter();
   }
 
   function renderTable(results) {
@@ -907,12 +1013,12 @@
     const results = getFilteredResults();
     const chartResults = filterResultsByChart(results);
     const summaryCardResults = filterResultsBySummaryCard(chartResults);
-    const tableResults = filterResultsByHighlight(summaryCardResults);
+    const tableResults = filterResultsByIndicator(summaryCardResults);
     const groups = groupByPillar(results);
     renderCards(results);
+    renderPerformanceMap(results);
     renderPillarGauges(groups);
     renderChart(groups);
-    renderHighlights(results);
     renderChartFilterBanner();
     renderTable(tableResults);
   }
@@ -929,8 +1035,7 @@
         situacao: null
       },
       summaryCardFilter: null,
-      highlightFilterId: null,
-      highlightsPaused: false
+      indicatorFilterId: null
     };
     fillFilters();
     document.querySelectorAll("[data-executive-filter]").forEach((select) => {
@@ -941,18 +1046,22 @@
     });
     document.getElementById("clearExecutiveChartFilter")?.addEventListener("click", clearChartFilter);
     document.getElementById("clearExecutiveSummaryCardFilter")?.addEventListener("click", clearSummaryCardFilter);
-    document.getElementById("clearExecutiveHighlightFilter")?.addEventListener("click", clearHighlightFilter);
-    document.getElementById("viewAllExecutiveIndicators")?.addEventListener("click", clearInteractiveFilters);
-    document.getElementById("toggleExecutiveHighlights")?.addEventListener("click", () => {
-      state.highlightsPaused = !state.highlightsPaused;
-      renderHighlights(getFilteredResults());
-    });
-    document.getElementById("executiveHighlightsTrack")?.addEventListener("click", (event) => {
+    document.getElementById("clearExecutiveIndicatorFilter")?.addEventListener("click", clearIndicatorFilter);
+    document.getElementById("executivePerformanceMapGroups")?.addEventListener("click", (event) => {
       const item = event.target instanceof Element
-        ? event.target.closest("[data-highlight-indicator-id]")
+        ? event.target.closest("[data-indicator-id]")
         : null;
       if (!item) return;
-      applyHighlightFilter(Number(item.dataset.highlightIndicatorId));
+      applyIndicatorFilter(Number(item.dataset.indicatorId));
+    });
+    document.getElementById("executivePerformanceMapGroups")?.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      const item = event.target instanceof Element
+        ? event.target.closest("[data-indicator-id]")
+        : null;
+      if (!item) return;
+      event.preventDefault();
+      applyIndicatorFilter(Number(item.dataset.indicatorId));
     });
     document.getElementById("executiveCards")?.addEventListener("click", (event) => {
       const item = event.target instanceof Element
@@ -983,4 +1092,16 @@
 
   window.PageModules = window.PageModules || {};
   window.PageModules.resumoExecutivo = { init };
+  if (window.__EXECUTIVE_SUMMARY_TEST__) {
+    window.ExecutiveSummaryInternals = {
+      performanceToneByPercent,
+      performanceToneLabel,
+      performanceVariation,
+      formatPerformanceVariation,
+      performancePercentLabel,
+      performancePercentValue,
+      shortIndicatorName,
+      nomeIndicadorMapa
+    };
+  }
 })();

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CAIXA Loterias | Resumo Executivo</title>
-  <link rel="stylesheet" href="/assets/css/styles.css?v=RESUMO-GRAFICO-SCROLL-001">
+  <link rel="stylesheet" href="/assets/css/styles.css?v=RESUMO-MAPA-DESEMPENHO-001">
   <script src="<?= APP_BASE_PATH ?>/assets/vendor/chart.umd.min.js?v=4.4.7" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/currency.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/situations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
@@ -16,7 +16,7 @@
   <script src="<?= APP_BASE_PATH ?>/assets/js/formulas.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/quarterly.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/dashboard.js?v=SOLICITACOES-REABERTURA-001" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/executiveSummary.js?v=RESUMO-GRAFICO-SCROLL-001" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/executiveSummary.js?v=RESUMO-MAPA-DESEMPENHO-001" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/app.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
 </head>
 <body data-page="resumoExecutivo">
@@ -46,6 +46,23 @@
 
       <section id="executiveCards" class="executive-summary-grid" aria-label="Indicadores gerais"></section>
 
+      <section id="executivePerformanceMap" class="panel executive-performance-map-panel" aria-labelledby="executivePerformanceMapTitle">
+        <div class="section-heading executive-section-heading">
+          <div>
+            <p class="eyebrow">Mapa de desempenho</p>
+            <h2 id="executivePerformanceMapTitle">Mapa de Desempenho dos Indicadores</h2>
+          </div>
+          <div class="executive-performance-legend" aria-label="Legenda do mapa de desempenho">
+            <span class="legend-verde">Verde <strong>Meta atingida</strong></span>
+            <span class="legend-amarelo">Amarelo <strong>Atenção</strong></span>
+            <span class="legend-vermelho">Vermelho <strong>Crítico</strong></span>
+            <span class="legend-cinza">Cinza <strong>Sem dados</strong></span>
+          </div>
+        </div>
+        <div id="executivePerformanceMapEmpty" class="empty-state" hidden>Nenhum indicador encontrado para os filtros selecionados.</div>
+        <div id="executivePerformanceMapGroups" class="executive-performance-map-groups" aria-label="Mapa visual dos indicadores"></div>
+      </section>
+
       <section class="painel-pilares" aria-label="Análise por pilar">
         <div class="panel executive-gauges-panel painel-pilares__gauges" aria-labelledby="pillarGaugesTitle">
         <div class="section-heading executive-section-heading">
@@ -69,23 +86,6 @@
         </div>
       </section>
 
-      <section id="executiveHighlights" class="panel executive-highlights-panel" aria-labelledby="executiveHighlightsTitle">
-        <div class="section-heading executive-section-heading">
-          <div>
-            <p class="eyebrow">Leitura rápida</p>
-            <h2 id="executiveHighlightsTitle">Destaques dos Indicadores</h2>
-          </div>
-          <div class="executive-highlights-actions">
-            <button id="toggleExecutiveHighlights" class="secondary-action table-action" type="button">Pausar</button>
-            <button id="viewAllExecutiveIndicators" class="secondary-action table-action" type="button">Ver todos</button>
-          </div>
-        </div>
-        <div id="executiveHighlightsEmpty" class="empty-state" hidden>Nenhum indicador encontrado para os filtros selecionados.</div>
-        <div id="executiveHighlightsScroller" class="executive-highlights-scroller" aria-label="Destaques dos indicadores">
-          <div id="executiveHighlightsTrack" class="executive-highlights-track"></div>
-        </div>
-      </section>
-
       <section class="panel executive-table-panel" aria-labelledby="executiveTableTitle">
         <div class="section-heading executive-section-heading">
           <div>
@@ -98,7 +98,7 @@
           <span id="executiveChartFilterText"></span>
           <span class="executive-active-filter-actions">
             <button id="clearExecutiveSummaryCardFilter" class="secondary-action table-action" type="button" hidden>Limpar filtro</button>
-            <button id="clearExecutiveHighlightFilter" class="secondary-action table-action" type="button" hidden>Limpar filtro</button>
+            <button id="clearExecutiveIndicatorFilter" class="secondary-action table-action" type="button" hidden>Limpar filtro</button>
             <button id="clearExecutiveChartFilter" class="secondary-action table-action" type="button" hidden>Limpar filtro do gráfico</button>
           </span>
         </div>
