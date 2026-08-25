@@ -161,3 +161,29 @@ CREATE TABLE IF NOT EXISTS backups_importacao (
   data_backup TEXT,
   created_at TEXT
 );
+
+CREATE TABLE IF NOT EXISTS usuarios_acesso (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  matricula TEXT NOT NULL UNIQUE,
+  nome TEXT,
+  email TEXT,
+  sg_unidade TEXT,
+  no_unidade TEXT,
+  perfil TEXT NOT NULL,
+  unidade_apuradora TEXT,
+  diretoria_responsavel TEXT,
+  ativo INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT,
+  updated_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS acessos_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  matricula TEXT,
+  nome TEXT,
+  perfil TEXT,
+  sg_unidade TEXT,
+  ip TEXT,
+  user_agent TEXT,
+  data_acesso TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
