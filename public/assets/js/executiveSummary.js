@@ -255,6 +255,12 @@
     return Boolean(state.chartFilter.pilar);
   }
 
+  function clearInteractiveFilters(except = null) {
+    if (except !== "chart") state.chartFilter = { pilar: null, situacao: null };
+    if (except !== "summaryCard") state.summaryCardFilter = null;
+    if (except !== "indicator") state.indicatorFilterId = null;
+  }
+
   function clearChartFilter() {
     state.chartFilter = { pilar: null, situacao: null };
     refresh();
@@ -275,9 +281,11 @@
 
   function applyChartFilter(pilar, situacao, options = {}) {
     if (state.chartFilter.pilar === pilar && state.chartFilter.situacao === situacao) {
-      clearChartFilter();
+      clearInteractiveFilters();
+      refresh();
       return;
     }
+    clearInteractiveFilters("chart");
     state.chartFilter = { pilar, situacao };
     refresh();
     if (options.scrollToTable) scrollToExecutiveTable(100);
@@ -311,9 +319,11 @@
 
   function applySummaryCardFilter(type) {
     if (type === "todos") {
-      state.summaryCardFilter = null;
+      clearInteractiveFilters();
     } else {
-      state.summaryCardFilter = state.summaryCardFilter === type ? null : type;
+      const active = state.summaryCardFilter === type;
+      clearInteractiveFilters("summaryCard");
+      state.summaryCardFilter = active ? null : type;
     }
     refresh();
     scrollToExecutiveTable();
@@ -321,9 +331,11 @@
 
   function applyPillarGaugeFilter(pilar) {
     if (state.chartFilter.pilar === pilar && !state.chartFilter.situacao) {
-      clearChartFilter();
+      clearInteractiveFilters();
+      refresh();
       return;
     }
+    clearInteractiveFilters("chart");
     state.chartFilter = { pilar, situacao: null };
     refresh();
     scrollToExecutiveTable();
@@ -339,11 +351,15 @@
   }
 
   function applyIndicatorFilter(indicadorId) {
-    if (state.indicatorFilterId === indicadorId) {
-      clearIndicatorFilter();
+    const id = Number(indicadorId);
+    if (!Number.isFinite(id)) return;
+    if (Number(state.indicatorFilterId) === id) {
+      clearInteractiveFilters();
+      refresh();
       return;
     }
-    state.indicatorFilterId = indicadorId;
+    clearInteractiveFilters("indicator");
+    state.indicatorFilterId = id;
     refresh();
     scrollToExecutiveTable();
   }
