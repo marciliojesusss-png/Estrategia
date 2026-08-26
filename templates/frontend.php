@@ -15,10 +15,6 @@ function render_frontend_page($viewFile)
 
     header('Content-Type: text/html; charset=utf-8');
     $html = (string) file_get_contents($path);
-    $assetVersion = 'AUTH-CORPORATIVA-002';
-    $stylesheetPath = APP_ROOT . '/public/assets/css/styles.css';
-    $stylesheetHash = is_file($stylesheetPath) ? hash_file('sha256', $stylesheetPath) : false;
-    $stylesheetVersion = $stylesheetHash ? substr($stylesheetHash, 0, 12) : 'RESUMO-MAPA-DESEMPENHO-002';
     $isLocal = Auth::isLocal() ? 'true' : 'false';
     $authUser = json_encode(
         Auth::currentUserForFrontend(),
@@ -90,22 +86,17 @@ HTML;
     // portanto, as tags PHP de APP_BASE_PATH não são interpretadas pelo require.
     $html = str_replace('<?= APP_BASE_PATH ?>', APP_BASE_PATH . app_public_url_prefix(), $html);
     $html = str_replace('</head>', $authScript . '</head>', $html);
-    $html = (string) preg_replace(
-        '#assets/css/styles\.css(?:\?v=[^"]*)?#',
-        'assets/css/styles.css?v=' . $stylesheetVersion,
+    $html = (string) preg_replace_callback(
+        '#assets/(?:css|js)/[A-Za-z0-9._/-]+(?:\?v=[^"<]*)?#',
+        static function (array $matches) {
+            $asset = preg_replace('#\?v=.*$#', '', $matches[0]);
+            $assetPath = APP_ROOT . '/public/' . $asset;
+            $assetHash = is_file($assetPath) ? hash_file('sha256', $assetPath) : false;
+            return $assetHash ? $asset . '?v=' . substr($assetHash, 0, 12) : $matches[0];
+        },
         $html
     );
     $html = prefix_app_base_path_urls($html);
-    $html = (string) preg_replace(
-        '#assets/js/auth\.js(?:\?v=[^"]*)?#',
-        'assets/js/auth.js?v=' . $assetVersion,
-        $html
-    );
-    $html = (string) preg_replace(
-        '#assets/js/app\.js(?:\?v=[^"]*)?#',
-        'assets/js/app.js?v=' . $assetVersion,
-        $html
-    );
     echo $html;
 }
 

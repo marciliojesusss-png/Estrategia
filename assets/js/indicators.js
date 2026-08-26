@@ -404,7 +404,103 @@
         Number(item.mes) <= Number(lancamento.mes)
       ))
       .sort((a, b) => Number(a.mes) - Number(b.mes));
-    return IndicatorFormulas.calcularIndicador(indicador, regra, lancamento, launches);
+    return calculateIndicatorForDisplay(indicador, regra, lancamento, launches);
+  }
+
+  function resolveMonthlyCalculation(calculated, launch) {
+    return {
+      resultadoMensal: calculated?.resultadoMensal ??
+        calculated?.resultadoCalculado ??
+        launch?.resultadoMensal ??
+        launch?.resultadoCalculado ??
+        launch?.resultadoOficialAnual ??
+        launch?.resultadoOficial ??
+        null,
+      percentualAtingido: calculated?.percentualAtingidoMensal ??
+        calculated?.percentualAtingido ??
+        launch?.percentualAtingidoMensal ??
+        launch?.percentualAtingido ??
+        null,
+      situacao: calculated?.situacao || launch?.situacaoCalculada || launch?.situacao || null
+    };
+  }
+
+  function resolveAccumulatedCalculation(calculated, launch) {
+    const monthly = resolveMonthlyCalculation(calculated, launch);
+    return {
+      metaReferencia: calculated?.metaAcumulada ??
+        calculated?.metaReferenciaMensal ??
+        calculated?.metaReferenciaPeriodo ??
+        launch?.metaReferencia ??
+        launch?.metaMensal ??
+        null,
+      resultadoAcumulado: calculated?.realizadoAcumulado ??
+        calculated?.resultadoAcumulado ??
+        calculated?.resultadoOficialAnual ??
+        launch?.resultadoAcumulado ??
+        launch?.resultadoOficialAnual ??
+        launch?.resultadoOficial ??
+        monthly.resultadoMensal,
+      percentualAtingido: calculated?.percentualAtingidoAnual ??
+        calculated?.percentualMetaAcumulada ??
+        calculated?.percentualAtingidoAcumulado ??
+        launch?.percentualAtingidoAnual ??
+        launch?.percentualAtingidoAcumulado ??
+        monthly.percentualAtingido,
+      situacao: monthly.situacao
+    };
+  }
+
+  function mergeCalculationForDisplay(calculated, launch) {
+    if (!calculated && !launch) return null;
+    const source = calculated || {};
+    const monthly = resolveMonthlyCalculation(source, launch);
+    const accumulated = resolveAccumulatedCalculation(source, launch);
+    const metaReference = accumulated.metaReferencia;
+    const annualPercent = source.percentualAtingidoAnual ??
+      source.percentualAtingidoAcumulado ??
+      launch?.percentualAtingidoAnual ??
+      launch?.percentualAtingidoAcumulado ??
+      monthly.percentualAtingido;
+
+    return {
+      ...source,
+      resultadoMensal: source.resultadoMensal ?? monthly.resultadoMensal,
+      resultadoCalculado: source.resultadoCalculado ?? monthly.resultadoMensal,
+      resultadoAcumulado: source.resultadoAcumulado ?? accumulated.resultadoAcumulado,
+      realizadoAcumulado: source.realizadoAcumulado ?? accumulated.resultadoAcumulado,
+      resultadoOficialAnual: source.resultadoOficialAnual ??
+        launch?.resultadoOficialAnual ??
+        launch?.resultadoOficial ??
+        accumulated.resultadoAcumulado,
+      percentualAtingidoMensal: source.percentualAtingidoMensal ?? monthly.percentualAtingido,
+      percentualAtingido: source.percentualAtingido ?? monthly.percentualAtingido,
+      percentualAtingidoAcumulado: source.percentualAtingidoAcumulado ?? annualPercent,
+      percentualAtingidoAnual: source.percentualAtingidoAnual ?? annualPercent,
+      metaReferenciaMensal: source.metaReferenciaMensal ?? metaReference,
+      metaAcumulada: source.metaAcumulada ?? metaReference,
+      situacao: source.situacao || monthly.situacao
+    };
+  }
+
+  function calculateIndicatorForDisplay(indicador, regra, launch, calculationScope) {
+    if (!launch) return null;
+    return mergeCalculationForDisplay(
+      IndicatorFormulas.calcularIndicador(indicador, regra, launch, calculationScope),
+      launch
+    );
+  }
+
+  function resolveGrowthTrackingModes(regra) {
+    const type = regra?.tipoCalculo || "";
+    return {
+      isEcossistemaScenario: type === "participacao_ecossistema_com_cenarios",
+      isRedeLotericaIncrement: type === "incremento_rede_loterica_base_2025",
+      isBase2025Growth: [
+        "crescimento_comparado_base_2025",
+        "crescimento_rede_loterica_base_2025"
+      ].includes(type)
+    };
   }
 
   function launchBadge(status) {
@@ -718,10 +814,11 @@
     const isIncentivoSocioambiental = Number(indicador.id) === 19;
     const isVisibilidadeRepasses = Number(indicador.id) === 20;
     const isDigitalChannels = Number(indicador.id) === 8;
-    const isEcossistema = Number(indicador.id) === 22;
     const isRedeLoterica = Number(indicador.id) === 23;
-    const isRedeLotericaIncremento = regra?.tipoCalculo === "incremento_rede_loterica_base_2025";
-    const isBase2025Growth = false;
+    const growthTrackingModes = resolveGrowthTrackingModes(regra);
+    const isEcossistema = growthTrackingModes.isEcossistemaScenario;
+    const isRedeLotericaIncremento = growthTrackingModes.isRedeLotericaIncrement;
+    const isBase2025Growth = growthTrackingModes.isBase2025Growth;
     const isGgrFormula = regra?.tipoCalculo === "ggr_formula";
     const isIeoInverse = regra?.tipoCalculo === "indice_inverso";
     const isRepasseSocial = Number(indicador.id) === 17;
@@ -993,16 +1090,17 @@
       if (isOfertasPersonalizadas) {
         const calculationScope = launches.filter((item) => Number(item.mes) <= month);
         const calculated = launch
-          ? IndicatorFormulas.calcularIndicador(indicador, regra, launch, calculationScope)
+          ? calculateIndicatorForDisplay(indicador, regra, launch, calculationScope)
           : null;
-        const percent = calculated?.percentualAtingidoMensal ?? null;
-        const situation = calculated?.situacao || (calculated?.statusCalculo === "aguardando_dados" ? "Sem calculo" : Calculations.calcularStatusDesempenho(percent));
+        const resolved = resolveMonthlyCalculation(calculated, launch);
+        const percent = resolved.percentualAtingido;
+        const situation = resolved.situacao || (calculated?.statusCalculo === "aguardando_dados" ? "Sem calculo" : Calculations.calcularStatusDesempenho(percent));
         return `
           <tr>
             <td>${name}/2026</td>
             <td>${Calculations.formatarValor(launch?.camposEntrada?.baseClientesAtivosCompetencia, "numero")}</td>
             <td>${Calculations.formatarValor(launch?.camposEntrada?.clientesUnicosComOfertaPersonalizadaCompetencia, "numero")}</td>
-            <td>${Calculations.formatarValor(calculated?.resultadoMensal, "percentual")}</td>
+            <td>${Calculations.formatarValor(resolved.resultadoMensal, "percentual")}</td>
             <td>${Calculations.formatarPercentual(percent)}</td>
             <td>${escapeHtml(situation)}</td>
             <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologação" ? "warn" : "info"}">${escapeHtml(launch?.status || "Não iniciado")}</span></td>
@@ -1012,7 +1110,7 @@
       }
       if (isNps) {
         const calculated = launch
-          ? IndicatorFormulas.calcularIndicador(indicador, regra, launch, launches.filter((item) => Number(item.mes) <= month))
+          ? calculateIndicatorForDisplay(indicador, regra, launch, launches.filter((item) => Number(item.mes) <= month))
           : null;
         const percent = calculated?.percentualAtingidoMensal ?? null;
         const situation = calculated?.situacao || (calculated?.statusCalculo === "aguardando_dados" ? "Sem calculo" : Calculations.calcularStatusDesempenho(percent));
@@ -1036,7 +1134,7 @@
       }
       if (isClimaOrganizacional) {
         const calculated = launch
-          ? IndicatorFormulas.calcularIndicador(indicador, regra, launch, launches.filter((item) => Number(item.mes) <= month))
+          ? calculateIndicatorForDisplay(indicador, regra, launch, launches.filter((item) => Number(item.mes) <= month))
           : null;
         const percent = calculated?.percentualAtingidoMensal ?? null;
         const situation = calculated?.situacao || (calculated?.statusCalculo === "aguardando_dados" ? "Sem calculo" : Calculations.calcularStatusDesempenho(percent));
@@ -1060,7 +1158,7 @@
       }
       if (isCapacitacaoEmpregados || isCapacitacaoJogoResponsavel) {
         const calculated = launch
-          ? IndicatorFormulas.calcularIndicador(indicador, regra, launch, launches.filter((item) => Number(item.mes) <= month))
+          ? calculateIndicatorForDisplay(indicador, regra, launch, launches.filter((item) => Number(item.mes) <= month))
           : null;
         const percent = calculated?.percentualAtingidoMensal ?? null;
         const situation = calculated?.situacao || (calculated?.statusCalculo === "aguardando_dados" ? "Sem calculo" : Calculations.calcularStatusDesempenho(percent));
@@ -1093,17 +1191,22 @@
       if (isAprimoramentoExperiencia) {
         const calculationScope = launches.filter((item) => Number(item.mes) <= month && item.status === "Homologado");
         const calculated = launch
-          ? IndicatorFormulas.calcularIndicador(indicador, regra, launch, calculationScope)
+          ? calculateIndicatorForDisplay(indicador, regra, launch, calculationScope)
           : null;
         const percent = calculated?.percentualAtingidoMensal ?? null;
         const situation = calculated?.situacao || (calculated?.statusCalculo === "aguardando_dados" ? "Sem calculo" : Calculations.calcularStatusDesempenho(percent));
+        const totalImprovements = Number(calculated?.totalMelhoriasPlano2026 ?? regra?.parametrosCalculo?.totalMelhoriasPlano2026);
+        const accumulatedImprovements = calculated?.melhoriasImplementadasAcumuladas ??
+          (Number.isFinite(totalImprovements) && calculated?.resultadoMensal != null
+            ? Math.round(Number(calculated.resultadoMensal) * totalImprovements)
+            : null);
         return `
           <tr>
             <td>${name}/2026</td>
             <td>${Calculations.formatarValor(launch?.camposEntrada?.melhoriasImplementadasMes, "numero")}</td>
             <td>${escapeHtml(launch?.camposEntrada?.descricaoMelhoriasMes || "-")}</td>
             <td>${escapeHtml(launch?.camposEntrada?.evidenciaMelhoriasMes || "-")}</td>
-            <td>${Calculations.formatarValor(calculated?.melhoriasImplementadasAcumuladas, "numero")}</td>
+            <td>${Calculations.formatarValor(accumulatedImprovements, "numero")}</td>
             <td>${Calculations.formatarValor(calculated?.resultadoMensal, "percentual")}</td>
             <td>${Calculations.formatarPercentual(percent)}</td>
             <td>${escapeHtml(situation)}</td>
@@ -1117,7 +1220,7 @@
         const quarter = syntheticLaunch.trimestre || `${Math.ceil(month / 3)}TRI/2026`;
         const curve = regra?.parametrosCalculo?.curvaTrimestralPercentual || {};
         const calculated = launch
-          ? IndicatorFormulas.calcularIndicador(indicador, regra, launch, launches.filter((item) => Number(item.mes) <= month))
+          ? calculateIndicatorForDisplay(indicador, regra, launch, launches.filter((item) => Number(item.mes) <= month))
           : null;
         const percent = calculated?.percentualAtingidoMensal ?? null;
         const situation = calculated?.situacao || (calculated?.statusCalculo === "aguardando_dados" ? "Sem calculo" : Calculations.calcularStatusDesempenho(percent));
@@ -1195,7 +1298,7 @@
         const quarter = launch?.trimestre || `${Math.ceil(month / 3)}TRI/2026`;
         const curve = regra?.parametrosCalculo?.curvaTrimestralAcumulada || {};
         const calculated = launch
-          ? IndicatorFormulas.calcularIndicador(indicador, regra, launch, launches.filter((item) => Number(item.mes) <= month && item.status === "Homologado"))
+          ? calculateIndicatorForDisplay(indicador, regra, launch, launches.filter((item) => Number(item.mes) <= month && item.status === "Homologado"))
           : null;
         const status = launch?.camposEntrada?.statusProjetoIncentivoSocioambiental || "";
         const counts = status === "Investimento realizado";
@@ -1208,7 +1311,7 @@
             <td>${escapeHtml(launch?.camposEntrada?.tipoIncentivoSocioambiental || "-")}</td>
             <td>${escapeHtml(status || "-")}</td>
             <td>${Calculations.formatarValor(launch?.camposEntrada?.valorInvestidoMes, "moeda")}</td>
-            <td>${Calculations.formatarValor(calculated?.valorInvestidoAcumuladoAteCompetencia ?? launch?.camposEntrada?.valorInvestidoAcumuladoCompetencia, "moeda")}</td>
+            <td>${Calculations.formatarValor(calculated?.valorInvestidoAcumuladoAteCompetencia ?? launch?.camposEntrada?.valorInvestidoAcumuladoCompetencia ?? calculated?.resultadoMensal, "moeda")}</td>
             <td>${escapeHtml(launch?.camposEntrada?.dataInvestimentoSocioambiental || "-")}</td>
             <td>${counts ? "Sim" : "Não"}</td>
             <td>${escapeHtml(situation)}</td>
@@ -1223,7 +1326,7 @@
         const curve = regra?.parametrosCalculo?.curvaTrimestralAcumulada || {};
         const calculationScope = launches.filter((item) => Number(item.mes) <= month && item.status === "Homologado");
         const calculated = launch
-          ? IndicatorFormulas.calcularIndicador(indicador, regra, launch, calculationScope)
+          ? calculateIndicatorForDisplay(indicador, regra, launch, calculationScope)
           : null;
         const status = launch?.camposEntrada?.statusAcaoVisibilidade || "";
         const counts = status === "Publicada/realizada";
@@ -1231,6 +1334,11 @@
         const percentLabel = percent === null || percent === undefined ? "Não aplicável" : Calculations.formatarPercentual(percent);
         const situation = calculated?.situacao || (calculated?.statusCalculo === "aguardando_dados" ? "Sem calculo" : Calculations.calcularStatusDesempenho(percent));
         const actionValue = launch?.camposEntrada?.acaoPropostaVisibilidade;
+        const totalActions = Number(calculated?.totalAcoesPropostasVisibilidade ?? regra?.parametrosCalculo?.totalAcoesPropostas);
+        const completedActions = calculated?.acoesRealizadasAcumuladas ??
+          (Number.isFinite(totalActions) && calculated?.resultadoMensal != null
+            ? Math.round(Number(calculated.resultadoMensal) * totalActions)
+            : null);
         return `
           <tr>
             <td>${name}/2026</td>
@@ -1239,7 +1347,7 @@
             <td>${escapeHtml(visibilidadeActionSemester(actionValue))}</td>
             <td>${escapeHtml(status || "-")}</td>
             <td>${escapeHtml(launch?.camposEntrada?.etapaAtualVisibilidade || "-")}</td>
-            <td>${Calculations.formatarValor(calculated?.acoesRealizadasAcumuladas, "quantidade")} de ${Calculations.formatarValor(calculated?.totalAcoesPropostasVisibilidade, "quantidade")}</td>
+            <td>${Calculations.formatarValor(completedActions, "quantidade")} de ${Calculations.formatarValor(totalActions, "quantidade")}</td>
             <td>${escapeHtml(percentLabel)}</td>
             <td>${escapeHtml(situation)}</td>
             <td>${escapeHtml(launch?.camposEntrada?.dataConclusaoVisibilidade || "-")}</td>
@@ -1253,7 +1361,7 @@
         const syntheticLaunch = launch || { ano: 2026, mes: month, competencia: `2026-${String(month).padStart(2, "0")}` };
         const calculationScope = launches.filter((item) => Number(item.mes) <= month);
         const calculated = launch
-          ? IndicatorFormulas.calcularIndicador(indicador, regra, launch, calculationScope)
+          ? calculateIndicatorForDisplay(indicador, regra, launch, calculationScope)
           : null;
         const percent = calculated?.percentualAtingidoAnual ?? calculated?.percentualAtingidoMensal ?? null;
         const situation = calculated?.situacao || (calculated?.statusCalculo === "aguardando_dados" ? "Sem calculo" : Calculations.calcularStatusDesempenho(percent));
@@ -1277,7 +1385,7 @@
         const syntheticLaunch = launch || { ano: 2026, mes: month, competencia: `2026-${String(month).padStart(2, "0")}` };
         const calculationScope = launches.filter((item) => Number(item.mes) <= month);
         const calculated = launch
-          ? IndicatorFormulas.calcularIndicador(indicador, regra, launch, calculationScope)
+          ? calculateIndicatorForDisplay(indicador, regra, launch, calculationScope)
           : null;
         const percent = calculated?.percentualAtingidoAnual ?? calculated?.percentualAtingidoMensal ?? null;
         const situation = calculated?.situacao || (calculated?.statusCalculo === "aguardando_dados" ? "Sem calculo" : Calculations.calcularStatusDesempenho(percent));
@@ -1301,15 +1409,16 @@
         const syntheticLaunch = launch || { ano: 2026, mes: month, competencia: `2026-${String(month).padStart(2, "0")}` };
         const calculationScope = launches.filter((item) => Number(item.mes) <= month);
         const calculated = launch
-          ? IndicatorFormulas.calcularIndicador(indicador, regra, launch, calculationScope)
+          ? calculateIndicatorForDisplay(indicador, regra, launch, calculationScope)
           : null;
-        const percent = calculated?.percentualAtingidoAnual ?? calculated?.percentualAtingidoMensal ?? null;
-        const situation = calculated?.situacao || (calculated?.statusCalculo === "aguardando_dados" ? "Sem calculo" : Calculations.calcularStatusDesempenho(percent));
+        const resolved = resolveAccumulatedCalculation(calculated, launch);
+        const percent = resolved.percentualAtingido;
+        const situation = resolved.situacao || (calculated?.statusCalculo === "aguardando_dados" ? "Sem calculo" : Calculations.calcularStatusDesempenho(percent));
         return `
           <tr>
             <td>${name}/2026</td>
-            <td>${escapeHtml(formatCurveMeta(syntheticLaunch))}</td>
-            <td>${Calculations.formatarValor(calculated?.realizadoAcumulado ?? calculated?.resultadoOficialAnual, "moeda")}</td>
+            <td>${Calculations.formatarValor(resolved.metaReferencia ?? getCurveMeta(syntheticLaunch), "moeda")}</td>
+            <td>${Calculations.formatarValor(resolved.resultadoAcumulado, "moeda")}</td>
             <td>${Calculations.formatarPercentual(percent)}</td>
             <td>${escapeHtml(situation)}</td>
             <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologação" ? "warn" : "info"}">${escapeHtml(launch?.status || "Não iniciado")}</span></td>
@@ -1320,7 +1429,7 @@
       if (isEcossistema) {
         const calculationScope = launches.filter((item) => Number(item.mes) <= month && item.status === "Homologado");
         const calculated = launch && launch.status === "Homologado"
-          ? IndicatorFormulas.calcularIndicador(indicador, regra, launch, calculationScope)
+          ? calculateIndicatorForDisplay(indicador, regra, launch, calculationScope)
           : null;
         const percent = calculated?.percentualAtingidoMensal ?? calculated?.percentualAtingidoAnual ?? launch?.percentualAtingidoMensal ?? null;
         const situation = calculated?.situacao || launch?.situacaoCalculada || (calculated?.erro ? "Dados insuficientes" : Calculations.calcularStatusDesempenho(percent));
@@ -1345,7 +1454,7 @@
       if (isRedeLotericaIncremento) {
         const calculationScope = launches.filter((item) => Number(item.mes) <= month && item.status === "Homologado");
         const calculated = launch && launch.status === "Homologado"
-          ? IndicatorFormulas.calcularIndicador(indicador, regra, launch, calculationScope)
+          ? calculateIndicatorForDisplay(indicador, regra, launch, calculationScope)
           : null;
         const base2025 = calculated?.arrecadacaoRedeLoterica2025 ??
           launch?.camposEntrada?.arrecadacaoRedeLoterica2025 ??
@@ -1373,7 +1482,7 @@
       if (isBase2025Growth) {
         const calculationScope = launches.filter((item) => Number(item.mes) <= month && item.status === "Homologado");
         const calculated = launch && launch.status === "Homologado"
-          ? IndicatorFormulas.calcularIndicador(indicador, regra, launch, calculationScope)
+          ? calculateIndicatorForDisplay(indicador, regra, launch, calculationScope)
           : null;
         const base2025Field = isRedeLoterica
           ? "arrecadacaoRedeLoterica2025PeriodoEquivalente"
@@ -1411,13 +1520,15 @@
         `;
       }
       const result = isDigitalChannels
-        ? digitalDenominator > 0 && digitalNumerator !== null ? digitalNumerator / digitalDenominator : null
+        ? digitalDenominator > 0 && digitalNumerator !== null
+          ? digitalNumerator / digitalDenominator
+          : launch?.resultadoMensal ?? launch?.realizadoMensal
         : launch?.resultadoMensal ?? launch?.realizadoMensal;
       if (isAccumulatedGoalCurve) {
         const syntheticLaunch = launch || { ano: 2026, mes: month, competencia: `2026-${String(month).padStart(2, "0")}` };
         const calculationScope = launches.filter((item) => Number(item.mes) <= month);
         const calculated = launch
-          ? IndicatorFormulas.calcularIndicador(indicador, regra, launch, calculationScope)
+          ? calculateIndicatorForDisplay(indicador, regra, launch, calculationScope)
           : null;
         const accumulatedResult = calculated?.resultadoOficialAnual ?? null;
         const percent = calculated?.percentualAtingidoAnual ?? calculated?.percentualAtingidoMensal ?? null;
@@ -1653,6 +1764,14 @@
   }
 
   window.PageModules = window.PageModules || {};
+  if (window.__INDICATORS_TEST__) {
+    window.IndicatorsInternals = {
+      resolveMonthlyCalculation,
+      resolveAccumulatedCalculation,
+      mergeCalculationForDisplay,
+      resolveGrowthTrackingModes
+    };
+  }
   window.PageModules.indicadores = { init };
 })();
 

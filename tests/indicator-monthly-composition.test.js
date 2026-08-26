@@ -1,0 +1,142 @@
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
+const vm = require("node:vm");
+
+const context = {
+  URLSearchParams,
+  window: {
+    __INDICATORS_TEST__: true,
+    PageModules: {},
+    location: { search: "" }
+  }
+};
+
+vm.createContext(context);
+const indicatorsSource = fs.readFileSync(
+  path.join(__dirname, "..", "assets", "js", "indicators.js"),
+  "utf8"
+);
+vm.runInContext(
+  indicatorsSource,
+  context
+);
+
+assert.equal(
+  (indicatorsSource.match(/IndicatorFormulas\.calcularIndicador/g) || []).length,
+  1,
+  "Todo cálculo usado pela tela deve passar pelo fallback de dados persistidos"
+);
+
+const {
+  resolveMonthlyCalculation,
+  resolveAccumulatedCalculation,
+  mergeCalculationForDisplay,
+  resolveGrowthTrackingModes
+} = context.window.IndicatorsInternals;
+
+const persisted = resolveMonthlyCalculation(
+  { resultadoMensal: null, percentualAtingidoMensal: null, statusCalculo: "erro" },
+  {
+    resultadoMensal: "0.25666942198745996",
+    percentualAtingido: "2.5666942198745994",
+    situacaoCalculada: "Atingido"
+  }
+);
+assert.equal(persisted.resultadoMensal, "0.25666942198745996");
+assert.equal(persisted.percentualAtingido, "2.5666942198745994");
+assert.equal(persisted.situacao, "Atingido");
+
+const recalculated = resolveMonthlyCalculation(
+  { resultadoMensal: 0.30, percentualAtingidoMensal: 3, situacao: "Atingido" },
+  { resultadoMensal: 0.25, percentualAtingido: 2.5, situacaoCalculada: "Atingido" }
+);
+assert.equal(recalculated.resultadoMensal, 0.30);
+assert.equal(recalculated.percentualAtingido, 3);
+
+const empty = resolveMonthlyCalculation(null, null);
+assert.equal(empty.resultadoMensal, null);
+assert.equal(empty.percentualAtingido, null);
+
+const socialTransfer = resolveAccumulatedCalculation(
+  { resultadoMensal: null, percentualAtingidoMensal: null, statusCalculo: "erro" },
+  {
+    metaReferencia: "737118539.3",
+    resultadoMensal: "769496203.1",
+    percentualAtingido: "1.0439246363695416",
+    situacaoCalculada: "Atingido"
+  }
+);
+assert.equal(socialTransfer.metaReferencia, "737118539.3");
+assert.equal(socialTransfer.resultadoAcumulado, "769496203.1");
+assert.equal(socialTransfer.percentualAtingido, "1.0439246363695416");
+assert.equal(socialTransfer.situacao, "Atingido");
+
+const mergedPersisted = mergeCalculationForDisplay(
+  {
+    resultadoMensal: null,
+    resultadoOficialAnual: null,
+    percentualAtingidoMensal: null,
+    percentualAtingidoAnual: null,
+    metaReferenciaMensal: null,
+    statusCalculo: "erro"
+  },
+  {
+    metaReferencia: "60",
+    resultadoMensal: "55",
+    resultadoOficialAnual: "55",
+    percentualAtingido: "0.9166666667",
+    situacaoCalculada: "Atenção"
+  }
+);
+assert.equal(mergedPersisted.metaReferenciaMensal, "60");
+assert.equal(mergedPersisted.resultadoMensal, "55");
+assert.equal(mergedPersisted.resultadoOficialAnual, "55");
+assert.equal(mergedPersisted.percentualAtingidoMensal, "0.9166666667");
+assert.equal(mergedPersisted.percentualAtingidoAnual, "0.9166666667");
+assert.equal(mergedPersisted.situacao, "Atenção");
+assert.equal(mergedPersisted.statusCalculo, "erro");
+
+const mergedRecalculated = mergeCalculationForDisplay(
+  {
+    resultadoMensal: 60,
+    resultadoOficialAnual: 62,
+    percentualAtingidoMensal: 1,
+    percentualAtingidoAnual: 1.1,
+    metaReferenciaMensal: 60,
+    situacao: "Atingido"
+  },
+  {
+    metaReferencia: 50,
+    resultadoMensal: 45,
+    resultadoOficialAnual: 46,
+    percentualAtingido: 0.9,
+    situacaoCalculada: "Atenção"
+  }
+);
+assert.equal(mergedRecalculated.metaReferenciaMensal, 60);
+assert.equal(mergedRecalculated.resultadoMensal, 60);
+assert.equal(mergedRecalculated.resultadoOficialAnual, 62);
+assert.equal(mergedRecalculated.percentualAtingidoMensal, 1);
+assert.equal(mergedRecalculated.percentualAtingidoAnual, 1.1);
+assert.equal(mergedRecalculated.situacao, "Atingido");
+
+const ecosystemGrowth = resolveGrowthTrackingModes({
+  tipoCalculo: "crescimento_comparado_base_2025"
+});
+assert.equal(ecosystemGrowth.isBase2025Growth, true);
+assert.equal(ecosystemGrowth.isEcossistemaScenario, false);
+
+const lotteryNetworkGrowth = resolveGrowthTrackingModes({
+  tipoCalculo: "crescimento_rede_loterica_base_2025"
+});
+assert.equal(lotteryNetworkGrowth.isBase2025Growth, true);
+assert.equal(lotteryNetworkGrowth.isRedeLotericaIncrement, false);
+
+const legacyScenario = resolveGrowthTrackingModes({
+  tipoCalculo: "participacao_ecossistema_com_cenarios"
+});
+assert.equal(legacyScenario.isEcossistemaScenario, true);
+assert.equal(legacyScenario.isBase2025Growth, false);
+
+console.log("Testes da composicao mensal do indicador OK");

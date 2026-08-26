@@ -18,7 +18,7 @@ final class IndicadorController
 
     public function show($id)
     {
-        $user = Auth::requirePagePermission('indicadores', 'visualizar');
+        $user = Auth::requirePermission('indicadores', 'visualizar');
         $item = $this->service->find($id);
         if (!$item) return ErrorHandler::renderError(404);
         if ($user['perfil'] !== 'administrador' && $user['perfil'] !== 'usuario_companhia') Auth::authorizeRecord($item, false);

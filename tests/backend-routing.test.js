@@ -13,9 +13,15 @@ assert.match(summary, /\/assets\/vendor\/chart\.umd\.min\.js/);
 assert.doesNotMatch(summary, /cdn\.jsdelivr\.net/);
 
 const frontendTemplate = fs.readFileSync(path.join(root, 'templates', 'frontend.php'), 'utf8');
-assert.match(frontendTemplate, /hash_file\('sha256', \$stylesheetPath\)/);
-assert.match(frontendTemplate, /assets\/css\/styles\.css\?v=' \. \$stylesheetVersion/);
-assert.doesNotMatch(frontendTemplate, /assets\/css\/styles\.css\?v=' \. \$assetVersion/);
+assert.match(frontendTemplate, /preg_replace_callback/);
+assert.match(frontendTemplate, /assets\/\(\?:css\|js\)/);
+assert.match(frontendTemplate, /hash_file\('sha256', \$assetPath\)/);
+assert.doesNotMatch(frontendTemplate, /AUTH-CORPORATIVA-002/);
+
+const publicIndicators = fs.readFileSync(path.join(root, 'public', 'indicadores.php'), 'utf8');
+assert.match(publicIndicators, /\$isDetailView/);
+assert.match(publicIndicators, /Auth::requirePermission\('indicadores', 'visualizar'\)/);
+assert.match(publicIndicators, /Auth::requirePagePermission\('indicadores', 'visualizar'\)/);
 
 function hash(file) { return crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex'); }
 for (const directory of ['css', 'js', 'img', 'vendor']) {

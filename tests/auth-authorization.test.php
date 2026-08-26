@@ -29,6 +29,7 @@ assert_auth(AccessPolicy::allows('unidade_apuradora', 'lancamentos', 'gerenciar'
 assert_auth(!AccessPolicy::allows('homologador', 'lancamentos', 'gerenciar'), 'homologador nao deve editar lancamentos');
 assert_auth(AccessPolicy::allows('homologador', 'homologacoes', 'decidir'), 'homologador deve decidir homologacao');
 assert_auth(!AccessPolicy::allows('usuario_companhia', 'homologacoes', 'decidir'), 'usuario companhia nao deve homologar');
+assert_auth(AccessPolicy::allows('usuario_companhia', 'indicadores', 'visualizar'), 'usuario companhia deve consultar detalhe de indicador');
 assert_auth(AccessPolicy::allowsPage('usuario_companhia', 'dashboard', 'visualizar'), 'usuario companhia deve visualizar apenas o resumo executivo');
 foreach (array('visao_trimestral', 'indicadores', 'lancamentos', 'homologacoes', 'relatorios') as $module) {
     assert_auth(!AccessPolicy::allowsPage('usuario_companhia', $module, 'visualizar'), 'usuario companhia nao deve visualizar a pagina ' . $module);

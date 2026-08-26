@@ -78,6 +78,12 @@
     }
 
     if (isUsuarioCompanhia(user.perfil)) {
+      const params = new URLSearchParams(String(window.location?.search || ""));
+      const isIndicatorDetail = page === "indicadores" &&
+        options.allowIndicatorDetail === true &&
+        params.get("view") === "detalhe" &&
+        Boolean(params.get("id") || params.get("indicadorId") || params.get("lancamentoId"));
+      if (isIndicatorDetail) return true;
       return USER_COMPANY_ALLOWED_PAGES.includes(page);
     }
 

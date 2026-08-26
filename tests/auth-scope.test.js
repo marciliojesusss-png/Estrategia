@@ -6,6 +6,7 @@ const { loadBootstrapData } = require("./helpers/bootstrap-data");
 
 const root = path.resolve(__dirname, "..");
 const context = {
+  URLSearchParams,
   localStorage: {
     getItem() { return null; },
     setItem() {},
@@ -58,8 +59,13 @@ assert.equal(context.window.Auth.canAccess("resumoExecutivo", companyUser), true
 for (const page of ["visaoTrimestral", "indicadores", "lancamentos", "homologacao", "relatorios", "administracao"]) {
   assert.equal(context.window.Auth.canAccess(page, companyUser), false, page);
 }
+context.window.location.search = "";
+assert.equal(context.window.Auth.canAccess("indicadores", companyUser, { allowIndicatorDetail: true }), false);
 context.window.location.search = "?id=22";
 assert.equal(context.window.Auth.canAccess("indicadores", companyUser, { allowIndicatorDetail: true }), false);
+context.window.location.search = "?view=detalhe&id=22";
+assert.equal(context.window.Auth.canAccess("indicadores", companyUser, { allowIndicatorDetail: true }), true);
+assert.equal(context.window.Auth.canAccess("indicadores", companyUser), false);
 
 const bootstrap = loadBootstrapData(root);
 const sucolUser = bootstrap.usuarios.find((item) => item.nome === "Unidade SUCOL");
