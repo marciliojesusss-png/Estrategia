@@ -16,6 +16,9 @@ function render_frontend_page($viewFile)
     header('Content-Type: text/html; charset=utf-8');
     $html = (string) file_get_contents($path);
     $assetVersion = 'AUTH-CORPORATIVA-002';
+    $stylesheetPath = APP_ROOT . '/public/assets/css/styles.css';
+    $stylesheetHash = is_file($stylesheetPath) ? hash_file('sha256', $stylesheetPath) : false;
+    $stylesheetVersion = $stylesheetHash ? substr($stylesheetHash, 0, 12) : 'RESUMO-MAPA-DESEMPENHO-002';
     $isLocal = Auth::isLocal() ? 'true' : 'false';
     $authUser = json_encode(
         Auth::currentUserForFrontend(),
@@ -89,7 +92,7 @@ HTML;
     $html = str_replace('</head>', $authScript . '</head>', $html);
     $html = (string) preg_replace(
         '#assets/css/styles\.css(?:\?v=[^"]*)?#',
-        'assets/css/styles.css?v=' . $assetVersion,
+        'assets/css/styles.css?v=' . $stylesheetVersion,
         $html
     );
     $html = prefix_app_base_path_urls($html);

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CAIXA Loterias | Resumo Executivo</title>
-  <link rel="stylesheet" href="/assets/css/styles.css?v=RESUMO-MAPA-DESEMPENHO-001">
+  <link rel="stylesheet" href="/assets/css/styles.css?v=RESUMO-MAPA-DESEMPENHO-002">
   <script src="<?= APP_BASE_PATH ?>/assets/vendor/chart.umd.min.js?v=4.4.7" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/currency.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/situations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
