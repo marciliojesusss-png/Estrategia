@@ -70,6 +70,12 @@
     return Object.fromEntries(state.indicadores.map((item) => [item.id, item]));
   }
 
+  function normalizeLaunchForReport(launch, rules) {
+    if (Number(launch?.indicadorId) !== 6 || !window.IeoRecorrente) return launch;
+    const rule = (rules || []).find((item) => Number(item.indicadorId) === 6);
+    return window.IeoRecorrente.normalizarLancamentoParaExibicao(launch, rule);
+  }
+
   function fillReportTypes() {
     document.getElementById("reportType").innerHTML = REPORTS
       .map(([value, label]) => `<option value="${value}">${escapeHtml(label)}</option>`)
@@ -365,11 +371,12 @@
   }
 
   async function init({ data, user }) {
+    const visibleLaunches = Auth.filterLaunchesByUser(data.lancamentos, data.indicadores, user);
     state = {
       data,
       user,
       indicadores: Auth.filterIndicatorsByUser(data.indicadores, user),
-      lancamentos: Auth.filterLaunchesByUser(data.lancamentos, data.indicadores, user),
+      lancamentos: visibleLaunches.map((launch) => normalizeLaunchForReport(launch, data.regrasIndicadores)),
       homologacoes: data.homologacoes,
       currentRows: [],
       currentColumns: []

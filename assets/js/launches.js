@@ -89,7 +89,7 @@
   }
 
   function isIeoRule(regra) {
-    return regra?.tipoCalculo === "indice_inverso" && regra?.indicadorId === 6;
+    return regra?.tipoCalculo === "indice_inverso" && Number(regra?.indicadorId) === 6;
   }
 
   function canAdjustOfficialPerformance() {

@@ -6,6 +6,7 @@
   <title>CAIXA Loterias | Indicadores</title>
   <link rel="stylesheet" href="/assets/css/styles.css?v=INDICADORES-DETALHE-LANCAMENTO-001">
   <script src="/assets/js/currency.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
+  <script src="/assets/js/ieo-recorrente.js?v=IEO-RECORRENTE-002" defer></script>
   <script src="/assets/js/situations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/bootstrap-data.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/dataStore.js?v=SOLICITACOES-REABERTURA-001" defer></script>
@@ -13,7 +14,6 @@
   <script src="/assets/js/auth.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/calculations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/formulas.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="/assets/js/ieo-recorrente.js?v=IEO-RECORRENTE-001" defer></script>
   <script src="/assets/js/quarterly.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/indicators.js?v=INDICADORES-DETALHE-LANCAMENTO-002" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/app.js?v=PERSISTENCIA-CENTRAL-008" defer></script>

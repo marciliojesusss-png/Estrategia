@@ -242,20 +242,7 @@
     "2026-11": 12525118608,
     "2026-12": 15600000000
   };
-  const IEO_META_ACUMULADA_2026 = {
-    "2026-01": null,
-    "2026-02": null,
-    "2026-03": 0.1441,
-    "2026-04": null,
-    "2026-05": null,
-    "2026-06": null,
-    "2026-07": null,
-    "2026-08": null,
-    "2026-09": null,
-    "2026-10": null,
-    "2026-11": null,
-    "2026-12": 0.1403
-  };
+  const IEO_META_ACUMULADA_2026 = window.IeoRecorrente?.IEO_META_MENSAL_2026 || Object.freeze({});
   const REPASSE_SOCIAL_META_ACUMULADA_2026 = {
     "2026-01": 737118539.30,
     "2026-02": 1394613495.00,
@@ -1897,7 +1884,7 @@
           };
         }
         if (Number(rule.indicadorId) === 6) {
-          return {
+          const normalizedIeoRule = {
             ...rule,
             nome: INDICATOR_NAMES[5],
             tipoCalculo: "indice_inverso",
@@ -1909,22 +1896,21 @@
               campoDespesasAdministrativas: "despesasAdministrativasMes",
               campoReceitasLiquidas: "receitasLiquidasMes",
               campoIeoInformado: "ieoApuradoInformado",
-              campoPercentualOficial: "percentualAtingidoOficialInformado",
               metaTipo: "curva_acumulada_por_competencia",
               metasAcumuladasPorCompetencia: IEO_META_ACUMULADA_2026,
               sentidoMeta: "quanto_menor_melhor"
             },
             camposEntrada: [
-              { nome: "despesaPessoalMes", rotulo: "Despesa de pessoal", tipo: "moeda", obrigatorio: false },
-              { nome: "despesasAdministrativasMes", rotulo: "Despesas administrativas", tipo: "moeda", obrigatorio: false },
-              { nome: "receitasLiquidasMes", rotulo: "Receitas líquidas", tipo: "moeda", obrigatorio: false },
-              { nome: "ieoApuradoInformado", rotulo: "IEO apurado pela unidade", tipo: "percentual", obrigatorio: false },
-              { nome: "percentualAtingidoOficialInformado", rotulo: "% atingido oficial informado", tipo: "percentual", obrigatorio: false }
+              { nome: "despesaPessoalMes", rotulo: "Despesa de pessoal", tipo: "moeda", obrigatorio: true },
+              { nome: "despesasAdministrativasMes", rotulo: "Despesas administrativas", tipo: "moeda", obrigatorio: true },
+              { nome: "receitasLiquidasMes", rotulo: "Receitas líquidas", tipo: "moeda", obrigatorio: true },
+              { nome: "ieoApuradoInformado", rotulo: "IEO apurado pela unidade", tipo: "percentual", obrigatorio: false }
             ],
             campoResultadoPrincipal: "resultadoMensal",
             campoPercentualAtingido: "percentualAtingidoMensal",
             resultadoOficial: "ultima_posicao_acumulada_homologada"
           };
+          return window.IeoRecorrente?.ajustarRegraIeo(normalizedIeoRule) || normalizedIeoRule;
         }
         if (Number(rule.indicadorId) === 7) {
           return {

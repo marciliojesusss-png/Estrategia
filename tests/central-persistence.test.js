@@ -17,7 +17,7 @@ global.DataStore = {
   salvarLancamentos: async () => true,
   saveLocal: async () => true
 };
-global.IndicatorFormulas = {
+global.IeoRecorrente = {
   IEO_META_MENSAL_2026: {
     "2026-01": 0.1449,
     "2026-02": 0.1445,
@@ -52,8 +52,8 @@ const prepared = global.CentralPersistence.prepareLaunchForCentral({
 assert.equal(prepared.metaMensal, 0.1449);
 assert.equal(prepared.metaReferencia, 0.1449);
 assert.equal(prepared.updatedAt, undefined, "updated_at deve ser gerado pelo backend no momento da gravação.");
-assert.equal(prepared.camposEntrada.percentualAtingidoOficialInformado, undefined);
-assert.equal(prepared.camposEntrada.observacaoAjusteOficial, undefined);
+assert.equal(prepared.camposEntrada.percentualAtingidoOficialInformado, 1.0422);
+assert.equal(prepared.camposEntrada.observacaoAjusteOficial, "legado");
 assert.equal(prepared.camposEntrada.despesaPessoalMes, 5700000);
 
 const normalLaunch = global.CentralPersistence.prepareLaunchForCentral({

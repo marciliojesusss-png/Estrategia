@@ -22,9 +22,7 @@
   });
 
   function isIeoRule(regra) {
-    return Boolean(regra) &&
-      Number(regra.indicadorId) === INDICADOR_IEO_ID &&
-      regra.tipoCalculo === "indice_inverso";
+    return Boolean(regra) && Number(regra.indicadorId) === INDICADOR_IEO_ID;
   }
 
   function competenciaKey(lancamento) {
@@ -38,6 +36,9 @@
   function ajustarRegraIeo(regra) {
     if (!isIeoRule(regra)) return regra;
 
+    regra.tipoCalculo = "indice_inverso";
+    regra.tipoConsolidacao = "ultima_posicao_acumulada";
+    regra.unidadeMedida = "percentual";
     regra.metaAnualValor = META_ANUAL_IEO_2026;
     regra.parametrosCalculo = Object.assign({}, regra.parametrosCalculo || {}, {
       metaTipo: "curva_acumulada_por_competencia",
@@ -47,9 +48,18 @@
 
     delete regra.parametrosCalculo.campoPercentualOficial;
 
-    regra.camposEntrada = (regra.camposEntrada || []).filter(function (campo) {
-      return campo && campo.nome !== CAMPO_PERCENTUAL_OFICIAL_LEGADO;
-    });
+    const camposAtuais = Object.fromEntries((regra.camposEntrada || [])
+      .filter(function (campo) {
+        return campo && ![CAMPO_PERCENTUAL_OFICIAL_LEGADO, CAMPO_OBSERVACAO_AJUSTE_LEGADO].includes(campo.nome);
+      })
+      .map(function (campo) { return [campo.nome, campo]; }));
+
+    regra.camposEntrada = [
+      Object.assign({}, camposAtuais.despesaPessoalMes, { nome: "despesaPessoalMes", rotulo: "Despesa de pessoal", tipo: "moeda", obrigatorio: true }),
+      Object.assign({}, camposAtuais.despesasAdministrativasMes, { nome: "despesasAdministrativasMes", rotulo: "Despesas administrativas", tipo: "moeda", obrigatorio: true }),
+      Object.assign({}, camposAtuais.receitasLiquidasMes, { nome: "receitasLiquidasMes", rotulo: "Receitas líquidas", tipo: "moeda", obrigatorio: true }),
+      Object.assign({}, camposAtuais.ieoApuradoInformado, { nome: "ieoApuradoInformado", rotulo: "IEO apurado pela unidade", tipo: "percentual", obrigatorio: false })
+    ];
 
     return regra;
   }
@@ -108,24 +118,27 @@
     return formatarPercentual(value);
   }
 
+  function getMetaCompetencia(lancamento) {
+    const key = competenciaKey(lancamento);
+    return Object.prototype.hasOwnProperty.call(IEO_META_MENSAL_2026, key)
+      ? IEO_META_MENSAL_2026[key]
+      : null;
+  }
+
   function calcularIeo(regra, lancamento) {
     ajustarRegraIeo(regra);
 
     const params = regra.parametrosCalculo || {};
     const campoIeoInformado = params.campoIeoInformado || params.campoValor || "ieoApuradoInformado";
     const ieoInformado = normalizarPercentual(raw(lancamento, campoIeoInformado));
-    let resultado = ieoInformado;
-    let origemResultado = ieoInformado !== null ? "informado" : "calculado";
+    const despesaPessoal = parseNumero(raw(lancamento, params.campoDespesaPessoal || "despesaPessoalMes"));
+    const despesasAdministrativas = parseNumero(raw(lancamento, params.campoDespesasAdministrativas || "despesasAdministrativasMes"));
+    const receitasLiquidas = parseNumero(raw(lancamento, params.campoReceitasLiquidas || "receitasLiquidasMes"));
+    const componentesCompletos = despesaPessoal !== null && despesasAdministrativas !== null && receitasLiquidas !== null;
+    let resultado = null;
+    let origemResultado = null;
 
-    if (resultado === null) {
-      const despesaPessoal = parseNumero(raw(lancamento, params.campoDespesaPessoal || "despesaPessoalMes"));
-      const despesasAdministrativas = parseNumero(raw(lancamento, params.campoDespesasAdministrativas || "despesasAdministrativasMes"));
-      const receitasLiquidas = parseNumero(raw(lancamento, params.campoReceitasLiquidas || "receitasLiquidasMes"));
-
-      if (despesaPessoal === null || despesasAdministrativas === null || receitasLiquidas === null || receitasLiquidas === 0) {
-        return resultadoBase(regra.unidadeMedida, "Dados insuficientes para cálculo.", "aguardando_dados");
-      }
-
+    if (componentesCompletos) {
       if (despesaPessoal < 0 || despesasAdministrativas < 0 || receitasLiquidas < 0) {
         const retorno = resultadoBase(
           regra.unidadeMedida,
@@ -135,8 +148,18 @@
         retorno.erro = true;
         return retorno;
       }
-
+      if (receitasLiquidas === 0) {
+        const retorno = resultadoBase(regra.unidadeMedida, "Receitas líquidas devem ser maiores que zero.", "erro");
+        retorno.erro = true;
+        return retorno;
+      }
       resultado = (despesaPessoal + despesasAdministrativas) / receitasLiquidas;
+      origemResultado = "calculado";
+    } else if (ieoInformado !== null) {
+      resultado = ieoInformado;
+      origemResultado = "informado";
+    } else {
+      return resultadoBase(regra.unidadeMedida, "Dados insuficientes para cálculo.", "aguardando_dados");
     }
 
     if (resultado < 0) {
@@ -146,9 +169,9 @@
     }
 
     const key = competenciaKey(lancamento);
-    const metaCompetencia = Object.prototype.hasOwnProperty.call(IEO_META_MENSAL_2026, key)
-      ? IEO_META_MENSAL_2026[key]
-      : normalizarPercentual(lancamento && lancamento.metaMensal) || normalizarPercentual(regra.metaAnualValor);
+    const metaCompetencia = getMetaCompetencia(lancamento) ??
+      normalizarPercentual(lancamento && lancamento.metaMensal) ??
+      normalizarPercentual(regra.metaAnualValor);
 
     if (metaCompetencia === null || metaCompetencia <= 0) {
       const retorno = resultadoBase(
@@ -209,6 +232,40 @@
     };
   }
 
+  function normalizarLancamentoParaExibicao(lancamento, regra) {
+    if (!lancamento || Number(lancamento.indicadorId ?? lancamento.indicador_id) !== INDICADOR_IEO_ID) {
+      return lancamento;
+    }
+
+    const regraIeo = ajustarRegraIeo(regra || {
+      indicadorId: INDICADOR_IEO_ID,
+      tipoCalculo: "indice_inverso",
+      parametrosCalculo: {},
+      camposEntrada: []
+    });
+    const metaCompetencia = getMetaCompetencia(lancamento);
+    const calculo = calcularIeo(regraIeo, lancamento);
+    const normalizado = Object.assign({}, lancamento, {
+      metaMensal: metaCompetencia ?? lancamento.metaMensal,
+      metaReferencia: metaCompetencia ?? lancamento.metaReferencia
+    });
+
+    if (calculo.resultadoMensal === null || calculo.resultadoMensal === undefined) return normalizado;
+
+    return Object.assign(normalizado, {
+      resultadoMensal: calculo.resultadoMensal,
+      realizadoMensal: calculo.resultadoMensal,
+      resultadoAcumulado: calculo.resultadoAcumulado,
+      resultadoOficialAnual: calculo.resultadoOficialAnual,
+      percentualAtingido: calculo.percentualAtingidoMensal,
+      percentualAtingidoMensal: calculo.percentualAtingidoMensal,
+      percentualAtingidoAcumulado: calculo.percentualAtingidoAcumulado,
+      percentualAtingidoAnual: calculo.percentualAtingidoAnual,
+      situacaoCalculada: calculo.situacao,
+      situacao: calculo.situacao
+    });
+  }
+
   function removerAjusteOficialLegado() {
     if (!root.document) return;
     const campos = root.document.querySelectorAll(
@@ -253,6 +310,19 @@
     return true;
   }
 
+  const api = {
+    INDICADOR_IEO_ID,
+    META_ANUAL_IEO_2026,
+    IEO_META_MENSAL_2026,
+    isIeoRule,
+    getMetaCompetencia,
+    ajustarRegraIeo,
+    calcularIeo,
+    normalizarLancamentoParaExibicao,
+    instalarCorrecao
+  };
+
+  root.IeoRecorrente = api;
   instalarCorrecao();
 
   if (root.document) {
@@ -272,11 +342,6 @@
   }
 
   if (typeof module !== "undefined" && module.exports) {
-    module.exports = {
-      IEO_META_MENSAL_2026,
-      ajustarRegraIeo,
-      calcularIeo,
-      instalarCorrecao
-    };
+    module.exports = api;
   }
 })(typeof window !== "undefined" ? window : globalThis);

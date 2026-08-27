@@ -838,7 +838,7 @@
     const isRedeLotericaIncremento = growthTrackingModes.isRedeLotericaIncrement;
     const isBase2025Growth = growthTrackingModes.isBase2025Growth;
     const isGgrFormula = regra?.tipoCalculo === "ggr_formula";
-    const isIeoInverse = regra?.tipoCalculo === "indice_inverso";
+    const isIeoInverse = Number(indicador.id) === 6;
     const isRepasseSocial = Number(indicador.id) === 17;
     const isAccumulatedGoalCurve = usesAccumulatedGoalCurve(regra);
     const launches = state.data.lancamentos

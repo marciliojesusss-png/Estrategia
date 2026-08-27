@@ -1,5 +1,6 @@
 ﻿const assert = require("node:assert/strict");
 const fs = require("node:fs");
+require("../assets/js/ieo-recorrente.js");
 const formulas = require("../assets/js/formulas.js");
 const { loadBootstrapData } = require("./helpers/bootstrap-data");
 
@@ -585,7 +586,7 @@ const ieo = formulas.calcularIndicador(
 );
 closeTo(ieo.resultadoMensal, 0.108);
 closeTo(ieo.resultadoOficialAnual, 0.108);
-closeTo(ieo.percentualAtingidoMensal, 1.0422);
+closeTo(ieo.percentualAtingidoMensal, 0.1441 / 0.108);
 assert.equal(ieo.resultadoMensalFormatado, "10,8%");
 assert.equal(ieo.resultadoOficialAnualFormatado, "10,8%");
 assert.equal(ieo.situacao, "Atingido");
@@ -597,7 +598,7 @@ const ieoCalculado = formulas.calcularIndicador(
   [{ ano: 2026, mes: 3, competencia: "2026-03", camposEntrada: { despesaPessoalMes: 60, despesasAdministrativasMes: 48, receitasLiquidasMes: 1000 } }]
 );
 closeTo(ieoCalculado.resultadoMensal, 0.108);
-closeTo(ieoCalculado.percentualAtingidoMensal, 1 + ((0.1441 - 0.108) / 0.1441));
+closeTo(ieoCalculado.percentualAtingidoMensal, 0.1441 / 0.108);
 assert.equal(ieoCalculado.situacao, "Atingido");
 
 const ieoJaneiroSemMeta = formulas.calcularIndicador(
@@ -626,9 +627,9 @@ const ieoJaneiroSemMeta = formulas.calcularIndicador(
 );
 closeTo(ieoJaneiroSemMeta.resultadoMensal, 0.0642);
 assert.equal(ieoJaneiroSemMeta.resultadoMensalFormatado, "6,42%");
-assert.equal(ieoJaneiroSemMeta.percentualAtingidoMensal, null);
-assert.equal(ieoJaneiroSemMeta.situacao, "Sem meta de referência");
-assert.equal(ieoJaneiroSemMeta.metaPendente, true);
+closeTo(ieoJaneiroSemMeta.percentualAtingidoMensal, 0.1449 / 0.0642);
+assert.equal(ieoJaneiroSemMeta.situacao, "Atingido");
+assert.equal(ieoJaneiroSemMeta.metaReferencia, 0.1449);
 
 const ieoAbaixo = formulas.calcularIndicador(
   indicador(6, "IEO Recorrente"),

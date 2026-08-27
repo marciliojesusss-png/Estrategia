@@ -75,6 +75,7 @@ final class Database
         $server = SQLSERVER_HOST . (SQLSERVER_PORT !== '' ? ',' . SQLSERVER_PORT : '');
         $options = array(
             'Database' => SQLSERVER_DATABASE,
+            'CharacterSet' => 'UTF-8',
         );
 
         if (SQLSERVER_USER !== '' || DB_AUTH_MODE === 'sql') {

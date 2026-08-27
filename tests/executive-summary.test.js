@@ -21,6 +21,12 @@ vm.runInNewContext(
 );
 context.CurrencyBR = context.window.CurrencyBR;
 
+vm.runInNewContext(
+  fs.readFileSync(path.join(root, "assets", "js", "ieo-recorrente.js"), "utf8"),
+  context,
+  { filename: "ieo-recorrente.js" }
+);
+
 ["calculations.js", "formulas.js"].forEach((file) => {
   vm.runInNewContext(
     fs.readFileSync(path.join(root, "assets", "js", file), "utf8"),
@@ -147,7 +153,7 @@ assert.equal(context.window.StrategicResults.officialSituation(ieoDashboardOfici
 assert.equal(ieoDashboardOficial.competencia, "Março/2026");
 assert.ok(Math.abs(ieoDashboardOficial.meta - 0.1441) < 0.000001);
 assert.ok(Math.abs(ieoDashboardOficial.resultado - 0.108) < 0.000001);
-assert.ok(Math.abs(ieoDashboardOficial.percentualAtingido - 1.0422) < 0.000001);
+assert.ok(Math.abs(ieoDashboardOficial.percentualAtingido - (0.1441 / 0.108)) < 0.000001);
 
 const repasseDashboardOficial = results.find((item) => item.indicador.id === 17);
 assert.equal(context.window.StrategicResults.officialSituation(repasseDashboardOficial), "Atingido");

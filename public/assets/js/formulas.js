@@ -538,10 +538,14 @@
 
   function desempenhoIndicadorInverso(resultado, meta) {
     if (resultado === null || meta === null || meta <= 0) return null;
-    return 1 + ((meta - resultado) / meta);
+    return resultado === 0 ? null : meta / resultado;
   }
 
   function getMetaReferenciaInversa(regra, lancamentoAtual) {
+    const metaOficialIeo = Number(regra?.indicadorId) === 6
+      ? root.IeoRecorrente?.getMetaCompetencia(lancamentoAtual)
+      : null;
+    if (metaOficialIeo !== null && metaOficialIeo !== undefined) return metaOficialIeo;
     const params = regra?.parametrosCalculo || {};
     const curva = params.metasAcumuladasPorCompetencia || params.curvaMetaAcumulada || {};
     const key = competenciaKey(lancamentoAtual);
@@ -557,7 +561,6 @@
   function calcularIndiceInverso(indicador, regra, lancamentoAtual, lancamentosDoAno) {
     const campoInformado = regra.parametrosCalculo?.campoIeoInformado || regra.parametrosCalculo?.campoValor || "ieoApuradoInformado";
     const informado = campoPercentual(lancamentoAtual, campoInformado);
-    const percentualOficial = campoPercentual(lancamentoAtual, regra.parametrosCalculo?.campoPercentualOficial || "percentualAtingidoOficialInformado");
     let resultado = informado;
     let origemResultado = informado !== null ? "informado" : "calculado";
 
@@ -589,11 +592,10 @@
         situacao: "Sem meta de referência",
         ieoRealizadoMes: resultado,
         ieoApuradoInformado: informado,
-        percentualAtingidoOficialInformado: percentualOficial,
         origemResultado
       });
     }
-    const percentual = percentualOficial ?? desempenhoIndicadorInverso(resultado, meta);
+    const percentual = desempenhoIndicadorInverso(resultado, meta);
     const situacao = situacaoIndicadorInverso(resultado, meta);
 
     return ok(resultado, resultado, percentual, percentual, regra.unidadeMedida, "IEO recorrente calculado pela regra inversa.", {
@@ -606,7 +608,6 @@
       situacao,
       ieoRealizadoMes: resultado,
       ieoApuradoInformado: informado,
-      percentualAtingidoOficialInformado: percentualOficial,
       origemResultado
     });
   }
@@ -1611,6 +1612,9 @@
   };
 
   root.IndicatorFormulas = api;
+  if (root.IeoRecorrente && typeof root.IeoRecorrente.instalarCorrecao === "function") {
+    root.IeoRecorrente.instalarCorrecao();
+  }
   if (typeof module !== "undefined" && module.exports) {
     module.exports = api;
   }

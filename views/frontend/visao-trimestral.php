@@ -6,6 +6,7 @@
   <title>CAIXA Loterias | Visão Trimestral</title>
   <link rel="stylesheet" href="/assets/css/styles.css?v=PERSISTENCIA-CENTRAL-008">
   <script src="<?= APP_BASE_PATH ?>/assets/js/currency.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/ieo-recorrente.js?v=IEO-RECORRENTE-002" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/situations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/bootstrap-data.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/dataStore.js?v=SOLICITACOES-REABERTURA-001" defer></script>
@@ -13,7 +14,6 @@
   <script src="<?= APP_BASE_PATH ?>/assets/js/auth.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/calculations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/formulas.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/ieo-recorrente.js?v=IEO-RECORRENTE-001" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/quarterly.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/quarterlyView.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/app.js?v=PERSISTENCIA-CENTRAL-008" defer></script>

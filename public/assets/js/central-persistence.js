@@ -76,14 +76,13 @@
 
     if (Number(prepared.indicadorId ?? prepared.indicador_id) === 6) {
       const key = prepared.competencia || `${prepared.ano}-${String(prepared.mes).padStart(2, "0")}`;
-      const curve = root.IndicatorFormulas?.IEO_META_MENSAL_2026 || {};
+      const curve = root.IeoRecorrente?.IEO_META_MENSAL_2026 || {};
       const meta = Object.prototype.hasOwnProperty.call(curve, key) ? curve[key] : prepared.metaMensal;
       if (meta !== null && meta !== undefined) {
         prepared.metaMensal = meta;
         prepared.metaReferencia = meta;
       }
-      delete prepared.camposEntrada.percentualAtingidoOficialInformado;
-      delete prepared.camposEntrada.observacaoAjusteOficial;
+      // Os campos legados permanecem preservados no histórico, mas não participam do cálculo oficial.
     }
 
     return prepared;

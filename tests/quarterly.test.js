@@ -1,4 +1,5 @@
 ﻿const assert = require("node:assert/strict");
+require("../assets/js/ieo-recorrente.js");
 const formulas = require("../assets/js/formulas.js");
 
 globalThis.IndicatorFormulas = formulas;
@@ -503,7 +504,7 @@ assert.equal(ieoQuarter.statusTrimestre, "Fechado");
 assert.equal(ieoQuarter.mesesHomologados, 3);
 assert.ok(Math.abs(ieoQuarter.metaTrimestral - 0.1441) < 0.000001);
 assert.ok(Math.abs(ieoQuarter.resultadoTrimestral - 0.108) < 0.000001);
-assert.ok(Math.abs(ieoQuarter.desempenhoTrimestral - 1.0422) < 0.000001);
+assert.ok(Math.abs(ieoQuarter.desempenhoTrimestral - (0.1441 / 0.108)) < 0.000001);
 assert.equal(ieoQuarter.situacaoTrimestral, "Atingido");
 
 const ofertasQuarter = consolidarTrimestre(

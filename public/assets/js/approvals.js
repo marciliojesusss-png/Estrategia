@@ -65,6 +65,11 @@
     return window.IndicatorFormulas ? window.IndicatorFormulas.obterRegra(indicador, state.data.regrasIndicadores || []) : null;
   }
 
+  function launchForDisplay(indicador, lancamento, regra) {
+    if (Number(indicador?.id) !== 6 || !window.IeoRecorrente) return lancamento;
+    return window.IeoRecorrente.normalizarLancamentoParaExibicao(lancamento, regra);
+  }
+
   function getSelectedLaunch() {
     return state.lancamentos.find((item) => item.id === state.selectedId);
   }
@@ -148,14 +153,15 @@
     target.innerHTML = lancamentos.map((item) => {
       const indicador = porId[item.indicadorId];
       const regra = indicador ? getRule(indicador) : null;
+      const displayItem = launchForDisplay(indicador, item, regra);
       return `
         <tr>
           <td>${escapeHtml(indicador ? indicador.indicador : item.indicadorId)}</td>
           <td>${escapeHtml(indicador ? indicador.unidadeApuradora || "Não informado" : "-")}</td>
           <td>${escapeHtml(indicador ? indicador.diretoriaResponsavel || "Não informado" : "-")}</td>
           <td>${escapeHtml(item.nomeMes)}/${escapeHtml(item.ano)}</td>
-          <td>${Calculations.formatarValor(item.resultadoMensal ?? item.realizadoMensal, regra && regra.unidadeMedida)}</td>
-          <td>${Calculations.formatarPercentual(item.percentualAtingido)}</td>
+          <td>${Calculations.formatarValor(displayItem.resultadoMensal ?? displayItem.realizadoMensal, regra && regra.unidadeMedida)}</td>
+          <td>${Calculations.formatarPercentual(displayItem.percentualAtingido)}</td>
           <td><span class="badge ${badgeClass(item.status)}">${escapeHtml(item.status)}</span></td>
           <td><button class="secondary-action table-action" type="button" data-id="${item.id}">${canAct(item) ? "Analisar" : "Consultar"}</button></td>
         </tr>
@@ -165,6 +171,7 @@
 
   function renderReference(indicador, lancamento) {
     const regra = getRule(indicador);
+    const displayLaunch = launchForDisplay(indicador, lancamento, regra);
     const metaReferencia = regra?.parametrosCalculo?.metaTipo === "curva_acumulada_por_competencia"
       ? (() => {
         const key = lancamento?.competencia || `${lancamento?.ano}-${String(lancamento?.mes).padStart(2, "0")}`;
@@ -181,10 +188,10 @@
       ["Diretoria responsável", indicador.diretoriaResponsavel || "Não informado"],
       ["Mês/Ano", `${lancamento.nomeMes}/${lancamento.ano}`],
       ["Meta de referência", metaReferencia],
-      ["Realizado mensal", Calculations.formatarValor(lancamento.resultadoMensal ?? lancamento.realizadoMensal, regra && regra.unidadeMedida)],
-      ["Percentual atingido", Calculations.formatarPercentual(lancamento.percentualAtingido)],
-      ["Resultado acumulado", Calculations.formatarValor(lancamento.resultadoAcumulado, regra && regra.unidadeMedida)],
-      ["Percentual acumulado", Calculations.formatarPercentual(lancamento.percentualAtingidoAcumulado)],
+      ["Realizado mensal", Calculations.formatarValor(displayLaunch.resultadoMensal ?? displayLaunch.realizadoMensal, regra && regra.unidadeMedida)],
+      ["Percentual atingido", Calculations.formatarPercentual(displayLaunch.percentualAtingido)],
+      ["Resultado acumulado", Calculations.formatarValor(displayLaunch.resultadoAcumulado, regra && regra.unidadeMedida)],
+      ["Percentual acumulado", Calculations.formatarPercentual(displayLaunch.percentualAtingidoAcumulado)],
       ["Tipo de cálculo", indicador.tipoCalculo],
       ["Métrica/Fórmula", indicador.metrica, true]
     ].map(([label, value, full]) => `
