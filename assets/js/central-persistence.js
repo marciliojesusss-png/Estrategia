@@ -65,6 +65,35 @@
     return backendInfoPromise;
   }
 
+  function prepareLaunchForCentral(launch) {
+    const prepared = {
+      ...launch,
+      camposEntrada: { ...(launch?.camposEntrada || {}) }
+    };
+
+    // O backend deve registrar o momento real desta persistência.
+    delete prepared.updatedAt;
+
+    if (Number(prepared.indicadorId ?? prepared.indicador_id) === 6) {
+      const key = prepared.competencia || `${prepared.ano}-${String(prepared.mes).padStart(2, "0")}`;
+      const curve = root.IndicatorFormulas?.IEO_META_MENSAL_2026 || {};
+      const meta = Object.prototype.hasOwnProperty.call(curve, key) ? curve[key] : prepared.metaMensal;
+      if (meta !== null && meta !== undefined) {
+        prepared.metaMensal = meta;
+        prepared.metaReferencia = meta;
+      }
+      delete prepared.camposEntrada.percentualAtingidoOficialInformado;
+      delete prepared.camposEntrada.observacaoAjusteOficial;
+    }
+
+    return prepared;
+  }
+
+  function prepareValueForCentral(key, value) {
+    if (key !== "lancamentos") return value;
+    return value.map(prepareLaunchForCentral);
+  }
+
   async function persistCollection(key, value) {
     if (!Array.isArray(value)) {
       throw new Error(`Coleção ${key} inválida para persistência central.`);
@@ -75,9 +104,10 @@
       throw new Error("Backend PHP indisponível. Os dados não foram confirmados no banco central.");
     }
 
+    const preparedValue = prepareValueForCentral(key, value);
     const size = CHUNK_SIZE[key] || 40;
-    for (let index = 0; index < value.length; index += size) {
-      const chunk = value.slice(index, index + size);
+    for (let index = 0; index < preparedValue.length; index += size) {
+      const chunk = preparedValue.slice(index, index + size);
       await requestJson("api/database", {
         method: "POST",
         body: JSON.stringify({ key, value: chunk })
@@ -88,7 +118,7 @@
       persisted: true,
       database: backend.database,
       mode: backend.mode,
-      records: value.length
+      records: preparedValue.length
     };
   }
 
@@ -150,6 +180,7 @@
 
   root.CentralPersistence = {
     getBackendInfo,
+    prepareLaunchForCentral,
     persistCollection,
     install
   };
