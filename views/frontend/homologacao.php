@@ -13,6 +13,7 @@
   <script src="/assets/js/auth.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/calculations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/formulas.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
+  <script src="/assets/js/ieo-recorrente.js?v=IEO-RECORRENTE-001" defer></script>
   <script src="/assets/js/approvals.js?v=SOLICITACOES-REABERTURA-001" defer></script>
   <script src="/assets/js/app.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
 </head>
@@ -95,8 +96,3 @@
   </div>
 </body>
 </html>
-
-
-
-
-
