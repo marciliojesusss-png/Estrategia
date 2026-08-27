@@ -91,7 +91,7 @@
       { match: "agilidade no atendimento", label: "Agilidade Atendimento RH" },
       { match: "apoio ao desenvolvimento socioambiental", label: "Apoio Socioambiental" },
       { match: "repasse social", label: "Repasse Social" },
-      { match: "principios de jogo responsavel", label: "Jogo Responsável" },
+      { match: "principios de jogo responsavel", label: "Princípios de Jogo Responsável" },
       { match: "incentivo socioambiental", label: "Incentivo Socioambiental" },
       { match: "visibilidade dos repasses sociais", label: "Visibilidade Repasses Sociais" },
       { match: "jogo responsavel 2026", label: "Jogo Responsável 2026" },

@@ -77,5 +77,9 @@ assert.equal(
   internals.nomeIndicadorMapa({ indicador: "Participação da Rede Lotérica nos Negócios da CAIXA Loterias" }),
   "Participação Rede Lotérica"
 );
+assert.equal(
+  internals.nomeIndicadorMapa({ indicador: "Princípios de Jogo Responsável (WLA)" }),
+  "Princípios de Jogo Responsável"
+);
 
 console.log("Testes do mapa de desempenho executivo OK");

@@ -31,8 +31,10 @@ assert.equal(
 const {
   resolveMonthlyCalculation,
   resolveAccumulatedCalculation,
+  resolveAccumulatedGoalCalculation,
   mergeCalculationForDisplay,
-  resolveGrowthTrackingModes
+  resolveGrowthTrackingModes,
+  usesAccumulatedGoalCurve
 } = context.window.IndicatorsInternals;
 
 const persisted = resolveMonthlyCalculation(
@@ -71,6 +73,22 @@ assert.equal(socialTransfer.metaReferencia, "737118539.3");
 assert.equal(socialTransfer.resultadoAcumulado, "769496203.1");
 assert.equal(socialTransfer.percentualAtingido, "1.0439246363695416");
 assert.equal(socialTransfer.situacao, "Atingido");
+
+const recurringProfit = resolveAccumulatedGoalCalculation(
+  {
+    resultadoOficialAnual: "119377680.03",
+    percentualAtingidoAnual: "0.09874084369727047",
+    situacao: "Abaixo da meta"
+  },
+  {
+    metaReferencia: "89555555.56",
+    resultadoOficialAnual: "119377680.03",
+    percentualAtingido: "0.09874084369727047",
+    situacaoCalculada: "Abaixo da meta"
+  }
+);
+assert.ok(Math.abs(recurringProfit.percentualAtingido - (119377680.03 / 89555555.56)) < 0.000001);
+assert.equal(recurringProfit.situacao, "Atingido");
 
 const mergedPersisted = mergeCalculationForDisplay(
   {
@@ -138,5 +156,18 @@ const legacyScenario = resolveGrowthTrackingModes({
 });
 assert.equal(legacyScenario.isEcossistemaScenario, true);
 assert.equal(legacyScenario.isBase2025Growth, false);
+
+assert.equal(usesAccumulatedGoalCurve({
+  tipoCalculo: "valor_financeiro_acumulado",
+  parametrosCalculo: {}
+}), true, "Lucro recorrente deve manter a tabela acumulada mesmo sem metaTipo no servidor");
+assert.equal(usesAccumulatedGoalCurve({
+  tipoCalculo: "percentual_direto",
+  parametrosCalculo: { metaTipo: "curva_acumulada_por_competencia" }
+}), true);
+assert.equal(usesAccumulatedGoalCurve({
+  tipoCalculo: "percentual_direto",
+  parametrosCalculo: {}
+}), false);
 
 console.log("Testes da composicao mensal do indicador OK");

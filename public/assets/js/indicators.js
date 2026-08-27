@@ -451,6 +451,19 @@
     };
   }
 
+  function resolveAccumulatedGoalCalculation(calculated, launch) {
+    const resolved = resolveAccumulatedCalculation(calculated, launch);
+    const meta = Number(resolved.metaReferencia);
+    const result = Number(resolved.resultadoAcumulado);
+    if (!Number.isFinite(meta) || meta <= 0 || !Number.isFinite(result)) return resolved;
+    const percent = result / meta;
+    return {
+      ...resolved,
+      percentualAtingido: percent,
+      situacao: percent >= 1 ? "Atingido" : "Abaixo da meta"
+    };
+  }
+
   function mergeCalculationForDisplay(calculated, launch) {
     if (!calculated && !launch) return null;
     const source = calculated || {};
@@ -501,6 +514,11 @@
         "crescimento_rede_loterica_base_2025"
       ].includes(type)
     };
+  }
+
+  function usesAccumulatedGoalCurve(regra) {
+    return regra?.parametrosCalculo?.metaTipo === "curva_acumulada_por_competencia" ||
+      regra?.tipoCalculo === "valor_financeiro_acumulado";
   }
 
   function launchBadge(status) {
@@ -822,7 +840,7 @@
     const isGgrFormula = regra?.tipoCalculo === "ggr_formula";
     const isIeoInverse = regra?.tipoCalculo === "indice_inverso";
     const isRepasseSocial = Number(indicador.id) === 17;
-    const isAccumulatedGoalCurve = regra?.parametrosCalculo?.metaTipo === "curva_acumulada_por_competencia";
+    const isAccumulatedGoalCurve = usesAccumulatedGoalCurve(regra);
     const launches = state.data.lancamentos
       .filter((item) => String(item.indicadorId) === String(indicador.id) && Number(item.ano) === 2026)
       .sort((a, b) => Number(a.mes) - Number(b.mes));
@@ -1411,7 +1429,7 @@
         const calculated = launch
           ? calculateIndicatorForDisplay(indicador, regra, launch, calculationScope)
           : null;
-        const resolved = resolveAccumulatedCalculation(calculated, launch);
+        const resolved = resolveAccumulatedGoalCalculation(calculated, launch);
         const percent = resolved.percentualAtingido;
         const situation = resolved.situacao || (calculated?.statusCalculo === "aguardando_dados" ? "Sem calculo" : Calculations.calcularStatusDesempenho(percent));
         return `
@@ -1530,13 +1548,14 @@
         const calculated = launch
           ? calculateIndicatorForDisplay(indicador, regra, launch, calculationScope)
           : null;
-        const accumulatedResult = calculated?.resultadoOficialAnual ?? null;
-        const percent = calculated?.percentualAtingidoAnual ?? calculated?.percentualAtingidoMensal ?? null;
-        const situation = calculated?.situacao || (calculated?.statusCalculo === "aguardando_dados" ? "Sem calculo" : Calculations.calcularStatusDesempenho(percent));
+        const resolved = resolveAccumulatedGoalCalculation(calculated, launch);
+        const accumulatedResult = resolved.resultadoAcumulado;
+        const percent = resolved.percentualAtingido;
+        const situation = resolved.situacao || (calculated?.statusCalculo === "aguardando_dados" ? "Sem calculo" : Calculations.calcularStatusDesempenho(percent));
         return `
           <tr>
             <td>${name}/2026</td>
-            <td>${escapeHtml(formatCurveMeta(syntheticLaunch))}</td>
+            <td>${resolved.metaReferencia == null ? escapeHtml(formatCurveMeta(syntheticLaunch)) : Calculations.formatarValor(resolved.metaReferencia, regra.unidadeMedida)}</td>
             <td>${Calculations.formatarValor(accumulatedResult, regra.unidadeMedida)}</td>
             <td>${Calculations.formatarPercentual(percent)}</td>
             <td>${escapeHtml(situation)}</td>
@@ -1768,8 +1787,10 @@
     window.IndicatorsInternals = {
       resolveMonthlyCalculation,
       resolveAccumulatedCalculation,
+      resolveAccumulatedGoalCalculation,
       mergeCalculationForDisplay,
-      resolveGrowthTrackingModes
+      resolveGrowthTrackingModes,
+      usesAccumulatedGoalCurve
     };
   }
   window.PageModules.indicadores = { init };
