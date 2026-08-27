@@ -11,6 +11,8 @@ const migrationReportPath = path.join(root, "database", "migration-report.json")
 const frontendViews = path.join(root, "views", "frontend");
 const adminHtml = fs.readFileSync(path.join(frontendViews, "administracao.php"), "utf8");
 const reportsHtml = fs.readFileSync(path.join(frontendViews, "relatorios.php"), "utf8");
+const loginHtml = fs.readFileSync(path.join(root, "views", "auth", "login.php"), "utf8");
+const frontendTemplate = fs.readFileSync(path.join(root, "templates", "frontend.php"), "utf8");
 const app = fs.readFileSync(path.join(root, "assets", "js", "app.js"), "utf8");
 const readme = fs.readFileSync(path.join(root, "README.md"), "utf8");
 const gitignore = fs.readFileSync(path.join(root, ".gitignore"), "utf8");
@@ -86,6 +88,9 @@ assert.match(reportsHtml, /assets\/js\/databaseService\.js/);
 });
 assert.match(app, /Modo SQL local ativo/);
 assert.match(app, /\/database\/indicadores\.sqlite/);
+assert.match(app, /CAIXA_LOTERIAS_DB_DRIVER === "sqlite"/);
+assert.match(loginHtml, /DB_DRIVER === 'sqlite'/);
+assert.match(frontendTemplate, /CAIXA_LOTERIAS_DB_DRIVER/);
 assert.match(readme, /database\/indicadores\.sqlite/);
 assert.match(readme, /migrar-para-sqlserver\.py/);
 assert.equal(fs.existsSync(path.join(root, "scripts", "migrar-para-sqlserver.py")), true);

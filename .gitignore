@@ -1,4 +1,5 @@
 ﻿# Bancos SQLite locais e artefatos de migração podem ser recriados.
+*.sqlite
 !/database/schema.sql
 
 # Segredos de ambiente locais. O modelo versionado não contém credenciais.
@@ -23,6 +24,7 @@ __pycache__/
 .vite/
 .next/
 node_modules/
+/.playwright-mcp/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
