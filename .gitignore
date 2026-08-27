@@ -5,6 +5,7 @@
 /.env
 /.env.*
 !/.env.example
+/app/config/servidor.local.php
 
 # Backups locais gerados pelo script de migracao podem ser recriados.
 database/backups/*.sqlite
