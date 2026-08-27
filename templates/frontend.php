@@ -16,6 +16,7 @@ function render_frontend_page($viewFile)
     header('Content-Type: text/html; charset=utf-8');
     $html = (string) file_get_contents($path);
     $isLocal = Auth::isLocal() ? 'true' : 'false';
+    $dbDriver = json_encode((string) DB_DRIVER, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
     $authUser = json_encode(
         Auth::currentUserForFrontend(),
         JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
@@ -29,6 +30,7 @@ function render_frontend_page($viewFile)
 window.CAIXA_LOTERIAS_AUTH_USER = {$authUser};
 window.CAIXA_LOTERIAS_CSRF_TOKEN = {$csrfToken};
 window.CAIXA_LOTERIAS_IS_LOCAL = {$isLocal};
+window.CAIXA_LOTERIAS_DB_DRIVER = {$dbDriver};
 window.APP_BASE_PATH = {$basePath};
 window.APP_PUBLIC_URL_PREFIX = {$publicPrefix};
 window.normalizeAppRoute = function(route) {

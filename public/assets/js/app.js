@@ -45,7 +45,7 @@
         </div>
       `);
     }
-    if (window.CAIXA_LOTERIAS_IS_LOCAL === true) {
+    if (window.CAIXA_LOTERIAS_DB_DRIVER === "sqlite") {
       messages.push(`
         <div class="notice muted compact-notice sql-local-notice">
           <strong>Modo SQL local ativo.</strong>

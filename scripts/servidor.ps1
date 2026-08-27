@@ -244,11 +244,10 @@ function Start-ApplicationServer {
       $environmentBasePath = '/'
     }
     $oldAppEnv = $env:APP_ENV
-    $oldDbConnection = $env:DB_CONNECTION
     $oldAppBasePath = $env:APP_BASE_PATH
     try {
       $env:APP_ENV = 'development'
-      $env:DB_CONNECTION = 'sqlite'
+      # Nao sobrescreve DB_CONNECTION: a configuracao local decide entre sqlsrv e sqlite.
       $env:APP_BASE_PATH = $environmentBasePath
       $process = Start-Process -FilePath $phpPath `
         -ArgumentList @('-S', $address, '-t', $publicArgument, $routerArgument) `
@@ -259,7 +258,6 @@ function Start-ApplicationServer {
         -PassThru
     } finally {
       if ($null -eq $oldAppEnv) { Remove-Item Env:APP_ENV -ErrorAction SilentlyContinue } else { $env:APP_ENV = $oldAppEnv }
-      if ($null -eq $oldDbConnection) { Remove-Item Env:DB_CONNECTION -ErrorAction SilentlyContinue } else { $env:DB_CONNECTION = $oldDbConnection }
       if ($null -eq $oldAppBasePath) { Remove-Item Env:APP_BASE_PATH -ErrorAction SilentlyContinue } else { $env:APP_BASE_PATH = $oldAppBasePath }
     }
 
@@ -341,7 +339,8 @@ Write-Host "Acao: $Acao | Host: $BindHost | Porta: $Port | APP_BASE_PATH: '$Base
 switch ($Acao) {
   'executar' {
     $env:APP_ENV = 'development'
-    $env:DB_CONNECTION = 'sqlite'
+    # O driver do banco nao e forcado aqui. app/config/servidor.local.php pode
+    # selecionar sqlsrv; sem configuracao explicita, config.php usa SQLite no desenvolvimento.
     $env:APP_BASE_PATH = $BasePath
     $applicationUrl = Get-ApplicationUrl 'login'
     Write-Host "URL local: $applicationUrl" -ForegroundColor Green
@@ -361,7 +360,7 @@ switch ($Acao) {
     Stop-ApplicationServer
     $Background = $true
     $env:APP_ENV = 'development'
-    $env:DB_CONNECTION = 'sqlite'
+    # Mantem a mesma regra da acao executar: servidor.local.php pode selecionar sqlsrv.
     $env:APP_BASE_PATH = $BasePath
     Start-ApplicationServer
     $applicationUrl = Get-ApplicationUrl 'login'
