@@ -13,6 +13,7 @@
   <script src="/assets/js/auth.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/calculations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/formulas.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
+  <script src="/assets/js/ieo-recorrente.js?v=IEO-RECORRENTE-001" defer></script>
   <script src="/assets/js/quarterly.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/indicators.js?v=INDICADORES-DETALHE-LANCAMENTO-002" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/app.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
@@ -33,7 +34,7 @@
 
       <section id="indicatorCatalogFilters" class="filters" aria-label="Filtros dos indicadores">
         <label>Plano <select data-filter="plano"></select></label>
-        <label>Pilar <select data-filter="pilar"></select></label>
+        <label>Pilar estratégico <select data-filter="pilar"></select></label>
         <label>Unidade apuradora <select data-filter="unidade"></select></label>
         <label>Diretoria responsável <select data-filter="diretoria"></select></label>
       </section>
@@ -203,8 +204,3 @@
   </div>
 </body>
 </html>
-
-
-
-
-
