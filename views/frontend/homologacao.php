@@ -9,6 +9,7 @@
   <script src="/assets/js/situations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/bootstrap-data.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/dataStore.js?v=SOLICITACOES-REABERTURA-001" defer></script>
+  <script src="/assets/js/central-persistence.js?v=PERSISTENCIA-CENTRAL-009" defer></script>
   <script src="/assets/js/databaseService.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/auth.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/calculations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
