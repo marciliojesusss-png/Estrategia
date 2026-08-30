@@ -177,7 +177,15 @@
 
   async function initPage() {
     const page = document.body.dataset.page;
-    const storageInfo = await DataStore.getStorageInfo();
+    const centralExecutive = page === "resumoExecutivo";
+    const storageInfo = centralExecutive
+      ? {
+          mode: "php_sqlserver",
+          centralAvailable: true,
+          localDatabase: "SQL Server",
+          message: "Fonte central SQL Server ativa."
+        }
+      : await DataStore.getStorageInfo();
 
     if (page === "login") {
       await initLogin();
@@ -198,10 +206,14 @@
 
     const module = window.PageModules && window.PageModules[page];
     if (module) {
-      const data = await DataStore.loadAll();
-      await module.init({ data, user });
+      if (centralExecutive) {
+        await module.init({ user });
+      } else {
+        const data = await DataStore.loadAll();
+        await module.init({ data, user });
+      }
     }
-    if (window.DataService?.initBaseValidacaoLocal) {
+    if (!centralExecutive && window.DataService?.initBaseValidacaoLocal) {
       window.DataService.initBaseValidacaoLocal();
     }
   }

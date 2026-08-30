@@ -75,7 +75,6 @@ assert.match(reportsHtml, /id="databaseLocalPanel"/);
 assert.match(adminHtml, /assets\/js\/databaseService\.js/);
 assert.match(reportsHtml, /assets\/js\/databaseService\.js/);
 [
-  "resumo-executivo.php",
   "visao-trimestral.php",
   "indicadores.php",
   "lancamentos.php",
@@ -86,6 +85,9 @@ assert.match(reportsHtml, /assets\/js\/databaseService\.js/);
   const html = fs.readFileSync(path.join(frontendViews, page), "utf8");
   assert.match(html, /assets\/js\/databaseService\.js/, page);
 });
+const executiveHtml = fs.readFileSync(path.join(frontendViews, "resumo-executivo.php"), "utf8");
+assert.doesNotMatch(executiveHtml, /assets\/js\/(?:bootstrap-data|dataStore|databaseService)\.js/);
+assert.match(fs.readFileSync(path.join(root, "assets", "js", "executiveSummary.js"), "utf8"), /api\/dashboard\/dados/);
 assert.match(app, /Modo SQL local ativo/);
 assert.match(app, /\/database\/indicadores\.sqlite/);
 assert.match(app, /CAIXA_LOTERIAS_DB_DRIVER === "sqlite"/);

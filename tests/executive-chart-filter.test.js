@@ -26,7 +26,7 @@ assert.match(executiveSummary, /data-map-index="\$\{index\}"/);
 assert.match(executiveSummary, /data-map-size="\$\{size\}"/);
 assert.match(executiveSummary, /applyIndicatorFilter\(Number\(item\.dataset\.indicatorId\)\)/);
 assert.match(executiveSummary, /aria-pressed="\$\{active \? "true" : "false"\}"/);
-assert.match(executiveSummary, /class="executive-performance-card executive-performance-\$\{tone\} executive-performance-size-\$\{size\} \$\{active \? "is-active" : ""\}"/);
+assert.match(executiveSummary, /class="executive-performance-card executive-performance-\$\{tone\} executive-performance-size-\$\{size\} \$\{active \? "is-active" : ""\} \$\{deadlineStatus\?\.atrasado \? "has-deadline-alert" : ""\}"/);
 assert.match(executiveSummary, /chart\.getElementsAtEventForMode/);
 assert.match(executiveSummary, /row\[segment\.key\]/);
 assert.match(executiveSummary, /applyChartFilter\(row\.pillar, segment\.situation, \{ scrollToTable: true \}\)/);

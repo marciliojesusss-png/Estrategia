@@ -57,6 +57,18 @@ assert.equal(internals.performancePercentLabel(1.04), "104% da meta");
 assert.equal(internals.performancePercentLabel(null), "Sem percentual");
 assert.equal(internals.performancePercentValue(1.04), "104%");
 assert.equal(internals.performancePercentValue(null), "Sem percentual");
+assert.equal(internals.performanceMapSize({ indicador: { numero: 23 } }, 22), "wide");
+assert.equal(internals.performanceMapSize({ indicador: { numero: 22 } }, 21), "normal");
+assert.equal(internals.isExpectedDeadlineCycle({ periodicidade: "Trimestral" }, { mes: 7 }), true);
+assert.equal(internals.isExpectedDeadlineCycle({ periodicidade: "Trimestral" }, { mes: 9 }), true);
+assert.equal(internals.isOperationalCompetenceRequired("mensal", 5), true);
+assert.equal(internals.isOperationalCompetenceRequired("trimestral", 5), false);
+assert.equal(internals.isOperationalCompetenceRequired("trimestral", 6), true);
+assert.equal(internals.isOperationalCompetenceRequired("semestral", 5), false);
+assert.equal(internals.isOperationalCompetenceRequired("semestral", 6), true);
+assert.equal(internals.isOperationalCompetenceRequired("anual", 11), false);
+assert.equal(internals.isOperationalCompetenceRequired("anual", 12), true);
+assert.equal(internals.isExpectedDeadlineCycle({ periodicidade: "Não especificada" }, { mes: 7 }), true);
 assert.equal(
   internals.shortIndicatorName({ indicador: "IEO Recorrente (Índice de Eficiência Operacional Recorrente)" }),
   "IEO"

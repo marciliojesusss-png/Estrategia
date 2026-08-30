@@ -27,6 +27,8 @@
     indicators: [],
     launches: [],
     rules: [],
+    operationalFrequencies: [],
+    prazos: [],
     chartFilter: {
       pilar: null,
       situacao: null
@@ -117,6 +119,113 @@
     return shortIndicatorName(indicator);
   }
 
+  async function loadCentralExecutiveData() {
+    const target = typeof window.appUrl === "function"
+      ? window.appUrl("api/dashboard/dados")
+      : `${window.APP_BASE_PATH || ""}/index.php?route=api/dashboard/dados`;
+    const response = await window.fetch(target, { cache: "no-store" });
+    const payload = await response.json().catch(() => ({}));
+    const data = payload?.dados;
+    if (!response.ok || payload?.sucesso === false || !data) {
+      throw new Error(payload?.mensagem || "Não foi possível consultar a fonte central do Resumo Executivo.");
+    }
+    if (![data.indicadores, data.lancamentos, data.regrasIndicadores, data.frequenciasCobrancaOperacional, data.prazos].every(Array.isArray)) {
+      throw new Error("A fonte central retornou dados incompletos para o Resumo Executivo.");
+    }
+    if (normalizeText(data.fonte?.driver) !== "sqlsrv") {
+      throw new Error("O Resumo Executivo exige a fonte central SQL Server.");
+    }
+    return data;
+  }
+
+  function isOperationalCompetenceRequired(frequency, month) {
+    const normalizedFrequency = normalizeText(frequency) || "mensal";
+    const numericMonth = Number(month);
+    if (!Number.isInteger(numericMonth) || numericMonth < 1 || numericMonth > 12) return false;
+    if (normalizedFrequency === "trimestral") return numericMonth % 3 === 0;
+    if (normalizedFrequency === "semestral") return numericMonth === 6 || numericMonth === 12;
+    if (normalizedFrequency === "anual") return numericMonth === 12;
+    return normalizedFrequency === "mensal";
+  }
+
+  function operationalFrequencyForIndicator(indicator) {
+    const configured = state.operationalFrequencies.find(
+      (item) => Number(item.indicadorId) === Number(indicator?.id)
+    );
+    return configured?.frequenciaCobrancaOperacional || "mensal";
+  }
+
+  function isExpectedDeadlineCycle(indicator, launch) {
+    return isOperationalCompetenceRequired(
+      operationalFrequencyForIndicator(indicator),
+      launch?.mes
+    );
+  }
+
+  function operationalLaunchForResult(result, referenceDate = new Date()) {
+    if (!result?.indicador) return null;
+    const filters = selectedFilters();
+    const activeCompetences = (state.prazos || [])
+      .filter((item) => item?.ativo !== false)
+      .map((item) => String(item.competencia || ""))
+      .filter((item) => /^\d{4}-\d{2}$/.test(item));
+    const referenceCompetence = `${referenceDate.getFullYear()}-${String(referenceDate.getMonth() + 1).padStart(2, "0")}`;
+    let targetCompetence = null;
+
+    if (filters.periodo === "Mensal") {
+      const selectedMonth = MONTHS.find(([, name]) => name === filters.competencia)?.[0] || null;
+      targetCompetence = selectedMonth
+        ? `2026-${String(selectedMonth).padStart(2, "0")}`
+        : activeCompetences.filter((item) => item <= referenceCompetence).sort().at(-1) || null;
+    } else if (filters.periodo === "Trimestral") {
+      const quarter = QuarterlyConsolidation.QUARTERS.find((item) => `${item.label}/2026` === filters.competencia);
+      const months = quarter?.months || quarter?.meses || [];
+      const competences = months.map((month) => `2026-${String(month).padStart(2, "0")}`);
+      targetCompetence = activeCompetences.filter((item) => competences.includes(item) && item <= referenceCompetence).sort().at(-1) || null;
+    } else {
+      targetCompetence = activeCompetences.filter((item) => item.startsWith("2026-") && item <= referenceCompetence).sort().at(-1) || null;
+    }
+
+    if (!targetCompetence) return result.lancamentoAcao || result.lancamento || null;
+    const launch = state.launches.find((item) => (
+      Number(item.indicadorId) === Number(result.indicador.id) &&
+      window.PrazoApuracao.competenceOf(item) === targetCompetence
+    )) || null;
+    return launch && isExpectedDeadlineCycle(result.indicador, launch) ? launch : null;
+  }
+
+  function deadlineStatusForResult(result, referenceDate = new Date()) {
+    if (!window.PrazoApuracao) return null;
+    const launch = operationalLaunchForResult(result, referenceDate);
+    if (!launch) return null;
+    const prazo = window.PrazoApuracao.findForLaunch(state.prazos, launch);
+    return {
+      ...window.PrazoApuracao.avaliar(launch, prazo, referenceDate),
+      competencia: window.PrazoApuracao.competenceOf(launch),
+      statusOperacional: launch.status
+    };
+  }
+
+  function formatDeadlineCompetence(value) {
+    const match = String(value || "").match(/^(\d{4})-(\d{2})$/);
+    if (!match) return "-";
+    const month = MONTHS.find(([number]) => number === Number(match[2]));
+    return month ? `${month[1].slice(0, 3)}/${match[1]}` : value;
+  }
+
+  function deadlineAlertMarkup(deadlineStatus) {
+    if (!deadlineStatus?.atrasado) return "";
+    const tone = deadlineStatus.codigo === window.PrazoApuracao.STATUS.HOMOLOGACAO_ATRASADA
+      ? "approval-overdue"
+      : "fill-overdue";
+    return `
+      <span class="deadline-alert deadline-alert--${tone}" role="status">
+        <strong><span aria-hidden="true">⚠</span> ${escapeHtml(deadlineStatus.mensagem)}</strong>
+        <small>${escapeHtml(formatDeadlineCompetence(deadlineStatus.competencia))} · Prazo: ${escapeHtml(deadlineStatus.prazoFormatado)}</small>
+      </span>
+    `;
+  }
+
   function performanceToneByPercent(percentual) {
     const percent = toFiniteNumber(percentual);
     if (percent === null) return "cinza";
@@ -153,7 +262,7 @@
   function performanceMapSize(result, index) {
     const number = Number(result?.indicador?.numero);
     if ([3].includes(number)) return "tall";
-    if ([13, 15, 17, 18, 21].includes(number)) return "wide";
+    if ([13, 15, 17, 18, 21, 23].includes(number)) return "wide";
     if (index < 6) return "featured";
     return "normal";
   }
@@ -526,7 +635,7 @@
       (filters.unidade === "Todos" || indicator.unidadeApuradora === filters.unidade) &&
       (filters.diretoria === "Todos" || indicator.diretoriaResponsavel === filters.diretoria)
     ));
-    const ids = new Set(indicators.map((item) => item.id));
+    const ids = new Set(indicators.map((item) => Number(item.id)));
     if (filters.periodo === "Trimestral") {
       return indicators
         .map((indicator) => quarterlyResult(indicator, filters.competencia))
@@ -540,7 +649,7 @@
       ? MONTHS.find(([, name]) => name === filters.competencia)?.[0] || null
       : null;
     const launches = state.launches.filter((launch) => (
-      ids.has(launch.indicadorId) &&
+      ids.has(Number(launch.indicadorId)) &&
       Number(launch.ano) === 2026 &&
       (!selectedMonth || Number(launch.mes) <= selectedMonth)
     ));
@@ -895,6 +1004,7 @@
     const active = Number(result.indicador.id) === Number(state.indicatorFilterId);
     const size = performanceMapSize(result, index);
     const showOperationalStatus = shouldShowOperationalStatusInPerformanceMap();
+    const deadlineStatus = deadlineStatusForResult(result);
     const tooltipLines = [
       `Indicador: ${name}`,
       `Resultado oficial: ${officialResult}`,
@@ -906,13 +1016,18 @@
       `Variação: ${variationLabel}`,
       `Situação: ${situation}`
     ];
-    if (showOperationalStatus) {
+    if (deadlineStatus?.atrasado) {
+      if (showOperationalStatus) tooltipLines.push(`Status do resultado oficial: ${status}`);
+      tooltipLines.push(`Competência operacional: ${formatDeadlineCompetence(deadlineStatus.competencia)}`);
+      tooltipLines.push(`Status operacional: ${deadlineStatus.statusOperacional}`);
+      tooltipLines.push(`${deadlineStatus.mensagem} — prazo: ${deadlineStatus.prazoFormatado}`);
+    } else if (showOperationalStatus) {
       tooltipLines.push(`Status: ${status}`);
     }
     const tooltip = tooltipLines.join("\n");
     return `
       <button
-        class="executive-performance-card executive-performance-${tone} executive-performance-size-${size} ${active ? "is-active" : ""}"
+        class="executive-performance-card executive-performance-${tone} executive-performance-size-${size} ${active ? "is-active" : ""} ${deadlineStatus?.atrasado ? "has-deadline-alert" : ""}"
         type="button"
         data-indicator-id="${result.indicador.id}"
         data-map-index="${index}"
@@ -932,6 +1047,7 @@
         <span class="executive-performance-footer">
           <span class="executive-performance-variation executive-performance-variation-${variation?.direction || "none"}">${escapeHtml(variationLabel)}</span>
         </span>
+        ${deadlineAlertMarkup(deadlineStatus)}
       </button>
     `;
   }
@@ -1039,13 +1155,16 @@
     renderTable(tableResults);
   }
 
-  async function init({ data, user }) {
+  async function init({ user }) {
+    const data = await loadCentralExecutiveData();
     state = {
       data,
       user,
       indicators: Auth.filterIndicatorsByUser(data.indicadores, user),
       launches: Auth.filterLaunchesByUser(data.lancamentos, data.indicadores, user),
       rules: data.regrasIndicadores || [],
+      operationalFrequencies: data.frequenciasCobrancaOperacional || [],
+      prazos: data.prazos || [],
       chartFilter: {
         pilar: null,
         situacao: null
@@ -1116,6 +1235,14 @@
       formatPerformanceVariation,
       performancePercentLabel,
       performancePercentValue,
+      performanceMapSize,
+      loadCentralExecutiveData,
+      deadlineStatusForResult,
+      deadlineAlertMarkup,
+      operationalLaunchForResult,
+      isExpectedDeadlineCycle,
+      isOperationalCompetenceRequired,
+      operationalFrequencyForIndicator,
       shortIndicatorName,
       nomeIndicadorMapa
     };

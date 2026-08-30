@@ -78,7 +78,7 @@
     if (window.IndicatorFormulas && IndicatorFormulas.obterRegra) {
       return IndicatorFormulas.obterRegra(indicador, regras || []);
     }
-    return (regras || []).find((regra) => regra.indicadorId === indicador.id) || null;
+    return (regras || []).find((regra) => Number(regra.indicadorId) === Number(indicador.id)) || null;
   }
 
   function getEntryDate(lancamento) {
@@ -315,7 +315,9 @@
   function calcularResultadosOficiais(indicadores, lancamentos, regras) {
     return indicadores.map((indicador) => {
       const regra = getRule(indicador, regras);
-      const lancamentosDoIndicador = lancamentos.filter((item) => item.indicadorId === indicador.id);
+      const lancamentosDoIndicador = lancamentos.filter(
+        (item) => Number(item.indicadorId) === Number(indicador.id)
+      );
       return obterResultadoDashboard(indicador, regra, lancamentosDoIndicador);
     });
   }

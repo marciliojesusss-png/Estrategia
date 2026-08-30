@@ -15,6 +15,7 @@ require_once __DIR__ . '/../app/controllers/HomologacaoApiController.php';
 require_once __DIR__ . '/../app/controllers/DashboardApiController.php';
 require_once __DIR__ . '/../app/controllers/AdministracaoController.php';
 require_once __DIR__ . '/../app/controllers/AdministracaoApiController.php';
+require_once __DIR__ . '/../app/controllers/PrazosApuracaoApiController.php';
 
 // Mantém links, formulários e assets sob a aplicação virtual configurada no IIS.
 ob_start(function ($content) {
@@ -123,6 +124,9 @@ $router->get('/api/dashboard/{action}',array($dashboardApi,'handle'));
 $adminApi=new AdministracaoApiController();
 $router->any('/api/administracao/{resource}',array($adminApi,'handle'));
 $router->any('/api/administracao/{resource}/{id}',array($adminApi,'handle'));
+$prazosApuracaoApi = new PrazosApuracaoApiController();
+$router->any('/api/prazos-apuracao', array($prazosApuracaoApi, 'handle'));
+$router->any('/api/prazos-apuracao/{id}', array($prazosApuracaoApi, 'handle'));
 
 $router->get('/saude', function () {
     Response::success(array('aplicacao' => 'disponivel', 'php' => PHP_VERSION), 'Aplicacao disponivel.');

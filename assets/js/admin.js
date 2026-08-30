@@ -43,6 +43,7 @@
     diretorias: "Diretorias responsáveis",
     indicadores: "Indicadores",
     metas: "Metas mensais",
+    prazosApuracao: "Prazos de Apuração",
     tiposCalculo: "Tipos de cálculo",
     reabertura: "Reabertura de lançamento",
     solicitacoesReabertura: "Solicitações de Reabertura",
@@ -57,7 +58,8 @@
     accessUsers: null,
     accessStorage: null,
     accessStorageWarned: false,
-    loadingAccessUsers: false
+    loadingAccessUsers: false,
+    prazos: []
   };
 
   const ACCESS_PROFILE_OPTIONS = [
@@ -95,7 +97,10 @@
       },
       ...options
     });
-    const payload = await response.json().catch(() => ({}));
+    const payload = await response.json().catch(() => null);
+    if (!payload || typeof payload !== "object") {
+      throw new Error(`Resposta inválida da API (${response.status}).`);
+    }
     if (!response.ok || payload.ok === false || payload.sucesso === false) {
       throw new Error(payload.error || payload.mensagem || `Falha na API (${response.status}).`);
     }
@@ -159,6 +164,7 @@
       ["Diretorias responsáveis", state.data.diretorias.length],
       ["Indicadores", state.data.indicadores.length],
       ["Metas mensais", state.data.metas.length],
+      ["Prazos de apuração", state.prazos.length],
       ["Lançamentos", state.data.lancamentos.length],
       ["Solicitações pendentes", (state.data.solicitacoesReabertura || []).filter((item) => item.statusSolicitacao === "Pendente").length],
       ["Solicitações aprovadas", (state.data.solicitacoesReabertura || []).filter((item) => item.statusSolicitacao === "Aprovada").length],
@@ -214,7 +220,7 @@
       button.classList.toggle("active", button.dataset.adminModule === module);
     });
     document.getElementById("adminForm").hidden = true;
-    document.getElementById("adminNewButton").hidden = !["acessos", "usuarios", "planos", "pilares", "unidades", "diretorias", "metas"].includes(module);
+    document.getElementById("adminNewButton").hidden = !["acessos", "usuarios", "planos", "pilares", "unidades", "diretorias", "metas", "prazosApuracao"].includes(module);
     renderModule();
   }
 
@@ -760,6 +766,102 @@
     renderModule();
   }
 
+
+  async function loadPrazosApuracao() {
+    try {
+      const payload = await adminApi("api/prazos-apuracao");
+      state.prazos = Array.isArray(payload) ? payload : [];
+    } catch (error) {
+      state.prazos = [];
+      showMessage(error.message || "Não foi possível carregar os prazos de apuração.", "warning");
+    }
+  }
+
+  function formatCompetencia(value) {
+    const match = String(value || "").match(/^(\d{4})-(\d{2})$/);
+    if (!match) return value || "-";
+    const month = MESES.find(([number]) => number === Number(match[2]));
+    return month ? `${month[1].slice(0, 3)}/${match[1]}` : value;
+  }
+
+  function renderPrazosApuracao() {
+    const rows = state.prazos.map((item) => `
+      <tr>
+        <td>${escapeHtml(formatCompetencia(item.competencia))}</td>
+        <td>${escapeHtml(PrazoApuracao.formatDate(item.dataLimitePreenchimento))}</td>
+        <td>${escapeHtml(PrazoApuracao.formatDate(item.dataLimiteHomologacao))}</td>
+        <td><span class="badge ${item.ativo ? "ok" : "danger"}">${item.ativo ? "Ativo" : "Inativo"}</span></td>
+        <td><button class="secondary-action table-action" type="button" data-edit-prazo="${escapeHtml(item.id)}">Editar</button></td>
+      </tr>
+    `);
+    table(["Competência", "Preenchimento", "Homologação", "Status", "Ações"], rows);
+  }
+
+  function openPrazoApuracaoForm(item = null) {
+    const form = document.getElementById("adminForm");
+    const source = item || {
+      competencia: "",
+      dataLimitePreenchimento: "",
+      dataLimiteHomologacao: "",
+      ativo: true
+    };
+    form.innerHTML = `
+      <label>Competência
+        <input name="competencia" type="month" value="${escapeHtml(source.competencia)}" required>
+      </label>
+      <label>Prazo para preenchimento
+        <input name="dataLimitePreenchimento" type="date" value="${escapeHtml(source.dataLimitePreenchimento)}" required>
+      </label>
+      <label>Prazo para homologação
+        <input name="dataLimiteHomologacao" type="date" value="${escapeHtml(source.dataLimiteHomologacao)}" required>
+      </label>
+      <label>Ativo
+        <select name="ativo" required>
+          ${options([["true", "Ativo"], ["false", "Inativo"]], String(source.ativo !== false))}
+        </select>
+      </label>
+      <div class="form-actions full-span">
+        <button class="primary-action" type="submit">Salvar prazo</button>
+        <button id="adminCancelForm" class="secondary-action" type="button">Cancelar</button>
+      </div>
+    `;
+    form.hidden = false;
+    state.editingId = item ? item.id : null;
+  }
+
+  async function savePrazoApuracaoForm(event) {
+    event.preventDefault();
+    const values = Object.fromEntries(new FormData(event.currentTarget).entries());
+    if (values.dataLimiteHomologacao < values.dataLimitePreenchimento) {
+      showMessage("O prazo de homologação não pode ser anterior ao prazo de preenchimento.", "warning");
+      return;
+    }
+    const payload = {
+      competencia: values.competencia,
+      dataLimitePreenchimento: values.dataLimitePreenchimento,
+      dataLimiteHomologacao: values.dataLimiteHomologacao,
+      ativo: values.ativo === "true"
+    };
+    const id = state.editingId;
+    try {
+      const saved = await adminApi(id ? `api/prazos-apuracao/${encodeURIComponent(id)}` : "api/prazos-apuracao", {
+        method: id ? "PUT" : "POST",
+        body: JSON.stringify(payload)
+      });
+      state.prazos = id === null
+        ? [saved, ...state.prazos]
+        : state.prazos.map((item) => String(item.id) === String(id) ? saved : item);
+      state.prazos.sort((a, b) => String(b.competencia).localeCompare(String(a.competencia)));
+      showMessage("Prazo de apuração salvo no SQL Server.");
+      document.getElementById("adminForm").hidden = true;
+      renderCards();
+      renderPrazosApuracao();
+    } catch (error) {
+      showMessage(error.message || "Não foi possível salvar o prazo de apuração.", "warning");
+    }
+  }
+
+
   function renderHistorico() {
     const rows = [...state.data.historico].reverse().slice(0, 200).map((item) => `
       <tr>
@@ -786,6 +888,7 @@
     if (state.module === "indicadores") renderIndicadores();
     if (state.module === "metas") renderMetas();
     if (state.module === "tiposCalculo") renderTiposCalculo();
+    if (state.module === "prazosApuracao") renderPrazosApuracao();
     if (state.module === "reabertura") renderReabertura();
     if (state.module === "solicitacoesReabertura") renderSolicitacoesReabertura();
     if (state.module === "historico") renderHistorico();
@@ -797,6 +900,10 @@
     });
 
     document.getElementById("adminNewButton").addEventListener("click", () => {
+      if (state.module === "prazosApuracao") {
+        openPrazoApuracaoForm();
+        return;
+      }
       if (state.module === "acessos") {
         openAccessForm();
         return;
@@ -814,6 +921,10 @@
     });
 
     document.getElementById("adminForm").addEventListener("submit", (event) => {
+      if (state.module === "prazosApuracao") {
+        savePrazoApuracaoForm(event);
+        return;
+      }
       if (state.module === "acessos") {
         saveAccessForm(event);
         return;
@@ -832,6 +943,13 @@
     });
 
     document.getElementById("adminTableBody").addEventListener("click", (event) => {
+      const prazoButton = event.target.closest("[data-edit-prazo]");
+      if (prazoButton) {
+        const item = state.prazos.find((record) => String(record.id) === String(prazoButton.dataset.editPrazo));
+        if (item) openPrazoApuracaoForm(item);
+        return;
+      }
+
       const accessButton = event.target.closest("[data-edit-access]");
       if (accessButton) {
         const item = (state.accessUsers || []).find((record) => String(record.id) === String(accessButton.dataset.editAccess));
@@ -883,8 +1001,9 @@
 
   async function init({ data, user }) {
     const storageInfo = await DataStore.getStorageInfo();
-    state = { data, user, storageInfo, module: "acessos", editingId: null, accessUsers: null, accessStorage: null, accessStorageWarned: false, loadingAccessUsers: false };
+    state = { data, user, storageInfo, module: "acessos", editingId: null, accessUsers: null, accessStorage: null, accessStorageWarned: false, loadingAccessUsers: false, prazos: [] };
     state.data.solicitacoesReabertura = state.data.solicitacoesReabertura || [];
+    await loadPrazosApuracao();
     renderConfigurationInfo();
     renderCards();
     bindEvents();

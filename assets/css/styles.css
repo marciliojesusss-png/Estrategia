@@ -1157,6 +1157,52 @@ button:focus-visible {
   font-weight: 800;
 }
 
+.executive-performance-card.has-deadline-alert {
+  grid-template-rows: auto minmax(30px, auto) auto auto;
+}
+
+.deadline-alert {
+  display: grid;
+  gap: 1px;
+  align-self: end;
+  padding: 5px 7px;
+  border: 1px solid rgba(230, 237, 242, 0.28);
+  border-left: 3px solid #f0ad1e;
+  border-radius: 5px;
+  color: #ffffff;
+  background: #082c3d;
+  box-shadow: 0 2px 6px rgba(0, 15, 24, 0.28);
+}
+
+.executive-performance-card .deadline-alert strong {
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 900;
+  line-height: 1.15;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-transform: none;
+}
+
+.executive-performance-card .deadline-alert strong > span {
+  color: #f0ad1e;
+}
+
+.deadline-alert small {
+  color: #e6edf2;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.deadline-alert--approval-overdue {
+  background: #082c3d;
+}
+
+.deadline-alert--fill-overdue {
+  background: #082c3d;
+}
+
 .executive-performance-variation-up,
 .executive-performance-variation-flat {
   color: #ecfff0;

@@ -4,21 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CAIXA Loterias | Resumo Executivo</title>
-  <link rel="stylesheet" href="/assets/css/styles.css?v=RESUMO-MAPA-DESEMPENHO-002">
+  <link rel="stylesheet" href="/assets/css/styles.css?v=RESUMO-ALERTA-PETROLEO-002">
   <script src="<?= APP_BASE_PATH ?>/assets/vendor/chart.umd.min.js?v=4.4.7" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/currency.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/ieo-recorrente.js?v=IEO-RECORRENTE-002" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/situations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/bootstrap-data.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/dataStore.js?v=SOLICITACOES-REABERTURA-001" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/databaseService.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/auth.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/calculations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/formulas.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/quarterly.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/dashboard.js?v=SOLICITACOES-REABERTURA-001" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/executiveSummary.js?v=RESUMO-MAPA-DESEMPENHO-001" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/app.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/prazo-apuracao.js?v=PRAZOS-APURACAO-001" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/dashboard.js?v=RESUMO-FONTE-CENTRAL-002" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/executiveSummary.js?v=RESUMO-GRID-COMPACTO-001" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/app.js?v=PERSISTENCIA-CENTRAL-009" defer></script>
 </head>
 <body data-page="resumoExecutivo">
   <div class="app-shell">
