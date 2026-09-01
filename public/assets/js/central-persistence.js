@@ -123,6 +123,14 @@
 
   function showPersistenceError(error) {
     const message = `Falha ao gravar no banco central: ${error.message}`;
+    const actionTarget = root.document && (
+      root.document.getElementById("launchActionFeedback") ||
+      root.document.getElementById("approvalActionFeedback")
+    );
+    if (actionTarget && root.ActionFeedback?.show(actionTarget, message, "error")) {
+      console.error(message, error);
+      return;
+    }
     const target = root.document && (
       root.document.getElementById("launchMessage") ||
       root.document.getElementById("approvalMessage")

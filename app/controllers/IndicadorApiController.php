@@ -2,11 +2,18 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../services/IndicadorService.php';
+require_once __DIR__ . '/../services/IndicadorConsultaInstitucionalService.php';
 
 final class IndicadorApiController
 {
     private $service;
-    public function __construct() { $this->service = new IndicadorService(Database::getConnection()); }
+    private $institutionalService;
+    public function __construct()
+    {
+        $db = Database::getConnection();
+        $this->service = new IndicadorService($db);
+        $this->institutionalService = new IndicadorConsultaInstitucionalService($db);
+    }
 
     public function handle($id = null)
     {
@@ -37,11 +44,27 @@ final class IndicadorApiController
 
     private function show($id)
     {
+        if ($this->isGeneralView($_GET)) {
+            $user = Auth::requirePermission('dashboard', 'visualizar', true);
+            try {
+                return Response::success(
+                    $this->institutionalService->detalhe($id, $user),
+                    'Detalhe institucional consultado.'
+                );
+            } catch (OutOfBoundsException $error) {
+                return Response::error($error->getMessage(), 404);
+            }
+        }
         $user = Auth::requirePermission('indicadores', 'visualizar', true);
         $item = $this->service->find($id);
         if (!$item) return Response::error('Indicador nao encontrado.', 404);
         if ($user['perfil'] !== 'administrador' && $user['perfil'] !== 'usuario_companhia') Auth::authorizeRecord($item, true);
         Response::success($item, 'Indicador consultado.');
+    }
+
+    private function isGeneralView(array $source)
+    {
+        return isset($source['escopo']) && strtolower(trim((string) $source['escopo'])) === 'geral';
     }
 
     private function status($id, array $user)

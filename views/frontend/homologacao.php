@@ -4,18 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CAIXA Loterias | Homologação</title>
-  <link rel="stylesheet" href="/assets/css/styles.css?v=EVIDENCIAS-002">
+  <link rel="stylesheet" href="/assets/css/styles.css?v=ACTION-FEEDBACK-001">
   <script src="/assets/js/currency.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/ieo-recorrente.js?v=IEO-RECORRENTE-002" defer></script>
   <script src="/assets/js/situations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/bootstrap-data.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/dataStore.js?v=SOLICITACOES-REABERTURA-001" defer></script>
-  <script src="/assets/js/central-persistence.js?v=PERSISTENCIA-CENTRAL-009" defer></script>
+  <script src="/assets/js/central-persistence.js?v=ACTION-FEEDBACK-001" defer></script>
   <script src="/assets/js/databaseService.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/auth.js?v=RELATORIOS-ADMIN-001" defer></script>
   <script src="/assets/js/calculations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/formulas.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="/assets/js/approvals.js?v=EVIDENCIAS-002" defer></script>
+  <script src="/assets/js/action-feedback.js?v=ACTION-FEEDBACK-001" defer></script>
+  <script src="/assets/js/approvals.js?v=ACTION-FEEDBACK-001" defer></script>
   <script src="/assets/js/app.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
 </head>
 <body data-page="homologacao">
@@ -101,7 +102,8 @@
             <textarea id="approvalObservacaoDiretoria" rows="4"></textarea>
           </label>
 
-          <div class="form-actions full-span">
+          <div class="form-actions action-feedback-bar full-span">
+            <div id="approvalActionFeedback" class="action-feedback" role="status" aria-live="polite" hidden></div>
             <button id="approveButton" class="primary-action" type="button">Homologar</button>
             <button id="returnButton" class="secondary-action" type="button">Devolver para ajuste</button>
             <button id="reopenButton" class="secondary-action" type="button">Reabrir para edição</button>

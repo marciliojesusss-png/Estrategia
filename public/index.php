@@ -144,7 +144,6 @@ $router->get('/saude/banco', function () {
         Response::error('Banco de dados indisponivel.', 503);
     }
 });
-
 $route = isset($_GET['route']) ? trim((string) $_GET['route'], '/') : '';
 if ($route === '') {
     $route = 'dashboard';

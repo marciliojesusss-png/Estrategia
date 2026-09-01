@@ -639,39 +639,27 @@
   }
 
   async function reopenLaunch(id) {
-    const launch = state.data.lancamentos.find((item) => item.id === id);
+    const launch = state.data.lancamentos.find((item) => String(item.id) === String(id));
     if (!launch || launch.status !== "Homologado") return;
-    const original = { ...launch };
-    const updated = {
-      ...launch,
-      status: "Reaberto",
-      homologadoPor: "",
-      dataHomologacao: "",
-      observacaoDiretoria: `${launch.observacaoDiretoria || ""}`.trim(),
-      solicitacaoReabertura: launch.solicitacaoReabertura
-        ? { ...launch.solicitacaoReabertura, status: "Atendida", dataAtendimento: new Date().toISOString() }
-        : null
-    };
-    state.data.lancamentos = state.data.lancamentos.map((item) => item.id === id ? updated : item);
-    state.data.homologacoes = state.data.homologacoes.map((item) => (
-      item.lancamentoId === id ? { ...item, status: "Reaberto", observacaoDiretoria: updated.observacaoDiretoria } : item
-    ));
-    await Promise.all([
-      DataStore.salvarLancamentos(state.data.lancamentos),
-      DataStore.saveLocal("homologacoes", state.data.homologacoes)
-    ]);
-    await DataStore.appendHistory({
-      usuario: state.user.email || state.user.nome,
-      acao: "reabertura_lancamento",
-      entidade: "lancamentos",
-      registroId: id,
-      valorAnterior: original,
-      valorNovo: updated
-    });
-    state.data.historico = await DataStore.loadJson("historico");
-    showMessage("Lançamento reaberto para ajuste.");
-    renderCards();
-    renderModule();
+    const justificativa = window.prompt("Informe a justificativa da reabertura:");
+    if (!justificativa || !justificativa.trim()) {
+      showMessage("A justificativa da reabertura é obrigatória.", "warning");
+      return;
+    }
+    try {
+      const updated = await adminApi(`api/lancamentos/${encodeURIComponent(id)}/reabrir`, {
+        method: "POST",
+        body: JSON.stringify({ justificativa: justificativa.trim() })
+      });
+      state.data.lancamentos = state.data.lancamentos.map((item) => (
+        String(item.id) === String(id) ? { ...item, ...updated } : item
+      ));
+      showMessage("Lançamento reaberto para edição com sucesso.");
+      renderCards();
+      renderModule();
+    } catch (error) {
+      showMessage(error.message || "Não foi possível reabrir o lançamento para edição.", "warning");
+    }
   }
 
   function renderSolicitacoesReabertura() {
@@ -728,33 +716,41 @@
       return;
     }
 
+    try {
       const payload = await adminApi("api/solicitacoes-reabertura", {
-      method: "POST",
-      body: JSON.stringify({
-        action: decision === "approve" ? "aprovar" : "negar",
-        id,
-        justificativaDecisao: justificativaDecisao.trim()
-      })
-    });
-    if (payload.solicitacao) {
-      state.data.solicitacoesReabertura = (state.data.solicitacoesReabertura || []).map((item) => (
-        item.id === id ? payload.solicitacao : item
-      ));
+        method: "POST",
+        body: JSON.stringify({
+          action: decision === "approve" ? "aprovar" : "negar",
+          id,
+          justificativaDecisao: justificativaDecisao.trim()
+        })
+      });
+      if (payload.solicitacao) {
+        state.data.solicitacoesReabertura = (state.data.solicitacoesReabertura || []).map((item) => (
+          String(item.id) === String(id) ? payload.solicitacao : item
+        ));
+      }
+      if (payload.lancamento) {
+        state.data.lancamentos = state.data.lancamentos.map((item) => (
+          String(item.id) === String(payload.lancamento.id) ? payload.lancamento : item
+        ));
+      }
+      showMessage(
+        decision === "approve"
+          ? "Solicitação aprovada e lançamento reaberto para edição com sucesso."
+          : "Solicitação de reabertura negada com sucesso.",
+        "info"
+      );
+      renderCards();
+      renderModule();
+    } catch (error) {
+      showMessage(
+        error.message || (decision === "approve"
+          ? "Não foi possível aprovar a solicitação de reabertura."
+          : "Não foi possível negar a solicitação de reabertura."),
+        "warning"
+      );
     }
-    if (payload.lancamento) {
-      state.data.lancamentos = state.data.lancamentos.map((item) => (
-        String(item.id) === String(payload.lancamento.id) ? payload.lancamento : item
-      ));
-    }
-    state.data.historico = await DataStore.loadJson("historico");
-    showMessage(
-      decision === "approve"
-        ? "Solicitacao aprovada. O lancamento foi reaberto para edicao."
-        : "Solicitacao negada. O lancamento permanece homologado.",
-      "info"
-    );
-    renderCards();
-    renderModule();
   }
 
   async function resetOperationalData() {
@@ -852,7 +848,7 @@
         ? [saved, ...state.prazos]
         : state.prazos.map((item) => String(item.id) === String(id) ? saved : item);
       state.prazos.sort((a, b) => String(b.competencia).localeCompare(String(a.competencia)));
-      showMessage("Prazo de apuração salvo no SQL Server.");
+      showMessage("Prazo salvo com sucesso.");
       document.getElementById("adminForm").hidden = true;
       renderCards();
       renderPrazosApuracao();

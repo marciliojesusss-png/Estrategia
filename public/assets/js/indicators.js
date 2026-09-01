@@ -27,7 +27,8 @@
     indicadores: [],
     selectedId: null,
     selectedLaunchId: null,
-    editMode: false
+    editMode: false,
+    institutionalDetail: null
   };
 
   function unique(values) {
@@ -76,10 +77,62 @@
     return params.get("view") === "detalhe" || Boolean(params.get("id") || params.get("indicadorId") || params.get("lancamentoId"));
   }
 
+  function requestedDetailScope() {
+    return new URLSearchParams(window.location.search).get("escopo") === "geral" ? "geral" : "proprio";
+  }
+
+  function isGeneralDetailRequest() {
+    const params = new URLSearchParams(window.location.search);
+    return isRouteDetailMode() && params.get("origem") === "resumo-executivo" && requestedDetailScope() === "geral";
+  }
+
   function detailBackTarget() {
-    const origin = new URLSearchParams(window.location.search).get("origem");
+    const params = new URLSearchParams(window.location.search);
+    const origin = params.get("origem");
     const page = origin === "indicadores" ? "indicadores" : "resumo-executivo";
-    return window.AppRoutes ? window.AppRoutes.page(page) : `/${page}`;
+    const backParams = page === "resumo-executivo" && requestedDetailScope() === "geral"
+      ? { escopo: "geral" }
+      : undefined;
+    return window.AppRoutes ? window.AppRoutes.page(page, backParams) : `/${page}${backParams ? "?escopo=geral" : ""}`;
+  }
+
+  async function loadInstitutionalDetail(indicatorId) {
+    const baseTarget = typeof window.appUrl === "function"
+      ? window.appUrl(`api/indicadores/${indicatorId}`)
+      : `${window.APP_BASE_PATH || ""}/index.php?route=api/indicadores/${encodeURIComponent(indicatorId)}`;
+    const target = `${baseTarget}${baseTarget.includes("?") ? "&" : "?"}escopo=geral`;
+    const response = await window.fetch(target, { cache: "no-store" });
+    const payload = await response.json().catch(() => ({}));
+    const detail = payload?.dados;
+    if (!response.ok || payload?.sucesso === false || !detail?.indicador) {
+      throw new Error(payload?.mensagem || "Não foi possível consultar o detalhe institucional.");
+    }
+    if (normalizeText(detail.fonte?.driver) !== "sqlsrv") {
+      throw new Error("O detalhe institucional exige a fonte central SQL Server.");
+    }
+    if (detail.consulta?.escopo !== "geral") {
+      throw new Error("O backend não confirmou o escopo institucional solicitado.");
+    }
+    return detail;
+  }
+
+  function mergeInstitutionalDetail(detail) {
+    const indicatorId = Number(detail.indicador.id);
+    const withoutIndicator = (state.indicadores || []).filter((item) => Number(item.id) !== indicatorId);
+    const launches = (state.data.lancamentos || []).filter((item) => Number(item.indicadorId) !== indicatorId);
+    const rules = (state.data.regrasIndicadores || []).filter((item) => Number(item.indicadorId) !== indicatorId);
+    state.indicadores = [...withoutIndicator, detail.indicador];
+    state.data = {
+      ...state.data,
+      indicadores: state.indicadores,
+      lancamentos: [...launches, ...(detail.lancamentos || [])],
+      regrasIndicadores: [...rules, ...(detail.regrasIndicadores || [])]
+    };
+    state.institutionalDetail = detail;
+  }
+
+  function isInstitutionalReadOnly() {
+    return state.institutionalDetail?.consulta?.somenteLeitura === true;
   }
 
   function setIndicatorPageMode(indicador) {
@@ -106,7 +159,7 @@
   }
 
   function canEdit() {
-    return state.user && state.user.perfil === "Administrador";
+    return state.user && state.user.perfil === "Administrador" && !isInstitutionalReadOnly();
   }
 
   function showMessage(message, type = "info") {
@@ -200,6 +253,7 @@
     const panel = document.getElementById("indicatorDetailPanel");
     const readOnly = document.getElementById("indicatorReadOnly");
     const form = document.getElementById("indicatorForm");
+    const institutionalNotice = document.getElementById("indicatorInstitutionalNotice");
     setIndicatorPageMode(indicador);
 
     if (!indicador) {
@@ -208,6 +262,7 @@
     }
 
     panel.hidden = false;
+    if (institutionalNotice) institutionalNotice.hidden = !isInstitutionalReadOnly();
     document.getElementById("detailTitle").textContent = indicador.indicador;
     document.getElementById("detailBadge").textContent = indicador.ativo ? "Ativo" : "Inativo";
 
@@ -351,6 +406,9 @@
       view: "detalhe",
       id: String(indicadorId)
     });
+    const current = new URLSearchParams(window.location.search);
+    if (current.get("origem")) params.set("origem", current.get("origem"));
+    if (current.get("escopo")) params.set("escopo", current.get("escopo"));
     if (launchId) params.set("lancamentoId", String(launchId));
     return window.AppRoutes ? window.AppRoutes.page("indicadores", params) : `/indicadores?${params.toString()}`;
   }
@@ -528,6 +586,20 @@
     return "info";
   }
 
+  function resolveMonthlySituation(calculated, resolved) {
+    if (resolved?.resultadoMensal == null && resolved?.percentualAtingido == null) return "Sem cálculo";
+    return resolved?.situacao ||
+      (calculated?.statusCalculo === "aguardando_dados" ? "Sem cálculo" : Calculations.calcularStatusDesempenho(resolved?.percentualAtingido));
+  }
+
+  function performanceBadge(situation) {
+    const normalized = window.Situations ? Situations.normalizarSituacao(situation) : situation;
+    if (normalized === "Atingido") return "ok";
+    if (normalized === "Abaixo da meta" || normalized === "Atenção") return "warn";
+    if (normalized === "Crítico") return "danger";
+    return "info";
+  }
+
   function launchDetailItem([label, value, full]) {
     return `
       <article class="detail-item ${full ? "full-span" : ""}">
@@ -594,6 +666,13 @@
   }
 
   function renderEvidence(lancamento) {
+    if (lancamento?.evidenciasRestritas) {
+      return renderTextBlock(
+        "Fonte/Evidência",
+        "Existem evidências associadas. O acesso aos documentos permanece restrito ao escopo operacional autorizado.",
+        "Existem evidências associadas."
+      );
+    }
     const entries = evidenceEntries(lancamento);
     if (!entries.length) {
       return renderTextBlock("Fonte/Evidência", "Nenhuma evidência anexada.", "Nenhuma evidência anexada.");
@@ -873,14 +952,7 @@
       return action?.semestrePrevisto || "-";
     }
 
-    document.getElementById("indicatorMonthlyHeader").innerHTML = isPix ? `
-      <th>Mês</th>
-      <th>Arrecadação com PIX no mês</th>
-      <th>Arrecadação total nos canais eletrônicos</th>
-      <th>Resultado mensal</th>
-      <th>Status mensal</th>
-      <th>Ação</th>
-    ` : isOfertasPersonalizadas ? `
+    document.getElementById("indicatorMonthlyHeader").innerHTML = isOfertasPersonalizadas ? `
       <th>Competência</th>
       <th>Base de clientes ativos identificáveis</th>
       <th>Clientes únicos com oferta personalizada</th>
@@ -1043,13 +1115,6 @@
       <th>Situação da competência</th>
       <th>Status mensal</th>
       <th>Ação</th>
-    ` : isDigitalChannels ? `
-      <th>Mês</th>
-      <th>Arrecadação total nos canais eletrônicos</th>
-      <th>Arrecadação total dos produtos de loterias</th>
-      <th>Resultado mensal</th>
-      <th>Status mensal</th>
-      <th>Ação</th>
     ` : isEcossistema ? `
       <th>Competencia</th>
       <th>Cenario</th>
@@ -1095,16 +1160,15 @@
     ` : `
       <th>Mês</th>
       <th>Meta mensal/referência</th>
-      <th>Realizado mensal</th>
       <th>Resultado mensal</th>
+      <th>% atingido</th>
+      <th>Situação</th>
       <th>Status mensal</th>
       <th>Ação</th>
     `;
 
     document.getElementById("indicatorMonthlyComposition").innerHTML = QuarterlyConsolidation.MONTHS.map(([month, name]) => {
       const launch = byMonth[month];
-      const digitalNumerator = Calculations.parseMoedaBR(launch?.camposEntrada?.arrecadacaoCanaisEletronicosMes);
-      const digitalDenominator = Calculations.parseMoedaBR(launch?.camposEntrada?.arrecadacaoTotalProdutosLoteriasMes);
       if (isOfertasPersonalizadas) {
         const calculationScope = launches.filter((item) => Number(item.mes) <= month);
         const calculated = launch
@@ -1537,11 +1601,6 @@
           </tr>
         `;
       }
-      const result = isDigitalChannels
-        ? digitalDenominator > 0 && digitalNumerator !== null
-          ? digitalNumerator / digitalDenominator
-          : launch?.resultadoMensal ?? launch?.realizadoMensal
-        : launch?.resultadoMensal ?? launch?.realizadoMensal;
       if (isAccumulatedGoalCurve) {
         const syntheticLaunch = launch || { ano: 2026, mes: month, competencia: `2026-${String(month).padStart(2, "0")}` };
         const calculationScope = launches.filter((item) => Number(item.mes) <= month);
@@ -1564,21 +1623,25 @@
           </tr>
         `;
       }
+      const calculationScope = launches.filter((item) => Number(item.mes) <= month);
+      const calculated = launch
+        ? calculateIndicatorForDisplay(indicador, regra, launch, calculationScope)
+        : null;
+      const resolved = resolveMonthlyCalculation(calculated, launch);
+      const metaReference = calculated?.metaReferenciaMensal ??
+        calculated?.metaReferenciaPeriodo ??
+        launch?.metaReferencia ??
+        launch?.metaMensal ??
+        regra.metaAnualValor;
+      const situation = resolveMonthlySituation(calculated, resolved);
       return `
         <tr>
           <td>${name}/2026</td>
-          <td>${isPix
-            ? Calculations.formatarValor(launch?.camposEntrada?.arrecadacaoPixMes, "moeda")
-            : isDigitalChannels
-              ? Calculations.formatarValor(launch?.camposEntrada?.arrecadacaoCanaisEletronicosMes, "moeda")
-              : Calculations.formatarValor(launch?.metaMensal ?? regra.metaAnualValor, regra.unidadeMedida)}</td>
-          <td>${isPix
-            ? Calculations.formatarValor(launch?.camposEntrada?.arrecadacaoTotalCanaisEletronicosMes, "moeda")
-            : isDigitalChannels
-              ? Calculations.formatarValor(launch?.camposEntrada?.arrecadacaoTotalProdutosLoteriasMes, "moeda")
-              : Calculations.formatarValor(launch?.realizadoMensal, regra.unidadeMedida)}</td>
-          <td>${Calculations.formatarValor(result, regra.unidadeMedida)}</td>
-          <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologação" ? "warn" : "info"}">${escapeHtml(launch?.status || "Não iniciado")}</span></td>
+          <td>${Calculations.formatarValor(metaReference, regra.unidadeMedida)}</td>
+          <td>${Calculations.formatarValor(resolved.resultadoMensal, regra.unidadeMedida)}</td>
+          <td>${Calculations.formatarPercentual(resolved.percentualAtingido)}</td>
+          <td><span class="badge ${performanceBadge(situation)}">${escapeHtml(situation)}</span></td>
+          <td><span class="badge ${launchBadge(launch?.status)}">${escapeHtml(launch?.status || "Não iniciado")}</span></td>
           <td>${monthlyAction(launch)}</td>
         </tr>
       `;
@@ -1640,7 +1703,10 @@
   }
 
   function getSelectedIndicator() {
-    return state.indicadores.find((item) => item.id === state.selectedId);
+    if (Number(state.institutionalDetail?.indicador?.id) === Number(state.selectedId)) {
+      return state.institutionalDetail.indicador;
+    }
+    return state.indicadores.find((item) => Number(item.id) === Number(state.selectedId));
   }
 
   function refresh() {
@@ -1649,7 +1715,9 @@
     const filtered = getFilteredIndicators();
     renderTable(filtered);
 
-    if (state.selectedId && !visible.some((item) => item.id === state.selectedId)) {
+    const authorizedInstitutionalDetail = isRouteDetailMode() &&
+      Number(state.institutionalDetail?.indicador?.id) === Number(state.selectedId);
+    if (state.selectedId && !visible.some((item) => Number(item.id) === Number(state.selectedId)) && !authorizedInstitutionalDetail) {
       state.selectedId = null;
       state.selectedLaunchId = null;
       state.editMode = false;
@@ -1729,7 +1797,8 @@
     });
 
     document.getElementById("backFromIndicatorDetail")?.addEventListener("click", () => {
-      if (window.history.length > 1) {
+      const origin = new URLSearchParams(window.location.search).get("origem");
+      if (origin !== "resumo-executivo" && window.history.length > 1) {
         window.history.back();
         return;
       }
@@ -1759,8 +1828,19 @@
       indicadores: data.indicadores,
       selectedId: null,
       selectedLaunchId: null,
-      editMode: false
+      editMode: false,
+      institutionalDetail: null
     };
+
+    const directRequestedId = requestedIndicatorId();
+    let institutionalLoadError = "";
+    if (directRequestedId && isGeneralDetailRequest()) {
+      try {
+        mergeInstitutionalDetail(await loadInstitutionalDetail(directRequestedId));
+      } catch (error) {
+        institutionalLoadError = error?.message || "Não foi possível consultar o detalhe institucional.";
+      }
+    }
 
     document.querySelectorAll(".admin-only").forEach((element) => {
       element.hidden = !canEdit();
@@ -1771,13 +1851,15 @@
 
     const requestedLaunch = (state.data.lancamentos || []).find((item) => Number(item.id) === requestedLaunchId());
     const requestedId = requestedLaunch ? Number(requestedLaunch.indicadorId) : requestedIndicatorId();
-    if (requestedId && state.indicadores.some((item) => item.id === requestedId)) {
+    const requestedIndicatorAvailable = state.indicadores.some((item) => Number(item.id) === requestedId) ||
+      Number(state.institutionalDetail?.indicador?.id) === requestedId;
+    if (requestedId && requestedIndicatorAvailable && !institutionalLoadError) {
       state.selectedId = requestedId;
       state.selectedLaunchId = requestedLaunch ? Number(requestedLaunch.id) : null;
       renderDetail(getSelectedIndicator());
       document.getElementById(state.selectedLaunchId ? "monthlyLaunchDetail" : "indicatorDetailPanel").scrollIntoView({ block: "start" });
     } else if (isRouteDetailMode()) {
-      showMessage("Indicador não encontrado ou indisponível para o perfil atual.", "warning");
+      showMessage(institutionalLoadError || "Indicador não encontrado ou indisponível para o perfil atual.", "warning");
       setIndicatorPageMode(null);
     }
   }
@@ -1789,6 +1871,11 @@
       resolveAccumulatedCalculation,
       resolveAccumulatedGoalCalculation,
       mergeCalculationForDisplay,
+      resolveMonthlySituation,
+      performanceBadge,
+      requestedDetailScope,
+      isGeneralDetailRequest,
+      isInstitutionalReadOnly,
       resolveGrowthTrackingModes,
       usesAccumulatedGoalCurve
     };

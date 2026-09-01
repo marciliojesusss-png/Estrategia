@@ -49,7 +49,7 @@ final class EvidenciaController
             $user = Auth::requirePermission('lancamentos', 'gerenciar', true);
             Auth::requireCsrf();
             $this->service->remove($id, $user);
-            Response::success(array('id'=>$id), 'Evidência removida.');
+            Response::success(array('id'=>$id), 'Evidência removida com sucesso.');
         } catch (LogicException $error) {
             Response::error($error->getMessage(), 409);
         } catch (OutOfBoundsException $error) {
@@ -95,7 +95,7 @@ final class EvidenciaController
             $repository = new EvidenciasRepository(Database::getConnection());
             $evidence = $repository->find($id);
             $this->service->remove($id, $user);
-            $_SESSION['_flash'] = 'Evidência removida.';
+            $_SESSION['_flash'] = 'Evidência removida com sucesso.';
             Response::redirect('/lancamentos/' . $evidence['lancamento_id']);
         } catch (Exception $error) {
             ErrorHandler::renderError($error instanceof UnexpectedValueException ? 403 : 404);

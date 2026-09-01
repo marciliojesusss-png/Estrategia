@@ -5,6 +5,12 @@ const vm = require("node:vm");
 
 const context = {
   URLSearchParams,
+  Calculations: {
+    calcularStatusDesempenho(value) {
+      if (value === null || value === undefined || value === "") return "Sem cálculo";
+      return Number(value) >= 1 ? "Atingido" : "Abaixo da meta";
+    }
+  },
   window: {
     __INDICATORS_TEST__: true,
     PageModules: {},
@@ -33,9 +39,18 @@ const {
   resolveAccumulatedCalculation,
   resolveAccumulatedGoalCalculation,
   mergeCalculationForDisplay,
+  resolveMonthlySituation,
+  performanceBadge,
   resolveGrowthTrackingModes,
   usesAccumulatedGoalCurve
 } = context.window.IndicatorsInternals;
+
+context.window.location.search = "?view=detalhe&id=12&origem=resumo-executivo&escopo=geral";
+assert.equal(context.window.IndicatorsInternals.requestedDetailScope(), "geral");
+assert.equal(context.window.IndicatorsInternals.isGeneralDetailRequest(), true);
+context.window.location.search = "?view=detalhe&id=12&escopo=geral";
+assert.equal(context.window.IndicatorsInternals.isGeneralDetailRequest(), false, "Escopo geral sem origem esperada nao deve ativar o carregamento institucional no frontend");
+context.window.location.search = "";
 
 const persisted = resolveMonthlyCalculation(
   { resultadoMensal: null, percentualAtingidoMensal: null, statusCalculo: "erro" },
@@ -59,6 +74,25 @@ assert.equal(recalculated.percentualAtingido, 3);
 const empty = resolveMonthlyCalculation(null, null);
 assert.equal(empty.resultadoMensal, null);
 assert.equal(empty.percentualAtingido, null);
+assert.equal(resolveMonthlySituation(null, empty), "Sem cálculo");
+assert.equal(performanceBadge("Atingido"), "ok");
+assert.equal(performanceBadge("Abaixo da meta"), "warn");
+assert.equal(performanceBadge("Sem cálculo"), "info");
+
+const actualZero = resolveMonthlyCalculation(
+  { resultadoMensal: 0, percentualAtingidoMensal: 0 },
+  null
+);
+assert.equal(actualZero.resultadoMensal, 0, "Resultado real zero não pode ser tratado como ausência de apuração");
+assert.equal(actualZero.percentualAtingido, 0, "Percentual real zero não pode ser substituído por hífen");
+assert.equal(resolveMonthlySituation(null, actualZero), "Abaixo da meta");
+
+assert.match(indicatorsSource, /<th>Meta mensal\/referência<\/th>\s*<th>Resultado mensal<\/th>\s*<th>% atingido<\/th>\s*<th>Situação<\/th>\s*<th>Status mensal<\/th>/);
+assert.doesNotMatch(
+  indicatorsSource.match(/` : `\s*<th>Mês<\/th>[\s\S]*?<th>Ação<\/th>\s*`;/)?.[0] || "",
+  /Realizado mensal/,
+  "O fallback genérico não deve exibir a coluna Realizado mensal"
+);
 
 const socialTransfer = resolveAccumulatedCalculation(
   { resultadoMensal: null, percentualAtingidoMensal: null, statusCalculo: "erro" },

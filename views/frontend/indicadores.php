@@ -15,7 +15,7 @@
   <script src="/assets/js/calculations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/formulas.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/quarterly.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/indicators.js?v=INDICADORES-DETALHE-LANCAMENTO-002" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/indicators.js?v=INDICADORES-DETALHE-INSTITUCIONAL-004" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/app.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
 </head>
 <body data-page="indicadores">
@@ -40,6 +40,12 @@
       </section>
 
       <div id="indicatorMessage" class="notice" hidden></div>
+
+      <div id="indicatorInstitutionalNotice" class="notice info compact-notice" hidden>
+        <span class="badge info">Visão institucional</span>
+        <span class="badge info">Somente leitura</span>
+        <span>Indicador fora do seu escopo operacional. São exibidas somente posições homologadas, sem acesso ampliado a documentos.</span>
+      </div>
 
       <section id="indicatorCatalogPanel" class="panel">
         <div class="panel-actions indicators-actions">
@@ -90,8 +96,9 @@
                   <tr id="indicatorMonthlyHeader">
                     <th>Mês</th>
                     <th>Meta mensal/referência</th>
-                    <th>Realizado mensal</th>
                     <th>Resultado mensal</th>
+                    <th>% atingido</th>
+                    <th>Situação</th>
                     <th>Status mensal</th>
                     <th>Ação</th>
                   </tr>

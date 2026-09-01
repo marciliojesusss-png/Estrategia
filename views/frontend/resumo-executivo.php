@@ -15,7 +15,7 @@
   <script src="<?= APP_BASE_PATH ?>/assets/js/quarterly.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/prazo-apuracao.js?v=PRAZOS-APURACAO-001" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/dashboard.js?v=RESUMO-FONTE-CENTRAL-002" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/executiveSummary.js?v=RESUMO-ESCOPO-VISAO-001" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/executiveSummary.js?v=RESUMO-DETALHE-INSTITUCIONAL-002" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/app.js?v=PERSISTENCIA-CENTRAL-009" defer></script>
 </head>
 <body data-page="resumoExecutivo">

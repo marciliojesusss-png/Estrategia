@@ -9,6 +9,7 @@
     regras: [],
     lancamentos: [],
     evidenciasPorLancamento: {},
+    evidenceOperationInProgress: false,
     selectedId: null
   };
 
@@ -85,6 +86,15 @@
     target.className = `notice ${type}`;
     target.textContent = message;
     target.hidden = false;
+  }
+
+  function showActionFeedback(message, type = "success") {
+    if (window.ActionFeedback?.show("launchActionFeedback", message, type)) return;
+    showMessage(message, type === "error" ? "danger" : type === "warning" ? "warning" : "info");
+  }
+
+  function clearActionFeedback() {
+    window.ActionFeedback?.clear("launchActionFeedback");
   }
 
   function getIndicatorMap() {
@@ -181,28 +191,70 @@
     return state.evidenciasPorLancamento[String(launchId)];
   }
 
-  async function addEvidence() {
-    const lancamento = getSelectedLaunch();
+  function pendingEvidenceFile() {
+    return document.getElementById("launchEvidenceFile")?.files?.[0] || null;
+  }
+
+  function renderPendingEvidenceStatus(errorMessage = "") {
+    const target = document.getElementById("launchEvidencePendingStatus");
+    if (!target) return;
+    const file = pendingEvidenceFile();
+    if (!file) {
+      target.hidden = true;
+      target.textContent = "";
+      target.className = "evidence-pending-status";
+      return;
+    }
+    target.hidden = false;
+    target.className = `evidence-pending-status${errorMessage ? " is-error" : ""}`;
+    target.textContent = errorMessage || `Arquivo selecionado: ${file.name} — será anexado ao salvar.`;
+  }
+
+  function setEvidenceOperationBusy(busy) {
+    state.evidenceOperationInProgress = busy;
+    ["addEvidenceButton", "saveDraftButton", "sendApprovalButton"].forEach((id) => {
+      const button = document.getElementById(id);
+      if (button) button.disabled = busy || !isEditable(getSelectedLaunch());
+    });
+  }
+
+  async function uploadPendingEvidence(lancamento) {
     const fileInput = document.getElementById("launchEvidenceFile");
-    if (!lancamento || !isEditable(lancamento) || !fileInput.files?.length) {
+    const file = pendingEvidenceFile();
+    if (!file) return { uploaded: false };
+
+    const form = new FormData();
+    form.append("evidencia", file);
+    form.append("descricao", document.getElementById("launchEvidenceDescription").value.trim());
+    try {
+      const evidence = await evidenceApi(`api/lancamentos/${encodeURIComponent(lancamento.id)}/evidencias`, { method: "POST", body: form });
+      fileInput.value = "";
+      document.getElementById("launchEvidenceDescription").value = "";
+      renderPendingEvidenceStatus();
+      await loadEvidenceList(lancamento.id, true);
+      return { uploaded: true, evidence };
+    } catch (error) {
+      renderPendingEvidenceStatus(`Arquivo selecionado, mas ainda não anexado: ${error.message}`);
+      throw error;
+    }
+  }
+
+  async function addEvidence() {
+    clearActionFeedback();
+    const lancamento = getSelectedLaunch();
+    if (!lancamento || !isEditable(lancamento) || !pendingEvidenceFile()) {
       showMessage("Selecione um arquivo permitido.", "warning");
       return;
     }
-    const form = new FormData();
-    form.append("evidencia", fileInput.files[0]);
-    form.append("descricao", document.getElementById("launchEvidenceDescription").value.trim());
-    const button = document.getElementById("addEvidenceButton");
-    button.disabled = true;
+    if (state.evidenceOperationInProgress) return;
+    setEvidenceOperationBusy(true);
     try {
-      await evidenceApi(`api/lancamentos/${encodeURIComponent(lancamento.id)}/evidencias`, { method: "POST", body: form });
-      fileInput.value = "";
-      document.getElementById("launchEvidenceDescription").value = "";
-      await loadEvidenceList(lancamento.id, true);
-      showMessage("Evidência anexada com sucesso.", "info");
+      await uploadPendingEvidence(lancamento);
+      showActionFeedback("Evidência anexada com sucesso.");
     } catch (error) {
-      showMessage(error.message, "warning");
+      showActionFeedback(error.message || "Não foi possível anexar a evidência.", "error");
     } finally {
-      button.disabled = !isEditable(lancamento);
+      setEvidenceOperationBusy(false);
     }
   }
 
@@ -210,15 +262,16 @@
     const lancamento = getSelectedLaunch();
     if (!lancamento || !isEditable(lancamento)) return;
     if (!window.confirm("Remover este arquivo de evidência?")) return;
+    clearActionFeedback();
     try {
       await evidenceApi(`api/evidencias/${encodeURIComponent(id)}/remover`, {
         method: "POST",
         body: JSON.stringify({})
       });
       await loadEvidenceList(lancamento.id, true);
-      showMessage("Evidência removida.", "info");
+      showActionFeedback("Evidência removida com sucesso.");
     } catch (error) {
-      showMessage(error.message, "warning");
+      showActionFeedback(error.message || "Não foi possível remover a evidência.", "error");
     }
   }
 
@@ -803,6 +856,7 @@
     legacyJustification.hidden = !legacyText;
     document.getElementById("legacyLaunchJustificationText").textContent = legacyText;
     renderEvidenceList(lancamento);
+    renderPendingEvidenceStatus();
     loadEvidenceList(lancamento.id).catch((error) => showMessage(error.message, "warning"));
 
     updateCalculatedPreview();
@@ -938,7 +992,7 @@
     return result;
   }
 
-  function validateLaunch(indicador, action) {
+  function validateLaunch(indicador, action, options = {}) {
     const regra = getRule(indicador);
     const observacaoArea = document.getElementById("launchObservacaoArea").value.trim();
     const percentualManual = document.getElementById("launchPercentualManual").value;
@@ -990,7 +1044,8 @@
       return false;
     }
 
-    if (action === "send" && regra.exigeEvidencia && !evidenceItems(getSelectedLaunch().id).length) {
+    const pendingEvidenceAllowed = options.allowPendingEvidence && Boolean(pendingEvidenceFile());
+    if (action === "send" && regra.exigeEvidencia && !evidenceItems(getSelectedLaunch().id).length && !pendingEvidenceAllowed) {
       showMessage("Anexe pelo menos um arquivo antes de enviar para homologação.", "warning");
       return false;
     }
@@ -1002,16 +1057,51 @@
     const lancamento = getSelectedLaunch();
     const indicador = lancamento && getIndicatorMap()[lancamento.indicadorId];
     if (!lancamento || !indicador || !isEditable(lancamento)) return;
-    if (action === "send") {
-      try {
+    if (state.evidenceOperationInProgress) return;
+    clearActionFeedback();
+    setEvidenceOperationBusy(true);
+    let evidenceUploaded = false;
+    try {
+      if (action === "send") {
         await loadEvidenceList(lancamento.id, true);
-      } catch (error) {
-        showMessage(error.message, "warning");
-        return;
       }
-    }
-    if (!validateLaunch(indicador, action)) return;
+      if (!validateLaunch(indicador, action, { allowPendingEvidence: true })) return;
 
+      if (pendingEvidenceFile()) {
+        try {
+          const upload = await uploadPendingEvidence(lancamento);
+          evidenceUploaded = upload.uploaded;
+        } catch (uploadError) {
+          if (action === "send") {
+            showActionFeedback(`Não foi possível anexar a evidência. O lançamento não foi enviado para homologação. ${uploadError.message}`, "error");
+            return;
+          }
+          await saveLaunchData(action, lancamento, indicador);
+          showActionFeedback(`Rascunho salvo, mas não foi possível anexar a evidência. O arquivo continua selecionado para nova tentativa. ${uploadError.message}`, "warning");
+          return;
+        }
+      }
+
+      if (!validateLaunch(indicador, action)) return;
+      await saveLaunchData(action, lancamento, indicador);
+      if (action === "send") {
+        showActionFeedback("Lançamento enviado para homologação com sucesso.");
+      } else {
+        showActionFeedback("Rascunho salvo com sucesso.");
+      }
+    } catch (error) {
+      showActionFeedback(
+        error.message || (action === "send"
+          ? "Não foi possível enviar para homologação."
+          : "Não foi possível salvar o rascunho."),
+        "error"
+      );
+    } finally {
+      setEvidenceOperationBusy(false);
+    }
+  }
+
+  async function saveLaunchData(action, lancamento, indicador) {
     const calculation = updateCalculatedPreview();
     const original = { ...lancamento };
     const now = new Date().toISOString();
@@ -1052,10 +1142,10 @@
       valorNovo: state.lancamentos.find((item) => item.id === updated.id)
     });
 
-    showMessage(action === "send" ? "Lançamento enviado para homologação." : "Rascunho salvo com sucesso.", "info");
     refresh();
     state.selectedId = updated.id;
     renderEditor();
+    return updated;
   }
 
   function recomputeAccumulatedForIndicator(indicadorId, ano) {
@@ -1111,28 +1201,27 @@
   async function requestReopening() {
     const launch = getSelectedLaunch();
     if (!launch || launch.status !== "Homologado" || state.user.perfil !== "Unidade Apuradora") return;
-    const updated = {
-      ...launch,
-      solicitacaoReabertura: {
-        status: "Pendente",
-        solicitadaPor: state.user.email || state.user.nome,
-        dataSolicitacao: new Date().toISOString()
-      }
-    };
-    state.lancamentos = state.lancamentos.map((item) => item.id === updated.id ? updated : item);
-    const mergedLaunches = mergeScopedLaunches();
-    state.data.lancamentos = mergedLaunches;
-    await DataStore.salvarLancamentos(mergedLaunches);
-    await DataStore.appendHistory({
-      usuario: state.user.email || state.user.nome,
-      acao: "solicitacao_reabertura_lancamento",
-      entidade: "lancamentos",
-      registroId: updated.id,
-      valorAnterior: launch.solicitacaoReabertura || null,
-      valorNovo: updated.solicitacaoReabertura
-    });
-    showMessage("Solicitação de reabertura registrada para análise da diretoria.", "info");
-    renderEditor();
+    clearActionFeedback();
+    try {
+      const result = await evidenceApi("api/solicitacoes-reabertura", {
+        method: "POST",
+        body: JSON.stringify({
+          action: "criar",
+          lancamentoId: launch.id,
+          indicadorId: launch.indicadorId,
+          competencia: launch.competencia || `${launch.ano}-${String(launch.mes).padStart(2, "0")}`,
+          tipoAjuste: "Correção de valor lançado",
+          justificativa: "Solicitação de reabertura enviada pela ficha de lançamento."
+        })
+      });
+      const updated = { ...launch, solicitacaoReabertura: result.solicitacao || result };
+      state.lancamentos = state.lancamentos.map((item) => String(item.id) === String(updated.id) ? updated : item);
+      state.data.lancamentos = state.data.lancamentos.map((item) => String(item.id) === String(updated.id) ? updated : item);
+      renderEditor();
+      showActionFeedback("Solicitação de reabertura enviada com sucesso.");
+    } catch (error) {
+      showActionFeedback(error.message || "Não foi possível solicitar a reabertura.", "error");
+    }
   }
 
   function refresh() {
@@ -1149,6 +1238,7 @@
       const button = event.target.closest("button[data-id]");
       if (!button) return;
       state.selectedId = button.dataset.id;
+      clearActionFeedback();
       renderEditor();
       document.getElementById("launchEditorPanel").scrollIntoView({ behavior: "smooth", block: "start" });
     });
@@ -1176,6 +1266,7 @@
     document.getElementById("saveDraftButton").addEventListener("click", () => persistLaunch("draft"));
     document.getElementById("sendApprovalButton").addEventListener("click", () => persistLaunch("send"));
     document.getElementById("addEvidenceButton").addEventListener("click", addEvidence);
+    document.getElementById("launchEvidenceFile").addEventListener("change", () => renderPendingEvidenceStatus());
     document.getElementById("launchEvidenceList").addEventListener("click", (event) => {
       const button = event.target.closest("button[data-remove-evidence]");
       if (button) removeEvidence(button.dataset.removeEvidence);
@@ -1196,6 +1287,7 @@
       regras: data.regrasIndicadores || [],
       lancamentos: Auth.filterLaunchesByUser(data.lancamentos, data.indicadores, user),
       evidenciasPorLancamento: {},
+      evidenceOperationInProgress: false,
       selectedId: null
     };
 

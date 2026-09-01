@@ -197,6 +197,22 @@
     }
   }
 
+  function requestedViewScope(user) {
+    const requested = new URLSearchParams(window.location.search).get("escopo");
+    if (canChooseViewScope(user) && requested === "geral") return VIEW_SCOPE.GENERAL;
+    if (canChooseViewScope(user) && requested === "proprio") return VIEW_SCOPE.OWN;
+    return storedViewScope(user);
+  }
+
+  function indicatorDetailNavigationParams(indicatorId, viewScope = state.viewScope) {
+    return {
+      view: "detalhe",
+      id: indicatorId,
+      origem: "resumo-executivo",
+      escopo: viewScope === VIEW_SCOPE.GENERAL ? "geral" : "proprio"
+    };
+  }
+
   function persistViewScope() {
     if (!canChooseViewScope()) return;
     try {
@@ -1326,7 +1342,7 @@
           <td class="official-value">${result.lancamento ? StrategicResults.formatOfficialResult(result) : "-"}</td>
           <td class="col-situacao"><span class="badge badge-situacao ${badgeClass(situation)} ${String(situation).length > 16 ? "long" : ""}">${escapeHtml(situation)}</span></td>
           ${shouldHideStatusColumn() ? "" : `<td class="col-status"><span class="badge badge-status ${badgeClass(status)}">${escapeHtml(status)}</span></td>`}
-          <td><a class="secondary-action table-action dashboard-action" href="${window.AppRoutes ? window.AppRoutes.page("indicadores", { view: "detalhe", id: result.indicador.id, origem: "resumo-executivo" }) : `/indicadores?view=detalhe&id=${result.indicador.id}&origem=resumo-executivo`}" title="Visualizar indicador">Ver</a></td>
+          <td><a class="secondary-action table-action dashboard-action" href="${window.AppRoutes ? window.AppRoutes.page("indicadores", indicatorDetailNavigationParams(result.indicador.id)) : `/indicadores?${new URLSearchParams(indicatorDetailNavigationParams(result.indicador.id)).toString()}`}" title="Visualizar indicador">Ver</a></td>
         </tr>
       `;
     }).join("");
@@ -1347,7 +1363,7 @@
   }
 
   async function init({ user }) {
-    const initialScope = storedViewScope(user);
+    const initialScope = requestedViewScope(user);
     const data = await loadCentralExecutiveData(initialScope);
     state = {
       data: null,
@@ -1447,6 +1463,8 @@
       viewScopeProfileCode,
       canChooseViewScope,
       defaultViewScope,
+      requestedViewScope,
+      indicatorDetailNavigationParams,
       activeIndicators,
       collectionsForViewScope,
       applyCentralData,

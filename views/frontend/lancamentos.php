@@ -4,18 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CAIXA Loterias | Lançamentos</title>
-  <link rel="stylesheet" href="<?= APP_BASE_PATH ?>/assets/css/styles.css?v=EVIDENCIAS-002">
+  <link rel="stylesheet" href="<?= APP_BASE_PATH ?>/assets/css/styles.css?v=ACTION-FEEDBACK-001">
   <script src="/assets/js/currency.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/ieo-recorrente.js?v=IEO-RECORRENTE-002" defer></script>
   <script src="/assets/js/situations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/bootstrap-data.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/dataStore.js?v=SOLICITACOES-REABERTURA-001" defer></script>
-  <script src="/assets/js/central-persistence.js?v=PERSISTENCIA-CENTRAL-009" defer></script>
+  <script src="/assets/js/central-persistence.js?v=ACTION-FEEDBACK-001" defer></script>
   <script src="/assets/js/databaseService.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/auth.js?v=RELATORIOS-ADMIN-001" defer></script>
   <script src="/assets/js/calculations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/formulas.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="/assets/js/launches.js?v=EVIDENCIAS-002" defer></script>
+  <script src="/assets/js/action-feedback.js?v=ACTION-FEEDBACK-001" defer></script>
+  <script src="/assets/js/launches.js?v=ACTION-FEEDBACK-001" defer></script>
   <script src="/assets/js/app.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
 </head>
 <body data-page="lancamentos">
@@ -143,6 +144,7 @@
               </label>
               <button id="addEvidenceButton" class="secondary-action" type="button">+ Adicionar arquivo</button>
             </div>
+            <p id="launchEvidencePendingStatus" class="evidence-pending-status" aria-live="polite" hidden></p>
 
             <div>
               <h4>Arquivos anexados</h4>
@@ -154,7 +156,8 @@
             <textarea id="launchMetrica" rows="4" readonly></textarea>
           </label>
 
-          <div class="form-actions full-span">
+          <div class="form-actions action-feedback-bar full-span">
+            <div id="launchActionFeedback" class="action-feedback" role="status" aria-live="polite" hidden></div>
             <button id="saveDraftButton" class="primary-action" type="button">Salvar rascunho</button>
             <button id="sendApprovalButton" class="secondary-action" type="button">Enviar para homologação</button>
             <button id="requestReopenButton" class="secondary-action" type="button" hidden>Solicitar reabertura</button>

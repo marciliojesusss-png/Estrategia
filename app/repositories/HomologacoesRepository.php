@@ -43,7 +43,7 @@ final class HomologacoesRepository
 
     private function where(array$f,$pending)
     {
-        $a=$pending?'l':'h';$conditions=array();$p=array();if($pending)$conditions[]="l.status = :pending";$p[':pending']=$pending?'Enviado para homologacao':null;if(!$pending)unset($p[':pending']);
+        $a=$pending?'l':'h';$conditions=array();$p=array();if($pending){$conditions[]="(l.status = :pending OR l.status = :pending_accented)";$p[':pending']='Enviado para homologacao';$p[':pending_accented']='Enviado para homologação';}
         $map=array('indicadorId'=>'l.indicador_id','unidade_apuradora'=>'l.unidade_apuradora','diretoria_responsavel'=>'l.diretoria_responsavel','status'=>$pending?'l.status':'h.status_novo');foreach($map as$k=>$col){$v=isset($f[$k])?$f[$k]:(isset($f[lcfirst(str_replace('_','',ucwords($k,'_')))])?$f[lcfirst(str_replace('_','',ucwords($k,'_')))]:null);if($v!==null&&$v!==''&&$v!=='Todos'){$conditions[]=$col.' = :f_'.count($p);$p[':f_'.count($p)]=$v;}}
         if(!empty($f['dataInicial'])){$conditions[]=($pending?'l.created_at':'h.data_acao').' >= :inicio';$p[':inicio']=$f['dataInicial'];}if(!empty($f['dataFinal'])){$conditions[]=($pending?'l.created_at':'h.data_acao').' <= :fim';$p[':fim']=$f['dataFinal'].'T23:59:59';}
         return array($conditions?' WHERE '.implode(' AND ',$conditions):'',$p);

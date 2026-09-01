@@ -5,9 +5,11 @@ const vm = require("node:vm");
 
 const root = path.resolve(__dirname, "..");
 const context = {
+  URLSearchParams,
   window: {
     __EXECUTIVE_SUMMARY_TEST__: true,
-    devicePixelRatio: 1
+    devicePixelRatio: 1,
+    location: { search: "" }
   },
   console,
   Intl,
@@ -79,6 +81,12 @@ assert.equal(internals.defaultViewScope({ perfilCodigo: "unidade_apuradora" }), 
 assert.equal(internals.defaultViewScope({ perfilCodigo: "homologador" }), "own");
 assert.equal(internals.defaultViewScope({ perfilCodigo: "administrador" }), "general");
 assert.equal(internals.defaultViewScope({ perfilCodigo: "usuario_companhia" }), "general");
+assert.equal(internals.indicatorDetailNavigationParams(12, "general").escopo, "geral");
+assert.equal(internals.indicatorDetailNavigationParams(12, "own").escopo, "proprio");
+assert.equal(internals.indicatorDetailNavigationParams(12, "general").origem, "resumo-executivo");
+context.window.location.search = "?escopo=geral";
+assert.equal(internals.requestedViewScope({ perfilCodigo: "homologador" }), "general");
+context.window.location.search = "";
 const scopeData = {
   indicadores: [
     { id: 1, ativo: true, unidadeApuradora: "SUCOL", diretoriaResponsavel: "DIFIR" },

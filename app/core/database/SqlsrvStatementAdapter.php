@@ -36,7 +36,9 @@ final class SqlsrvStatementAdapter
         }
 
         $options = $this->options;
-        if (!$options && defined('SQLSRV_CURSOR_CLIENT_BUFFERED')) {
+        // Cursor client-buffered é útil para leitura, mas interfere em
+        // sqlsrv_rows_affected() quando aplicado a comandos de gravação.
+        if (!$options && preg_match('/^\s*SELECT\b/i', $this->sql) && defined('SQLSRV_CURSOR_CLIENT_BUFFERED')) {
             $options = array('Scrollable' => constant('SQLSRV_CURSOR_CLIENT_BUFFERED'));
         }
 

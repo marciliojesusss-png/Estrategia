@@ -62,6 +62,15 @@
     target.hidden = false;
   }
 
+  function showActionFeedback(message, type = "success") {
+    if (window.ActionFeedback?.show("approvalActionFeedback", message, type)) return;
+    showMessage(message, type === "error" ? "danger" : type === "warning" ? "warning" : "info");
+  }
+
+  function clearActionFeedback() {
+    window.ActionFeedback?.clear("approvalActionFeedback");
+  }
+
   async function apiJson(path, options = {}) {
     const csrfToken = window.Auth?.getCurrentUser?.()?.csrfToken || window.CAIXA_LOTERIAS_AUTH_USER?.csrfToken || "";
     const target = window.appUrl ? window.appUrl(path) : path;
@@ -295,7 +304,7 @@
     reopenButton.disabled = isAdmin() ? !reopenable : !requestable;
   }
 
-  function renderPanel() {
+  function renderPanel(options = {}) {
     const lancamento = getSelectedLaunch();
     const indicador = lancamento && getIndicatorMap()[lancamento.indicadorId];
     const panel = document.getElementById("approvalPanel");
@@ -324,7 +333,7 @@
     renderReference(indicador, lancamento);
     setActionState(lancamento);
 
-    if (lancamento.status === "Homologado") {
+    if (!options.suppressGeneralNotice && lancamento.status === "Homologado") {
       const pendingRequest = pendingReopenRequest(lancamento);
       showMessage(
         canReopen(lancamento) && lancamento.solicitacaoReabertura?.status === "Pendente"
@@ -336,7 +345,7 @@
               : "Lançamentos homologados só podem ser reabertos pelo Administrador. Caso seja necessário corrigir alguma informação, envie uma solicitação de reabertura com justificativa.",
         (canReopen(lancamento) && lancamento.solicitacaoReabertura?.status === "Pendente") || pendingRequest ? "warning" : "info"
       );
-    } else if (!canAct(lancamento)) {
+    } else if (!options.suppressGeneralNotice && !canAct(lancamento)) {
       showMessage(`Lançamento com status "${lancamento.status}" está disponível apenas para consulta.`, "warning");
     }
   }
@@ -431,64 +440,67 @@
       return;
     }
 
-    const result = await apiJson("api/solicitacoes-reabertura", {
-      method: "POST",
-      body: JSON.stringify({
-        action: "criar",
-        lancamentoId: lancamento.id,
-        indicadorId: lancamento.indicadorId,
-        competencia: lancamento.competencia || `${lancamento.ano}-${String(lancamento.mes).padStart(2, "0")}`,
-        tipoAjuste: document.getElementById("reopenRequestType").value,
-        justificativa,
-        observacaoComplementar: document.getElementById("reopenRequestObservation").value.trim()
-      })
-    });
-    const createdRequest = result.solicitacao || result;
-    state.solicitacoesReabertura = [...state.solicitacoesReabertura, createdRequest];
-    state.data.solicitacoesReabertura = state.solicitacoesReabertura;
-    document.getElementById("reopenRequestDialog").close();
-    showMessage("Solicitacao de reabertura enviada ao Administrador.", "info");
-    refresh();
-    state.selectedId = lancamento.id;
-    renderPanel();
+    const submitButton = document.getElementById("submitReopenRequestButton");
+    if (submitButton) submitButton.disabled = true;
+    clearActionFeedback();
+    try {
+      const result = await apiJson("api/solicitacoes-reabertura", {
+        method: "POST",
+        body: JSON.stringify({
+          action: "criar",
+          lancamentoId: lancamento.id,
+          indicadorId: lancamento.indicadorId,
+          competencia: lancamento.competencia || `${lancamento.ano}-${String(lancamento.mes).padStart(2, "0")}`,
+          tipoAjuste: document.getElementById("reopenRequestType").value,
+          justificativa,
+          observacaoComplementar: document.getElementById("reopenRequestObservation").value.trim()
+        })
+      });
+      const createdRequest = result.solicitacao || result;
+      state.solicitacoesReabertura = [...state.solicitacoesReabertura, createdRequest];
+      state.data.solicitacoesReabertura = state.solicitacoesReabertura;
+      document.getElementById("reopenRequestDialog").close();
+      refresh();
+      state.selectedId = lancamento.id;
+      renderPanel({ suppressGeneralNotice: true });
+      showActionFeedback("Solicitação de reabertura enviada com sucesso.");
+    } catch (error) {
+      showActionFeedback(error.message || "Não foi possível solicitar a reabertura.", "error");
+    } finally {
+      if (submitButton) submitButton.disabled = false;
+    }
   }
 
-  function mergeScopedLaunches() {
-    const scopedIds = new Set(state.lancamentos.map((item) => item.id));
-    return state.data.lancamentos.map((item) => (
-      scopedIds.has(item.id) ? state.lancamentos.find((updated) => updated.id === item.id) : item
+  function applyOfficialLaunch(updated) {
+    state.lancamentos = state.lancamentos.map((item) => (
+      String(item.id) === String(updated.id) ? { ...item, ...updated } : item
+    ));
+    state.data.lancamentos = state.data.lancamentos.map((item) => (
+      String(item.id) === String(updated.id) ? { ...item, ...updated } : item
     ));
   }
 
-  function nextHomologacaoId() {
-    return state.homologacoes.length
-      ? Math.max(...state.homologacoes.map((item) => Number(item.id) || 0)) + 1
-      : 1;
+  function setDecisionBusy(busy) {
+    if (!busy) {
+      const lancamento = getSelectedLaunch();
+      if (lancamento) {
+        setActionState(lancamento);
+        return;
+      }
+    }
+    ["approveButton", "returnButton", "reopenButton"].forEach((id) => {
+      const button = document.getElementById(id);
+      if (button) button.disabled = busy;
+    });
   }
 
-  function upsertHomologacao(lancamento, status, observacaoDiretoria) {
-    const existing = state.homologacoes.find((item) => item.lancamentoId === lancamento.id);
-    const base = {
-      lancamentoId: lancamento.id,
-      indicadorId: lancamento.indicadorId,
-      ano: lancamento.ano,
-      mes: lancamento.mes,
-      status,
-      homologadoPor: status === "Homologado" ? state.user.email || state.user.nome : "",
-      dataHomologacao: status === "Homologado" ? new Date().toISOString().slice(0, 10) : "",
-      devolvidoPor: status === "Devolvido para ajuste" ? state.user.email || state.user.nome : "",
-      dataDevolucao: status === "Devolvido para ajuste" ? new Date().toISOString().slice(0, 10) : "",
-      observacaoDiretoria
-    };
-
-    if (existing) {
-      state.homologacoes = state.homologacoes.map((item) => (
-        item.lancamentoId === lancamento.id ? { ...item, ...base } : item
-      ));
-      return;
+  async function reloadOfficialLaunch(id, fallback, observation = "") {
+    try {
+      const detail = await apiJson(`api/homologacoes/${encodeURIComponent(id)}`, { method: "GET" });
+      return { ...(detail.lancamento || fallback), observacaoDiretoria: observation };
+    } catch (_error) {
+      return { ...fallback, observacaoDiretoria: observation };
     }
-
-    state.homologacoes = [...state.homologacoes, { id: nextHomologacaoId(), ...base }];
   }
 
   async function persistDecision(action) {
@@ -501,42 +513,44 @@
       return;
     }
 
-    const original = { ...lancamento };
-    const today = new Date().toISOString().slice(0, 10);
-    const status = action === "approve" ? "Homologado" : "Devolvido para ajuste";
-    const updated = {
-      ...lancamento,
-      status,
-      observacaoDiretoria,
-      homologadoPor: action === "approve" ? state.user.email || state.user.nome : "",
-      dataHomologacao: action === "approve" ? today : "",
-      devolvidoPor: action === "return" ? state.user.email || state.user.nome : "",
-      dataDevolucao: action === "return" ? today : ""
-    };
+    if (action === "return" && observacaoDiretoria.length < 5) {
+      showMessage("A observação da devolução deve ter pelo menos 5 caracteres.", "warning");
+      return;
+    }
 
-    state.lancamentos = state.lancamentos.map((item) => item.id === updated.id ? updated : item);
-    upsertHomologacao(updated, status, observacaoDiretoria);
-
-    const mergedLaunches = mergeScopedLaunches();
-    state.data.lancamentos = mergedLaunches;
-    state.data.homologacoes = state.homologacoes;
-    await Promise.all([
-      DataStore.salvarLancamentos(mergedLaunches),
-      DataStore.saveLocal("homologacoes", state.homologacoes)
-    ]);
-    await DataStore.appendHistory({
-      usuario: state.user.email || state.user.nome,
-      acao: action === "approve" ? "homologacao_lancamento" : "devolucao_lancamento",
-      entidade: "lancamentos",
-      registroId: updated.id,
-      valorAnterior: original,
-      valorNovo: updated
-    });
-
-    showMessage(action === "approve" ? "Lançamento homologado com sucesso." : "Lançamento devolvido para ajuste.", "info");
-    refresh();
-    state.selectedId = updated.id;
-    renderPanel();
+    clearActionFeedback();
+    setDecisionBusy(true);
+    try {
+      const endpoint = action === "approve"
+        ? `api/homologacoes/${encodeURIComponent(lancamento.id)}/aprovar`
+        : `api/homologacoes/${encodeURIComponent(lancamento.id)}/rejeitar`;
+      const body = action === "approve"
+        ? { observacaoDiretoria }
+        : { justificativa: observacaoDiretoria };
+      const confirmed = await apiJson(endpoint, {
+        method: "POST",
+        body: JSON.stringify(body)
+      });
+      const updated = await reloadOfficialLaunch(lancamento.id, confirmed, observacaoDiretoria);
+      applyOfficialLaunch(updated);
+      refresh();
+      state.selectedId = updated.id;
+      renderPanel({ suppressGeneralNotice: true });
+      showActionFeedback(
+        action === "approve"
+          ? "Lançamento homologado com sucesso."
+          : "Lançamento devolvido para ajuste com sucesso."
+      );
+    } catch (error) {
+      showActionFeedback(
+        error.message || (action === "approve"
+          ? "Não foi possível homologar o lançamento."
+          : "Não foi possível devolver o lançamento para ajuste."),
+        "error"
+      );
+    } finally {
+      setDecisionBusy(false);
+    }
   }
 
   async function reopenLaunch() {
@@ -552,44 +566,23 @@
       return;
     }
 
-    const original = { ...lancamento };
-    const today = new Date().toISOString().slice(0, 10);
-    const updated = {
-      ...lancamento,
-      status: "Reaberto",
-      observacaoDiretoria,
-      homologadoPor: "",
-      dataHomologacao: "",
-      reabertoPor: state.user.email || state.user.nome,
-      dataReabertura: today,
-      solicitacaoReabertura: lancamento.solicitacaoReabertura
-        ? { ...lancamento.solicitacaoReabertura, status: "Atendida", dataAtendimento: new Date().toISOString() }
-        : null
-    };
-
-    state.lancamentos = state.lancamentos.map((item) => item.id === updated.id ? updated : item);
-    upsertHomologacao(updated, "Reaberto", observacaoDiretoria);
-
-    const mergedLaunches = mergeScopedLaunches();
-    state.data.lancamentos = mergedLaunches;
-    state.data.homologacoes = state.homologacoes;
-    await Promise.all([
-      DataStore.salvarLancamentos(mergedLaunches),
-      DataStore.saveLocal("homologacoes", state.homologacoes)
-    ]);
-    await DataStore.appendHistory({
-      usuario: state.user.email || state.user.nome,
-      acao: "reabertura_lancamento",
-      entidade: "lancamentos",
-      registroId: updated.id,
-      valorAnterior: original,
-      valorNovo: updated
-    });
-
-    showMessage("Lançamento reaberto para edição pela unidade apuradora.", "info");
-    refresh();
-    state.selectedId = updated.id;
-    renderPanel();
+    clearActionFeedback();
+    setDecisionBusy(true);
+    try {
+      const updated = await apiJson(`api/lancamentos/${encodeURIComponent(lancamento.id)}/reabrir`, {
+        method: "POST",
+        body: JSON.stringify({ justificativa: observacaoDiretoria })
+      });
+      applyOfficialLaunch({ ...updated, observacaoDiretoria });
+      refresh();
+      state.selectedId = updated.id;
+      renderPanel({ suppressGeneralNotice: true });
+      showActionFeedback("Lançamento reaberto para edição com sucesso.");
+    } catch (error) {
+      showActionFeedback(error.message || "Não foi possível reabrir o lançamento para edição.", "error");
+    } finally {
+      setDecisionBusy(false);
+    }
   }
 
   function refresh() {
@@ -606,6 +599,7 @@
       const button = event.target.closest("button[data-id]");
       if (!button) return;
       state.selectedId = button.dataset.id;
+      clearActionFeedback();
       renderPanel();
       document.getElementById("approvalPanel").scrollIntoView({ behavior: "smooth", block: "start" });
     });
@@ -621,6 +615,7 @@
     });
     document.getElementById("closeApprovalButton").addEventListener("click", () => {
       state.selectedId = null;
+      clearActionFeedback();
       document.getElementById("approvalPanel").hidden = true;
     });
   }
