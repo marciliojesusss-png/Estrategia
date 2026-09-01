@@ -88,6 +88,7 @@ assert.equal(actualZero.percentualAtingido, 0, "Percentual real zero não pode s
 assert.equal(resolveMonthlySituation(null, actualZero), "Abaixo da meta");
 
 assert.match(indicatorsSource, /<th>Meta mensal\/referência<\/th>\s*<th>Resultado mensal<\/th>\s*<th>% atingido<\/th>\s*<th>Situação<\/th>\s*<th>Status mensal<\/th>/);
+assert.match(indicatorsSource, /isPrincipiosJogoResponsavel \? `[\s\S]*?<th>Trimestre\/competência<\/th>[\s\S]*?<th>Status da competência<\/th>/);
 assert.doesNotMatch(
   indicatorsSource.match(/` : `\s*<th>Mês<\/th>[\s\S]*?<th>Ação<\/th>\s*`;/)?.[0] || "",
   /Realizado mensal/,

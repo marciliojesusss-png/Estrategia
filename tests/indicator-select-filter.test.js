@@ -8,6 +8,8 @@ const root = path.resolve(__dirname, "..");
 function loadInternals(file, globalName) {
   const context = { window: { PageModules: {} } };
   vm.createContext(context);
+  vm.runInContext(fs.readFileSync(path.join(root, "assets", "js", "indicator-periodicity.js"), "utf8"), context);
+  context.window.IndicatorPeriodicity = context.IndicatorPeriodicity;
   vm.runInContext(fs.readFileSync(path.join(root, "assets", "js", file), "utf8"), context);
   return context.window[globalName];
 }
@@ -58,6 +60,17 @@ for (const module of [
     ["L8"]
   );
   assert.equal(internals.filterLaunches(lancamentos, { mes: "Maio", status: "Não iniciado", indicador: "8" }).length, 0);
+  assert.deepEqual(
+    plain(internals.officialOperationalLaunches(
+      [
+        { id: "L18APR", indicadorId: 18, mes: 4 },
+        { id: "L18JUN", indicadorId: 18, mes: 6 }
+      ],
+      [{ id: 18, periodicidade: "Trimestral" }]
+    )).map((item) => item.id),
+    ["L18JUN"],
+    "Abril não pode permanecer na fila operacional do indicador trimestral."
+  );
 }
 
 for (const view of ["lancamentos.php", "homologacao.php"]) {

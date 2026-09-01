@@ -148,7 +148,7 @@
     if (title) title.textContent = detailMode ? indicador.indicador : "Indicadores";
     if (description) {
       description.textContent = detailMode
-        ? "Consulta metodológica, composição mensal e histórico do indicador."
+        ? `Consulta metodológica, ${window.IndicatorPeriodicity?.compositionLabel(indicador).toLowerCase() || "composição mensal"} e histórico do indicador.`
         : "Catálogo metodológico dos indicadores estratégicos.";
     }
     if (filters) filters.hidden = detailMode;
@@ -924,6 +924,19 @@
       .filter((item) => String(item.indicadorId) === String(indicador.id) && Number(item.ano) === 2026)
       .sort((a, b) => Number(a.mes) - Number(b.mes));
     const byMonth = Object.fromEntries(launches.map((item) => [Number(item.mes), item]));
+    const compositionMonths = QuarterlyConsolidation.MONTHS.filter(([month]) => (
+      window.IndicatorPeriodicity?.isExpectedMonth(indicador, month) !== false
+    ));
+    const compositionEyebrow = document.getElementById("indicatorCompositionEyebrow");
+    const compositionTitle = document.getElementById("indicatorCompositionTitle");
+    if (compositionEyebrow) {
+      compositionEyebrow.textContent = window.IndicatorPeriodicity?.compositionLabel(indicador) || "Composição mensal";
+    }
+    if (compositionTitle) {
+      compositionTitle.textContent = window.IndicatorPeriodicity?.frequencyOf(indicador) === "mensal"
+        ? "Competências de 2026"
+        : "Posições oficiais de 2026";
+    }
 
     function getCurveMeta(launch) {
       const key = launch?.competencia || `${launch?.ano}-${String(launch?.mes).padStart(2, "0")}`;
@@ -1036,7 +1049,7 @@
       <th>Status mensal</th>
       <th>Ação</th>
     ` : isPrincipiosJogoResponsavel ? `
-      <th>Mês/competência</th>
+      <th>Trimestre/competência</th>
       <th>Meta do trimestre</th>
       <th>Elemento RGF-WLA</th>
       <th>Status da ação</th>
@@ -1044,7 +1057,7 @@
       <th>Data de conclusão</th>
       <th>Conta?</th>
       <th>Evidência</th>
-      <th>Status mensal</th>
+      <th>Status da competência</th>
       <th>Ação</th>
     ` : isApoioSocioambiental ? `
       <th>Mês/competência</th>
@@ -1167,7 +1180,7 @@
       <th>Ação</th>
     `;
 
-    document.getElementById("indicatorMonthlyComposition").innerHTML = QuarterlyConsolidation.MONTHS.map(([month, name]) => {
+    document.getElementById("indicatorMonthlyComposition").innerHTML = compositionMonths.map(([month, name]) => {
       const launch = byMonth[month];
       if (isOfertasPersonalizadas) {
         const calculationScope = launches.filter((item) => Number(item.mes) <= month);
@@ -1343,7 +1356,7 @@
         const counts = ["Concluída", "Concluida", "Homologada"].includes(status);
         return `
           <tr>
-            <td>${name}/2026</td>
+            <td>${escapeHtml(window.IndicatorPeriodicity?.competenceLabel(indicador, launch || { ano: 2026, mes: month }, QuarterlyConsolidation.MONTHS) || `${name}/2026`)}</td>
             <td>${Calculations.formatarValor(curve[quarter]?.metaElementosAcumulados, "quantidade")}</td>
             <td>${escapeHtml(launch?.camposEntrada?.elementoRGF || "-")}</td>
             <td>${escapeHtml(status || "-")}</td>

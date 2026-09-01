@@ -3,15 +3,18 @@ declare(strict_types=1);
 
 require_once __DIR__.'/../repositories/HomologacoesRepository.php';
 require_once __DIR__.'/../repositories/LancamentosRepository.php';
+require_once __DIR__.'/../repositories/IndicadoresRepository.php';
 require_once __DIR__.'/../repositories/EvidenciasRepository.php';
 require_once __DIR__.'/../repositories/AuditoriaRepository.php';
 require_once __DIR__.'/LancamentoStateMachine.php';
+require_once __DIR__.'/CompetenciaPeriodicidade.php';
 
 final class HomologacaoService
 {
     private $db;
     private $repo;
     private $launches;
+    private $indicators;
     private $evidence;
     private $audit;
 
@@ -20,11 +23,24 @@ final class HomologacaoService
         $this->db=$db;
         $this->repo=new HomologacoesRepository($db);
         $this->launches=new LancamentosRepository($db);
+        $this->indicators=new IndicadoresRepository($db);
         $this->evidence=new EvidenciasRepository($db);
         $this->audit=new AuditoriaRepository($db);
     }
 
-    public function queue(array $filters,$page,$perPage){return $this->repo->queue($filters,$page,$perPage);}
+    public function queue(array $filters,$page,$perPage)
+    {
+        $all=array();$cursor=1;
+        do{$batch=$this->repo->queue($filters,$cursor,100);$all=array_merge($all,$batch['items']);$cursor++;}while($cursor<=($batch['pagination']['pages'] ?? 0));
+        $indicators=array();
+        foreach($this->indicators->all() as $indicator)$indicators[(string)($indicator['id'] ?? '')]=$indicator;
+        $filtered=array_values(array_filter($all,function($launch)use($indicators){
+            $indicator=$indicators[(string)($launch['indicadorId'] ?? $launch['indicador_id'] ?? '')] ?? null;
+            return $indicator && CompetenciaPeriodicidade::isExpected($indicator,$launch);
+        }));
+        $page=max(1,(int)$page);$perPage=max(1,min(100,(int)$perPage));$total=count($filtered);
+        return array('items'=>array_slice($filtered,($page-1)*$perPage,$perPage),'pagination'=>array('page'=>$page,'perPage'=>$perPage,'total'=>$total,'pages'=>$total?(int)ceil($total/$perPage):0));
+    }
     public function history(array $filters,$page,$perPage){return $this->repo->history($filters,$page,$perPage);}
 
     public function detail($id,array $user)
@@ -69,6 +85,9 @@ final class HomologacaoService
         $before=$this->launches->find($id);
         if(!$before) throw new OutOfBoundsException('Lancamento nao encontrado.');
         if($user['perfil']!=='administrador'&&!AccessPolicy::scopeAllows($user,$before)) throw new UnexpectedValueException('Registro fora do escopo.');
+        $indicator=$this->indicators->find($before['indicadorId'] ?? '');
+        if(!$indicator) throw new OutOfBoundsException('Indicador nao encontrado.');
+        CompetenciaPeriodicidade::assertExpected($indicator,$before);
         $expected=LancamentoStateMachine::SUBMITTED;
         if(LancamentoStateMachine::normalize($before['status'])!==$expected) throw new LogicException('Homologacao ja processada ou indisponivel.');
 

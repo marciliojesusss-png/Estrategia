@@ -474,7 +474,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "numero": 18,
       "pilar": "Sustentabilidade e Cidadania",
       "indicador": "Princípios de Jogo Responsável (WLA)",
-      "periodicidade": "Não especificada",
+      "periodicidade": "Trimestral",
       "plano": "PEI",
       "unidadeApuradora": "SURCI",
       "diretoriaResponsavel": "DICRI",

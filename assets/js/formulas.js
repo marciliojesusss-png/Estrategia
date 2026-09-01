@@ -1003,6 +1003,8 @@
       const metaTrimestral = toNumber(curva[trimestre]?.metaElementosAcumulados);
       const metaReferencia = metaTrimestral || toNumber(regra.metaAnualValor);
       const percentual = metaReferencia ? acumulado / metaReferencia : null;
+      const metaAnual = toNumber(regra.metaAnualValor);
+      const percentualAnual = metaAnual ? acumulado / metaAnual : null;
       const situacao = metaReferencia
         ? acumulado >= metaReferencia
           ? "Atingido"
@@ -1012,6 +1014,11 @@
         elementosAtendidos,
         elementosAtendidosAcumulados: acumulado,
         metaTrimestral,
+        metaAnual,
+        resultadoOficialAnual: acumulado,
+        percentualAtingidoAnual: percentualAnual,
+        percentualAtingidoMetaTrimestral: percentual,
+        percentualAtingidoMetaAnual: percentualAnual,
         situacao
       });
     }

@@ -62,6 +62,11 @@ async function createDataStore({ localLaunches, currentVersion = false } = {}) {
 
   vm.createContext(context);
   vm.runInContext(
+    fs.readFileSync(path.join(__dirname, "..", "assets", "js", "indicator-periodicity.js"), "utf8"),
+    context
+  );
+  context.window.IndicatorPeriodicity = context.IndicatorPeriodicity;
+  vm.runInContext(
     fs.readFileSync(path.join(__dirname, "..", "assets", "js", "dataStore.js"), "utf8"),
     context
   );
@@ -123,6 +128,15 @@ async function createDataStore({ localLaunches, currentVersion = false } = {}) {
   assert.equal(redeLotericaLaunches[0].unidadeApuradora, "SUCOL");
   assert.equal(redeLotericaLaunches[0].metaMensal, 1.02);
   assert.equal(redeLotericaLaunches[0].status, "Não iniciado");
+
+  const quarterlyGenerated = DataStore.gerarLancamentosLimpos([
+    { id: 18, periodicidade: "Trimestral", ativo: true }
+  ], [], 2026);
+  assert.deepEqual(
+    Array.from(quarterlyGenerated, (item) => Number(item.mes)),
+    [3, 6, 9, 12],
+    "Novos lançamentos trimestrais devem ser gerados somente nos fechamentos oficiais."
+  );
 
   console.log("Testes de persistência local/SQLite OK");
 })().catch((error) => {

@@ -1,6 +1,7 @@
 ﻿const assert = require("node:assert/strict");
 require("../assets/js/ieo-recorrente.js");
 const formulas = require("../assets/js/formulas.js");
+require("../assets/js/indicator-periodicity.js");
 
 globalThis.IndicatorFormulas = formulas;
 require("../assets/js/quarterly.js");
@@ -36,7 +37,7 @@ assert.equal(partial.mesesHomologados, 2);
 assert.equal(partial.resultadoTrimestral, 200);
 assert.equal(partial.metaTrimestral, 300);
 assert.equal(partial.desempenhoTrimestral, 200 / 300);
-assert.match(partial.mensagem, /2 de 3 meses homologados/);
+assert.match(partial.mensagem, /2 de 3 competências oficiais homologadas/);
 
 const closed = consolidarTrimestre(
   indicator,
@@ -48,6 +49,41 @@ assert.equal(closed.statusTrimestre, "Fechado");
 assert.equal(closed.mesesHomologados, 3);
 assert.equal(closed.resultadoTrimestral, 300);
 assert.equal(closed.desempenhoTrimestral, 1);
+
+const quarterlyIndicator = { id: 18, indicador: "Princípios de Jogo Responsável", periodicidade: "Trimestral", unidadeMedida: "quantidade" };
+const quarterlyRule = {
+  indicadorId: 18,
+  tipoCalculo: "plano_acao_por_elementos",
+  tipoConsolidacao: "elementos_acumulados",
+  unidadeMedida: "quantidade",
+  metaAnualValor: 10,
+  parametrosCalculo: {
+    campoElemento: "elementoRGF",
+    campoStatus: "statusAcao",
+    metaTipo: "curva_trimestral_acumulada",
+    statusQueContam: ["Concluída", "Homologada"],
+    curvaTrimestralAcumulada: {
+      "1TRI/2026": { metaElementosAcumulados: 1 },
+      "2TRI/2026": { metaElementosAcumulados: 2 }
+    }
+  },
+  camposEntrada: []
+};
+const quarterlyLaunches = [
+  { id: "jan", indicadorId: 18, ano: 2026, mes: 1, nomeMes: "Janeiro", status: "Homologado", camposEntrada: { elementoRGF: "Envolvimento", statusAcao: "Concluída" } },
+  { id: "mar", indicadorId: 18, ano: 2026, mes: 3, nomeMes: "Março", status: "Homologado", camposEntrada: { elementoRGF: "Envolvimento", statusAcao: "Concluída" } },
+  { id: "abr", indicadorId: 18, ano: 2026, mes: 4, nomeMes: "Abril", status: "Homologado", camposEntrada: { elementoRGF: "Orientação", statusAcao: "Concluída" } },
+  { id: "jun", indicadorId: 18, ano: 2026, mes: 6, nomeMes: "Junho", status: "Homologado", camposEntrada: { elementoRGF: "Orientação", statusAcao: "Concluída" } }
+];
+const secondQuarter = consolidarTrimestre(quarterlyIndicator, quarterlyRule, quarterlyLaunches, "2TRI/2026");
+assert.equal(secondQuarter.mesesEsperados, 1);
+assert.equal(secondQuarter.mesesHomologados, 1);
+assert.equal(secondQuarter.statusTrimestre, "Fechado");
+assert.deepEqual(secondQuarter.composicaoMensal.map((item) => item.mes), [6]);
+assert.equal(secondQuarter.resultadoTrimestral, 2);
+assert.equal(secondQuarter.metaTrimestral, 2);
+assert.equal(secondQuarter.desempenhoTrimestral, 1);
+assert.equal(secondQuarter.dadosCalculados.percentualAtingidoAnual, 0.2);
 
 const empty = consolidarTrimestre(indicator, rule, launches, "2TRI/2026");
 assert.equal(empty.statusTrimestre, "Sem dados");
@@ -328,6 +364,7 @@ assert.equal(principiosJogoResponsavelQuarter.mesesHomologados, 3);
 assert.equal(principiosJogoResponsavelQuarter.metaTrimestral, 1);
 assert.equal(principiosJogoResponsavelQuarter.resultadoTrimestral, 1);
 assert.equal(principiosJogoResponsavelQuarter.desempenhoTrimestral, 1);
+assert.equal(principiosJogoResponsavelQuarter.dadosCalculados.percentualAtingidoAnual, 0.1);
 assert.deepEqual(principiosJogoResponsavelQuarter.dadosCalculados.elementosAtendidos, ["Envolvimento das partes interessadas"]);
 assert.equal(principiosJogoResponsavelQuarter.situacaoTrimestral, "Atingido");
 

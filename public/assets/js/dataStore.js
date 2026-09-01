@@ -378,6 +378,11 @@
     [11, "Novembro"],
     [12, "Dezembro"]
   ];
+  function mesesEsperados(indicador) {
+    const expected = window.IndicatorPeriodicity?.expectedMonths(indicador) || MESES.map(([mes]) => mes);
+    const expectedSet = new Set(expected.map(Number));
+    return MESES.filter(([mes]) => expectedSet.has(mes));
+  }
   const NPS_REFERENCIAS_2026 = {
     "2026-03": 55
   };
@@ -1398,7 +1403,7 @@
     );
     let nextId = 1;
 
-    return indicadores.flatMap((indicador) => MESES.map(([mes, nomeMes]) => {
+    return indicadores.flatMap((indicador) => mesesEsperados(indicador).map(([mes, nomeMes]) => {
       const meta = metasPorIndicadorMes.get(`${indicador.id}:${ano}:${mes}`) || {};
       return resetarDadosOperacionais([{
         id: nextId++,
@@ -1433,7 +1438,7 @@
     indicadores
       .filter((indicador) => indicador && indicador.ativo !== false)
       .forEach((indicador) => {
-        MESES.forEach(([mes, nomeMes]) => {
+        mesesEsperados(indicador).forEach(([mes, nomeMes]) => {
           const key = `${Number(indicador.id)}:${ano}:${mes}`;
           if (existentes.has(key)) return;
           const meta = metasPorIndicadorMes.get(key) || {};

@@ -39,6 +39,14 @@
       });
   }
 
+  function officialOperationalLaunches(launches, indicators) {
+    const byId = Object.fromEntries((indicators || []).map((indicator) => [String(indicator.id), indicator]));
+    return (launches || []).filter((launch) => {
+      const indicator = byId[String(launch.indicadorId)];
+      return !indicator || window.IndicatorPeriodicity?.isExpectedCompetence(indicator, launch) !== false;
+    });
+  }
+
   function escapeHtml(value) {
     return String(value ?? "")
       .replaceAll("&", "&amp;")
@@ -625,7 +633,10 @@
       data,
       user,
       indicadores: Auth.filterIndicatorsByUser(data.indicadores, user),
-      lancamentos: Auth.filterLaunchesByUser(data.lancamentos, data.indicadores, user),
+      lancamentos: officialOperationalLaunches(
+        Auth.filterLaunchesByUser(data.lancamentos, data.indicadores, user),
+        data.indicadores
+      ),
       homologacoes: data.homologacoes,
       solicitacoesReabertura: data.solicitacoesReabertura || [],
       evidenciasPorLancamento: {},
@@ -645,5 +656,5 @@
 
   window.PageModules = window.PageModules || {};
   window.PageModules.homologacao = { init };
-  window.__APPROVALS_FILTER_TEST_INTERNALS__ = { indicatorFilterOptions, filterLaunches };
+  window.__APPROVALS_FILTER_TEST_INTERNALS__ = { indicatorFilterOptions, filterLaunches, officialOperationalLaunches };
 })();

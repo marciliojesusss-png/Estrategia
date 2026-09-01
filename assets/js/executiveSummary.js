@@ -346,20 +346,14 @@
   }
 
   function isOperationalCompetenceRequired(frequency, month) {
-    const normalizedFrequency = normalizeText(frequency) || "mensal";
-    const numericMonth = Number(month);
-    if (!Number.isInteger(numericMonth) || numericMonth < 1 || numericMonth > 12) return false;
-    if (normalizedFrequency === "trimestral") return numericMonth % 3 === 0;
-    if (normalizedFrequency === "semestral") return numericMonth === 6 || numericMonth === 12;
-    if (normalizedFrequency === "anual") return numericMonth === 12;
-    return normalizedFrequency === "mensal";
+    return window.IndicatorPeriodicity?.isExpectedMonth(frequency, month) ?? false;
   }
 
   function operationalFrequencyForIndicator(indicator) {
     const configured = state.operationalFrequencies.find(
       (item) => Number(item.indicadorId) === Number(indicator?.id)
     );
-    return configured?.frequenciaCobrancaOperacional || "mensal";
+    return configured?.frequenciaCobrancaOperacional || indicator?.periodicidade || "mensal";
   }
 
   function isExpectedDeadlineCycle(indicator, launch) {
@@ -372,10 +366,12 @@
   function operationalLaunchForResult(result, referenceDate = new Date()) {
     if (!result?.indicador) return null;
     const filters = selectedFilters();
+    const effectiveFrequency = operationalFrequencyForIndicator(result.indicador);
     const activeCompetences = (state.prazos || [])
       .filter((item) => item?.ativo !== false)
       .map((item) => String(item.competencia || ""))
-      .filter((item) => /^\d{4}-\d{2}$/.test(item));
+      .filter((item) => /^\d{4}-\d{2}$/.test(item))
+      .filter((item) => window.IndicatorPeriodicity?.isExpectedCompetence(effectiveFrequency, item) !== false);
     const referenceCompetence = `${referenceDate.getFullYear()}-${String(referenceDate.getMonth() + 1).padStart(2, "0")}`;
     let targetCompetence = null;
 
@@ -393,7 +389,10 @@
       targetCompetence = activeCompetences.filter((item) => item.startsWith("2026-") && item <= referenceCompetence).sort().at(-1) || null;
     }
 
-    if (!targetCompetence) return result.lancamentoAcao || result.lancamento || null;
+    if (!targetCompetence) {
+      const fallback = result.lancamentoAcao || result.lancamento || null;
+      return fallback && isExpectedDeadlineCycle(result.indicador, fallback) ? fallback : null;
+    }
     const launch = state.launches.find((item) => (
       Number(item.indicadorId) === Number(result.indicador.id) &&
       window.PrazoApuracao.competenceOf(item) === targetCompetence

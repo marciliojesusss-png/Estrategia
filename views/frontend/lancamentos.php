@@ -9,14 +9,15 @@
   <script src="/assets/js/ieo-recorrente.js?v=IEO-RECORRENTE-002" defer></script>
   <script src="/assets/js/situations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/bootstrap-data.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="/assets/js/dataStore.js?v=SOLICITACOES-REABERTURA-001" defer></script>
+  <script src="/assets/js/indicator-periodicity.js?v=PERIODICIDADE-TRIMESTRAL-001" defer></script>
+  <script src="/assets/js/dataStore.js?v=PERIODICIDADE-TRIMESTRAL-001" defer></script>
   <script src="/assets/js/central-persistence.js?v=ACTION-FEEDBACK-001" defer></script>
   <script src="/assets/js/databaseService.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/auth.js?v=RELATORIOS-ADMIN-001" defer></script>
   <script src="/assets/js/calculations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="/assets/js/formulas.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
+  <script src="/assets/js/formulas.js?v=META-ANUAL-TRIMESTRAL-001" defer></script>
   <script src="/assets/js/action-feedback.js?v=ACTION-FEEDBACK-001" defer></script>
-  <script src="/assets/js/launches.js?v=ACTION-FEEDBACK-001" defer></script>
+  <script src="/assets/js/launches.js?v=META-ANUAL-TRIMESTRAL-001" defer></script>
   <script src="/assets/js/app.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
 </head>
 <body data-page="lancamentos">
@@ -27,7 +28,7 @@
       <section class="page-heading">
         <p class="eyebrow">Preenchimento</p>
         <h1>Lançamentos</h1>
-        <p>Registro mensal dos dados pelas unidades apuradoras.</p>
+        <p>Registro dos dados pelas unidades apuradoras.</p>
       </section>
 
       <section class="filters" aria-label="Filtros dos lançamentos">
@@ -44,9 +45,9 @@
             <thead>
               <tr>
                 <th>Indicador</th>
-                <th>Mês</th>
+                <th>Mês / competência</th>
                 <th>Meta</th>
-                <th>Resultado mensal</th>
+                <th>Resultado da competência</th>
                 <th>Situação</th>
                 <th>Status</th>
                 <th>Ações</th>
@@ -88,11 +89,11 @@
             <input id="launchPercentualManual" type="number" step="any" placeholder="Ex.: 0.85 para 85%">
           </label>
 
-          <label><span id="launchResultadoMensalLabel">Resultado mensal</span>
+          <label><span id="launchResultadoMensalLabel">Resultado da competência</span>
             <input id="launchResultadoMensal" type="text" readonly>
           </label>
 
-          <label id="percentualMensalWrapper" hidden><span id="launchPercentualCalculadoLabel">% da meta atingida mensal</span>
+          <label id="percentualMensalWrapper" hidden><span id="launchPercentualCalculadoLabel">% da meta atingida</span>
             <input id="launchPercentualCalculado" type="text" readonly>
           </label>
 
@@ -100,7 +101,7 @@
             <input id="launchResultadoAcumulado" type="text" readonly>
           </label>
 
-          <label id="percentualAnualWrapper" hidden>% da meta atingida anual
+          <label id="percentualAnualWrapper" hidden><span id="launchPercentualAcumuladoLabel">% da meta atingida anual</span>
             <input id="launchPercentualAcumulado" type="text" readonly>
           </label>
 

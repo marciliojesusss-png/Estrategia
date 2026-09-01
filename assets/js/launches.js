@@ -50,6 +50,14 @@
     return launch?.nomeMes || monthName(launch?.mes);
   }
 
+  function officialOperationalLaunches(launches, indicators) {
+    const byId = Object.fromEntries((indicators || []).map((indicator) => [String(indicator.id), indicator]));
+    return (launches || []).filter((launch) => {
+      const indicator = byId[String(launch.indicadorId)];
+      return !indicator || window.IndicatorPeriodicity?.isExpectedCompetence(indicator, launch) !== false;
+    });
+  }
+
   function escapeHtml(value) {
     return String(value ?? "")
       .replaceAll("&", "&amp;")
@@ -452,8 +460,12 @@
   }
 
   function fillFilters(lancamentos) {
+    const selectedIndicator = document.querySelector('[data-filter="indicador"]')?.value || "";
+    const monthSource = selectedIndicator
+      ? lancamentos.filter((item) => String(item.indicadorId) === String(selectedIndicator))
+      : lancamentos;
     const options = {
-      mes: ["Todos", ...unique(lancamentos.map((item) => launchMonthName(item)))].map((value) => ({ value, label: value })),
+      mes: ["Todos", ...unique(monthSource.map((item) => launchMonthName(item)))].map((value) => ({ value, label: value })),
       status: ["Todos", ...unique(lancamentos.map((item) => item.status))].map((value) => ({ value, label: value })),
       indicador: [
         { value: "", label: "Todos os indicadores" },
@@ -590,18 +602,18 @@
         ? "Incremento percentual"
       : ["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(regra?.tipoCalculo)
         ? "Indice 2026/2025"
-      : isOfertasPersonalizadasIndicator(indicador, regra)
-        ? "Resultado da competência"
-      : "Resultado mensal";
+      : "Resultado da competência";
     document.getElementById("launchPercentualCalculadoLabel").textContent = isIeoRule(regra)
       ? "% atingido"
       : regra?.tipoCalculo === "incremento_rede_loterica_base_2025"
         ? "% atingido"
       : ["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(regra?.tipoCalculo)
         ? "% atingido da meta"
-      : "% da meta atingida mensal";
+      : "% da meta atingida";
     document.getElementById("launchResultadoAcumuladoLabel").textContent = isIeoRule(regra)
       ? "Posição acumulada até a competência"
+      : regra?.tipoCalculo === "plano_acao_por_elementos"
+        ? "Resultado acumulado no ano"
       : regra?.tipoCalculo === "incremento_rede_loterica_base_2025"
         ? "Incremento oficial do indicador"
       : ["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(regra?.tipoCalculo)
@@ -609,6 +621,9 @@
       : isOfertasPersonalizadasIndicator(indicador, regra)
         ? "Resultado oficial do indicador"
       : "Resultado oficial anual";
+    document.getElementById("launchPercentualAcumuladoLabel").textContent = regra?.tipoCalculo === "plano_acao_por_elementos"
+      ? "% da meta anual"
+      : "% da meta atingida anual";
     document.getElementById("launchSituacaoCalculadaLabel").textContent = isIeoRule(regra)
       ? "Situação da competência"
       : "Situação";
@@ -717,7 +732,33 @@
     }
   }
 
-  function renderFormulaDetails(resultado) {
+  function quarterLabel(lancamento) {
+    const informed = String(lancamento?.trimestre || "").match(/([1-4])\s*TRI/i);
+    if (informed) return `${informed[1]}TRI`;
+    const month = Number(lancamento?.mes);
+    return Number.isInteger(month) && month >= 1 && month <= 12 ? `${Math.ceil(month / 3)}TRI` : "trimestre";
+  }
+
+  function quarterlyMetaDetail(resultado, regra, lancamento) {
+    if (resultado?.metaTrimestral === undefined) return null;
+    const value = resultado.metaTrimestral;
+    if (regra?.tipoCalculo === "plano_acao_por_elementos") {
+      const formatted = Calculations.formatarValor(value, "quantidade");
+      const suffix = Number(value) === 1 ? "elemento acumulado" : "elementos acumulados";
+      return [`Meta do ${quarterLabel(lancamento)}`, `${formatted} ${suffix}`];
+    }
+
+    const unit = resultado.metaTrimestralUnidadeMedida || resultado.unidadeMedida || regra?.unidadeMedida || "numero";
+    const label = regra?.tipoCalculo === "incremento_rede_loterica_base_2025"
+      ? "Meta trimestral de incremento"
+      : "Meta trimestral";
+    const formatted = unit === "percentual"
+      ? Calculations.formatarPercentual(value)
+      : Calculations.formatarValor(value, unit);
+    return [label, formatted];
+  }
+
+  function renderFormulaDetails(resultado, regra, lancamento) {
     const wrapper = document.getElementById("formulaDetailsWrapper");
     const target = document.getElementById("formulaDetails");
     const details = [];
@@ -749,9 +790,8 @@
     if (resultado.incrementoRedeLoterica !== undefined) {
       details.push(["Incremento percentual", Calculations.formatarPercentual(resultado.incrementoRedeLoterica)]);
     }
-    if (resultado.metaTrimestral !== undefined) {
-      details.push(["Meta trimestral de incremento", Calculations.formatarPercentual(resultado.metaTrimestral)]);
-    }
+    const quarterlyMeta = quarterlyMetaDetail(resultado, regra, lancamento);
+    if (quarterlyMeta) details.push(quarterlyMeta);
     if (resultado.baseReferencia2025Periodo !== undefined) {
       details.push(["Base 2025 equivalente", Calculations.formatarValor(resultado.baseReferencia2025Periodo, "moeda")]);
     } else if (resultado.resultadoReferencia2025 !== undefined) {
@@ -988,7 +1028,7 @@
       document.getElementById("launchPercentualAcumulado").value = "-";
       document.getElementById("launchSituacaoCalculada").value = "Sem cálculo";
     }
-    renderFormulaDetails(result.resultado);
+    renderFormulaDetails(result.resultado, result.regra, lancamento);
     return result;
   }
 
@@ -1231,7 +1271,10 @@
 
   function bindEvents() {
     document.querySelectorAll("[data-filter]").forEach((select) => {
-      select.addEventListener("change", () => renderTable(getFilteredLaunches()));
+      select.addEventListener("change", () => {
+        if (select.dataset.filter === "indicador") fillFilters(state.lancamentos);
+        renderTable(getFilteredLaunches());
+      });
     });
 
     document.getElementById("lancamentosTable").addEventListener("click", (event) => {
@@ -1285,7 +1328,10 @@
       user,
       indicadores: Auth.filterIndicatorsByUser(data.indicadores, user),
       regras: data.regrasIndicadores || [],
-      lancamentos: Auth.filterLaunchesByUser(data.lancamentos, data.indicadores, user),
+      lancamentos: officialOperationalLaunches(
+        Auth.filterLaunchesByUser(data.lancamentos, data.indicadores, user),
+        data.indicadores
+      ),
       evidenciasPorLancamento: {},
       evidenceOperationInProgress: false,
       selectedId: null
@@ -1307,5 +1353,11 @@
 
   window.PageModules = window.PageModules || {};
   window.PageModules.lancamentos = { init };
-  window.__LAUNCHES_FILTER_TEST_INTERNALS__ = { indicatorFilterOptions, filterLaunches };
+  window.__LAUNCHES_FILTER_TEST_INTERNALS__ = {
+    indicatorFilterOptions,
+    filterLaunches,
+    officialOperationalLaunches,
+    quarterLabel,
+    quarterlyMetaDetail
+  };
 })();

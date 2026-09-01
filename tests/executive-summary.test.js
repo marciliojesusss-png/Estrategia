@@ -15,6 +15,13 @@ const context = {
 context.window.window = context.window;
 
 vm.runInNewContext(
+  fs.readFileSync(path.join(root, "assets", "js", "indicator-periodicity.js"), "utf8"),
+  context,
+  { filename: "indicator-periodicity.js" }
+);
+context.window.IndicatorPeriodicity = context.IndicatorPeriodicity;
+
+vm.runInNewContext(
   fs.readFileSync(path.join(root, "assets", "js", "currency.js"), "utf8"),
   context,
   { filename: "currency.js" }
@@ -185,5 +192,31 @@ const digitalDashboard = context.window.StrategicResults.calcularDashboard({
 assert.ok(Math.abs(digitalDashboard.resultado - (1180000000 / 3980000000)) < 0.000001);
 assert.equal(digitalDashboard.competencia, "Fevereiro/2026");
 assert.equal(digitalDashboard.meta, 0.2805);
+
+const principiosIndicator = { ...indicators.find((item) => item.id === 18), periodicidade: "Trimestral" };
+const principiosRule = rules.find((item) => item.indicadorId === 18);
+const principiosBase = [
+  { id: "P-MAR", indicadorId: 18, ano: 2026, mes: 3, nomeMes: "Março", trimestre: "1TRI/2026", status: "Homologado", camposEntrada: { elementoRGF: "Envolvimento das partes interessadas", acaoExecutada: "Instituição do Fórum", statusAcao: "Concluída" } },
+  { id: "P-ABR", indicadorId: 18, ano: 2026, mes: 4, nomeMes: "Abril", trimestre: "2TRI/2026", status: "Em preenchimento", camposEntrada: { elementoRGF: "Orientação ao jogador para tratamento", acaoExecutada: "Revisão da relação de entidades", statusAcao: "Concluída" } },
+  { id: "P-JUN", indicadorId: 18, ano: 2026, mes: 6, nomeMes: "Junho", trimestre: "2TRI/2026", status: "Não iniciado", camposEntrada: {} }
+];
+const principiosBeforeJune = context.window.StrategicResults.calcularDashboard({
+  indicadores: [principiosIndicator], regras: [principiosRule], lancamentos: principiosBase
+}).resultadosOficiais[0];
+assert.equal(principiosBeforeJune.competencia, "Março/2026", "Abril não pode substituir a posição trimestral oficial.");
+
+const principiosJune = context.window.StrategicResults.calcularDashboard({
+  indicadores: [principiosIndicator],
+  regras: [principiosRule],
+  lancamentos: principiosBase.map((item) => item.id === "P-JUN" ? {
+    ...item,
+    status: "Homologado",
+    camposEntrada: { elementoRGF: "Orientação ao jogador para tratamento", acaoExecutada: "Revisão da relação de entidades", statusAcao: "Concluída" }
+  } : item)
+}).resultadosOficiais[0];
+assert.equal(principiosJune.competencia, "Junho/2026");
+assert.equal(principiosJune.meta, 2);
+assert.equal(principiosJune.resultado, 2);
+assert.equal(principiosJune.percentualAtingido, 1);
 
 console.log("Testes do resumo executivo OK");

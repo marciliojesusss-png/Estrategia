@@ -9,13 +9,14 @@
   <script src="/assets/js/ieo-recorrente.js?v=IEO-RECORRENTE-002" defer></script>
   <script src="/assets/js/situations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/bootstrap-data.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="/assets/js/dataStore.js?v=SOLICITACOES-REABERTURA-001" defer></script>
+  <script src="/assets/js/indicator-periodicity.js?v=PERIODICIDADE-TRIMESTRAL-001" defer></script>
+  <script src="/assets/js/dataStore.js?v=PERIODICIDADE-TRIMESTRAL-001" defer></script>
   <script src="/assets/js/databaseService.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/auth.js?v=RELATORIOS-ADMIN-001" defer></script>
   <script src="/assets/js/calculations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="/assets/js/formulas.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="/assets/js/quarterly.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/indicators.js?v=INDICADORES-DETALHE-INSTITUCIONAL-004" defer></script>
+  <script src="/assets/js/formulas.js?v=META-ANUAL-TRIMESTRAL-001" defer></script>
+  <script src="/assets/js/quarterly.js?v=META-ANUAL-TRIMESTRAL-001" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/indicators.js?v=PERIODICIDADE-TRIMESTRAL-001" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/app.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
 </head>
 <body data-page="indicadores">
@@ -86,8 +87,8 @@
           <section class="indicator-tracking-section">
             <div class="section-heading">
               <div>
-                <p class="eyebrow">Composição mensal</p>
-                <h3>Competências de 2026</h3>
+                <p id="indicatorCompositionEyebrow" class="eyebrow">Composição mensal</p>
+                <h3 id="indicatorCompositionTitle">Competências de 2026</h3>
               </div>
             </div>
             <div class="table-wrap compact-table indicator-monthly-table table-responsive table-composicao-wrapper">

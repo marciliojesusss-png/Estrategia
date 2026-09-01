@@ -37,6 +37,13 @@ context.Auth = {
 context.window.Auth = context.Auth;
 
 vm.runInNewContext(
+  fs.readFileSync(path.join(root, "assets", "js", "indicator-periodicity.js"), "utf8"),
+  context,
+  { filename: "indicator-periodicity.js" }
+);
+context.window.IndicatorPeriodicity = context.IndicatorPeriodicity;
+
+vm.runInNewContext(
   fs.readFileSync(path.join(root, "assets", "js", "executiveSummary.js"), "utf8"),
   context,
   { filename: "executiveSummary.js" }
@@ -110,7 +117,7 @@ const homologatorUser = { perfilCodigo: "homologador", diretoriaResponsavel: "DI
 const homologatorCollections = internals.collectionsForViewScope(scopeData, homologatorUser, "own");
 assert.deepEqual(Array.from(homologatorCollections.indicators, (item) => item.id), [2]);
 assert.deepEqual(Array.from(homologatorCollections.launches, (item) => item.id), ["L2"]);
-assert.equal(internals.isExpectedDeadlineCycle({ periodicidade: "Trimestral" }, { mes: 7 }), true);
+assert.equal(internals.isExpectedDeadlineCycle({ periodicidade: "Trimestral" }, { mes: 7 }), false);
 assert.equal(internals.isExpectedDeadlineCycle({ periodicidade: "Trimestral" }, { mes: 9 }), true);
 assert.equal(internals.isOperationalCompetenceRequired("mensal", 5), true);
 assert.equal(internals.isOperationalCompetenceRequired("trimestral", 5), false);

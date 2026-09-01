@@ -1067,7 +1067,55 @@ assert.equal(principiosJogoResponsavel.resultadoMensal, 1);
 assert.equal(principiosJogoResponsavel.elementosAtendidosAcumulados, 1);
 assert.deepEqual(principiosJogoResponsavel.elementosAtendidos, ["Envolvimento das partes interessadas"]);
 closeTo(principiosJogoResponsavel.percentualAtingidoMensal, 1);
+closeTo(principiosJogoResponsavel.percentualAtingidoAcumulado, 1);
+closeTo(principiosJogoResponsavel.percentualAtingidoAnual, 0.1);
+closeTo(principiosJogoResponsavel.percentualAtingidoMetaTrimestral, 1);
+closeTo(principiosJogoResponsavel.percentualAtingidoMetaAnual, 0.1);
 assert.equal(principiosJogoResponsavel.situacao, "Atingido");
+
+function calcularPrincipiosNoTrimestre(trimestre, elementos) {
+  const meses = trimestre === "2TRI/2026" ? [3, 6] : trimestre === "3TRI/2026" ? [3, 6, 7, 8, 9] : [3, 6, 7, 8, 9, 10, 11, 12, 12, 12];
+  const lancamentos = elementos.map((elemento, index) => ({
+    ano: 2026,
+    mes: meses[index],
+    trimestre: index === elementos.length - 1 ? trimestre : `${Math.ceil(meses[index] / 3)}TRI/2026`,
+    camposEntrada: { elementoRGF: elemento, acaoExecutada: `Ação ${index + 1}`, statusAcao: "Concluída" }
+  }));
+  return formulas.calcularIndicador(
+    indicador(18, "Princípios de Jogo Responsável"),
+    regraPrincipiosJogoResponsavel,
+    lancamentos.at(-1),
+    lancamentos
+  );
+}
+
+const principios2Tri = calcularPrincipiosNoTrimestre("2TRI/2026", ["Elemento 1", "Elemento 2"]);
+assert.equal(principios2Tri.resultadoMensal, 2);
+assert.equal(principios2Tri.resultadoOficialAnual, 2);
+assert.equal(principios2Tri.metaTrimestral, 2);
+assert.equal(principios2Tri.metaAnual, 10);
+closeTo(principios2Tri.percentualAtingidoMensal, 1);
+closeTo(principios2Tri.percentualAtingidoAcumulado, 1);
+closeTo(principios2Tri.percentualAtingidoAnual, 0.2);
+assert.equal(principios2Tri.situacao, "Atingido");
+
+const principios3TriAbaixo = calcularPrincipiosNoTrimestre("3TRI/2026", ["Elemento 1", "Elemento 2", "Elemento 3", "Elemento 4"]);
+assert.equal(principios3TriAbaixo.resultadoMensal, 4);
+assert.equal(principios3TriAbaixo.metaTrimestral, 5);
+closeTo(principios3TriAbaixo.percentualAtingidoMensal, 0.8);
+closeTo(principios3TriAbaixo.percentualAtingidoAcumulado, 0.8);
+closeTo(principios3TriAbaixo.percentualAtingidoAnual, 0.4);
+assert.equal(principios3TriAbaixo.situacao, "Abaixo da meta");
+
+const principios3TriAtingido = calcularPrincipiosNoTrimestre("3TRI/2026", ["Elemento 1", "Elemento 2", "Elemento 3", "Elemento 4", "Elemento 5"]);
+closeTo(principios3TriAtingido.percentualAtingidoMensal, 1);
+closeTo(principios3TriAtingido.percentualAtingidoAnual, 0.5);
+assert.equal(principios3TriAtingido.situacao, "Atingido");
+
+const principios4Tri = calcularPrincipiosNoTrimestre("4TRI/2026", ["Elemento 1", "Elemento 2", "Elemento 3", "Elemento 4", "Elemento 5", "Elemento 6", "Elemento 7", "Elemento 8", "Elemento 9", "Elemento 10"]);
+closeTo(principios4Tri.percentualAtingidoMensal, 1);
+closeTo(principios4Tri.percentualAtingidoAnual, 1);
+assert.equal(principios4Tri.situacao, "Atingido");
 
 const regraApoioSocioambiental = {
   indicadorId: 16,

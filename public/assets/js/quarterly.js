@@ -87,12 +87,11 @@
     ].map(toNumber).find((value) => value !== null) ?? null;
   }
 
-  function getOfficialPerformance(calculation) {
-    return [
-      calculation?.percentualAtingidoAnual,
-      calculation?.percentualAtingidoAcumulado,
-      calculation?.percentualAtingidoMensal
-    ].map(toNumber).find((value) => value !== null) ?? null;
+  function getOfficialPerformance(calculation, rule) {
+    const candidates = rule?.tipoCalculo === "plano_acao_por_elementos"
+      ? [calculation?.percentualAtingidoAcumulado, calculation?.percentualAtingidoMensal, calculation?.percentualAtingidoAnual]
+      : [calculation?.percentualAtingidoAnual, calculation?.percentualAtingidoAcumulado, calculation?.percentualAtingidoMensal];
+    return candidates.map(toNumber).find((value) => value !== null) ?? null;
   }
 
   function competenciaKey(lancamento) {
@@ -226,33 +225,38 @@
     ));
   }
 
-  function buildMessage(status, count, names, hasReturned) {
+  function buildMessage(status, count, names, hasReturned, expectedCount = 3) {
     if (status === "Sem dados") return "Nenhum mês homologado no trimestre.";
-    if (status === "Fechado") return "Consolidado trimestral calculado com todos os meses homologados.";
+    if (status === "Fechado") return "Consolidado trimestral calculado com todas as competências oficiais homologadas.";
     const months = names.length ? `: ${names.join(", ")}` : "";
     const returned = hasReturned ? " Há mês devolvido para ajuste." : "";
-    return `Consolidado parcial calculado com ${count} de 3 meses homologados${months}.${returned}`;
+    return `Consolidado parcial calculado com ${count} de ${expectedCount} competências oficiais homologadas${months}.${returned}`;
   }
 
   function consolidarTrimestre(indicador, regra, lancamentosDoIndicador, trimestre) {
     const number = quarterNumber(trimestre);
     const months = obterMesesDoTrimestre(trimestre);
+    const expectedMonths = months.filter((month) => (
+      root.IndicatorPeriodicity?.isExpectedMonth(indicador, month) !== false
+    ));
     const year = getYear(trimestre);
     const label = number ? `${number}TRI/${year}` : null;
     const quarterLaunches = (lancamentosDoIndicador || [])
       .filter((item) => Number(item.ano) === year && months.includes(Number(item.mes)))
       .sort((a, b) => Number(a.mes) - Number(b.mes));
-    const byMonth = Object.fromEntries(quarterLaunches.map((item) => [Number(item.mes), item]));
-    const monthlyComposition = months.map((month) => ({
+    const officialQuarterLaunches = quarterLaunches.filter((item) => expectedMonths.includes(Number(item.mes)));
+    const byMonth = Object.fromEntries(officialQuarterLaunches.map((item) => [Number(item.mes), item]));
+    const monthlyComposition = expectedMonths.map((month) => ({
       mes: month,
       nomeMes: MONTHS.find(([value]) => value === month)?.[1] || month,
       lancamento: byMonth[month] || null,
       status: byMonth[month]?.status || STATUS_LANCAMENTO.NAO_INICIADO
     }));
-    const homologatedInQuarter = quarterLaunches.filter((item) => item.status === STATUS_LANCAMENTO.HOMOLOGADO);
+    const homologatedInQuarter = officialQuarterLaunches.filter((item) => item.status === STATUS_LANCAMENTO.HOMOLOGADO);
     const homologatedCount = homologatedInQuarter.length;
-    const hasReturned = quarterLaunches.some((item) => item.status === STATUS_LANCAMENTO.DEVOLVIDO_AJUSTE);
-    const quarterStatus = homologatedCount === 0 ? "Sem dados" : homologatedCount === 3 ? "Fechado" : "Parcial";
+    const expectedCount = expectedMonths.length;
+    const hasReturned = officialQuarterLaunches.some((item) => item.status === STATUS_LANCAMENTO.DEVOLVIDO_AJUSTE);
+    const quarterStatus = homologatedCount === 0 ? "Sem dados" : homologatedCount === expectedCount ? "Fechado" : "Parcial";
     const homologatedNames = monthlyComposition
       .filter((item) => item.status === STATUS_LANCAMENTO.HOMOLOGADO)
       .map((item) => item.nomeMes);
@@ -271,10 +275,10 @@
         situacaoTrimestral: "Sem dados",
         statusTrimestre: "Sem dados",
         mesesHomologados: 0,
-        mesesEsperados: 3,
+        mesesEsperados: expectedCount,
         composicaoMensal: monthlyComposition,
         possuiMesDevolvido: hasReturned,
-        mensagem: buildMessage("Sem dados", 0, [], hasReturned),
+        mensagem: buildMessage("Sem dados", 0, [], hasReturned, expectedCount),
         ultimoLancamentoHomologado: null
       };
     }
@@ -284,7 +288,7 @@
     const calculation = root.IndicatorFormulas?.calcularIndicador(indicador, regra, current, calculationScope);
     const validCalculation = calculation && !calculation.erro ? calculation : null;
     let result = getOfficialResult(validCalculation, regra);
-    let performance = getOfficialPerformance(validCalculation);
+    let performance = getOfficialPerformance(validCalculation, regra);
     let calculatedQuarterResult = result;
     let officialPresentedResult = result;
 
@@ -345,10 +349,10 @@
       situacaoTrimestral: getSituation(validCalculation, performance),
       statusTrimestre: quarterStatus,
       mesesHomologados: homologatedCount,
-      mesesEsperados: 3,
+      mesesEsperados: expectedCount,
       composicaoMensal: monthlyComposition,
       possuiMesDevolvido: hasReturned,
-      mensagem: buildMessage(quarterStatus, homologatedCount, homologatedNames, hasReturned),
+      mensagem: buildMessage(quarterStatus, homologatedCount, homologatedNames, hasReturned, expectedCount),
       ultimoLancamentoHomologado: lastByMonth(homologatedInQuarter),
       dadosCalculados: validCalculation
     };

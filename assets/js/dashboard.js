@@ -122,16 +122,21 @@
     );
   }
 
-  function getOfficialPercent(lancamento, resultado) {
-    if (resultado && toFiniteNumber(resultado.percentualAtingidoAnual) !== null) return toFiniteNumber(resultado.percentualAtingidoAnual);
-    if (resultado && toFiniteNumber(resultado.percentualAtingidoAcumulado) !== null) return toFiniteNumber(resultado.percentualAtingidoAcumulado);
-    if (resultado && toFiniteNumber(resultado.percentualAtingidoMensal) !== null) return toFiniteNumber(resultado.percentualAtingidoMensal);
-    return [
-      lancamento.percentualAtingidoAnual,
-      lancamento.percentualAtingidoAcumulado,
-      lancamento.percentualAtingidoMensal,
-      lancamento.percentualAtingido
-    ].map(toFiniteNumber).find((value) => value !== null) ?? null;
+  function isOfficialCompetence(indicator, launch) {
+    return window.IndicatorPeriodicity?.isExpectedCompetence(indicator, launch) !== false;
+  }
+
+  function getOfficialPercent(lancamento, resultado, regra) {
+    const periodBased = regra?.tipoCalculo === "plano_acao_por_elementos";
+    const calculatedCandidates = periodBased
+      ? [resultado?.percentualAtingidoAcumulado, resultado?.percentualAtingidoMensal, resultado?.percentualAtingidoAnual]
+      : [resultado?.percentualAtingidoAnual, resultado?.percentualAtingidoAcumulado, resultado?.percentualAtingidoMensal];
+    const calculated = calculatedCandidates.map(toFiniteNumber).find((value) => value !== null);
+    if (calculated !== undefined) return calculated;
+    const persistedCandidates = periodBased
+      ? [lancamento.percentualAtingidoAcumulado, lancamento.percentualAtingidoMensal, lancamento.percentualAtingido, lancamento.percentualAtingidoAnual]
+      : [lancamento.percentualAtingidoAnual, lancamento.percentualAtingidoAcumulado, lancamento.percentualAtingidoMensal, lancamento.percentualAtingido];
+    return persistedCandidates.map(toFiniteNumber).find((value) => value !== null) ?? null;
   }
 
   function getOfficialResult(lancamento, resultado) {
@@ -234,6 +239,7 @@
 
   function obterResultadosMensais(indicador, regra, lancamentosDoIndicador) {
     const lancamentosValidos = (lancamentosDoIndicador || [])
+      .filter((launch) => isOfficialCompetence(indicador, launch))
       .filter(hasValidLaunchData)
       .sort(sortByOfficialCompetence);
 
@@ -264,13 +270,17 @@
     const validSource = homologatedOnlyTypes.has(regra?.tipoCalculo)
       ? (lancamentosDoIndicador || []).filter((item) => item.status === "Homologado")
       : (lancamentosDoIndicador || []);
-    const lancamentosValidos = validSource
+    const lancamentosHistoricosValidos = validSource
       .filter(hasValidLaunchData)
       .sort(sortByOfficialCompetence);
+    const lancamentosValidos = lancamentosHistoricosValidos
+      .filter((launch) => isOfficialCompetence(indicador, launch));
     const resultadosMensais = obterResultadosMensais(indicador, regra, lancamentosDoIndicador);
 
     if (!lancamentosValidos.length) {
-      const lancamentosOrdenados = [...(lancamentosDoIndicador || [])].sort(sortByOfficialCompetence);
+      const lancamentosOrdenados = [...(lancamentosDoIndicador || [])]
+        .filter((launch) => isOfficialCompetence(indicador, launch))
+        .sort(sortByOfficialCompetence);
       const agora = new Date();
       const lancamentoCompetenciaAtual = lancamentosOrdenados.find((item) => (
         Number(item.ano) === agora.getFullYear() && Number(item.mes) === agora.getMonth() + 1
@@ -293,8 +303,8 @@
     }
 
     const lancamentoOficial = selectOfficialLaunch(regra, lancamentosValidos);
-    const resultadoCalculado = calcularResultadoPorMotor(indicador, regra, lancamentoOficial, lancamentosValidos);
-    const percentualAtingido = getOfficialPercent(lancamentoOficial, resultadoCalculado);
+    const resultadoCalculado = calcularResultadoPorMotor(indicador, regra, lancamentoOficial, lancamentosHistoricosValidos);
+    const percentualAtingido = getOfficialPercent(lancamentoOficial, resultadoCalculado, regra);
     const resultado = getOfficialResult(lancamentoOficial, resultadoCalculado);
 
     return {

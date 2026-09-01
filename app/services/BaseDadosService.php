@@ -11,6 +11,7 @@ require_once __DIR__ . '/../repositories/AuditoriaRepository.php';
 require_once __DIR__ . '/../repositories/UsuariosRepository.php';
 require_once __DIR__ . '/../repositories/SolicitacoesReaberturaRepository.php';
 require_once __DIR__ . '/LancamentoStateMachine.php';
+require_once __DIR__ . '/CompetenciaPeriodicidade.php';
 
 final class BaseDadosService
 {
@@ -231,6 +232,10 @@ final class BaseDadosService
     private function validateRequiredEvidenceTransitions(array $items): void
     {
         $required = array();
+        $indicators = array();
+        foreach ($this->indicadores->all() as $indicator) {
+            $indicators[(string)($indicator['id'] ?? '')] = $indicator;
+        }
         foreach ($this->configuracoes->get('regrasIndicadores', array()) as $rule) {
             if (!empty($rule['exigeEvidencia'])) $required[(string)($rule['indicadorId'] ?? '')] = true;
         }
@@ -238,9 +243,16 @@ final class BaseDadosService
             $id = (string)($item['id'] ?? '');
             $indicatorId = (string)($item['indicadorId'] ?? $item['indicador_id'] ?? '');
             $newStatus = LancamentoStateMachine::normalize((string)($item['status'] ?? ''));
-            if ($id === '' || $newStatus !== LancamentoStateMachine::SUBMITTED || empty($required[$indicatorId])) continue;
+            if ($id === '' || $newStatus !== LancamentoStateMachine::SUBMITTED) continue;
             $existing = $this->lancamentos->find($id);
             if ($existing && LancamentoStateMachine::normalize($existing['status']) === LancamentoStateMachine::SUBMITTED) continue;
+            if (!isset($indicators[$indicatorId])) {
+                throw new InvalidArgumentException('Indicador do lançamento não foi encontrado.');
+            }
+            if (!CompetenciaPeriodicidade::isExpected($indicators[$indicatorId], $item)) {
+                throw new InvalidArgumentException('A competência informada não pertence ao ciclo oficial do indicador.');
+            }
+            if (empty($required[$indicatorId])) continue;
             if (!$this->evidencias->byLaunch($id)) {
                 throw new InvalidArgumentException('Anexe pelo menos um arquivo antes de enviar para homologacao.');
             }
