@@ -70,10 +70,13 @@ assert.match(styles, /\.executive-table-panel\s*\{[\s\S]*scroll-margin-top: 140p
 assert.match(styles, /\.executive-performance-map-panel/);
 assert.match(styles, /\.executive-performance-map-groups\s*\{[\s\S]*grid-template-columns: repeat\(6, minmax\(0, 1fr\)\);/);
 assert.match(styles, /\.executive-performance-map-groups\s*\{[\s\S]*grid-auto-flow: dense;/);
-assert.match(styles, /\.executive-performance-map-groups\s*\{[\s\S]*grid-auto-rows: minmax\(78px, auto\);/);
+assert.match(styles, /\.executive-performance-map-groups\s*\{[\s\S]*grid-auto-rows: minmax\(70px, auto\);/);
+assert.match(styles, /\.executive-performance-map-groups\s*\{[\s\S]*gap: 4px;/);
 assert.doesNotMatch(performanceMapGroupsRule, /min-height:/);
 assert.match(styles, /\.executive-performance-card/);
-assert.match(styles, /\.executive-performance-card\s*\{[\s\S]*min-height: 78px;/);
+assert.match(styles, /\.executive-performance-card\s*\{[\s\S]*min-height: 70px;/);
+assert.match(styles, /\.executive-performance-card\s*\{[\s\S]*padding: 5px 8px;/);
+assert.match(styles, /\.deadline-alert\s*\{[\s\S]*padding: 4px 7px;/);
 assert.match(styles, /\.executive-performance-size-featured\s*\{[\s\S]*min-height: 98px;/);
 assert.match(styles, /\.executive-performance-size-wide\s*\{[\s\S]*grid-column: span 2;/);
 assert.match(styles, /\.executive-performance-size-tall\s*\{[\s\S]*grid-row: span 2;/);

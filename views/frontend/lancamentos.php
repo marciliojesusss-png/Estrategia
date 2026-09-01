@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CAIXA Loterias | Lançamentos</title>
-  <link rel="stylesheet" href="<?= APP_BASE_PATH ?>/assets/css/styles.css?v=PERSISTENCIA-CENTRAL-008">
+  <link rel="stylesheet" href="<?= APP_BASE_PATH ?>/assets/css/styles.css?v=EVIDENCIAS-002">
   <script src="/assets/js/currency.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/ieo-recorrente.js?v=IEO-RECORRENTE-002" defer></script>
   <script src="/assets/js/situations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
@@ -12,10 +12,10 @@
   <script src="/assets/js/dataStore.js?v=SOLICITACOES-REABERTURA-001" defer></script>
   <script src="/assets/js/central-persistence.js?v=PERSISTENCIA-CENTRAL-009" defer></script>
   <script src="/assets/js/databaseService.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="/assets/js/auth.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
+  <script src="/assets/js/auth.js?v=RELATORIOS-ADMIN-001" defer></script>
   <script src="/assets/js/calculations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/formulas.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="/assets/js/launches.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
+  <script src="/assets/js/launches.js?v=EVIDENCIAS-002" defer></script>
   <script src="/assets/js/app.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
 </head>
 <body data-page="lancamentos">
@@ -32,6 +32,7 @@
       <section class="filters" aria-label="Filtros dos lançamentos">
         <label>Mês <select data-filter="mes"></select></label>
         <label>Status <select data-filter="status"></select></label>
+        <label>Indicador <select data-filter="indicador"></select></label>
       </section>
 
       <section class="panel">
@@ -111,17 +112,43 @@
             <div id="formulaDetails" class="detail-grid"></div>
           </div>
 
-          <label class="full-span">Justificativa
-            <textarea id="launchJustificativa" rows="3"></textarea>
-          </label>
-
           <label class="full-span">Observação da área
-            <textarea id="launchObservacaoArea" rows="3"></textarea>
+            <textarea id="launchObservacaoArea" rows="3" placeholder="Informe contexto, explicação do resultado ou informação complementar sobre esta competência."></textarea>
           </label>
 
-          <label id="evidenceWrapper" class="full-span" hidden>Evidência
-            <textarea id="launchEvidencia" rows="3" placeholder="Informe referência, link, documento ou evidência do resultado"></textarea>
-          </label>
+          <aside id="legacyLaunchJustification" class="legacy-information full-span" hidden>
+            <strong>Justificativa legada (somente leitura)</strong>
+            <p id="legacyLaunchJustificationText"></p>
+          </aside>
+
+          <section id="evidenceWrapper" class="evidence-section full-span" aria-labelledby="launchEvidenceTitle">
+            <div class="evidence-section-heading">
+              <div>
+                <p class="eyebrow">Documentação comprobatória</p>
+                <h3 id="launchEvidenceTitle">Evidências</h3>
+              </div>
+              <span id="evidenceRequirementText" class="evidence-requirement"></span>
+            </div>
+
+            <label>Referência / Link
+              <input id="launchEvidenceReference" type="text" placeholder="Nota Técnica, processo, SharePoint ou outra referência documental">
+            </label>
+
+            <div class="evidence-upload-grid">
+              <label>Arquivo
+                <input id="launchEvidenceFile" type="file" accept=".pdf,.jpg,.jpeg,.png,.xls,.xlsx,.doc,.docx">
+              </label>
+              <label>Descrição opcional
+                <input id="launchEvidenceDescription" type="text" maxlength="500" placeholder="Ex.: Memória de cálculo validada pela área financeira">
+              </label>
+              <button id="addEvidenceButton" class="secondary-action" type="button">+ Adicionar arquivo</button>
+            </div>
+
+            <div>
+              <h4>Arquivos anexados</h4>
+              <div id="launchEvidenceList" class="evidence-list" aria-live="polite"></div>
+            </div>
+          </section>
 
           <label class="full-span">Métrica/Fórmula de referência
             <textarea id="launchMetrica" rows="4" readonly></textarea>

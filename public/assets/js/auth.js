@@ -10,7 +10,7 @@
     indicadores: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consulta/Gestao", "Consulta/Gest\u00e3o"],
     lancamentos: ["Administrador", "Unidade Apuradora"],
     homologacao: ["Administrador", "Diretoria Homologadora"],
-    relatorios: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consulta/Gestao", "Consulta/Gest\u00e3o"],
+    relatorios: ["Administrador"],
     administracao: ["Administrador"]
   };
   const USER_COMPANY_ALLOWED_PAGES = ["resumoExecutivo"];

@@ -23,6 +23,11 @@ assert.match(publicIndicators, /\$isDetailView/);
 assert.match(publicIndicators, /Auth::requirePermission\('indicadores', 'visualizar'\)/);
 assert.match(publicIndicators, /Auth::requirePagePermission\('indicadores', 'visualizar'\)/);
 
+const publicReports = fs.readFileSync(path.join(root, 'public', 'relatorios.php'), 'utf8');
+const reportsApi = fs.readFileSync(path.join(root, 'api', 'relatorios.php'), 'utf8');
+assert.match(publicReports, /Auth::requirePagePermission\('relatorios', 'visualizar'\)/);
+assert.match(reportsApi, /Auth::requirePermission\('relatorios', 'visualizar', true\)/);
+
 function hash(file) { return crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex'); }
 for (const directory of ['css', 'js', 'img', 'vendor']) {
   const source = path.join(root, 'assets', directory);

@@ -5,10 +5,12 @@ require_once __DIR__ . '/../core/Database.php';
 require_once __DIR__ . '/../repositories/ConfiguracoesRepository.php';
 require_once __DIR__ . '/../repositories/IndicadoresRepository.php';
 require_once __DIR__ . '/../repositories/LancamentosRepository.php';
+require_once __DIR__ . '/../repositories/EvidenciasRepository.php';
 require_once __DIR__ . '/../repositories/HomologacoesRepository.php';
 require_once __DIR__ . '/../repositories/AuditoriaRepository.php';
 require_once __DIR__ . '/../repositories/UsuariosRepository.php';
 require_once __DIR__ . '/../repositories/SolicitacoesReaberturaRepository.php';
+require_once __DIR__ . '/LancamentoStateMachine.php';
 
 final class BaseDadosService
 {
@@ -16,6 +18,7 @@ final class BaseDadosService
     private $configuracoes;
     private $indicadores;
     private $lancamentos;
+    private $evidencias;
     private $homologacoes;
     private $auditoria;
     private $usuarios;
@@ -27,6 +30,7 @@ final class BaseDadosService
         $this->configuracoes = new ConfiguracoesRepository($this->db);
         $this->indicadores = new IndicadoresRepository($this->db);
         $this->lancamentos = new LancamentosRepository($this->db);
+        $this->evidencias = new EvidenciasRepository($this->db);
         $this->homologacoes = new HomologacoesRepository($this->db);
         $this->auditoria = new AuditoriaRepository($this->db);
         $this->usuarios = new UsuariosRepository($this->db);
@@ -66,7 +70,22 @@ final class BaseDadosService
     public function saveCollection(string $key, array $value, array $user = []): void
     {
         if ($key === 'lancamentos') {
-            $this->lancamentos->replaceAll($this->sanitizeLancamentosForUser($value, $user));
+            $sanitized = $this->sanitizeLancamentosForUser($value, $user);
+            $referenceChanges = $this->evidenceReferenceChanges($sanitized);
+            $this->validateRequiredEvidenceTransitions($sanitized);
+            $this->lancamentos->replaceAll($sanitized);
+            foreach ($referenceChanges as $change) {
+                $this->auditoria->append(array(
+                    'entidade'=>'lancamentos',
+                    'registroId'=>$change['id'],
+                    'acao'=>'referencia_evidencia_atualizada',
+                    'descricao'=>'Referência documental do lançamento atualizada.',
+                    'valorAnterior'=>array('referenciaEvidencia'=>$change['before']),
+                    'valorNovo'=>array('referenciaEvidencia'=>$change['after']),
+                    'usuario'=>$user['matricula'] ?? null,
+                    'perfilUsuario'=>$user['perfil'] ?? null,
+                ));
+            }
             return;
         }
         if ($key === 'homologacoes') {
@@ -192,5 +211,39 @@ final class BaseDadosService
     private function canWriteWorkflow(array $user): bool
     {
         return in_array((string) ($user['perfil'] ?? ''), ['administrador', 'homologador'], true);
+    }
+
+    private function evidenceReferenceChanges(array $items): array
+    {
+        $changes = array();
+        foreach ($items as $item) {
+            $id = (string)($item['id'] ?? '');
+            if ($id === '') continue;
+            $existing = $this->lancamentos->find($id);
+            if (!$existing) continue;
+            $before = trim((string)($existing['referenciaEvidencia'] ?? ''));
+            $after = trim((string)($item['referenciaEvidencia'] ?? $item['referencia_evidencia'] ?? ''));
+            if ($before !== $after) $changes[] = array('id'=>$id,'before'=>$before,'after'=>$after);
+        }
+        return $changes;
+    }
+
+    private function validateRequiredEvidenceTransitions(array $items): void
+    {
+        $required = array();
+        foreach ($this->configuracoes->get('regrasIndicadores', array()) as $rule) {
+            if (!empty($rule['exigeEvidencia'])) $required[(string)($rule['indicadorId'] ?? '')] = true;
+        }
+        foreach ($items as $item) {
+            $id = (string)($item['id'] ?? '');
+            $indicatorId = (string)($item['indicadorId'] ?? $item['indicador_id'] ?? '');
+            $newStatus = LancamentoStateMachine::normalize((string)($item['status'] ?? ''));
+            if ($id === '' || $newStatus !== LancamentoStateMachine::SUBMITTED || empty($required[$indicatorId])) continue;
+            $existing = $this->lancamentos->find($id);
+            if ($existing && LancamentoStateMachine::normalize($existing['status']) === LancamentoStateMachine::SUBMITTED) continue;
+            if (!$this->evidencias->byLaunch($id)) {
+                throw new InvalidArgumentException('Anexe pelo menos um arquivo antes de enviar para homologacao.');
+            }
+        }
     }
 }

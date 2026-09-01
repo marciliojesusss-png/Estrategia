@@ -4,18 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CAIXA Loterias | Resumo Executivo</title>
-  <link rel="stylesheet" href="/assets/css/styles.css?v=RESUMO-ALERTA-PETROLEO-002">
+  <link rel="stylesheet" href="/assets/css/styles.css?v=RESUMO-MAPA-COMPACTO-001">
   <script src="<?= APP_BASE_PATH ?>/assets/vendor/chart.umd.min.js?v=4.4.7" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/currency.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/ieo-recorrente.js?v=IEO-RECORRENTE-002" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/situations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/auth.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/auth.js?v=RELATORIOS-ADMIN-001" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/calculations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/formulas.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/quarterly.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/prazo-apuracao.js?v=PRAZOS-APURACAO-001" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/dashboard.js?v=RESUMO-FONTE-CENTRAL-002" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/executiveSummary.js?v=RESUMO-GRID-COMPACTO-001" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/executiveSummary.js?v=RESUMO-ESCOPO-VISAO-001" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/app.js?v=PERSISTENCIA-CENTRAL-009" defer></script>
 </head>
 <body data-page="resumoExecutivo">
@@ -30,6 +30,17 @@
           <p>Leitura consolidada do desempenho oficial dos indicadores estratégicos.</p>
         </div>
         <a class="secondary-action executive-detail-link" href="/indicadores">Ver catálogo de indicadores</a>
+      </section>
+
+      <section id="executiveViewScope" class="executive-view-scope" aria-labelledby="executiveViewScopeTitle" hidden>
+        <div class="executive-view-scope__heading">
+          <strong id="executiveViewScopeTitle">Escopo da visão</strong>
+          <span id="executiveViewScopeNote" aria-live="polite"></span>
+        </div>
+        <div class="executive-view-scope__options" role="group" aria-label="Selecionar escopo de visualização">
+          <button class="executive-view-scope__option" type="button" data-executive-view-scope="own" aria-pressed="false">Meus indicadores</button>
+          <button class="executive-view-scope__option" type="button" data-executive-view-scope="general" aria-pressed="false">Visão geral — <span data-general-indicator-count>23</span> indicadores</button>
+        </div>
       </section>
 
       <section class="filters executive-filters" aria-label="Filtros do resumo executivo">

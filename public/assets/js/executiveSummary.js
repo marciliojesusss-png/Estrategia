@@ -14,6 +14,9 @@
   ];
   const SITUATIONS = ["Atingido", "Abaixo da meta", "Sem dados", "Em andamento", "Sem cálculo"];
   const PLAN_ORDER = { PEI: 1, PN: 2 };
+  const RVD_INDICATOR_IDS = new Set([2, 5, 6, 7]);
+  const VIEW_SCOPE = Object.freeze({ OWN: "own", GENERAL: "general" });
+  const EXPECTED_GENERAL_INDICATOR_COUNT = 23;
   const SUMMARY_CARD_FILTERS = {
     atingido: { label: "Indicadores atingidos", situation: "Atingido" },
     abaixo_da_meta: { label: "Indicadores abaixo da meta", situation: "Abaixo da meta" },
@@ -29,6 +32,10 @@
     rules: [],
     operationalFrequencies: [],
     prazos: [],
+    viewScope: VIEW_SCOPE.GENERAL,
+    viewScopeDatasets: { own: null, general: null },
+    responsibilityIndicatorIds: new Set(),
+    viewScopeLoading: false,
     chartFilter: {
       pilar: null,
       situacao: null
@@ -54,6 +61,19 @@
       .replaceAll(">", "&gt;")
       .replaceAll('"', "&quot;")
       .replaceAll("'", "&#039;");
+  }
+
+  function isRvdIndicator(indicator) {
+    return RVD_INDICATOR_IDS.has(Number(indicator?.id));
+  }
+
+  function planBadgesMarkup(indicator) {
+    const plan = String(indicator?.plano || "");
+    const planBadge = `<span class="executive-plan-chip executive-plan-${plan.toLowerCase()}">${escapeHtml(plan)}</span>`;
+    const rvdBadge = isRvdIndicator(indicator)
+      ? '<span class="executive-plan-chip plan-badge--rvd" title="Remuneração Variável por Desempenho">RVD</span>'
+      : "";
+    return `<span class="executive-plan-badges">${planBadge}${rvdBadge}</span>`;
   }
 
   function limparNomeIndicador(nome) {
@@ -119,10 +139,12 @@
     return shortIndicatorName(indicator);
   }
 
-  async function loadCentralExecutiveData() {
-    const target = typeof window.appUrl === "function"
+  async function loadCentralExecutiveData(viewScope = VIEW_SCOPE.GENERAL) {
+    const baseTarget = typeof window.appUrl === "function"
       ? window.appUrl("api/dashboard/dados")
       : `${window.APP_BASE_PATH || ""}/index.php?route=api/dashboard/dados`;
+    const requestedScope = viewScope === VIEW_SCOPE.GENERAL ? "geral" : "proprio";
+    const target = `${baseTarget}${baseTarget.includes("?") ? "&" : "?"}escopo=${requestedScope}`;
     const response = await window.fetch(target, { cache: "no-store" });
     const payload = await response.json().catch(() => ({}));
     const data = payload?.dados;
@@ -135,7 +157,176 @@
     if (normalizeText(data.fonte?.driver) !== "sqlsrv") {
       throw new Error("O Resumo Executivo exige a fonte central SQL Server.");
     }
+    if (normalizeText(data.escopoVisualizacao) !== requestedScope) {
+      throw new Error("A fonte central retornou um escopo de visualização diferente do solicitado.");
+    }
     return data;
+  }
+
+  function viewScopeProfileCode(user) {
+    const code = normalizeText(user?.perfilCodigo).replace(/[\s-]+/g, "_");
+    if (code) return code;
+    const profile = normalizeText(user?.perfil).replace(/[\s-]+/g, "_");
+    if (profile === "unidade_apuradora") return "unidade_apuradora";
+    if (profile === "diretoria_homologadora" || profile === "homologador") return "homologador";
+    return profile;
+  }
+
+  function canChooseViewScope(user = state.user) {
+    return ["unidade_apuradora", "homologador"].includes(viewScopeProfileCode(user));
+  }
+
+  function defaultViewScope(user) {
+    return canChooseViewScope(user) ? VIEW_SCOPE.OWN : VIEW_SCOPE.GENERAL;
+  }
+
+  function viewScopeStorageKey(user) {
+    const identity = user?.matricula || user?.id || "anonimo";
+    const sessionIdentity = user?.csrfToken || "sessao-atual";
+    return `estrategia:resumo-executivo:escopo:${identity}:${sessionIdentity}`;
+  }
+
+  function storedViewScope(user) {
+    const fallback = defaultViewScope(user);
+    if (!canChooseViewScope(user)) return fallback;
+    try {
+      const stored = window.sessionStorage?.getItem(viewScopeStorageKey(user));
+      return Object.values(VIEW_SCOPE).includes(stored) ? stored : fallback;
+    } catch (_error) {
+      return fallback;
+    }
+  }
+
+  function persistViewScope() {
+    if (!canChooseViewScope()) return;
+    try {
+      window.sessionStorage?.setItem(viewScopeStorageKey(state.user), state.viewScope);
+    } catch (_error) {
+      // O seletor continua funcional em memória quando o storage não está disponível.
+    }
+  }
+
+  function activeIndicators(data) {
+    return (data?.indicadores || []).filter((indicator) => indicator?.ativo !== false);
+  }
+
+  function collectionsForViewScope(data, user, viewScope) {
+    const allIndicators = activeIndicators(data);
+    const ownIndicators = Auth.filterIndicatorsByUser(allIndicators, user);
+    const visibleIndicators = viewScope === VIEW_SCOPE.GENERAL ? allIndicators : ownIndicators;
+    const visibleIds = new Set(visibleIndicators.map((indicator) => Number(indicator.id)));
+    const allLaunches = data?.lancamentos || [];
+    return {
+      indicators: visibleIndicators,
+      launches: allLaunches.filter((launch) => visibleIds.has(Number(launch.indicadorId))),
+      responsibilityIndicatorIds: new Set(ownIndicators.map((indicator) => Number(indicator.id)))
+    };
+  }
+
+  function applyCentralData(data, viewScope) {
+    const collections = collectionsForViewScope(data, state.user, viewScope);
+    const visibleIds = new Set(collections.indicators.map((indicator) => Number(indicator.id)));
+
+    state.data = data;
+    state.viewScope = viewScope;
+    state.indicators = collections.indicators;
+    state.launches = collections.launches;
+    state.rules = data?.regrasIndicadores || [];
+    state.operationalFrequencies = (data?.frequenciasCobrancaOperacional || [])
+      .filter((item) => visibleIds.has(Number(item.indicadorId)));
+    state.prazos = data?.prazos || [];
+    state.responsibilityIndicatorIds = collections.responsibilityIndicatorIds;
+  }
+
+  function isOwnResponsibility(indicator) {
+    return state.responsibilityIndicatorIds.has(Number(indicator?.id));
+  }
+
+  function responsibilityLabel() {
+    return viewScopeProfileCode(state.user) === "unidade_apuradora"
+      ? "Minha unidade"
+      : "Minha diretoria";
+  }
+
+  function responsibilityBadgeMarkup(indicator) {
+    if (!canChooseViewScope() || state.viewScope !== VIEW_SCOPE.GENERAL || !isOwnResponsibility(indicator)) {
+      return "";
+    }
+    return `<span class="executive-responsibility-badge">${escapeHtml(responsibilityLabel())}</span>`;
+  }
+
+  function renderViewScopeSelector(message = "") {
+    const selector = document.getElementById("executiveViewScope");
+    if (!selector) return;
+    const selectable = canChooseViewScope();
+    selector.hidden = !selectable;
+    if (!selectable) return;
+
+    const generalData = state.viewScopeDatasets.general;
+    const generalCount = generalData ? activeIndicators(generalData).length : EXPECTED_GENERAL_INDICATOR_COUNT;
+    const countTarget = selector.querySelector("[data-general-indicator-count]");
+    if (countTarget) countTarget.textContent = String(generalCount);
+
+    selector.querySelectorAll("[data-executive-view-scope]").forEach((button) => {
+      const active = button.dataset.executiveViewScope === state.viewScope;
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-pressed", active ? "true" : "false");
+      button.disabled = state.viewScopeLoading;
+    });
+    selector.setAttribute("aria-busy", state.viewScopeLoading ? "true" : "false");
+
+    const note = document.getElementById("executiveViewScopeNote");
+    if (!note) return;
+    if (message) {
+      note.textContent = message;
+    } else if (state.viewScope === VIEW_SCOPE.GENERAL) {
+      note.textContent = `Visão institucional somente para consulta. Indicadores do seu escopo estão marcados como “${responsibilityLabel()}”.`;
+    } else {
+      note.textContent = `Exibindo ${state.indicators.length} indicador${state.indicators.length === 1 ? "" : "es"} do seu escopo operacional.`;
+    }
+  }
+
+  function sanitizeInteractiveFiltersForScope() {
+    const visibleIds = new Set(state.indicators.map((indicator) => Number(indicator.id)));
+    const visiblePillars = new Set(state.indicators.map((indicator) => normalizeText(indicator.pilar)));
+    if (state.indicatorFilterId && !visibleIds.has(Number(state.indicatorFilterId))) {
+      state.indicatorFilterId = null;
+    }
+    if (state.chartFilter.pilar && !visiblePillars.has(normalizeText(state.chartFilter.pilar))) {
+      state.chartFilter = { pilar: null, situacao: null };
+    }
+  }
+
+  async function setViewScope(nextScope) {
+    if (!canChooseViewScope() || !Object.values(VIEW_SCOPE).includes(nextScope) || nextScope === state.viewScope) {
+      return;
+    }
+    const previousScope = state.viewScope;
+    let errorMessage = "";
+    state.viewScopeLoading = true;
+    renderViewScopeSelector();
+    try {
+      let data = state.viewScopeDatasets[nextScope];
+      if (!data && nextScope === VIEW_SCOPE.OWN) {
+        data = state.viewScopeDatasets.general;
+      }
+      if (!data) {
+        data = await loadCentralExecutiveData(nextScope);
+        state.viewScopeDatasets[nextScope] = data;
+      }
+      applyCentralData(data, nextScope);
+      sanitizeInteractiveFiltersForScope();
+      fillFilters();
+      updatePeriodFilters();
+      persistViewScope();
+      refresh();
+    } catch (error) {
+      state.viewScope = previousScope;
+      errorMessage = error?.message || "Não foi possível alterar o escopo de visualização.";
+    } finally {
+      state.viewScopeLoading = false;
+      renderViewScopeSelector(errorMessage);
+    }
   }
 
   function isOperationalCompetenceRequired(frequency, month) {
@@ -1127,9 +1318,9 @@
       const status = displayStatus(result);
       return `
         <tr>
-          <td><span class="executive-plan-chip executive-plan-${result.indicador.plano.toLowerCase()}">${escapeHtml(result.indicador.plano)}</span></td>
+          <td>${planBadgesMarkup(result.indicador)}</td>
           <td>${escapeHtml(result.indicador.pilar)}</td>
-          <td class="indicator-name">${escapeHtml(limparNomeIndicador(result.indicador.indicador))}</td>
+          <td class="indicator-name"><span class="executive-indicator-cell"><span>${escapeHtml(limparNomeIndicador(result.indicador.indicador))}</span>${responsibilityBadgeMarkup(result.indicador)}</span></td>
           <td>${escapeHtml(result.competencia || "-")}</td>
           <td>${StrategicResults.formatOfficialMeta(result)}</td>
           <td class="official-value">${result.lancamento ? StrategicResults.formatOfficialResult(result) : "-"}</td>
@@ -1156,15 +1347,20 @@
   }
 
   async function init({ user }) {
-    const data = await loadCentralExecutiveData();
+    const initialScope = storedViewScope(user);
+    const data = await loadCentralExecutiveData(initialScope);
     state = {
-      data,
+      data: null,
       user,
-      indicators: Auth.filterIndicatorsByUser(data.indicadores, user),
-      launches: Auth.filterLaunchesByUser(data.lancamentos, data.indicadores, user),
-      rules: data.regrasIndicadores || [],
-      operationalFrequencies: data.frequenciasCobrancaOperacional || [],
-      prazos: data.prazos || [],
+      indicators: [],
+      launches: [],
+      rules: [],
+      operationalFrequencies: [],
+      prazos: [],
+      viewScope: initialScope,
+      viewScopeDatasets: { own: null, general: null },
+      responsibilityIndicatorIds: new Set(),
+      viewScopeLoading: false,
       chartFilter: {
         pilar: null,
         situacao: null
@@ -1172,7 +1368,17 @@
       summaryCardFilter: null,
       indicatorFilterId: null
     };
+    state.viewScopeDatasets[initialScope] = data;
+    applyCentralData(data, initialScope);
     fillFilters();
+    renderViewScopeSelector();
+    document.getElementById("executiveViewScope")?.addEventListener("click", (event) => {
+      const button = event.target instanceof Element
+        ? event.target.closest("[data-executive-view-scope]")
+        : null;
+      if (!button) return;
+      setViewScope(button.dataset.executiveViewScope);
+    });
     document.querySelectorAll("[data-executive-filter]").forEach((select) => {
       select.addEventListener("change", () => {
         if (select.dataset.executiveFilter === "periodo") updatePeriodFilters();
@@ -1236,6 +1442,17 @@
       performancePercentLabel,
       performancePercentValue,
       performanceMapSize,
+      isRvdIndicator,
+      planBadgesMarkup,
+      viewScopeProfileCode,
+      canChooseViewScope,
+      defaultViewScope,
+      activeIndicators,
+      collectionsForViewScope,
+      applyCentralData,
+      isOwnResponsibility,
+      responsibilityBadgeMarkup,
+      setViewScope,
       loadCentralExecutiveData,
       deadlineStatusForResult,
       deadlineAlertMarkup,

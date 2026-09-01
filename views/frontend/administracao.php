@@ -12,7 +12,7 @@
   <script src="/assets/js/dataStore.js?v=SOLICITACOES-REABERTURA-001" defer></script>
   <script src="/assets/js/databaseService.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/dataService.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="/assets/js/auth.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
+  <script src="/assets/js/auth.js?v=RELATORIOS-ADMIN-001" defer></script>
   <script src="/assets/js/prazo-apuracao.js?v=PRAZOS-APURACAO-001" defer></script>
   <script src="/assets/js/admin.js?v=PRAZOS-APURACAO-001" defer></script>
   <script src="/assets/js/app.js?v=PERSISTENCIA-CENTRAL-008" defer></script>

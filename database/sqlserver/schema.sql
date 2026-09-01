@@ -42,6 +42,7 @@ BEGIN
         situacao NVARCHAR(100) NULL,
         status NVARCHAR(100) NULL,
         observacao_unidade NVARCHAR(MAX) NULL,
+        referencia_evidencia NVARCHAR(MAX) NULL,
         evidencia_id NVARCHAR(100) NULL,
         usuario_responsavel NVARCHAR(255) NULL,
         created_at NVARCHAR(40) NULL,

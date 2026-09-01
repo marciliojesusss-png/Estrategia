@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS lancamentos (
   situacao TEXT,
   status TEXT,
   observacao_unidade TEXT,
+  referencia_evidencia TEXT,
   evidencia_id TEXT,
   usuario_responsavel TEXT,
   created_at TEXT,

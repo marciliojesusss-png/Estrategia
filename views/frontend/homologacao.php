@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CAIXA Loterias | Homologação</title>
-  <link rel="stylesheet" href="/assets/css/styles.css?v=PERSISTENCIA-CENTRAL-008">
+  <link rel="stylesheet" href="/assets/css/styles.css?v=EVIDENCIAS-002">
   <script src="/assets/js/currency.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/ieo-recorrente.js?v=IEO-RECORRENTE-002" defer></script>
   <script src="/assets/js/situations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
@@ -12,10 +12,10 @@
   <script src="/assets/js/dataStore.js?v=SOLICITACOES-REABERTURA-001" defer></script>
   <script src="/assets/js/central-persistence.js?v=PERSISTENCIA-CENTRAL-009" defer></script>
   <script src="/assets/js/databaseService.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="/assets/js/auth.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
+  <script src="/assets/js/auth.js?v=RELATORIOS-ADMIN-001" defer></script>
   <script src="/assets/js/calculations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/formulas.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="/assets/js/approvals.js?v=SOLICITACOES-REABERTURA-001" defer></script>
+  <script src="/assets/js/approvals.js?v=EVIDENCIAS-002" defer></script>
   <script src="/assets/js/app.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
 </head>
 <body data-page="homologacao">
@@ -32,6 +32,7 @@
       <section class="filters" aria-label="Filtros da homologação">
         <label>Mês <select data-filter="mes"></select></label>
         <label>Status <select data-filter="status"></select></label>
+        <label>Indicador <select data-filter="indicador"></select></label>
       </section>
 
       <section class="panel">
@@ -69,17 +70,32 @@
         <form id="approvalForm" class="editor-form">
           <input type="hidden" id="approvalLaunchId">
 
-          <label class="full-span">Justificativa da unidade
-            <textarea id="approvalJustificativa" rows="3" readonly></textarea>
-          </label>
-
           <label class="full-span">Observação da área
             <textarea id="approvalObservacaoArea" rows="3" readonly></textarea>
           </label>
 
-          <label class="full-span">Evidência
-            <textarea id="approvalEvidencia" rows="3" readonly></textarea>
-          </label>
+          <aside id="legacyApprovalJustification" class="legacy-information full-span" hidden>
+            <strong>Justificativa legada da unidade (somente leitura)</strong>
+            <p id="legacyApprovalJustificationText"></p>
+          </aside>
+
+          <section class="evidence-section full-span" aria-labelledby="approvalEvidenceTitle">
+            <div class="evidence-section-heading">
+              <div>
+                <p class="eyebrow">Documentação da unidade apuradora</p>
+                <h3 id="approvalEvidenceTitle">Evidências da Unidade Apuradora</h3>
+              </div>
+              <span class="evidence-requirement">Somente leitura</span>
+            </div>
+            <div class="evidence-reference-readonly">
+              <strong>Referência / Link</strong>
+              <p id="approvalEvidenceReference">Não informada.</p>
+            </div>
+            <div>
+              <h4>Anexos</h4>
+              <div id="approvalEvidenceList" class="evidence-list" aria-live="polite"></div>
+            </div>
+          </section>
 
           <label class="full-span">Observação da diretoria
             <textarea id="approvalObservacaoDiretoria" rows="4"></textarea>

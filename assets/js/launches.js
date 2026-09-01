@@ -1,5 +1,5 @@
 (function () {
-  const EDITABLE_STATUSES = ["Não iniciado", "Em preenchimento", "Devolvido para ajuste", "Reaberto"];
+  const EDITABLE_STATUSES = ["Não iniciado", "Nao iniciado", "Rascunho", "Em preenchimento", "Devolvido para ajuste", "Reaberto", "Retificado"];
   const MANUAL_TYPES = ["manual_homologado", "qualitativo"];
 
   let state = {
@@ -8,11 +8,35 @@
     indicadores: [],
     regras: [],
     lancamentos: [],
+    evidenciasPorLancamento: {},
     selectedId: null
   };
 
   function unique(values) {
     return [...new Set(values.filter(Boolean))];
+  }
+
+  function cleanIndicatorName(value) {
+    return String(value || "").replace(/^\s*\d+\s*[.\-–—]\s*/, "").trim();
+  }
+
+  function indicatorFilterOptions(lancamentos, indicadores = state.indicadores) {
+    const availableIds = new Set(lancamentos.map((item) => String(item.indicadorId)));
+    return indicadores
+      .filter((item) => availableIds.has(String(item.id)))
+      .sort((left, right) => {
+        const leftNumber = Number(left.numero ?? left.id);
+        const rightNumber = Number(right.numero ?? right.id);
+        if (Number.isFinite(leftNumber) && Number.isFinite(rightNumber) && leftNumber !== rightNumber) {
+          return leftNumber - rightNumber;
+        }
+        return cleanIndicatorName(left.indicador).localeCompare(cleanIndicatorName(right.indicador), "pt-BR");
+      })
+      .map((item) => {
+        const number = Number(item.numero ?? item.id);
+        const officialNumber = Number.isFinite(number) ? String(number).padStart(2, "0") : String(item.numero || item.id);
+        return { value: String(item.id), label: `${officialNumber} - ${cleanIndicatorName(item.indicador)}` };
+      });
   }
 
   function monthName(value) {
@@ -90,6 +114,112 @@
 
   function isIeoRule(regra) {
     return regra?.tipoCalculo === "indice_inverso" && Number(regra?.indicadorId) === 6;
+  }
+
+  function appUrl(path) {
+    return typeof window.appUrl === "function" ? window.appUrl(path) : path;
+  }
+
+  function csrfToken() {
+    return window.Auth?.getCurrentUser?.()?.csrfToken ||
+      window.CAIXA_LOTERIAS_AUTH_USER?.csrfToken ||
+      window.CAIXA_LOTERIAS_CSRF_TOKEN ||
+      "";
+  }
+
+  async function evidenceApi(path, options = {}) {
+    const headers = { ...(options.headers || {}) };
+    if (csrfToken()) headers["X-CSRF-Token"] = csrfToken();
+    if (options.body && !(options.body instanceof FormData)) headers["Content-Type"] = "application/json";
+    const response = await fetch(appUrl(path), { cache: "no-store", ...options, headers });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || payload.sucesso === false || payload.ok === false) {
+      throw new Error(payload.mensagem || payload.error || `Falha na API (${response.status}).`);
+    }
+    return Object.prototype.hasOwnProperty.call(payload, "dados") ? payload.dados : payload;
+  }
+
+  function evidenceItems(launchId) {
+    return state.evidenciasPorLancamento[String(launchId)] || [];
+  }
+
+  function formatUploadDate(value) {
+    if (!value) return "";
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString("pt-BR");
+  }
+
+  function renderEvidenceList(lancamento) {
+    const target = document.getElementById("launchEvidenceList");
+    const items = evidenceItems(lancamento.id);
+    if (!items.length) {
+      target.innerHTML = '<p class="evidence-empty">Nenhum arquivo anexado.</p>';
+      return;
+    }
+    target.innerHTML = items.map((item) => `
+      <article class="evidence-item">
+        <div class="evidence-item-icon" aria-hidden="true">📎</div>
+        <div class="evidence-item-content">
+          <strong>${escapeHtml(item.nomeArquivo)}</strong>
+          ${item.descricao ? `<p>${escapeHtml(item.descricao)}</p>` : ""}
+          <small>${escapeHtml([formatUploadDate(item.dataUpload), item.usuario].filter(Boolean).join(" • "))}</small>
+        </div>
+        <div class="evidence-item-actions">
+          <a class="secondary-action" href="${escapeHtml(appUrl(`evidencias/${encodeURIComponent(item.id)}/download`))}">Baixar</a>
+          ${isEditable(lancamento) ? `<button class="secondary-action danger-action" type="button" data-remove-evidence="${escapeHtml(item.id)}">Remover</button>` : ""}
+        </div>
+      </article>
+    `).join("");
+  }
+
+  async function loadEvidenceList(launchId, quiet = false) {
+    if (!quiet) document.getElementById("launchEvidenceList").innerHTML = '<p class="evidence-empty">Carregando anexos...</p>';
+    const items = await evidenceApi(`api/lancamentos/${encodeURIComponent(launchId)}/evidencias`, { method: "GET" });
+    state.evidenciasPorLancamento[String(launchId)] = Array.isArray(items) ? items : [];
+    const selected = getSelectedLaunch();
+    if (selected && String(selected.id) === String(launchId)) renderEvidenceList(selected);
+    return state.evidenciasPorLancamento[String(launchId)];
+  }
+
+  async function addEvidence() {
+    const lancamento = getSelectedLaunch();
+    const fileInput = document.getElementById("launchEvidenceFile");
+    if (!lancamento || !isEditable(lancamento) || !fileInput.files?.length) {
+      showMessage("Selecione um arquivo permitido.", "warning");
+      return;
+    }
+    const form = new FormData();
+    form.append("evidencia", fileInput.files[0]);
+    form.append("descricao", document.getElementById("launchEvidenceDescription").value.trim());
+    const button = document.getElementById("addEvidenceButton");
+    button.disabled = true;
+    try {
+      await evidenceApi(`api/lancamentos/${encodeURIComponent(lancamento.id)}/evidencias`, { method: "POST", body: form });
+      fileInput.value = "";
+      document.getElementById("launchEvidenceDescription").value = "";
+      await loadEvidenceList(lancamento.id, true);
+      showMessage("Evidência anexada com sucesso.", "info");
+    } catch (error) {
+      showMessage(error.message, "warning");
+    } finally {
+      button.disabled = !isEditable(lancamento);
+    }
+  }
+
+  async function removeEvidence(id) {
+    const lancamento = getSelectedLaunch();
+    if (!lancamento || !isEditable(lancamento)) return;
+    if (!window.confirm("Remover este arquivo de evidência?")) return;
+    try {
+      await evidenceApi(`api/evidencias/${encodeURIComponent(id)}/remover`, {
+        method: "POST",
+        body: JSON.stringify({})
+      });
+      await loadEvidenceList(lancamento.id, true);
+      showMessage("Evidência removida.", "info");
+    } catch (error) {
+      showMessage(error.message, "warning");
+    }
   }
 
   function canAdjustOfficialPerformance() {
@@ -269,28 +399,40 @@
   }
 
   function fillFilters(lancamentos) {
-    const values = {
-      mes: ["Todos", ...unique(lancamentos.map((item) => launchMonthName(item)))],
-      status: ["Todos", ...unique(lancamentos.map((item) => item.status))]
+    const options = {
+      mes: ["Todos", ...unique(lancamentos.map((item) => launchMonthName(item)))].map((value) => ({ value, label: value })),
+      status: ["Todos", ...unique(lancamentos.map((item) => item.status))].map((value) => ({ value, label: value })),
+      indicador: [
+        { value: "", label: "Todos os indicadores" },
+        ...indicatorFilterOptions(lancamentos)
+      ]
     };
 
     document.querySelectorAll("[data-filter]").forEach((select) => {
       const currentValue = select.value;
-      select.innerHTML = values[select.dataset.filter].map((value) => `<option>${escapeHtml(value)}</option>`).join("");
-      if (values[select.dataset.filter].includes(currentValue)) {
+      const availableOptions = options[select.dataset.filter] || [];
+      select.innerHTML = availableOptions.map((option) => (
+        `<option value="${escapeHtml(option.value)}">${escapeHtml(option.label)}</option>`
+      )).join("");
+      if (availableOptions.some((option) => option.value === currentValue)) {
         select.value = currentValue;
       }
     });
   }
 
-  function getFilteredLaunches() {
-    const values = Object.fromEntries(
-      [...document.querySelectorAll("[data-filter]")].map((select) => [select.dataset.filter, select.value])
-    );
-    return state.lancamentos.filter((item) => (
+  function filterLaunches(lancamentos, values) {
+    return lancamentos.filter((item) => (
       (values.mes === "Todos" || launchMonthName(item) === values.mes) &&
-      (values.status === "Todos" || item.status === values.status)
+      (values.status === "Todos" || item.status === values.status) &&
+      (!values.indicador || String(item.indicadorId) === String(values.indicador))
     ));
+  }
+
+  function getFilteredLaunches() {
+    const filterEntries = [...document.querySelectorAll("[data-filter]")]
+      .map((select) => [select.dataset.filter, select.value]);
+    const values = Object.fromEntries(filterEntries);
+    return filterLaunches(state.lancamentos, values);
   }
 
   function renderTable(lancamentos) {
@@ -350,9 +492,11 @@
     [
       "launchRealizado",
       "launchPercentualManual",
-      "launchJustificativa",
       "launchObservacaoArea",
-      "launchEvidencia",
+      "launchEvidenceReference",
+      "launchEvidenceFile",
+      "launchEvidenceDescription",
+      "addEvidenceButton",
       "saveDraftButton",
       "sendApprovalButton",
       "clearLaunchButton"
@@ -647,12 +791,19 @@
     document.getElementById("launchMeta").value = formatDisplayMeta(regra, lancamento);
     document.getElementById("launchRealizado").value = lancamento.realizadoMensal ?? "";
     document.getElementById("launchPercentualManual").value = lancamento.percentualManual ?? lancamento.percentualAtingido ?? "";
-    document.getElementById("launchJustificativa").value = lancamento.justificativa || "";
     document.getElementById("launchObservacaoArea").value = lancamento.observacaoArea || "";
-    document.getElementById("launchEvidencia").value = lancamento.evidencia || "";
+    document.getElementById("launchEvidenceReference").value = lancamento.referenciaEvidencia || lancamento.linkEvidencia || "";
     document.getElementById("launchMetrica").value = indicador.metrica || "";
     document.getElementById("manualPercentWrapper").hidden = !isManual(indicador);
-    document.getElementById("evidenceWrapper").hidden = !regra.exigeEvidencia;
+    document.getElementById("evidenceRequirementText").textContent = regra.exigeEvidencia
+      ? "Arquivo obrigatório para envio"
+      : "Opcional";
+    const legacyJustification = document.getElementById("legacyLaunchJustification");
+    const legacyText = String(lancamento.justificativa || "").trim();
+    legacyJustification.hidden = !legacyText;
+    document.getElementById("legacyLaunchJustificationText").textContent = legacyText;
+    renderEvidenceList(lancamento);
+    loadEvidenceList(lancamento.id).catch((error) => showMessage(error.message, "warning"));
 
     updateCalculatedPreview();
     const disabled = !isEditable(lancamento);
@@ -731,8 +882,7 @@
       ...lancamento,
       camposEntrada,
       realizadoMensal: realizado,
-      percentualManual,
-      justificativa: document.getElementById("launchJustificativa").value.trim()
+      percentualManual
     };
     const simulatedLaunches = state.lancamentos.map((item) => {
       if (item.id !== lancamento.id) return item;
@@ -790,9 +940,7 @@
 
   function validateLaunch(indicador, action) {
     const regra = getRule(indicador);
-    const justificativa = document.getElementById("launchJustificativa").value.trim();
     const observacaoArea = document.getElementById("launchObservacaoArea").value.trim();
-    const evidencia = document.getElementById("launchEvidencia").value.trim();
     const percentualManual = document.getElementById("launchPercentualManual").value;
     const result = updateCalculatedPreview();
 
@@ -831,19 +979,19 @@
         showMessage("Indicadores manuais ou qualitativos exigem percentual manual.", "warning");
         return false;
       }
-      if (!justificativa || !observacaoArea) {
-        showMessage("Indicadores manuais ou qualitativos exigem justificativa e observação da área.", "warning");
+      if (!observacaoArea) {
+        showMessage("Indicadores manuais ou qualitativos exigem observação da área.", "warning");
         return false;
       }
     }
 
-    if (regra.exigeJustificativa && !justificativa) {
-      showMessage("Justificativa obrigatória para este indicador.", "warning");
+    if (regra.exigeJustificativa && !observacaoArea) {
+      showMessage("Observação da área obrigatória para este indicador.", "warning");
       return false;
     }
 
-    if (regra.exigeEvidencia && !evidencia) {
-      showMessage("Evidência obrigatória para este indicador.", "warning");
+    if (action === "send" && regra.exigeEvidencia && !evidenceItems(getSelectedLaunch().id).length) {
+      showMessage("Anexe pelo menos um arquivo antes de enviar para homologação.", "warning");
       return false;
     }
 
@@ -854,6 +1002,14 @@
     const lancamento = getSelectedLaunch();
     const indicador = lancamento && getIndicatorMap()[lancamento.indicadorId];
     if (!lancamento || !indicador || !isEditable(lancamento)) return;
+    if (action === "send") {
+      try {
+        await loadEvidenceList(lancamento.id, true);
+      } catch (error) {
+        showMessage(error.message, "warning");
+        return;
+      }
+    }
     if (!validateLaunch(indicador, action)) return;
 
     const calculation = updateCalculatedPreview();
@@ -873,9 +1029,8 @@
       resultadoOficialAnual: calculation.resultado.resultadoOficialAnual,
       situacaoCalculada: Situations.normalizarSituacao(calculation.resultado.situacao || getCalculatedSituation(calculation.resultado.percentualAtingidoAnual ?? calculation.resultado.percentualAtingidoMensal)),
       status: action === "send" ? "Enviado para homologação" : "Em preenchimento",
-      justificativa: document.getElementById("launchJustificativa").value.trim(),
       observacaoArea: document.getElementById("launchObservacaoArea").value.trim(),
-      evidencia: document.getElementById("launchEvidencia").value.trim(),
+      referenciaEvidencia: document.getElementById("launchEvidenceReference").value.trim(),
       preenchidoPor: state.user.email || state.user.nome,
       dataPreenchimento: now.slice(0, 10),
       statusCalculo: calculation.resultado.statusCalculo,
@@ -938,9 +1093,10 @@
     if (!lancamento || !isEditable(lancamento)) return;
     document.getElementById("launchRealizado").value = "";
     document.getElementById("launchPercentualManual").value = "";
-    document.getElementById("launchJustificativa").value = "";
     document.getElementById("launchObservacaoArea").value = "";
-    document.getElementById("launchEvidencia").value = "";
+    document.getElementById("launchEvidenceReference").value = "";
+    document.getElementById("launchEvidenceFile").value = "";
+    document.getElementById("launchEvidenceDescription").value = "";
     document.querySelectorAll(".dynamic-entry-field").forEach((input) => {
       input.value = "";
     });
@@ -1019,6 +1175,11 @@
 
     document.getElementById("saveDraftButton").addEventListener("click", () => persistLaunch("draft"));
     document.getElementById("sendApprovalButton").addEventListener("click", () => persistLaunch("send"));
+    document.getElementById("addEvidenceButton").addEventListener("click", addEvidence);
+    document.getElementById("launchEvidenceList").addEventListener("click", (event) => {
+      const button = event.target.closest("button[data-remove-evidence]");
+      if (button) removeEvidence(button.dataset.removeEvidence);
+    });
     document.getElementById("requestReopenButton").addEventListener("click", requestReopening);
     document.getElementById("clearLaunchButton").addEventListener("click", clearForm);
     document.getElementById("closeLaunchButton").addEventListener("click", () => {
@@ -1034,6 +1195,7 @@
       indicadores: Auth.filterIndicatorsByUser(data.indicadores, user),
       regras: data.regrasIndicadores || [],
       lancamentos: Auth.filterLaunchesByUser(data.lancamentos, data.indicadores, user),
+      evidenciasPorLancamento: {},
       selectedId: null
     };
 
@@ -1053,4 +1215,5 @@
 
   window.PageModules = window.PageModules || {};
   window.PageModules.lancamentos = { init };
+  window.__LAUNCHES_FILTER_TEST_INTERNALS__ = { indicatorFilterOptions, filterLaunches };
 })();

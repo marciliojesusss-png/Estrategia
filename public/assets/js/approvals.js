@@ -8,11 +8,35 @@
     lancamentos: [],
     homologacoes: [],
     solicitacoesReabertura: [],
+    evidenciasPorLancamento: {},
     selectedId: null
   };
 
   function unique(values) {
     return [...new Set(values.filter(Boolean))];
+  }
+
+  function cleanIndicatorName(value) {
+    return String(value || "").replace(/^\s*\d+\s*[.\-–—]\s*/, "").trim();
+  }
+
+  function indicatorFilterOptions(lancamentos, indicadores = state.indicadores) {
+    const availableIds = new Set(lancamentos.map((item) => String(item.indicadorId)));
+    return indicadores
+      .filter((item) => availableIds.has(String(item.id)))
+      .sort((left, right) => {
+        const leftNumber = Number(left.numero ?? left.id);
+        const rightNumber = Number(right.numero ?? right.id);
+        if (Number.isFinite(leftNumber) && Number.isFinite(rightNumber) && leftNumber !== rightNumber) {
+          return leftNumber - rightNumber;
+        }
+        return cleanIndicatorName(left.indicador).localeCompare(cleanIndicatorName(right.indicador), "pt-BR");
+      })
+      .map((item) => {
+        const number = Number(item.numero ?? item.id);
+        const officialNumber = Number.isFinite(number) ? String(number).padStart(2, "0") : String(item.numero || item.id);
+        return { value: String(item.id), label: `${officialNumber} - ${cleanIndicatorName(item.indicador)}` };
+      });
   }
 
   function escapeHtml(value) {
@@ -65,13 +89,56 @@
     return window.IndicatorFormulas ? window.IndicatorFormulas.obterRegra(indicador, state.data.regrasIndicadores || []) : null;
   }
 
+  function appUrl(path) {
+    return typeof window.appUrl === "function" ? window.appUrl(path) : path;
+  }
+
+  function formatUploadDate(value) {
+    if (!value) return "";
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString("pt-BR");
+  }
+
+  function renderApprovalEvidenceList(lancamento) {
+    const target = document.getElementById("approvalEvidenceList");
+    const items = state.evidenciasPorLancamento[String(lancamento.id)] || [];
+    if (!items.length) {
+      target.innerHTML = '<p class="evidence-empty">Nenhum arquivo anexado.</p>';
+      return;
+    }
+    target.innerHTML = items.map((item) => `
+      <article class="evidence-item">
+        <div class="evidence-item-icon" aria-hidden="true">📎</div>
+        <div class="evidence-item-content">
+          <strong>${escapeHtml(item.nomeArquivo)}</strong>
+          ${item.descricao ? `<p>${escapeHtml(item.descricao)}</p>` : ""}
+          <small>${escapeHtml([formatUploadDate(item.dataUpload), item.usuario].filter(Boolean).join(" • "))}</small>
+        </div>
+        <div class="evidence-item-actions">
+          <a class="secondary-action" href="${escapeHtml(appUrl(`evidencias/${encodeURIComponent(item.id)}/download`))}">Baixar</a>
+        </div>
+      </article>
+    `).join("");
+  }
+
+  async function loadApprovalEvidences(lancamento) {
+    document.getElementById("approvalEvidenceList").innerHTML = '<p class="evidence-empty">Carregando anexos...</p>';
+    try {
+      const items = await apiJson(`api/lancamentos/${encodeURIComponent(lancamento.id)}/evidencias`, { method: "GET" });
+      state.evidenciasPorLancamento[String(lancamento.id)] = Array.isArray(items) ? items : [];
+      if (String(state.selectedId) === String(lancamento.id)) renderApprovalEvidenceList(lancamento);
+    } catch (error) {
+      document.getElementById("approvalEvidenceList").innerHTML = `<p class="evidence-empty">${escapeHtml(error.message)}</p>`;
+    }
+  }
+
   function launchForDisplay(indicador, lancamento, regra) {
     if (Number(indicador?.id) !== 6 || !window.IeoRecorrente) return lancamento;
     return window.IeoRecorrente.normalizarLancamentoParaExibicao(lancamento, regra);
   }
 
   function getSelectedLaunch() {
-    return state.lancamentos.find((item) => item.id === state.selectedId);
+    return state.lancamentos.find((item) => String(item.id) === String(state.selectedId));
   }
 
   function isAdmin() {
@@ -117,28 +184,40 @@
   }
 
   function fillFilters(lancamentos) {
-    const values = {
-      mes: ["Todos", ...unique(lancamentos.map((item) => item.nomeMes))],
-      status: ["Todos", ...unique(lancamentos.map((item) => item.status))]
+    const options = {
+      mes: ["Todos", ...unique(lancamentos.map((item) => item.nomeMes))].map((value) => ({ value, label: value })),
+      status: ["Todos", ...unique(lancamentos.map((item) => item.status))].map((value) => ({ value, label: value })),
+      indicador: [
+        { value: "", label: "Todos os indicadores" },
+        ...indicatorFilterOptions(lancamentos)
+      ]
     };
 
     document.querySelectorAll("[data-filter]").forEach((select) => {
       const currentValue = select.value;
-      select.innerHTML = values[select.dataset.filter].map((value) => `<option>${escapeHtml(value)}</option>`).join("");
-      if (values[select.dataset.filter].includes(currentValue)) {
+      const availableOptions = options[select.dataset.filter] || [];
+      select.innerHTML = availableOptions.map((option) => (
+        `<option value="${escapeHtml(option.value)}">${escapeHtml(option.label)}</option>`
+      )).join("");
+      if (availableOptions.some((option) => option.value === currentValue)) {
         select.value = currentValue;
       }
     });
+  }
+
+  function filterLaunches(lancamentos, values) {
+    return lancamentos.filter((item) => (
+      (values.mes === "Todos" || item.nomeMes === values.mes) &&
+      (values.status === "Todos" || item.status === values.status) &&
+      (!values.indicador || String(item.indicadorId) === String(values.indicador))
+    ));
   }
 
   function getFilteredLaunches() {
     const values = Object.fromEntries(
       [...document.querySelectorAll("[data-filter]")].map((select) => [select.dataset.filter, select.value])
     );
-    return state.lancamentos.filter((item) => (
-      (values.mes === "Todos" || item.nomeMes === values.mes) &&
-      (values.status === "Todos" || item.status === values.status)
-    ));
+    return filterLaunches(state.lancamentos, values);
   }
 
   function renderTable(lancamentos) {
@@ -146,7 +225,7 @@
     const porId = getIndicatorMap();
 
     if (!lancamentos.length) {
-      target.innerHTML = '<tr><td colspan="8">Nenhum lançamento disponível para homologação.</td></tr>';
+      target.innerHTML = '<tr><td colspan="8">Nenhum lançamento disponível para os filtros selecionados.</td></tr>';
       return;
     }
 
@@ -232,9 +311,15 @@
     badge.textContent = lancamento.status;
     badge.className = `badge ${badgeClass(lancamento.status)}`;
     document.getElementById("approvalLaunchId").value = lancamento.id;
-    document.getElementById("approvalJustificativa").value = lancamento.justificativa || "";
     document.getElementById("approvalObservacaoArea").value = lancamento.observacaoArea || "";
-    document.getElementById("approvalEvidencia").value = lancamento.evidencia || "";
+    document.getElementById("approvalEvidenceReference").textContent =
+      lancamento.referenciaEvidencia || lancamento.linkEvidencia || "Não informada.";
+    const legacyJustification = document.getElementById("legacyApprovalJustification");
+    const legacyText = String(lancamento.justificativa || "").trim();
+    legacyJustification.hidden = !legacyText;
+    document.getElementById("legacyApprovalJustificationText").textContent = legacyText;
+    renderApprovalEvidenceList(lancamento);
+    loadApprovalEvidences(lancamento);
     document.getElementById("approvalObservacaoDiretoria").value = lancamento.observacaoDiretoria || "";
     renderReference(indicador, lancamento);
     setActionState(lancamento);
@@ -520,7 +605,7 @@
     document.getElementById("homologacaoTable").addEventListener("click", (event) => {
       const button = event.target.closest("button[data-id]");
       if (!button) return;
-      state.selectedId = Number(button.dataset.id);
+      state.selectedId = button.dataset.id;
       renderPanel();
       document.getElementById("approvalPanel").scrollIntoView({ behavior: "smooth", block: "start" });
     });
@@ -548,14 +633,15 @@
       lancamentos: Auth.filterLaunchesByUser(data.lancamentos, data.indicadores, user),
       homologacoes: data.homologacoes,
       solicitacoesReabertura: data.solicitacoesReabertura || [],
+      evidenciasPorLancamento: {},
       selectedId: null
     };
 
     bindEvents();
     refresh();
 
-    const requestedId = Number(new URLSearchParams(window.location.search).get("lancamentoId"));
-    if (requestedId && state.lancamentos.some((item) => item.id === requestedId)) {
+    const requestedId = new URLSearchParams(window.location.search).get("lancamentoId");
+    if (requestedId && state.lancamentos.some((item) => String(item.id) === String(requestedId))) {
       state.selectedId = requestedId;
       renderPanel();
       document.getElementById("approvalPanel").scrollIntoView({ block: "start" });
@@ -564,4 +650,5 @@
 
   window.PageModules = window.PageModules || {};
   window.PageModules.homologacao = { init };
+  window.__APPROVALS_FILTER_TEST_INTERNALS__ = { indicatorFilterOptions, filterLaunches };
 })();

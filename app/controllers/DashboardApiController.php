@@ -19,11 +19,23 @@ final class DashboardApiController
     public function handle($action = 'resumo')
     {
         Auth::requirePermission('dashboard', 'visualizar', true);
-        $filters = Auth::scopeFilters($this->filters($_GET));
-        if ($action === 'dados') return Response::success($this->dadosService->dados($filters), 'Dados centrais do Resumo Executivo consultados.');
+        $requestedFilters = $this->filters($_GET);
+        $generalView = $action === 'dados' && $this->isGeneralView($_GET);
+        $filters = $generalView ? $requestedFilters : Auth::scopeFilters($requestedFilters);
+        if ($action === 'dados') {
+            $filters['ativo'] = true;
+            $data = $this->dadosService->dados($filters);
+            $data['escopoVisualizacao'] = $generalView ? 'geral' : 'proprio';
+            return Response::success($data, 'Dados centrais do Resumo Executivo consultados.');
+        }
         if ($action === 'resumo') return Response::success($this->service->resumo($filters), 'Resumo consultado.');
         if ($action === 'graficos') return Response::success($this->service->graficos($filters), 'Graficos consultados.');
         Response::error('Recurso nao encontrado.', 404);
+    }
+
+    private function isGeneralView(array $source)
+    {
+        return isset($source['escopo']) && strtolower(trim((string) $source['escopo'])) === 'geral';
     }
 
     private function filters(array $source)

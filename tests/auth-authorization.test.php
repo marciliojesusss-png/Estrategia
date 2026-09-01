@@ -30,6 +30,10 @@ assert_auth(!AccessPolicy::allows('homologador', 'lancamentos', 'gerenciar'), 'h
 assert_auth(AccessPolicy::allows('homologador', 'homologacoes', 'decidir'), 'homologador deve decidir homologacao');
 assert_auth(!AccessPolicy::allows('usuario_companhia', 'homologacoes', 'decidir'), 'usuario companhia nao deve homologar');
 assert_auth(AccessPolicy::allows('usuario_companhia', 'indicadores', 'visualizar'), 'usuario companhia deve consultar detalhe de indicador');
+assert_auth(AccessPolicy::allows('administrador', 'relatorios', 'visualizar'), 'administrador deve visualizar relatorios');
+foreach (array('homologador', 'unidade_apuradora', 'usuario_companhia', 'perfil_nao_cadastrado') as $profile) {
+    assert_auth(!AccessPolicy::allows($profile, 'relatorios', 'visualizar'), $profile . ' nao deve visualizar relatorios');
+}
 assert_auth(AccessPolicy::allowsPage('usuario_companhia', 'dashboard', 'visualizar'), 'usuario companhia deve visualizar apenas o resumo executivo');
 foreach (array('visao_trimestral', 'indicadores', 'lancamentos', 'homologacoes', 'relatorios') as $module) {
     assert_auth(!AccessPolicy::allowsPage('usuario_companhia', $module, 'visualizar'), 'usuario companhia nao deve visualizar a pagina ' . $module);

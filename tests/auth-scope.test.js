@@ -53,6 +53,10 @@ const scopedLaunches = context.window.Auth.filterLaunchesByUser(lancamentos, ind
 assert.deepEqual(scopedLaunches.map((item) => item.id), [253]);
 
 assert.equal(context.window.Auth.canAccess("lancamentos", user), true);
+assert.equal(context.window.Auth.canAccess("relatorios", { perfil: "Administrador" }), true);
+for (const perfil of ["Unidade Apuradora", "Diretoria Homologadora", "Consulta/Gestao", "Consulta/Gestão"]) {
+  assert.equal(context.window.Auth.canAccess("relatorios", { perfil }), false, perfil);
+}
 
 const companyUser = { perfil: "Usuario Companhia" };
 assert.equal(context.window.Auth.canAccess("resumoExecutivo", companyUser), true);

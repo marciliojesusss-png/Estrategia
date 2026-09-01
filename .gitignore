@@ -34,5 +34,7 @@ pnpm-debug.log*
 /storage/logs/*
 !/storage/logs/.gitkeep
 /storage/temporarios/*.pid
+/uploads/evidencias/*
+!/uploads/evidencias/.gitkeep
 /logs/
 *.log
