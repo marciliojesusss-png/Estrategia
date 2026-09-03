@@ -39,6 +39,12 @@ assert.equal(evaluate("Enviado para homologação", "2026-09-09").atrasado, fals
 assert.equal(evaluate("Enviado para homologação", "2026-09-10").codigo, engine.STATUS.HOMOLOGACAO_ATRASADA);
 assert.equal(evaluate("Enviado para homologaÃƒÂ§ÃƒÂ£o", "2026-09-10").codigo, engine.STATUS.HOMOLOGACAO_ATRASADA);
 assert.equal(evaluate("Homologado", "2026-09-20").atrasado, false);
+assert.equal(evaluate("Homologado", "2026-09-20", prazo, {
+  camposEntrada: {
+    tipoPosicaoCapacitacao: "acompanhamento",
+    acoesAcompanhamentoCapacitacao: "Acompanhamento mensal realizado."
+  }
+}).codigo, engine.STATUS.EM_DIA);
 assert.equal(evaluate("Não iniciado", "2026-09-20", null).codigo, engine.STATUS.SEM_PRAZO);
 assert.equal(evaluate("Devolvido para ajuste", "2026-09-06").codigo, engine.STATUS.AJUSTE_ATRASADO);
 assert.equal(evaluate("Devolvido para ajuste", "2026-09-06").mensagem, "Ajuste em atraso");

@@ -390,6 +390,12 @@
       const curve = getRedeLotericaCurveForLaunch(regra, lancamento);
       if (curve) values.metaTrimestral = curve.metaIncremento;
     }
+    if (regra?.tipoCalculo === "cobertura_capacitacao") {
+      values.tipoPosicaoCapacitacao = IndicatorFormulas.resolverTipoPosicaoCapacitacao(lancamento) || "";
+      const trimestre = lancamento.trimestre || `${Math.ceil(Number(lancamento.mes) / 3)}TRI/${lancamento.ano || 2026}`;
+      const criterio = regra.parametrosCalculo?.curvaTrimestralCursos?.[trimestre] || {};
+      values.quantidadeCursosMinimaCapacitacao = criterio.quantidadeCursosMinima ?? "";
+    }
     return values;
   }
 
@@ -399,10 +405,11 @@
   }
 
   function renderEntryInput(field, value, extra = "") {
+    const wrapperClass = field.tipo === "textarea" ? "full-span" : "";
     if (field.tipo === "selecao") {
       const options = field.opcoes || [];
       return `
-        <label>${escapeHtml(field.rotulo || field.nome)}
+        <label class="${wrapperClass}" data-entry-wrapper="${escapeHtml(field.nome)}">${escapeHtml(field.rotulo || field.nome)}
           <select
             class="dynamic-entry-field"
             data-entry-field="${escapeHtml(field.nome)}"
@@ -420,8 +427,23 @@
         </label>
       `;
     }
+    if (field.tipo === "textarea") {
+      return `
+        <label class="full-span" data-entry-wrapper="${escapeHtml(field.nome)}">${escapeHtml(field.rotulo || field.nome)}
+          <textarea
+            class="dynamic-entry-field"
+            data-entry-field="${escapeHtml(field.nome)}"
+            data-entry-type="texto"
+            rows="4"
+            ${field.obrigatorio ? "required" : ""}
+            ${field.somenteLeitura ? "readonly" : ""}
+            ${extra}
+          >${escapeHtml(value ?? "")}</textarea>
+        </label>
+      `;
+    }
     return `
-      <label>${escapeHtml(field.rotulo || field.nome)}
+      <label class="${wrapperClass}" data-entry-wrapper="${escapeHtml(field.nome)}">${escapeHtml(field.rotulo || field.nome)}
         <input
           class="dynamic-entry-field"
           data-entry-field="${escapeHtml(field.nome)}"
@@ -590,9 +612,15 @@
     document.getElementById("manualPercentWrapper").hidden = !manual;
     document.getElementById("percentualMensalWrapper").hidden = hideAtingimentoFields;
     document.getElementById("percentualAnualWrapper").hidden = hideAtingimentoFields;
+    document.getElementById("resultadoAnualWrapper").hidden = false;
     document.getElementById("situacaoCalculadaWrapper").hidden = !automatic;
     if (isIeoRule(regra)) {
       document.getElementById("percentualMensalWrapper").hidden = false;
+      document.getElementById("percentualAnualWrapper").hidden = true;
+    }
+    if (regra?.tipoCalculo === "cobertura_capacitacao") {
+      document.getElementById("percentualMensalWrapper").hidden = false;
+      document.getElementById("resultadoAnualWrapper").hidden = true;
       document.getElementById("percentualAnualWrapper").hidden = true;
     }
 
@@ -641,6 +669,7 @@
       input.readOnly = true;
       input.disabled = false;
     });
+    updateCapacitacaoPositionFields(regra, getSelectedLaunch());
   }
 
   function getCalculatedSituation(percentualAtingido) {
@@ -692,11 +721,49 @@
       updateIeoOptionalVisibility();
       return;
     }
-    document.getElementById("dynamicInputFields").innerHTML = (regra.camposEntrada || []).map((field) => `
+    const visibleFields = window.DocumentationFields
+      ? DocumentationFields.visibleInputFields(regra)
+      : (regra.camposEntrada || []);
+    document.getElementById("dynamicInputFields").innerHTML = visibleFields.map((field) => `
       ${renderEntryInput(field, values[field.nome] ?? "")}
     `).join("");
+    updateCapacitacaoPositionFields(regra, lancamento);
     updateEcossistemaCurveFields(regra, lancamento);
     updateRedeLotericaCurveFields(regra, lancamento);
+  }
+
+  function updateCapacitacaoPositionFields(regra, lancamento) {
+    if (regra?.tipoCalculo !== "cobertura_capacitacao") return;
+    const typeInput = document.querySelector('[data-entry-field="tipoPosicaoCapacitacao"]');
+    const type = typeInput?.value || "";
+    const isTracking = type === "acompanhamento";
+    const isQuantitative = type === "apuracao_quantitativa";
+    const visibleFields = new Set([
+      "tipoPosicaoCapacitacao",
+      ...(isTracking ? ["acoesAcompanhamentoCapacitacao"] : []),
+      ...(isQuantitative ? [
+        "publicoAlvoElegivelCapacitacao",
+        "empregadosCapacitadosCapacitacao",
+        "quantidadeCursosMinimaCapacitacao",
+        "cursosConsideradosCapacitacao"
+      ] : []),
+      ...((isTracking || isQuantitative) ? ["dataBaseApuracaoCapacitacao"] : [])
+    ]);
+    document.querySelectorAll("[data-entry-wrapper]").forEach((wrapper) => {
+      const fieldName = wrapper.dataset.entryWrapper;
+      const visible = visibleFields.has(fieldName);
+      wrapper.hidden = !visible;
+      const input = wrapper.querySelector(".dynamic-entry-field");
+      if (input) input.disabled = !visible || !isEditable(lancamento);
+    });
+
+    const quantityInput = document.querySelector('[data-entry-field="quantidadeCursosMinimaCapacitacao"]');
+    const trimestre = lancamento?.trimestre || `${Math.ceil(Number(lancamento?.mes) / 3)}TRI/${lancamento?.ano || 2026}`;
+    const criterion = regra.parametrosCalculo?.curvaTrimestralCursos?.[trimestre] || {};
+    if (quantityInput) {
+      quantityInput.value = criterion.quantidadeCursosMinima ?? "";
+      quantityInput.readOnly = true;
+    }
   }
 
   function updateEcossistemaCurveFields(regra, lancamento) {
@@ -884,8 +951,14 @@
     document.getElementById("launchMeta").value = formatDisplayMeta(regra, lancamento);
     document.getElementById("launchRealizado").value = lancamento.realizadoMensal ?? "";
     document.getElementById("launchPercentualManual").value = lancamento.percentualManual ?? lancamento.percentualAtingido ?? "";
-    document.getElementById("launchObservacaoArea").value = lancamento.observacaoArea || "";
-    document.getElementById("launchEvidenceReference").value = lancamento.referenciaEvidencia || lancamento.linkEvidencia || "";
+    const documentation = window.DocumentationFields
+      ? DocumentationFields.resolve(regra, lancamento)
+      : {
+        observation: lancamento.observacaoArea || "",
+        reference: lancamento.referenciaEvidencia || lancamento.linkEvidencia || ""
+      };
+    document.getElementById("launchObservacaoArea").value = documentation.observation;
+    document.getElementById("launchEvidenceReference").value = documentation.reference;
     document.getElementById("launchMetrica").value = indicador.metrica || "";
     document.getElementById("manualPercentWrapper").hidden = !isManual(indicador);
     document.getElementById("evidenceRequirementText").textContent = regra.exigeEvidencia
@@ -953,10 +1026,13 @@
 
   function calculateLaunchValues(lancamento, indicador) {
     const regra = getRule(indicador);
-    const camposEntrada = {
+    const collectedFields = {
       ...(lancamento.camposEntrada || {}),
       ...collectEntryValues()
     };
+    const camposEntrada = window.DocumentationFields
+      ? DocumentationFields.preserveLegacyFields(regra, lancamento, collectedFields)
+      : collectedFields;
     const ieoDirectToggle = document.getElementById("ieoDirectToggle");
     if (isIeoRule(regra) && ieoDirectToggle && !ieoDirectToggle.checked) {
       camposEntrada.ieoApuradoInformado = "";
@@ -1006,6 +1082,7 @@
     const hideAtingimentoFields = shouldHideGoalAchievementFields(indicador, result.regra);
     document.getElementById("percentualMensalWrapper").hidden = hideAtingimentoFields;
     document.getElementById("percentualAnualWrapper").hidden = hideAtingimentoFields;
+    document.getElementById("resultadoAnualWrapper").hidden = false;
     document.getElementById("realizadoWrapper").hidden = usesAutomaticCalculation(indicador, result.regra);
     document.getElementById("manualPercentWrapper").hidden = !isManual(indicador);
     document.getElementById("situacaoCalculadaWrapper").hidden = !usesAutomaticCalculation(indicador, result.regra);
@@ -1013,6 +1090,11 @@
       document.getElementById("percentualMensalWrapper").hidden = false;
       document.getElementById("percentualAnualWrapper").hidden = true;
       document.getElementById("launchPercentualCalculadoLabel").textContent = "% atingido";
+    }
+    if (result.regra?.tipoCalculo === "cobertura_capacitacao") {
+      document.getElementById("percentualMensalWrapper").hidden = false;
+      document.getElementById("resultadoAnualWrapper").hidden = true;
+      document.getElementById("percentualAnualWrapper").hidden = true;
     }
     document.getElementById("launchResultadoMensal").value = result.resultado.resultadoMensalFormatado || Calculations.formatarValor(result.resultado.resultadoMensal, result.resultado.unidadeMedida);
     document.getElementById("launchPercentualCalculado").value = isIeoRule(result.regra) && result.resultado.percentualAtingidoMensal === null
@@ -1037,6 +1119,29 @@
     const observacaoArea = document.getElementById("launchObservacaoArea").value.trim();
     const percentualManual = document.getElementById("launchPercentualManual").value;
     const result = updateCalculatedPreview();
+
+    if (action === "send" && regra.tipoCalculo === "cobertura_capacitacao") {
+      const tipoPosicao = IndicatorFormulas.resolverTipoPosicaoCapacitacao({
+        ...getSelectedLaunch(),
+        camposEntrada: result.camposEntrada
+      });
+      if (!tipoPosicao) {
+        showMessage("Selecione o tipo da posição antes de enviar para homologação.", "warning");
+        return false;
+      }
+      if (tipoPosicao === "acompanhamento" && !String(result.camposEntrada.acoesAcompanhamentoCapacitacao || "").trim()) {
+        showMessage("Informe as ações realizadas ou o andamento antes de enviar para homologação.", "warning");
+        return false;
+      }
+      if (tipoPosicao === "apuracao_quantitativa") {
+        const publico = toNumberOrNull(result.camposEntrada.publicoAlvoElegivelCapacitacao);
+        const capacitados = toNumberOrNull(result.camposEntrada.empregadosCapacitadosCapacitacao);
+        if (publico === null || publico <= 0 || capacitados === null || capacitados < 0) {
+          showMessage("Informe o público-alvo elegível e os empregados capacitados antes de enviar para homologação.", "warning");
+          return false;
+        }
+      }
+    }
 
     if (
       action === "send" &&
@@ -1130,10 +1235,14 @@
         showActionFeedback("Rascunho salvo com sucesso.");
       }
     } catch (error) {
+      const fallback = action === "send"
+        ? "Não foi possível enviar para homologação."
+        : "Não foi possível salvar o rascunho.";
+      const detail = String(error.message || "").trim().replace(/[.\s]+$/, "");
       showActionFeedback(
-        error.message || (action === "send"
-          ? "Não foi possível enviar para homologação."
-          : "Não foi possível salvar o rascunho."),
+        evidenceUploaded
+          ? `Evidência anexada, mas não foi possível salvar o lançamento${detail ? `: ${detail}` : ""}.`
+          : detail ? `${fallback.replace(/\.$/, "")}: ${detail}.` : fallback,
         "error"
       );
     } finally {
@@ -1191,6 +1300,7 @@
   function recomputeAccumulatedForIndicator(indicadorId, ano) {
     const indicador = getIndicatorMap()[indicadorId];
     const regra = getRule(indicador);
+    if (regra?.tipoCalculo === "cobertura_capacitacao") return;
     const ordered = state.lancamentos
       .filter((item) => item.indicadorId === indicadorId && item.ano === ano)
       .sort((a, b) => a.mes - b.mes);
@@ -1235,6 +1345,8 @@
       ieoDirectToggle.checked = false;
       updateIeoOptionalVisibility();
     }
+    const indicador = lancamento && getIndicatorMap()[lancamento.indicadorId];
+    updateCapacitacaoPositionFields(getRule(indicador), lancamento);
     updateCalculatedPreview();
   }
 
@@ -1295,6 +1407,11 @@
       if (event.target.id === "ieoDirectToggle") updateIeoOptionalVisibility();
       if (event.target.dataset.entryField === "marcoAlcancadoTIC") {
         updateCapacidadeTicPercentual(event.target.value);
+      }
+      if (event.target.dataset.entryField === "tipoPosicaoCapacitacao") {
+        const lancamento = getSelectedLaunch();
+        const indicador = lancamento && getIndicatorMap()[lancamento.indicadorId];
+        updateCapacitacaoPositionFields(getRule(indicador), lancamento);
       }
       const lancamento = getSelectedLaunch();
       const indicador = lancamento && getIndicatorMap()[lancamento.indicadorId];

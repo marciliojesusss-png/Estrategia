@@ -283,9 +283,16 @@
       };
     }
 
-    const calculationScope = getCalculationScope(regra, lancamentosDoIndicador || [], months, year, months.at(-1));
+    let calculationScope = getCalculationScope(regra, lancamentosDoIndicador || [], months, year, months.at(-1));
+    if (regra?.tipoCalculo === "cobertura_capacitacao") {
+      calculationScope = calculationScope.filter((item) => (
+        root.IndicatorFormulas?.resolverTipoPosicaoCapacitacao?.(item) === "apuracao_quantitativa"
+      ));
+    }
     const current = lastByMonth(calculationScope);
-    const calculation = root.IndicatorFormulas?.calcularIndicador(indicador, regra, current, calculationScope);
+    const calculation = current
+      ? root.IndicatorFormulas?.calcularIndicador(indicador, regra, current, calculationScope)
+      : null;
     const validCalculation = calculation && !calculation.erro ? calculation : null;
     let result = getOfficialResult(validCalculation, regra);
     let performance = getOfficialPerformance(validCalculation, regra);

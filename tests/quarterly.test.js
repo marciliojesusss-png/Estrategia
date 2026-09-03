@@ -207,6 +207,31 @@ assert.ok(Math.abs(capacitacaoQuarter.resultadoTrimestral - (137 / 151)) < 0.000
 assert.equal(capacitacaoQuarter.desempenhoTrimestral, 1);
 assert.equal(capacitacaoQuarter.situacaoTrimestral, "Atingido");
 
+const capacitacaoQuarter2 = consolidarTrimestre(
+  capacitacaoQuarter.indicador,
+  {
+    ...capacitacaoQuarter.regra,
+    parametrosCalculo: {
+      ...capacitacaoQuarter.regra.parametrosCalculo,
+      curvaTrimestralCursos: {
+        ...capacitacaoQuarter.regra.parametrosCalculo.curvaTrimestralCursos,
+        "2TRI/2026": { metaCobertura: 0.90, quantidadeCursosMinima: 2, descricao: "90% do público-alvo com 02 cursos concluídos acumulados" }
+      }
+    }
+  },
+  [
+    { ano: 2026, mes: 4, status: "Homologado", competencia: "2026-04", trimestre: "2TRI/2026", camposEntrada: { tipoPosicaoCapacitacao: "acompanhamento", acoesAcompanhamentoCapacitacao: "Concluído relatório técnico." } },
+    { ano: 2026, mes: 5, status: "Homologado", competencia: "2026-05", trimestre: "2TRI/2026", camposEntrada: { tipoPosicaoCapacitacao: "acompanhamento", acoesAcompanhamentoCapacitacao: "Realizada apresentação oficial da Trilha." } },
+    { ano: 2026, mes: 6, status: "Homologado", competencia: "2026-06", trimestre: "2TRI/2026", camposEntrada: { tipoPosicaoCapacitacao: "apuracao_quantitativa", publicoAlvoElegivelCapacitacao: 183, empregadosCapacitadosCapacitacao: 177 } }
+  ],
+  "2TRI/2026"
+);
+assert.equal(capacitacaoQuarter2.statusTrimestre, "Fechado");
+assert.equal(capacitacaoQuarter2.mesesHomologados, 3);
+assert.ok(Math.abs(capacitacaoQuarter2.resultadoTrimestral - (177 / 183)) < 0.000001);
+assert.equal(capacitacaoQuarter2.desempenhoTrimestral, 1);
+assert.equal(capacitacaoQuarter2.situacaoTrimestral, "Atingido");
+
 const aprimoramentoQuarter = consolidarTrimestre(
   { id: 4, indicador: "Aprimoramento da Experiência do Cliente", unidadeMedida: "percentual" },
   {

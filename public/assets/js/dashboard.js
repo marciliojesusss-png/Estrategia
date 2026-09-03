@@ -228,6 +228,59 @@
     }
   }
 
+  function isQuantitativePerformanceLaunch(regra, lancamento) {
+    if (regra?.tipoCalculo === "cobertura_capacitacao") {
+      return window.IndicatorFormulas?.resolverTipoPosicaoCapacitacao?.(lancamento) === "apuracao_quantitativa";
+    }
+    if (regra?.tipoCalculo === "nota_pesquisa_anual") {
+      const campoNota = regra.parametrosCalculo?.campoNota || "notaClimaApurada";
+      return [
+        lancamento?.camposEntrada?.[campoNota],
+        lancamento?.resultadoMensal,
+        lancamento?.resultadoOficialAnual,
+        lancamento?.resultadoOficial
+      ].some((value) => toFiniteNumber(value) !== null);
+    }
+    return true;
+  }
+
+  function resolveLatestQuantitativePosition(indicador, regra, lancamentosDoIndicador) {
+    const homologatedOnlyTypes = new Set([
+      "razao_canais_digitais",
+      "participacao_ecossistema_com_cenarios",
+      "incremento_rede_loterica_base_2025",
+      "crescimento_comparado_base_2025",
+      "crescimento_rede_loterica_base_2025",
+      "cobertura_capacitacao",
+      "nota_pesquisa_anual"
+    ]);
+    const validSource = homologatedOnlyTypes.has(regra?.tipoCalculo)
+      ? (lancamentosDoIndicador || []).filter((item) => item.status === "Homologado")
+      : (lancamentosDoIndicador || []);
+    const historicalLaunches = validSource
+      .filter(hasValidLaunchData)
+      .sort(sortByOfficialCompetence);
+    const operationalLaunches = historicalLaunches
+      .filter((launch) => isOfficialCompetence(indicador, launch));
+    const quantitativeLaunches = operationalLaunches
+      .filter((launch) => isQuantitativePerformanceLaunch(regra, launch));
+    return {
+      historicalLaunches,
+      operationalLaunches,
+      quantitativeLaunches,
+      latestOperationalLaunch: operationalLaunches.at(-1) || null,
+      latestQuantitativeLaunch: selectOfficialLaunch(regra, quantitativeLaunches)
+    };
+  }
+
+  function executiveCurrentSituation(regra, lancamento, resultadoCalculado = null) {
+    if (regra?.tipoCalculo !== "nota_pesquisa_anual" || !lancamento) return null;
+    if (!isQuantitativePerformanceLaunch(regra, lancamento) && hasValidLaunchData(lancamento)) {
+      return "Em acompanhamento";
+    }
+    return resultadoCalculado?.situacao || lancamento.situacaoCalculada || null;
+  }
+
   function calcularResultadoPorMotor(indicador, regra, lancamentoOficial, lancamentosValidos) {
     if (!window.IndicatorFormulas || !IndicatorFormulas.calcularIndicador || !regra || !lancamentoOficial) return null;
     const lancamentosDoAno = lancamentosValidos
@@ -266,15 +319,10 @@
   }
 
   function obterResultadoDashboard(indicador, regra, lancamentosDoIndicador) {
-    const homologatedOnlyTypes = new Set(["razao_canais_digitais", "participacao_ecossistema_com_cenarios", "incremento_rede_loterica_base_2025", "crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"]);
-    const validSource = homologatedOnlyTypes.has(regra?.tipoCalculo)
-      ? (lancamentosDoIndicador || []).filter((item) => item.status === "Homologado")
-      : (lancamentosDoIndicador || []);
-    const lancamentosHistoricosValidos = validSource
-      .filter(hasValidLaunchData)
-      .sort(sortByOfficialCompetence);
-    const lancamentosValidos = lancamentosHistoricosValidos
-      .filter((launch) => isOfficialCompetence(indicador, launch));
+    const positions = resolveLatestQuantitativePosition(indicador, regra, lancamentosDoIndicador);
+    const lancamentosHistoricosValidos = positions.historicalLaunches;
+    const lancamentosOperacionaisValidos = positions.operationalLaunches;
+    const lancamentosValidos = positions.quantitativeLaunches;
     const resultadosMensais = obterResultadosMensais(indicador, regra, lancamentosDoIndicador);
 
     if (!lancamentosValidos.length) {
@@ -285,8 +333,9 @@
       const lancamentoCompetenciaAtual = lancamentosOrdenados.find((item) => (
         Number(item.ano) === agora.getFullYear() && Number(item.mes) === agora.getMonth() + 1
       ));
-      const lancamentoAcao = lancamentoCompetenciaAtual || lancamentosOrdenados.at(-1) || null;
+      const lancamentoAcao = lancamentoCompetenciaAtual || lancamentosOperacionaisValidos.at(-1) || lancamentosOrdenados.at(-1) || null;
       const possuiAndamento = lancamentoAcao && lancamentoAcao.status !== "Não iniciado";
+      const situacaoAtual = executiveCurrentSituation(regra, lancamentoAcao);
       return {
         indicador,
         regra,
@@ -296,16 +345,28 @@
         status: lancamentoAcao?.status || "Não iniciado",
         lancamento: null,
         lancamentoAcao,
+        latestOperationalLaunch: lancamentoAcao,
+        latestQuantitativeLaunch: null,
+        competenciaAtual: possuiAndamento ? competencia(lancamentoAcao) : null,
+        competenciaMedicao: null,
+        competenciaMedicaoCurta: null,
+        statusAtual: lancamentoAcao?.status || "Não iniciado",
         meta: getOfficialMeta(regra, lancamentoAcao, null),
-        situacaoCalculada: "Sem dados",
+        situacaoAtual,
+        situacaoCalculada: situacaoAtual || "Sem dados",
         resultadosMensais
       };
     }
 
-    const lancamentoOficial = selectOfficialLaunch(regra, lancamentosValidos);
+    const lancamentoOficial = positions.latestQuantitativeLaunch;
+    const lancamentoAcao = positions.latestOperationalLaunch || lancamentoOficial;
     const resultadoCalculado = calcularResultadoPorMotor(indicador, regra, lancamentoOficial, lancamentosHistoricosValidos);
+    const resultadoOperacional = lancamentoAcao === lancamentoOficial
+      ? resultadoCalculado
+      : calcularResultadoPorMotor(indicador, regra, lancamentoAcao, lancamentosHistoricosValidos);
     const percentualAtingido = getOfficialPercent(lancamentoOficial, resultadoCalculado, regra);
     const resultado = getOfficialResult(lancamentoOficial, resultadoCalculado);
+    const situacaoAtual = executiveCurrentSituation(regra, lancamentoAcao, resultadoOperacional);
 
     return {
       indicador,
@@ -315,9 +376,16 @@
       competencia: competencia(lancamentoOficial),
       status: lancamentoOficial.status,
       lancamento: lancamentoOficial,
-      lancamentoAcao: lancamentoOficial,
+      lancamentoAcao,
+      latestOperationalLaunch: lancamentoAcao,
+      latestQuantitativeLaunch: lancamentoOficial,
+      competenciaAtual: regra?.tipoCalculo === "nota_pesquisa_anual" ? competencia(lancamentoAcao) : null,
+      competenciaMedicao: regra?.tipoCalculo === "nota_pesquisa_anual" ? competencia(lancamentoOficial) : null,
+      competenciaMedicaoCurta: regra?.tipoCalculo === "nota_pesquisa_anual" ? competenciaCurta(lancamentoOficial) : null,
+      statusAtual: regra?.tipoCalculo === "nota_pesquisa_anual" ? lancamentoAcao.status : null,
       meta: getOfficialMeta(regra, lancamentoOficial, resultadoCalculado),
-      situacaoCalculada: resultadoCalculado && resultadoCalculado.situacao,
+      situacaoAtual,
+      situacaoCalculada: situacaoAtual || (resultadoCalculado && resultadoCalculado.situacao),
       resultadosMensais
     };
   }
@@ -546,7 +614,11 @@
   }
 
   function officialSituation(resultado) {
-    if (!resultado || !resultado.lancamento) return "Sem dados";
+    if (!resultado) return "Sem dados";
+    if (resultado.situacaoAtual) {
+      return window.Situations ? Situations.normalizarSituacao(resultado.situacaoAtual) : resultado.situacaoAtual;
+    }
+    if (!resultado.lancamento) return "Sem dados";
     if (resultado.situacaoCalculada) {
       return window.Situations ? Situations.normalizarSituacao(resultado.situacaoCalculada) : resultado.situacaoCalculada;
     }
@@ -790,6 +862,7 @@
   window.StrategicResults = {
     calcularDashboard,
     calcularResultadosOficiais,
+    resolveLatestQuantitativePosition,
     officialSituation,
     formatOfficialResult,
     formatOfficialMeta,

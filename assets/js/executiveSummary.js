@@ -440,6 +440,18 @@
     return "vermelho";
   }
 
+  function isTrackingSituation(value) {
+    const normalized = normalizeText(value);
+    return normalized === "em acompanhamento" ||
+      normalized === "em andamento" ||
+      normalized === "plano de acao em andamento";
+  }
+
+  function performanceToneForResult(result) {
+    if (isTrackingSituation(displaySituation(result))) return "amarelo";
+    return performanceToneByPercent(result?.percentualAtingido);
+  }
+
   function performanceToneLabel(tone) {
     if (tone === "verde") return "Meta atingida";
     if (tone === "amarelo") return "Atenção";
@@ -501,7 +513,17 @@
 
   function displayStatus(result) {
     if (result.trimestral) return result.status;
+    if (result.statusAtual) return result.statusAtual;
     return result.lancamento ? result.status : "Não iniciado";
+  }
+
+  function executiveCompetence(result) {
+    return result?.competenciaAtual || result?.competencia || null;
+  }
+
+  function measurementReference(result) {
+    if (result?.regra?.tipoCalculo !== "nota_pesquisa_anual") return null;
+    return result.competenciaMedicaoCurta || result.competenciaMedicao || null;
   }
 
   function displaySituation(result) {
@@ -556,6 +578,7 @@
     const normalized = normalizeText(normalizeSituation(value));
     if (normalized === "atingido" || normalized === "atingida") return "atingido";
     if (normalized === "abaixo da meta" || normalized === "critico" || normalized === "nao atingido") return "abaixo_da_meta";
+    if (isTrackingSituation(normalized)) return "acompanhamento";
     return "sem_dados";
   }
 
@@ -563,6 +586,7 @@
     const group = summarySituationGroup(displaySituation(result));
     if (group === "atingido") return "Atingido";
     if (group === "abaixo_da_meta") return "Abaixo da meta";
+    if (group === "acompanhamento") return "Em acompanhamento";
     return "Sem dados";
   }
 
@@ -876,11 +900,14 @@
     const statuses = results.map(displayStatus);
     const achieved = situations.filter((item) => item === "atingido").length;
     const attention = situations.filter((item) => item === "abaixo_da_meta").length;
+    const tracking = situations.filter((item) => item === "acompanhamento").length;
+    const noData = situations.filter((item) => item === "sem_dados").length;
     return {
       total: results.length,
       achieved,
       attention,
-      noData: results.length - achieved - attention,
+      tracking,
+      noData,
       homologated: statuses.filter((item) => item === "Homologado" || item === "Fechado").length,
       pending: statuses.filter((item) => item === "Enviado para homologação" || item === "Parcial").length
     };
@@ -928,6 +955,7 @@
       const pillarSituations = items.map(chartSituation);
       const achieved = pillarSituations.filter((item) => item === "Atingido").length;
       const attention = pillarSituations.filter((item) => item === "Abaixo da meta").length;
+      const tracking = pillarSituations.filter((item) => item === "Em acompanhamento").length;
       const noData = pillarSituations.filter((item) => item === "Sem dados").length;
       const gaugeTotal = items.length;
       const attainedPercent = gaugeTotal ? achieved / gaugeTotal : 0;
@@ -945,6 +973,7 @@
         total: items.length,
         achieved,
         attention,
+        tracking,
         noData,
         totalWithData: gaugeTotal,
         gaugeTotal,
@@ -1030,6 +1059,7 @@
         <div class="executive-pillar-metrics">
           <span><strong>${group.achieved}</strong> atingido${group.achieved === 1 ? "" : "s"}</span>
           <span><strong>${group.attention}</strong> abaixo da meta</span>
+          <span><strong>${group.tracking}</strong> em acompanhamento</span>
           <span><strong>${group.noData}</strong> sem dados</span>
         </div>
         <div class="executive-progress" aria-label="${(group.attainedPercent * 100).toFixed(0)}% atingidos">
@@ -1092,6 +1122,7 @@
       pillar: group.pillar,
       achieved: group.items.filter((item) => chartSituation(item) === "Atingido").length,
       attention: group.items.filter((item) => chartSituation(item) === "Abaixo da meta").length,
+      tracking: group.items.filter((item) => chartSituation(item) === "Em acompanhamento").length,
       noData: group.items.filter((item) => chartSituation(item) === "Sem dados").length
     }));
 
@@ -1099,6 +1130,7 @@
     const chartSegments = [
       { label: "Atingido", situation: "Atingido", key: "achieved", color: "#35d65b", muted: "rgba(53, 214, 91, 0.26)" },
       { label: "Abaixo da meta", situation: "Abaixo da meta", key: "attention", color: "#ff7a00", muted: "rgba(255, 122, 0, 0.28)" },
+      { label: "Em acompanhamento", situation: "Em acompanhamento", key: "tracking", color: "#f9c846", muted: "rgba(249, 200, 70, 0.28)" },
       { label: "Sem dados", situation: "Sem dados", key: "noData", color: "#91a7bd", muted: "rgba(145, 167, 189, 0.32)" }
     ];
     const activeFilter = hasChartFilter();
@@ -1199,13 +1231,15 @@
     const meta = StrategicResults.formatOfficialMeta(result);
     const situation = displaySituation(result);
     const status = displayStatus(result);
-    const competence = result.competencia || "-";
+    const competence = executiveCompetence(result) || "-";
+    const measurement = measurementReference(result);
+    const isAnnualSurvey = result.regra?.tipoCalculo === "nota_pesquisa_anual";
     const previous = previousMonthlyResult(result);
     const variation = performanceVariation(result.percentualAtingido, previous?.percentualAtingido);
     const variationLabel = formatPerformanceVariation(variation);
     const percentLabel = performancePercentLabel(result.percentualAtingido);
     const percentValue = performancePercentValue(result.percentualAtingido);
-    const tone = performanceToneByPercent(result.percentualAtingido);
+    const tone = performanceToneForResult(result);
     const toneLabel = performanceToneLabel(tone);
     const active = Number(result.indicador.id) === Number(state.indicatorFilterId);
     const size = performanceMapSize(result, index);
@@ -1216,7 +1250,8 @@
       `Resultado oficial: ${officialResult}`,
       `Meta: ${meta}`,
       `Percentual de atingimento: ${percentLabel}`,
-      `Competência: ${competence}`,
+      `Última competência: ${competence}`,
+      ...(isAnnualSurvey ? [`Última medição: ${measurement || "Sem nova medição"}`] : []),
       `Resultado anterior: ${previous ? StrategicResults.formatOfficialResult(previous) : "-"}`,
       `Percentual anterior: ${previous ? performancePercentLabel(previous.percentualAtingido) : "Sem comparação"}`,
       `Variação: ${variationLabel}`,
@@ -1250,9 +1285,16 @@
             ${toFiniteNumber(result.percentualAtingido) === null ? "" : "<small>da meta</small>"}
           </span>
         </span>
-        <span class="executive-performance-footer">
-          <span class="executive-performance-variation executive-performance-variation-${variation?.direction || "none"}">${escapeHtml(variationLabel)}</span>
-        </span>
+        ${isAnnualSurvey ? `
+          <span class="executive-performance-footer executive-performance-context">
+            <span>${escapeHtml(situation)}</span>
+            <span>${escapeHtml(measurement ? `Pesquisa: ${measurement}` : "Sem nova medição")}</span>
+          </span>
+        ` : `
+          <span class="executive-performance-footer">
+            <span class="executive-performance-variation executive-performance-variation-${variation?.direction || "none"}">${escapeHtml(variationLabel)}</span>
+          </span>
+        `}
         ${deadlineAlertMarkup(deadlineStatus)}
       </button>
     `;
@@ -1265,7 +1307,7 @@
 
     const ordered = [...results].sort((a, b) => (
       Number(b.percentualAtingido !== null && b.percentualAtingido !== undefined) - Number(a.percentualAtingido !== null && a.percentualAtingido !== undefined) ||
-      performanceToneRank(performanceToneByPercent(a.percentualAtingido)) - performanceToneRank(performanceToneByPercent(b.percentualAtingido)) ||
+      performanceToneRank(performanceToneForResult(a)) - performanceToneRank(performanceToneForResult(b)) ||
       (PLAN_ORDER[a.indicador.plano] || 99) - (PLAN_ORDER[b.indicador.plano] || 99) ||
       Number(a.indicador.numero) - Number(b.indicador.numero)
     ));
@@ -1331,14 +1373,16 @@
     target.innerHTML = ordered.map((result) => {
       const situation = displaySituation(result);
       const status = displayStatus(result);
+      const measurement = measurementReference(result);
+      const officialValue = result.lancamento ? StrategicResults.formatOfficialResult(result) : "-";
       return `
         <tr>
           <td>${planBadgesMarkup(result.indicador)}</td>
           <td>${escapeHtml(result.indicador.pilar)}</td>
           <td class="indicator-name"><span class="executive-indicator-cell"><span>${escapeHtml(limparNomeIndicador(result.indicador.indicador))}</span>${responsibilityBadgeMarkup(result.indicador)}</span></td>
-          <td>${escapeHtml(result.competencia || "-")}</td>
+          <td>${escapeHtml(executiveCompetence(result) || "-")}</td>
           <td>${StrategicResults.formatOfficialMeta(result)}</td>
-          <td class="official-value">${result.lancamento ? StrategicResults.formatOfficialResult(result) : "-"}</td>
+          <td class="official-value"><span class="executive-official-measurement"><strong>${escapeHtml(officialValue)}</strong>${measurement ? `<small>Medição: ${escapeHtml(measurement)}</small>` : ""}</span></td>
           <td class="col-situacao"><span class="badge badge-situacao ${badgeClass(situation)} ${String(situation).length > 16 ? "long" : ""}">${escapeHtml(situation)}</span></td>
           ${shouldHideStatusColumn() ? "" : `<td class="col-status"><span class="badge badge-status ${badgeClass(status)}">${escapeHtml(status)}</span></td>`}
           <td><a class="secondary-action table-action dashboard-action" href="${window.AppRoutes ? window.AppRoutes.page("indicadores", indicatorDetailNavigationParams(result.indicador.id)) : `/indicadores?${new URLSearchParams(indicatorDetailNavigationParams(result.indicador.id)).toString()}`}" title="Visualizar indicador">Ver</a></td>
@@ -1451,6 +1495,7 @@
   if (window.__EXECUTIVE_SUMMARY_TEST__) {
     window.ExecutiveSummaryInternals = {
       performanceToneByPercent,
+      performanceToneForResult,
       performanceToneLabel,
       performanceVariation,
       formatPerformanceVariation,
@@ -1477,6 +1522,11 @@
       isExpectedDeadlineCycle,
       isOperationalCompetenceRequired,
       operationalFrequencyForIndicator,
+      executiveCompetence,
+      measurementReference,
+      summarySituationGroup,
+      chartSituation,
+      aggregate,
       shortIndicatorName,
       nomeIndicadorMapa
     };

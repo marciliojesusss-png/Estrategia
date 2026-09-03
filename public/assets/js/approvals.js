@@ -56,6 +56,14 @@
       .replaceAll("'", "&#039;");
   }
 
+  function launchDocumentation(regra, lancamento) {
+    if (window.DocumentationFields) return DocumentationFields.resolve(regra, lancamento);
+    return {
+      reference: lancamento?.referenciaEvidencia || lancamento?.linkEvidencia || "",
+      observation: lancamento?.observacaoArea || ""
+    };
+  }
+
   function badgeClass(status) {
     if (status === "Homologado") return "ok";
     if (status === "Devolvido para ajuste") return "danger";
@@ -267,7 +275,20 @@
 
   function renderReference(indicador, lancamento) {
     const regra = getRule(indicador);
+    const documentation = launchDocumentation(regra, lancamento);
     const displayLaunch = launchForDisplay(indicador, lancamento, regra);
+    const tipoCapacitacao = regra?.tipoCalculo === "cobertura_capacitacao"
+      ? window.IndicatorFormulas?.resolverTipoPosicaoCapacitacao?.(lancamento)
+      : null;
+    const detalhesCapacitacao = tipoCapacitacao ? [
+      ["Tipo da posição", tipoCapacitacao === "acompanhamento" ? "Acompanhamento sem nova medição" : "Apuração quantitativa"],
+      ...(tipoCapacitacao === "acompanhamento" ? [
+        ["Ações realizadas / andamento", lancamento.camposEntrada?.acoesAcompanhamentoCapacitacao || "-", true]
+      ] : []),
+      ["Data-base da posição", lancamento.camposEntrada?.dataBaseApuracaoCapacitacao || "-"],
+      ["Fonte/evidência informada", documentation.reference || "-"],
+      ["Situação", tipoCapacitacao === "acompanhamento" ? "Em acompanhamento" : displayLaunch.situacaoCalculada || "-"]
+    ] : [];
     const metaReferencia = regra?.parametrosCalculo?.metaTipo === "curva_acumulada_por_competencia"
       ? (() => {
         const key = lancamento?.competencia || `${lancamento?.ano}-${String(lancamento?.mes).padStart(2, "0")}`;
@@ -289,7 +310,8 @@
       ["Resultado acumulado", Calculations.formatarValor(displayLaunch.resultadoAcumulado, regra && regra.unidadeMedida)],
       ["Percentual acumulado", Calculations.formatarPercentual(displayLaunch.percentualAtingidoAcumulado)],
       ["Tipo de cálculo", indicador.tipoCalculo],
-      ["Métrica/Fórmula", indicador.metrica, true]
+      ["Métrica/Fórmula", indicador.metrica, true],
+      ...detalhesCapacitacao
     ].map(([label, value, full]) => `
       <article class="detail-item ${full ? "full-span" : ""}">
         <span>${escapeHtml(label)}</span>
@@ -315,6 +337,7 @@
   function renderPanel(options = {}) {
     const lancamento = getSelectedLaunch();
     const indicador = lancamento && getIndicatorMap()[lancamento.indicadorId];
+    const regra = indicador && getRule(indicador);
     const panel = document.getElementById("approvalPanel");
 
     if (!lancamento || !indicador) {
@@ -328,9 +351,9 @@
     badge.textContent = lancamento.status;
     badge.className = `badge ${badgeClass(lancamento.status)}`;
     document.getElementById("approvalLaunchId").value = lancamento.id;
-    document.getElementById("approvalObservacaoArea").value = lancamento.observacaoArea || "";
-    document.getElementById("approvalEvidenceReference").textContent =
-      lancamento.referenciaEvidencia || lancamento.linkEvidencia || "Não informada.";
+    const documentation = launchDocumentation(regra, lancamento);
+    document.getElementById("approvalObservacaoArea").value = documentation.observation;
+    document.getElementById("approvalEvidenceReference").textContent = documentation.reference || "Não informada.";
     const legacyJustification = document.getElementById("legacyApprovalJustification");
     const legacyText = String(lancamento.justificativa || "").trim();
     legacyJustification.hidden = !legacyText;

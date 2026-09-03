@@ -1582,6 +1582,7 @@
             ...normalized,
             unidadeApuradora: "GERIN",
             diretoriaResponsavel: "DILOT",
+            periodicidade: "Mensal",
             tipoCalculo: "cobertura_capacitacao",
             unidadeMedida: "percentual",
             metaAnualDescricao: "≥ 90%",
@@ -2036,8 +2037,10 @@
             unidadeMedida: "percentual",
             metaAnualValor: 0.90,
             parametrosCalculo: {
+              campoTipoPosicao: "tipoPosicaoCapacitacao",
               campoPublicoAlvo: "publicoAlvoElegivelCapacitacao",
               campoCapacitados: "empregadosCapacitadosCapacitacao",
+              campoAcoesAcompanhamento: "acoesAcompanhamentoCapacitacao",
               campoQuantidadeCursos: "quantidadeCursosMinimaCapacitacao",
               campoCursosConsiderados: "cursosConsideradosCapacitacao",
               campoDataBase: "dataBaseApuracaoCapacitacao",
@@ -2048,11 +2051,23 @@
               sentidoMeta: "quanto_maior_melhor"
             },
             camposEntrada: [
-              { nome: "publicoAlvoElegivelCapacitacao", rotulo: "Público-alvo elegível", tipo: "numero", obrigatorio: true },
-              { nome: "empregadosCapacitadosCapacitacao", rotulo: "Empregados capacitados no critério do trimestre", tipo: "numero", obrigatorio: true },
-              { nome: "quantidadeCursosMinimaCapacitacao", rotulo: "Quantidade mínima de cursos exigida", tipo: "numero", obrigatorio: false },
+              {
+                nome: "tipoPosicaoCapacitacao",
+                rotulo: "Tipo da posição",
+                tipo: "selecao",
+                obrigatorio: true,
+                opcoes: [
+                  { value: "", label: "Selecione o tipo da posição" },
+                  { value: "acompanhamento", label: "Acompanhamento sem nova medição" },
+                  { value: "apuracao_quantitativa", label: "Apuração quantitativa" }
+                ]
+              },
+              { nome: "acoesAcompanhamentoCapacitacao", rotulo: "Ações realizadas / andamento", tipo: "textarea", obrigatorio: false },
+              { nome: "publicoAlvoElegivelCapacitacao", rotulo: "Público-alvo elegível", tipo: "numero", obrigatorio: false },
+              { nome: "empregadosCapacitadosCapacitacao", rotulo: "Empregados capacitados no critério do trimestre", tipo: "numero", obrigatorio: false },
+              { nome: "quantidadeCursosMinimaCapacitacao", rotulo: "Quantidade mínima de cursos exigida", tipo: "numero", obrigatorio: false, somenteLeitura: true },
               { nome: "cursosConsideradosCapacitacao", rotulo: "Curso(s)/trilha considerada", tipo: "texto", obrigatorio: false },
-              { nome: "dataBaseApuracaoCapacitacao", rotulo: "Data-base da apuração", tipo: "data", obrigatorio: false },
+              { nome: "dataBaseApuracaoCapacitacao", rotulo: "Data-base da posição", tipo: "data", obrigatorio: false },
               { nome: "fonteEvidenciaCapacitacao", rotulo: "Fonte/evidência", tipo: "texto", obrigatorio: false },
               { nome: "observacaoArea", rotulo: "Observação da área", tipo: "texto", obrigatorio: false }
             ],

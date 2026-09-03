@@ -52,6 +52,25 @@ assert.match(view, /<th>Resultado da competência<\/th>/);
 assert.match(view, /id="launchResultadoMensalLabel">Resultado da competência</);
 assert.match(view, /id="launchPercentualCalculadoLabel">% da meta atingida</);
 assert.match(view, /id="launchPercentualAcumuladoLabel">% da meta atingida anual</);
-assert.match(view, /launches\.js\?v=META-ANUAL-TRIMESTRAL-001/);
+assert.match(view, /id="resultadoAnualWrapper"/);
+assert.match(view, /documentation-fields\.js\?v=DOCUMENTACAO-CENTRAL-001/);
+assert.match(view, /launches\.js\?v=DOCUMENTACAO-CENTRAL-001/);
+
+const dataStoreSource = fs.readFileSync(path.join(root, "assets", "js", "dataStore.js"), "utf8");
+assert.match(dataStoreSource, /nome: "tipoPosicaoCapacitacao"/);
+assert.match(dataStoreSource, /Acompanhamento sem nova medição/);
+assert.match(dataStoreSource, /nome: "acoesAcompanhamentoCapacitacao"/);
+assert.match(dataStoreSource, /nome: "quantidadeCursosMinimaCapacitacao"[^\n]+somenteLeitura: true/);
+
+const launchesSource = fs.readFileSync(path.join(root, "assets", "js", "launches.js"), "utf8");
+assert.match(launchesSource, /function updateCapacitacaoPositionFields/);
+assert.match(launchesSource, /Informe as ações realizadas ou o andamento antes de enviar/);
+assert.match(launchesSource, /async function persistLaunch\(action\) \{\s+const lancamento = getSelectedLaunch\(\);/);
+assert.match(launchesSource, /Evidência anexada, mas não foi possível salvar o lançamento/);
+
+const approvalsSource = fs.readFileSync(path.join(root, "assets", "js", "approvals.js"), "utf8");
+assert.match(approvalsSource, /Acompanhamento sem nova medição/);
+assert.match(approvalsSource, /Ações realizadas \/ andamento/);
+assert.match(approvalsSource, /"Em acompanhamento"/);
 
 console.log("Testes de apresentação da tela de lançamentos OK");

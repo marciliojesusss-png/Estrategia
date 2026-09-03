@@ -1246,6 +1246,19 @@ button:focus-visible {
   font-weight: 800;
 }
 
+.executive-performance-context {
+  justify-content: space-between;
+  min-width: 0;
+  color: #fff4d9;
+  font-size: 0.68rem;
+}
+
+.executive-performance-context span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .executive-performance-card.has-deadline-alert {
   grid-template-rows: auto minmax(30px, auto) auto auto;
 }
@@ -1445,6 +1458,23 @@ button:focus-visible {
 
 .executive-table-wrap .official-value {
   font-weight: 800;
+}
+
+.executive-official-measurement {
+  display: grid;
+  gap: 2px;
+}
+
+.executive-official-measurement strong {
+  color: inherit;
+  font-size: inherit;
+}
+
+.executive-official-measurement small {
+  color: #7f94aa;
+  font-size: 0.68rem;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .tabela-executiva .badge {

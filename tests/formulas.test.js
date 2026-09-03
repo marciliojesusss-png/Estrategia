@@ -256,14 +256,85 @@ const regraCapacitacaoEmpregados = {
 const capacitacaoEmpregados = formulas.calcularIndicador(
   indicador(15, "Capacitação dos Empregados da CAIXA Loterias"),
   regraCapacitacaoEmpregados,
-  { ano: 2026, mes: 3, trimestre: "1TRI/2026", camposEntrada: { publicoAlvoElegivelCapacitacao: 151, empregadosCapacitadosCapacitacao: 137, quantidadeCursosMinimaCapacitacao: 1 } },
-  [{ ano: 2026, mes: 3, trimestre: "1TRI/2026", camposEntrada: { publicoAlvoElegivelCapacitacao: 151, empregadosCapacitadosCapacitacao: 137 } }]
+  { ano: 2026, mes: 3, trimestre: "1TRI/2026", camposEntrada: { tipoPosicaoCapacitacao: "apuracao_quantitativa", publicoAlvoElegivelCapacitacao: 151, empregadosCapacitadosCapacitacao: 137, quantidadeCursosMinimaCapacitacao: 1 } },
+  [{ ano: 2026, mes: 3, trimestre: "1TRI/2026", camposEntrada: { tipoPosicaoCapacitacao: "apuracao_quantitativa", publicoAlvoElegivelCapacitacao: 151, empregadosCapacitadosCapacitacao: 137 } }]
 );
 closeTo(capacitacaoEmpregados.resultadoMensal, 137 / 151);
 closeTo(capacitacaoEmpregados.percentualAtingidoMensal, 1);
 closeTo(capacitacaoEmpregados.percentualAtingidoMatematico, (137 / 151) / 0.9);
 assert.equal(capacitacaoEmpregados.quantidadeCursosMinimaCapacitacao, 1);
 assert.equal(capacitacaoEmpregados.situacao, "Atingido");
+
+const acompanhamentoCapacitacao = formulas.calcularIndicador(
+  indicador(15, "Capacitação dos Empregados da CAIXA Loterias"),
+  regraCapacitacaoEmpregados,
+  {
+    ano: 2026,
+    mes: 4,
+    trimestre: "2TRI/2026",
+    status: "Em preenchimento",
+    camposEntrada: {
+      tipoPosicaoCapacitacao: "acompanhamento",
+      acoesAcompanhamentoCapacitacao: "Concluído relatório técnico referente à Trilha de Desenvolvimento."
+    }
+  },
+  []
+);
+assert.equal(acompanhamentoCapacitacao.erro, undefined);
+assert.equal(acompanhamentoCapacitacao.resultadoMensal, null);
+assert.equal(acompanhamentoCapacitacao.resultadoOficialAnual, null);
+assert.equal(acompanhamentoCapacitacao.percentualAtingidoMensal, null);
+assert.equal(acompanhamentoCapacitacao.percentualAtingidoAnual, null);
+assert.equal(acompanhamentoCapacitacao.statusCalculo, "acompanhamento");
+assert.equal(acompanhamentoCapacitacao.situacao, "Em acompanhamento");
+
+const acompanhamentoCapacitacaoSemTexto = formulas.calcularIndicador(
+  indicador(15, "Capacitação dos Empregados da CAIXA Loterias"),
+  regraCapacitacaoEmpregados,
+  { ano: 2026, mes: 5, trimestre: "2TRI/2026", camposEntrada: { tipoPosicaoCapacitacao: "acompanhamento" } },
+  []
+);
+assert.equal(acompanhamentoCapacitacaoSemTexto.statusCalculo, "aguardando_dados");
+assert.equal(acompanhamentoCapacitacaoSemTexto.resultadoMensal, null);
+
+const capacitacaoEmpregadosJunho = formulas.calcularIndicador(
+  indicador(15, "Capacitação dos Empregados da CAIXA Loterias"),
+  {
+    ...regraCapacitacaoEmpregados,
+    parametrosCalculo: {
+      ...regraCapacitacaoEmpregados.parametrosCalculo,
+      curvaTrimestralCursos: {
+        ...regraCapacitacaoEmpregados.parametrosCalculo.curvaTrimestralCursos,
+        "2TRI/2026": { metaCobertura: 0.90, quantidadeCursosMinima: 2, descricao: "90% do público-alvo com 02 cursos concluídos acumulados" }
+      }
+    }
+  },
+  {
+    ano: 2026,
+    mes: 6,
+    trimestre: "2TRI/2026",
+    camposEntrada: {
+      tipoPosicaoCapacitacao: "apuracao_quantitativa",
+      publicoAlvoElegivelCapacitacao: 183,
+      empregadosCapacitadosCapacitacao: 177,
+      quantidadeCursosMinimaCapacitacao: 1
+    }
+  },
+  []
+);
+closeTo(capacitacaoEmpregadosJunho.resultadoMensal, 177 / 183);
+assert.equal(capacitacaoEmpregadosJunho.percentualAtingidoMensal, 1);
+assert.equal(capacitacaoEmpregadosJunho.quantidadeCursosMinimaCapacitacao, 2);
+assert.equal(capacitacaoEmpregadosJunho.situacao, "Atingido");
+
+assert.equal(formulas.resolverTipoPosicaoCapacitacao({
+  status: "Homologado",
+  camposEntrada: { publicoAlvoElegivelCapacitacao: 151, empregadosCapacitadosCapacitacao: 137 }
+}), "apuracao_quantitativa");
+assert.equal(formulas.resolverTipoPosicaoCapacitacao({
+  status: "Homologado",
+  camposEntrada: { fonteEvidenciaCapacitacao: "Informe trimestral de acompanhamento" }
+}), "acompanhamento");
 
 const regraDigitais = {
   indicadorId: 3,

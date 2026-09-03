@@ -219,4 +219,104 @@ assert.equal(principiosJune.meta, 2);
 assert.equal(principiosJune.resultado, 2);
 assert.equal(principiosJune.percentualAtingido, 1);
 
+const capacitacaoIndicator = { ...indicators.find((item) => item.id === 15), periodicidade: "Mensal" };
+const capacitacaoRule = rules.find((item) => item.indicadorId === 15);
+const capacitacaoPositions = [
+  {
+    id: "C-MAR", indicadorId: 15, ano: 2026, mes: 3, nomeMes: "Março", trimestre: "1TRI/2026", status: "Homologado",
+    camposEntrada: { tipoPosicaoCapacitacao: "apuracao_quantitativa", publicoAlvoElegivelCapacitacao: 151, empregadosCapacitadosCapacitacao: 137 }
+  },
+  {
+    id: "C-ABR", indicadorId: 15, ano: 2026, mes: 4, nomeMes: "Abril", trimestre: "2TRI/2026", status: "Homologado",
+    camposEntrada: { tipoPosicaoCapacitacao: "acompanhamento", acoesAcompanhamentoCapacitacao: "Concluído relatório técnico." }
+  },
+  {
+    id: "C-MAI", indicadorId: 15, ano: 2026, mes: 5, nomeMes: "Maio", trimestre: "2TRI/2026", status: "Homologado",
+    camposEntrada: { tipoPosicaoCapacitacao: "acompanhamento", acoesAcompanhamentoCapacitacao: "Realizada apresentação oficial da Trilha." }
+  }
+];
+const capacitacaoEntreMedicoes = context.window.StrategicResults.calcularDashboard({
+  indicadores: [capacitacaoIndicator], regras: [capacitacaoRule], lancamentos: capacitacaoPositions
+}).resultadosOficiais[0];
+assert.equal(capacitacaoEntreMedicoes.competencia, "Março/2026");
+assert.ok(Math.abs(capacitacaoEntreMedicoes.resultado - (137 / 151)) < 0.000001);
+assert.equal(capacitacaoEntreMedicoes.percentualAtingido, 1);
+assert.equal(capacitacaoEntreMedicoes.situacaoCalculada, "Atingido");
+assert.equal(capacitacaoEntreMedicoes.lancamentoAcao.nomeMes, "Maio");
+
+const capacitacaoJunho = context.window.StrategicResults.calcularDashboard({
+  indicadores: [capacitacaoIndicator],
+  regras: [capacitacaoRule],
+  lancamentos: [
+    ...capacitacaoPositions,
+    {
+      id: "C-JUN", indicadorId: 15, ano: 2026, mes: 6, nomeMes: "Junho", trimestre: "2TRI/2026", status: "Homologado",
+      camposEntrada: { tipoPosicaoCapacitacao: "apuracao_quantitativa", publicoAlvoElegivelCapacitacao: 183, empregadosCapacitadosCapacitacao: 177 }
+    }
+  ]
+}).resultadosOficiais[0];
+assert.equal(capacitacaoJunho.competencia, "Junho/2026");
+assert.ok(Math.abs(capacitacaoJunho.resultado - (177 / 183)) < 0.000001);
+assert.equal(capacitacaoJunho.percentualAtingido, 1);
+assert.equal(capacitacaoJunho.situacaoCalculada, "Atingido");
+
+const climaIndicator = { ...indicators.find((item) => item.id === 12), periodicidade: "Mensal" };
+const climaRule = rules.find((item) => item.indicadorId === 12);
+const climaPositions = [
+  {
+    id: "CLIMA-MAR", indicadorId: 12, ano: 2026, mes: 3, nomeMes: "Março", competencia: "2026-03", status: "Homologado",
+    camposEntrada: { tipoPosicaoClima: "Acompanhamento", metaReferenciaClima: 60, notaClimaApurada: 60 }
+  },
+  ...[4, 5, 6].map((mes) => ({
+    id: `CLIMA-${mes}`, indicadorId: 12, ano: 2026, mes, nomeMes: ["Abril", "Maio", "Junho"][mes - 4], competencia: `2026-0${mes}`, status: "Homologado",
+    camposEntrada: { tipoPosicaoClima: "Acompanhamento", metaReferenciaClima: 60, notaClimaApurada: "", acoesRealizadasClima: "Plano de ação em acompanhamento." }
+  }))
+];
+const climaComAcompanhamentos = context.window.StrategicResults.calcularDashboard({
+  indicadores: [climaIndicator], regras: [climaRule], lancamentos: climaPositions
+}).resultadosOficiais[0];
+assert.equal(climaComAcompanhamentos.lancamento.id, "CLIMA-MAR");
+assert.equal(climaComAcompanhamentos.lancamentoAcao.id, "CLIMA-6");
+assert.equal(climaComAcompanhamentos.competencia, "Março/2026");
+assert.equal(climaComAcompanhamentos.competenciaAtual, "Junho/2026");
+assert.equal(climaComAcompanhamentos.competenciaMedicaoCurta, "Mar/2026");
+assert.equal(climaComAcompanhamentos.resultado, 60);
+assert.equal(climaComAcompanhamentos.percentualAtingido, 1);
+assert.equal(climaComAcompanhamentos.situacaoAtual, "Em acompanhamento");
+assert.equal(climaComAcompanhamentos.statusAtual, "Homologado");
+assert.equal(context.window.StrategicResults.officialSituation(climaComAcompanhamentos), "Em acompanhamento");
+
+const climaFuturo = context.window.StrategicResults.calcularDashboard({
+  indicadores: [climaIndicator],
+  regras: [climaRule],
+  lancamentos: [
+    ...climaPositions,
+    {
+      id: "CLIMA-OUT", indicadorId: 12, ano: 2026, mes: 10, nomeMes: "Outubro", competencia: "2026-10", status: "Homologado",
+      camposEntrada: { tipoPosicaoClima: "Pesquisa oficial", metaReferenciaClima: 60, notaClimaApurada: 62 }
+    },
+    {
+      id: "CLIMA-NOV", indicadorId: 12, ano: 2026, mes: 11, nomeMes: "Novembro", competencia: "2026-11", status: "Homologado",
+      camposEntrada: { tipoPosicaoClima: "Acompanhamento", metaReferenciaClima: 60, notaClimaApurada: "", acoesRealizadasClima: "Acompanhamento futuro." }
+    }
+  ]
+}).resultadosOficiais[0];
+assert.equal(climaFuturo.lancamento.id, "CLIMA-OUT");
+assert.equal(climaFuturo.lancamentoAcao.id, "CLIMA-NOV");
+assert.equal(climaFuturo.competenciaAtual, "Novembro/2026");
+assert.equal(climaFuturo.competenciaMedicaoCurta, "Out/2026");
+assert.equal(climaFuturo.resultado, 62);
+assert.ok(Math.abs(climaFuturo.percentualAtingido - (62 / 60)) < 0.000001);
+assert.equal(climaFuturo.situacaoAtual, "Em acompanhamento");
+
+const climaSemMedicao = context.window.StrategicResults.calcularDashboard({
+  indicadores: [climaIndicator], regras: [climaRule], lancamentos: climaPositions.slice(1)
+}).resultadosOficiais[0];
+assert.equal(climaSemMedicao.lancamento, null);
+assert.equal(climaSemMedicao.lancamentoAcao.id, "CLIMA-6");
+assert.equal(climaSemMedicao.resultado, null);
+assert.equal(climaSemMedicao.percentualAtingido, null);
+assert.equal(climaSemMedicao.situacaoAtual, "Em acompanhamento");
+assert.equal(context.window.StrategicResults.officialSituation(climaSemMedicao), "Em acompanhamento");
+
 console.log("Testes do resumo executivo OK");

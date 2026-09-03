@@ -50,6 +50,14 @@ vm.runInNewContext(
 );
 
 const internals = context.window.ExecutiveSummaryInternals;
+context.StrategicResults = {
+  officialSituation(result) {
+    return result.situacaoAtual || result.situacaoCalculada || (result.lancamento ? "Atingido" : "Sem dados");
+  }
+};
+context.window.StrategicResults = context.StrategicResults;
+context.Situations = { normalizarSituacao: (value) => value };
+context.window.Situations = context.Situations;
 
 function assertVariation(actual, expectedValue, expectedDirection) {
   assert.equal(actual.direction, expectedDirection);
@@ -63,6 +71,22 @@ assert.equal(internals.performanceToneByPercent(0.81), "amarelo");
 assert.equal(internals.performanceToneByPercent(0.8), "vermelho");
 assert.equal(internals.performanceToneByPercent(0.5), "vermelho");
 assert.equal(internals.performanceToneByPercent(null), "cinza");
+assert.equal(internals.performanceToneForResult({ situacaoAtual: "Em acompanhamento", percentualAtingido: 1 }), "amarelo");
+assert.equal(internals.performanceToneForResult({ situacaoAtual: "Atingido", percentualAtingido: 1 }), "verde");
+assert.equal(internals.summarySituationGroup("Em acompanhamento"), "acompanhamento");
+assert.equal(internals.chartSituation({ situacaoAtual: "Em acompanhamento", lancamento: {} }), "Em acompanhamento");
+assert.equal(internals.executiveCompetence({ competencia: "Março/2026", competenciaAtual: "Junho/2026" }), "Junho/2026");
+assert.equal(internals.measurementReference({ regra: { tipoCalculo: "nota_pesquisa_anual" }, competenciaMedicaoCurta: "Mar/2026" }), "Mar/2026");
+assert.equal(internals.measurementReference({ regra: { tipoCalculo: "cobertura_capacitacao" }, competenciaMedicaoCurta: "Mar/2026" }), null);
+const climateTotals = internals.aggregate([
+  { situacaoAtual: "Em acompanhamento", statusAtual: "Homologado", lancamento: {} },
+  { situacaoAtual: "Atingido", statusAtual: "Homologado", lancamento: {} }
+]);
+assert.equal(climateTotals.total, 2);
+assert.equal(climateTotals.achieved, 1);
+assert.equal(climateTotals.attention, 0);
+assert.equal(climateTotals.tracking, 1);
+assert.equal(climateTotals.noData, 0);
 
 assertVariation(internals.performanceVariation(1.05, 1), 5, "up");
 assertVariation(internals.performanceVariation(0.92, 0.96), -4, "down");
@@ -150,6 +174,20 @@ assert.equal(
 assert.equal(
   internals.nomeIndicadorMapa({ indicador: "Princípios de Jogo Responsável (WLA)" }),
   "Princípios de Jogo Responsável"
+);
+
+const executiveSource = fs.readFileSync(path.join(root, "assets", "js", "executiveSummary.js"), "utf8");
+const executiveView = fs.readFileSync(path.join(root, "views", "frontend", "resumo-executivo.php"), "utf8");
+assert.match(executiveSource, /Pesquisa: \$\{measurement\}/);
+assert.match(executiveSource, /Medição: \$\{escapeHtml\(measurement\)\}/);
+assert.match(executiveSource, /performanceToneForResult/);
+assert.match(executiveView, /executiveSummary\.js\?v=CLIMA-EXECUTIVO-001/);
+assert.match(executiveView, /dashboard\.js\?v=CLIMA-EXECUTIVO-001/);
+assert.match(executiveView, /styles\.css\?v=CLIMA-EXECUTIVO-001/);
+assert.equal(executiveSource, fs.readFileSync(path.join(root, "public", "assets", "js", "executiveSummary.js"), "utf8"));
+assert.equal(
+  fs.readFileSync(path.join(root, "assets", "css", "styles.css"), "utf8"),
+  fs.readFileSync(path.join(root, "public", "assets", "css", "styles.css"), "utf8")
 );
 
 console.log("Testes do mapa de desempenho executivo OK");

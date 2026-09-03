@@ -44,6 +44,14 @@
       .replaceAll("'", "&#039;");
   }
 
+  function launchDocumentation(regra, lancamento) {
+    if (window.DocumentationFields) return DocumentationFields.resolve(regra, lancamento);
+    return {
+      reference: lancamento?.referenciaEvidencia || lancamento?.linkEvidencia || "",
+      observation: lancamento?.observacaoArea || ""
+    };
+  }
+
   function normalizeText(value) {
     return String(value || "")
       .normalize("NFD")
@@ -1182,6 +1190,7 @@
 
     document.getElementById("indicatorMonthlyComposition").innerHTML = compositionMonths.map(([month, name]) => {
       const launch = byMonth[month];
+      const documentation = launchDocumentation(regra, launch);
       if (isOfertasPersonalizadas) {
         const calculationScope = launches.filter((item) => Number(item.mes) <= month);
         const calculated = launch
@@ -1218,11 +1227,11 @@
             <td>${Calculations.formatarValor(calculated?.metaReferenciaPeriodo ?? launch?.metaMensal, "pontos")}</td>
             <td>${Calculations.formatarValor(calculated?.npsRealizado ?? calculated?.resultadoMensal, "pontos")}</td>
             <td>${escapeHtml(launch?.camposEntrada?.dataBasePesquisaNPS || "-")}</td>
-            <td>${escapeHtml(launch?.camposEntrada?.fontePesquisaNPS || "-")}</td>
+            <td>${escapeHtml(documentation.reference || "-")}</td>
             <td>${Calculations.formatarPercentual(percent)}</td>
             <td>${escapeHtml(situation)}</td>
             <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologação" ? "warn" : "info"}">${escapeHtml(launch?.status || "Não iniciado")}</span></td>
-            <td>${escapeHtml(launch?.camposEntrada?.observacaoArea || launch?.observacaoArea || "-")}</td>
+            <td>${escapeHtml(documentation.observation || "-")}</td>
             <td>${monthlyAction(launch)}</td>
           </tr>
         `;
@@ -1244,8 +1253,8 @@
             <td>${escapeHtml(launch?.camposEntrada?.acoesRealizadasClima || "-")}</td>
             <td>${escapeHtml(launch?.camposEntrada?.descricaoAndamentoClima || "-")}</td>
             <td>${escapeHtml(launch?.camposEntrada?.dataBasePesquisaClima || "-")}</td>
-            <td>${escapeHtml(launch?.camposEntrada?.fonteEvidenciaClima || "-")}</td>
-            <td>${escapeHtml(launch?.camposEntrada?.observacaoArea || launch?.observacaoArea || "-")}</td>
+            <td>${escapeHtml(documentation.reference || "-")}</td>
+            <td>${escapeHtml(documentation.observation || "-")}</td>
             <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologação" ? "warn" : "info"}">${escapeHtml(launch?.status || "Não iniciado")}</span></td>
             <td>${monthlyAction(launch)}</td>
           </tr>
@@ -1264,7 +1273,6 @@
         const campoCapacitados = regra?.parametrosCalculo?.campoCapacitados || "empregadosCapacitadosCapacitacao";
         const campoIniciativas = regra?.parametrosCalculo?.campoIniciativas || "iniciativasConsideradasJR";
         const campoDataBase = regra?.parametrosCalculo?.campoDataBase || "dataBaseApuracaoCapacitacao";
-        const campoFonte = regra?.parametrosCalculo?.campoFonte || "fonteEvidenciaCapacitacao";
         return `
           <tr>
             <td>${name}/2026</td>
@@ -1277,7 +1285,7 @@
             <td>${Calculations.formatarPercentual(percent)}</td>
             <td>${escapeHtml(situation)}</td>
             <td>${escapeHtml(launch?.camposEntrada?.[campoDataBase] || "-")}</td>
-            <td>${escapeHtml(launch?.camposEntrada?.[campoFonte] || "-")}</td>
+            <td>${escapeHtml(documentation.reference || "-")}</td>
             <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologação" ? "warn" : "info"}">${escapeHtml(launch?.status || "Não iniciado")}</span></td>
             <td>${monthlyAction(launch)}</td>
           </tr>
@@ -1300,7 +1308,7 @@
             <td>${name}/2026</td>
             <td>${Calculations.formatarValor(launch?.camposEntrada?.melhoriasImplementadasMes, "numero")}</td>
             <td>${escapeHtml(launch?.camposEntrada?.descricaoMelhoriasMes || "-")}</td>
-            <td>${escapeHtml(launch?.camposEntrada?.evidenciaMelhoriasMes || "-")}</td>
+            <td>${escapeHtml(documentation.reference || "-")}</td>
             <td>${Calculations.formatarValor(accumulatedImprovements, "numero")}</td>
             <td>${Calculations.formatarValor(calculated?.resultadoMensal, "percentual")}</td>
             <td>${Calculations.formatarPercentual(percent)}</td>
@@ -1327,7 +1335,7 @@
             <td>${escapeHtml(launch?.camposEntrada?.marcoAlcancadoTIC || "-")}</td>
             <td>${Calculations.formatarValor(calculated?.resultadoMensal ?? launch?.camposEntrada?.percentualRealizadoTIC, "percentual")}</td>
             <td>${escapeHtml(launch?.camposEntrada?.descricaoAndamentoTIC || "-")}</td>
-            <td>${escapeHtml(launch?.camposEntrada?.evidenciaTIC || "-")}</td>
+            <td>${escapeHtml(documentation.reference || "-")}</td>
             <td>${escapeHtml(situation)}</td>
             <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologação" ? "warn" : "info"}">${escapeHtml(launch?.status || "Não iniciado")}</span></td>
             <td>${monthlyAction(launch)}</td>
@@ -1342,8 +1350,8 @@
             <td>${escapeHtml(launch?.camposEntrada?.marcoAtualPlataformaJogos || "-")}</td>
             <td>${escapeHtml(launch?.camposEntrada?.statusProjetoPlataformaJogos || "-")}</td>
             <td>${escapeHtml(launch?.camposEntrada?.descricaoAndamentoPlataformaJogos || "-")}</td>
-            <td>${escapeHtml(launch?.camposEntrada?.evidenciaPlataformaJogos || "-")}</td>
-            <td>${escapeHtml(launch?.camposEntrada?.observacaoArea || launch?.observacaoArea || "-")}</td>
+            <td>${escapeHtml(documentation.reference || "-")}</td>
+            <td>${escapeHtml(documentation.observation || "-")}</td>
             <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologação" ? "warn" : "info"}">${escapeHtml(launch?.status || "Não iniciado")}</span></td>
             <td>${monthlyAction(launch)}</td>
           </tr>
@@ -1363,7 +1371,7 @@
             <td>${escapeHtml(launch?.camposEntrada?.acaoExecutada || "-")}</td>
             <td>${escapeHtml(launch?.camposEntrada?.dataConclusao || "-")}</td>
             <td>${counts ? "Sim" : "Não"}</td>
-            <td>${escapeHtml(launch?.camposEntrada?.evidenciaAcao || "-")}</td>
+            <td>${escapeHtml(documentation.reference || "-")}</td>
             <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologação" ? "warn" : "info"}">${escapeHtml(launch?.status || "Não iniciado")}</span></td>
             <td>${monthlyAction(launch)}</td>
           </tr>
@@ -1383,7 +1391,7 @@
             <td>${escapeHtml(status || "-")}</td>
             <td>${escapeHtml(launch?.camposEntrada?.dataApoioIniciativa || "-")}</td>
             <td>${counts ? "Sim" : "Não"}</td>
-            <td>${escapeHtml(launch?.camposEntrada?.evidenciaIniciativaSocioambiental || "-")}</td>
+            <td>${escapeHtml(documentation.reference || "-")}</td>
             <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologação" ? "warn" : "info"}">${escapeHtml(launch?.status || "Não iniciado")}</span></td>
             <td>${monthlyAction(launch)}</td>
           </tr>
@@ -1410,7 +1418,7 @@
             <td>${escapeHtml(launch?.camposEntrada?.dataInvestimentoSocioambiental || "-")}</td>
             <td>${counts ? "Sim" : "Não"}</td>
             <td>${escapeHtml(situation)}</td>
-            <td>${escapeHtml(launch?.camposEntrada?.evidenciaIncentivoSocioambiental || "-")}</td>
+            <td>${escapeHtml(documentation.reference || "-")}</td>
             <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologação" ? "warn" : "info"}">${escapeHtml(launch?.status || "Não iniciado")}</span></td>
             <td>${monthlyAction(launch)}</td>
           </tr>
@@ -1446,7 +1454,7 @@
             <td>${escapeHtml(percentLabel)}</td>
             <td>${escapeHtml(situation)}</td>
             <td>${escapeHtml(launch?.camposEntrada?.dataConclusaoVisibilidade || "-")}</td>
-            <td>${escapeHtml(launch?.camposEntrada?.evidenciaVisibilidade || "-")}${counts ? "" : ""}</td>
+            <td>${escapeHtml(documentation.reference || "-")}${counts ? "" : ""}</td>
             <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologação" ? "warn" : "info"}">${escapeHtml(launch?.status || "Não iniciado")}</span></td>
             <td>${monthlyAction(launch)}</td>
           </tr>
