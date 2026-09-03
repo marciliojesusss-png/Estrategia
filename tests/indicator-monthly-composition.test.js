@@ -195,7 +195,11 @@ assert.equal(legacyScenario.isBase2025Growth, false);
 assert.equal(usesAccumulatedGoalCurve({
   tipoCalculo: "valor_financeiro_acumulado",
   parametrosCalculo: {}
-}), true, "Lucro recorrente deve manter a tabela acumulada mesmo sem metaTipo no servidor");
+}), true, "Indicadores financeiros acumulados devem manter a tabela acumulada mesmo sem metaTipo no servidor");
+assert.equal(usesAccumulatedGoalCurve({
+  tipoCalculo: "lucro_recorrente_mensal",
+  parametrosCalculo: { metaTipo: "curva_mensal_por_competencia" }
+}), false, "Lucro recorrente mensal não deve usar a tabela acumulada");
 assert.equal(usesAccumulatedGoalCurve({
   tipoCalculo: "percentual_direto",
   parametrosCalculo: { metaTipo: "curva_acumulada_por_competencia" }

@@ -1237,6 +1237,9 @@
     const previous = previousMonthlyResult(result);
     const variation = performanceVariation(result.percentualAtingido, previous?.percentualAtingido);
     const variationLabel = formatPerformanceVariation(variation);
+    const variationTitle = Number(result.indicador.id) === 7
+      ? "Variação do atingimento"
+      : "Variação";
     const percentLabel = performancePercentLabel(result.percentualAtingido);
     const percentValue = performancePercentValue(result.percentualAtingido);
     const tone = performanceToneForResult(result);
@@ -1254,7 +1257,7 @@
       ...(isAnnualSurvey ? [`Última medição: ${measurement || "Sem nova medição"}`] : []),
       `Resultado anterior: ${previous ? StrategicResults.formatOfficialResult(previous) : "-"}`,
       `Percentual anterior: ${previous ? performancePercentLabel(previous.percentualAtingido) : "Sem comparação"}`,
-      `Variação: ${variationLabel}`,
+      `${variationTitle}: ${variationLabel}`,
       `Situação: ${situation}`
     ];
     if (deadlineStatus?.atrasado) {

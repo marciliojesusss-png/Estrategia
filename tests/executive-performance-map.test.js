@@ -92,6 +92,10 @@ assertVariation(internals.performanceVariation(1.05, 1), 5, "up");
 assertVariation(internals.performanceVariation(0.92, 0.96), -4, "down");
 assertVariation(internals.performanceVariation(1, 1), 0, "flat");
 assert.equal(internals.performanceVariation(1, null), null);
+const lucroMaio = 114547512.59 / 94438480.16;
+const lucroJunho = 108526486.50 / 106104677.05;
+assertVariation(internals.performanceVariation(lucroJunho, lucroMaio), (lucroJunho - lucroMaio) * 100, "down");
+assert.equal(internals.formatPerformanceVariation(internals.performanceVariation(lucroJunho, lucroMaio)), "▼ -19,0 p.p.");
 
 assert.equal(internals.formatPerformanceVariation(internals.performanceVariation(1.05, 1)), "▲ +5,0 p.p.");
 assert.equal(internals.formatPerformanceVariation(internals.performanceVariation(0.92, 0.96)), "▼ -4,0 p.p.");
@@ -181,8 +185,8 @@ const executiveView = fs.readFileSync(path.join(root, "views", "frontend", "resu
 assert.match(executiveSource, /Pesquisa: \$\{measurement\}/);
 assert.match(executiveSource, /Medição: \$\{escapeHtml\(measurement\)\}/);
 assert.match(executiveSource, /performanceToneForResult/);
-assert.match(executiveView, /executiveSummary\.js\?v=CLIMA-EXECUTIVO-001/);
-assert.match(executiveView, /dashboard\.js\?v=CLIMA-EXECUTIVO-001/);
+assert.match(executiveView, /executiveSummary\.js\?v=LUCRO-RECORRENTE-MENSAL-001/);
+assert.match(executiveView, /dashboard\.js\?v=LUCRO-RECORRENTE-MENSAL-001/);
 assert.match(executiveView, /styles\.css\?v=CLIMA-EXECUTIVO-001/);
 assert.equal(executiveSource, fs.readFileSync(path.join(root, "public", "assets", "js", "executiveSummary.js"), "utf8"));
 assert.equal(

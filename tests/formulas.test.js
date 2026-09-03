@@ -485,53 +485,115 @@ assert.equal(ggrSemPremios.mensagem, "Dados insuficientes para cálculo.");
 
 const regraLucroLiquido = {
   indicadorId: 7,
-  tipoCalculo: "valor_financeiro_acumulado",
-  tipoConsolidacao: "ultima_posicao_acumulada",
+  tipoCalculo: "lucro_recorrente_mensal",
+  tipoConsolidacao: "ultima_posicao_mensal_homologada",
   unidadeMedida: "moeda",
-  metaAnualValor: 1209000000,
+  metaAnualValor: 1305318247.20,
   parametrosCalculo: {
-    valorAcumuladoCampo: "lucroLiquidoRecorrenteAcumulado",
-    metaTipo: "curva_acumulada_por_competencia",
-    metasAcumuladasPorCompetencia: {
-      "2026-01": 89555555.56,
-      "2026-02": 179111111.11,
-      "2026-03": 268666666.67,
-      "2026-04": null,
-      "2026-12": 1209000000
+    campoValorMensal: "lucroLiquidoRecorrenteCompetencia",
+    campoValorAcumuladoLegado: "lucroLiquidoRecorrenteAcumulado",
+    metaTipo: "curva_mensal_por_competencia",
+    metasMensaisPorCompetencia: {
+      "2026-01": 90811101.33,
+      "2026-02": 77462728.16,
+      "2026-03": 90084434.66,
+      "2026-04": 96068372.33,
+      "2026-05": 94438480.16,
+      "2026-06": 106104677.05,
+      "2026-07": 98144245.44,
+      "2026-08": 94094264.37,
+      "2026-09": 128614993.92,
+      "2026-10": 101071987.08,
+      "2026-11": 91522592.68,
+      "2026-12": 236900370.02
     }
   },
-  camposEntrada: [{ nome: "lucroLiquidoRecorrenteAcumulado", obrigatorio: true }]
+  camposEntrada: [{ nome: "lucroLiquidoRecorrenteCompetencia", obrigatorio: true }]
 };
+const historicoLucro = [
+  { ano: 2026, mes: 1, competencia: "2026-01", camposEntrada: { lucroLiquidoRecorrenteAcumulado: 119377680.03 } },
+  { ano: 2026, mes: 2, competencia: "2026-02", camposEntrada: { lucroLiquidoRecorrenteAcumulado: 222011430.58 } },
+  { ano: 2026, mes: 3, competencia: "2026-03", camposEntrada: { lucroLiquidoRecorrenteAcumulado: 336321887.69 } }
+];
 const lucroJaneiro = formulas.calcularIndicador(
   indicador(7, "Lucro Liquido Recorrente"),
   regraLucroLiquido,
-  { ano: 2026, mes: 1, competencia: "2026-01", camposEntrada: { lucroLiquidoRecorrenteAcumulado: 119377680.03 } },
-  [{ ano: 2026, mes: 1, competencia: "2026-01", camposEntrada: { lucroLiquidoRecorrenteAcumulado: 119377680.03 } }]
+  historicoLucro[0],
+  historicoLucro
 );
-closeTo(lucroJaneiro.percentualAtingidoMensal, 119377680.03 / 89555555.56);
+closeTo(lucroJaneiro.percentualAtingidoMensal, 119377680.03 / 90811101.33);
 assert.equal(lucroJaneiro.situacao, "Atingido");
+assert.equal(lucroJaneiro.resultadoMensal, 119377680.03);
 const lucroMarco = formulas.calcularIndicador(
   indicador(7, "Lucro Liquido Recorrente"),
   regraLucroLiquido,
-  { ano: 2026, mes: 3, competencia: "2026-03", camposEntrada: { lucroLiquidoRecorrenteAcumulado: 336321887.69 } },
-  [
-    { ano: 2026, mes: 1, competencia: "2026-01", camposEntrada: { lucroLiquidoRecorrenteAcumulado: 119377680.03 } },
-    { ano: 2026, mes: 2, competencia: "2026-02", camposEntrada: { lucroLiquidoRecorrenteAcumulado: 222011430.58 } },
-    { ano: 2026, mes: 3, competencia: "2026-03", camposEntrada: { lucroLiquidoRecorrenteAcumulado: 336321887.69 } }
-  ]
+  historicoLucro[2],
+  historicoLucro
 );
-closeTo(lucroMarco.percentualAtingidoMensal, 336321887.69 / 268666666.67);
-closeTo(lucroMarco.resultadoOficialAnual, 336321887.69);
-closeTo(lucroMarco.metaAcumulada, 268666666.67);
-const lucroAbrilSemCurva = formulas.calcularIndicador(
+closeTo(lucroMarco.resultadoMensal, 114310457.11);
+closeTo(lucroMarco.percentualAtingidoMensal, 114310457.11 / 90084434.66);
+closeTo(lucroMarco.resultadoOficialAnual, 114310457.11);
+closeTo(lucroMarco.resultadoAcumulado, 336321887.69);
+closeTo(lucroMarco.metaAcumulada, 258358264.15);
+
+const lucroAbaixoDaMeta = formulas.calcularIndicador(
   indicador(7, "Lucro Liquido Recorrente"),
   regraLucroLiquido,
-  { ano: 2026, mes: 4, competencia: "2026-04", camposEntrada: { lucroLiquidoRecorrenteAcumulado: 400000000 } },
-  [{ ano: 2026, mes: 4, competencia: "2026-04", camposEntrada: { lucroLiquidoRecorrenteAcumulado: 400000000 } }]
+  { ano: 2026, mes: 6, competencia: "2026-06", camposEntrada: { lucroLiquidoRecorrenteCompetencia: 90000000 } },
+  [{ ano: 2026, mes: 6, competencia: "2026-06", camposEntrada: { lucroLiquidoRecorrenteCompetencia: 90000000 } }]
 );
-assert.equal(lucroAbrilSemCurva.statusCalculo, "aguardando_dados");
-assert.equal(lucroAbrilSemCurva.percentualAtingidoMensal, null);
-assert.equal(lucroAbrilSemCurva.metaReferenciaMensagem, "Pendente de curva orçamentária");
+closeTo(lucroAbaixoDaMeta.percentualAtingidoMensal, 90000000 / 106104677.05);
+assert.equal(lucroAbaixoDaMeta.situacao, "Abaixo da meta");
+
+const janeiroForte = { ano: 2026, mes: 1, competencia: "2026-01", camposEntrada: { lucroLiquidoRecorrenteCompetencia: 181622202.66 } };
+const fevereiroFraco = { ano: 2026, mes: 2, competencia: "2026-02", camposEntrada: { lucroLiquidoRecorrenteCompetencia: 61970182.528 } };
+const lucroFevereiroFraco = formulas.calcularIndicador(
+  indicador(7, "Lucro Liquido Recorrente"),
+  regraLucroLiquido,
+  fevereiroFraco,
+  [janeiroForte, fevereiroFraco]
+);
+closeTo(lucroFevereiroFraco.percentualAtingidoMensal, 0.8);
+assert.equal(lucroFevereiroFraco.situacao, "Abaixo da meta");
+assert.ok(lucroFevereiroFraco.percentualAtingidoAcumulado > 1, "O mês forte anterior mantém o acumulado acima da curva");
+
+const resultadosJanJun = [119377680.03, 102633750.55, 114310457.11, 111802634.71, 114547512.59, 108526486.50]
+  .map((value, index) => ({
+    ano: 2026,
+    mes: index + 1,
+    competencia: `2026-${String(index + 1).padStart(2, "0")}`,
+    camposEntrada: { lucroLiquidoRecorrenteCompetencia: value }
+  }));
+const lucroJunho = formulas.calcularIndicador(
+  indicador(7, "Lucro Liquido Recorrente"),
+  regraLucroLiquido,
+  resultadosJanJun[5],
+  resultadosJanJun
+);
+closeTo(lucroJunho.resultadoMensal, 108526486.50);
+closeTo(lucroJunho.metaReferenciaMensal, 106104677.05);
+closeTo(lucroJunho.percentualAtingidoMensal, 108526486.50 / 106104677.05);
+closeTo(lucroJunho.resultadoAcumulado, 671198521.49);
+closeTo(lucroJunho.metaAcumulada, 554969793.69);
+assert.equal(lucroJunho.situacao, "Atingido");
+const percentualMaio = 114547512.59 / 94438480.16;
+closeTo((lucroJunho.percentualAtingidoMensal - percentualMaio) * 100, -19.006, 0.01);
+
+const somaMetaAnualLucro = Object.values(regraLucroLiquido.parametrosCalculo.metasMensaisPorCompetencia)
+  .reduce((sum, value) => sum + Math.round(value * 100), 0) / 100;
+assert.equal(somaMetaAnualLucro, regraLucroLiquido.metaAnualValor);
+
+const lucroComLacunaLegada = formulas.calcularIndicador(
+  indicador(7, "Lucro Liquido Recorrente"),
+  regraLucroLiquido,
+  { ano: 2026, mes: 5, competencia: "2026-05", camposEntrada: { lucroLiquidoRecorrenteAcumulado: 562672034.99 } },
+  [
+    { ano: 2026, mes: 3, competencia: "2026-03", camposEntrada: { lucroLiquidoRecorrenteAcumulado: 336321887.69 } },
+    { ano: 2026, mes: 5, competencia: "2026-05", camposEntrada: { lucroLiquidoRecorrenteAcumulado: 562672034.99 } }
+  ]
+);
+assert.equal(lucroComLacunaLegada.erro, true);
+assert.equal(lucroComLacunaLegada.resultadoMensal, null);
 const regraPix = {
   indicadorId: 9,
   tipoCalculo: "razao_pix",

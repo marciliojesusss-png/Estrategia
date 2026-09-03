@@ -54,7 +54,7 @@ assert.match(view, /id="launchPercentualCalculadoLabel">% da meta atingida</);
 assert.match(view, /id="launchPercentualAcumuladoLabel">% da meta atingida anual</);
 assert.match(view, /id="resultadoAnualWrapper"/);
 assert.match(view, /documentation-fields\.js\?v=DOCUMENTACAO-CENTRAL-001/);
-assert.match(view, /launches\.js\?v=DOCUMENTACAO-CENTRAL-001/);
+assert.match(view, /launches\.js\?v=LUCRO-RECORRENTE-MENSAL-001/);
 
 const dataStoreSource = fs.readFileSync(path.join(root, "assets", "js", "dataStore.js"), "utf8");
 assert.match(dataStoreSource, /nome: "tipoPosicaoCapacitacao"/);

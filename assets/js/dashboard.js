@@ -153,6 +153,14 @@
   }
 
   function getOfficialMeta(regra, lancamento, resultado) {
+    if (regra?.tipoCalculo === "lucro_recorrente_mensal") {
+      const metaCalculada = toFiniteNumber(resultado?.metaReferenciaMensal);
+      if (metaCalculada !== null) return metaCalculada;
+      const key = lancamento?.competencia || `${lancamento?.ano}-${String(lancamento?.mes).padStart(2, "0")}`;
+      const curva = regra?.parametrosCalculo?.metasMensaisPorCompetencia || {};
+      if (Object.prototype.hasOwnProperty.call(curva, key)) return toFiniteNumber(curva[key]);
+      return toFiniteNumber(lancamento?.metaMensal ?? lancamento?.metaReferencia);
+    }
     if (regra?.parametrosCalculo?.metaTipo === "curva_acumulada_por_competencia") {
       const metaCalculada = toFiniteNumber(resultado?.metaAcumulada ?? resultado?.metaReferenciaMensal);
       if (metaCalculada !== null) return metaCalculada;
@@ -251,6 +259,7 @@
       "incremento_rede_loterica_base_2025",
       "crescimento_comparado_base_2025",
       "crescimento_rede_loterica_base_2025",
+      "lucro_recorrente_mensal",
       "cobertura_capacitacao",
       "nota_pesquisa_anual"
     ]);

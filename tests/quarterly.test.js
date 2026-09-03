@@ -815,34 +815,33 @@ const lucroQuarter = consolidarTrimestre(
   { id: 7, indicador: "Lucro Liquido Recorrente", unidadeMedida: "moeda" },
   {
     indicadorId: 7,
-    tipoCalculo: "valor_financeiro_acumulado",
-    tipoConsolidacao: "ultima_posicao_acumulada",
+    tipoCalculo: "lucro_recorrente_mensal",
+    tipoConsolidacao: "ultima_posicao_mensal_homologada",
     unidadeMedida: "moeda",
-    metaAnualValor: 1209000000,
+    metaAnualValor: 1305318247.20,
     parametrosCalculo: {
-      valorAcumuladoCampo: "lucroLiquidoRecorrenteAcumulado",
-      metaTipo: "curva_acumulada_por_competencia",
-      metasAcumuladasPorCompetencia: {
-        "2026-01": 89555555.56,
-        "2026-02": 179111111.11,
-        "2026-03": 268666666.67,
-        "2026-04": null,
-        "2026-12": 1209000000
+      campoValorMensal: "lucroLiquidoRecorrenteCompetencia",
+      campoValorAcumuladoLegado: "lucroLiquidoRecorrenteAcumulado",
+      metaTipo: "curva_mensal_por_competencia",
+      metasMensaisPorCompetencia: {
+        "2026-01": 90811101.33,
+        "2026-02": 77462728.16,
+        "2026-03": 90084434.66
       }
     },
-    camposEntrada: [{ nome: "lucroLiquidoRecorrenteAcumulado", obrigatorio: true }]
+    camposEntrada: [{ nome: "lucroLiquidoRecorrenteCompetencia", obrigatorio: true }]
   },
   [
-    { ano: 2026, mes: 1, status: "Homologado", competencia: "2026-01", camposEntrada: { lucroLiquidoRecorrenteAcumulado: 119377680.03 } },
-    { ano: 2026, mes: 2, status: "Homologado", competencia: "2026-02", camposEntrada: { lucroLiquidoRecorrenteAcumulado: 222011430.58 } },
-    { ano: 2026, mes: 3, status: "Homologado", competencia: "2026-03", camposEntrada: { lucroLiquidoRecorrenteAcumulado: 336321887.69 } }
+    { ano: 2026, mes: 1, status: "Homologado", competencia: "2026-01", camposEntrada: { lucroLiquidoRecorrenteCompetencia: 119377680.03 } },
+    { ano: 2026, mes: 2, status: "Homologado", competencia: "2026-02", camposEntrada: { lucroLiquidoRecorrenteCompetencia: 102633750.55 } },
+    { ano: 2026, mes: 3, status: "Homologado", competencia: "2026-03", camposEntrada: { lucroLiquidoRecorrenteCompetencia: 114310457.11 } }
   ],
   "1TRI/2026"
 );
 assert.equal(lucroQuarter.statusTrimestre, "Fechado");
-assert.ok(Math.abs(lucroQuarter.metaTrimestral - 268666666.67) < 0.0001);
-assert.ok(Math.abs(lucroQuarter.resultadoTrimestral - 336321887.69) < 0.0001);
-assert.ok(Math.abs(lucroQuarter.desempenhoTrimestral - (336321887.69 / 268666666.67)) < 0.000001);
+assert.ok(Math.abs(lucroQuarter.metaTrimestral - 90084434.66) < 0.0001);
+assert.ok(Math.abs(lucroQuarter.resultadoTrimestral - 114310457.11) < 0.0001);
+assert.ok(Math.abs(lucroQuarter.desempenhoTrimestral - (114310457.11 / 90084434.66)) < 0.000001);
 assert.equal(lucroQuarter.situacaoTrimestral, "Atingido");
 
 const ecossistemaQuarter = consolidarTrimestre(

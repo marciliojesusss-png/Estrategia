@@ -296,6 +296,7 @@
     if (regra?.tipoCalculo === "crescimento_comparado_base_2025") return "Meta em indice (110% da base 2025)";
     if (regra?.tipoCalculo === "crescimento_rede_loterica_base_2025") return "Meta em indice (102% da base 2025)";
     if (isIeoRule(regra)) return "Meta de referência da competência";
+    if (regra?.tipoCalculo === "lucro_recorrente_mensal") return "Meta da competência";
     if (regra?.parametrosCalculo?.metaTipo === "curva_acumulada_por_competencia") {
       return "Meta acumulada de referencia";
     }
@@ -319,6 +320,13 @@
     if (regra?.tipoCalculo === "incremento_rede_loterica_base_2025") {
       const curve = getRedeLotericaCurveForLaunch(regra, lancamento);
       return curve ? curve.metaIncremento / 100 : lancamento.metaMensal ?? regra?.metaAnualValor;
+    }
+    if (regra?.tipoCalculo === "lucro_recorrente_mensal") {
+      const key = lancamento?.competencia || `${lancamento?.ano}-${String(lancamento?.mes).padStart(2, "0")}`;
+      const curve = regra?.parametrosCalculo?.metasMensaisPorCompetencia || {};
+      return Object.prototype.hasOwnProperty.call(curve, key)
+        ? curve[key]
+        : lancamento?.metaMensal ?? lancamento?.metaReferencia ?? null;
     }
     if (regra?.parametrosCalculo?.metaTipo === "curva_acumulada_por_competencia") {
       const key = lancamento?.competencia || `${lancamento?.ano}-${String(lancamento?.mes).padStart(2, "0")}`;
@@ -640,6 +648,8 @@
       : "% da meta atingida";
     document.getElementById("launchResultadoAcumuladoLabel").textContent = isIeoRule(regra)
       ? "Posição acumulada até a competência"
+      : regra?.tipoCalculo === "lucro_recorrente_mensal"
+        ? "Resultado acumulado no ano"
       : regra?.tipoCalculo === "plano_acao_por_elementos"
         ? "Resultado acumulado no ano"
       : regra?.tipoCalculo === "incremento_rede_loterica_base_2025"
@@ -649,8 +659,10 @@
       : isOfertasPersonalizadasIndicator(indicador, regra)
         ? "Resultado oficial do indicador"
       : "Resultado oficial anual";
-    document.getElementById("launchPercentualAcumuladoLabel").textContent = regra?.tipoCalculo === "plano_acao_por_elementos"
-      ? "% da meta anual"
+    document.getElementById("launchPercentualAcumuladoLabel").textContent = regra?.tipoCalculo === "lucro_recorrente_mensal"
+      ? "% da meta acumulada"
+      : regra?.tipoCalculo === "plano_acao_por_elementos"
+        ? "% da meta anual"
       : "% da meta atingida anual";
     document.getElementById("launchSituacaoCalculadaLabel").textContent = isIeoRule(regra)
       ? "Situação da competência"
@@ -890,16 +902,25 @@
       details.push(["% da meta anual atingida", Calculations.formatarPercentual(resultado.percentualMetaAnualAtingida)]);
     }
     if (resultado.metaReferenciaMensal !== undefined) {
-      details.push(["Meta mensal de referência", Calculations.formatarValor(resultado.metaReferenciaMensal, resultado.unidadeMedida)]);
+      details.push([
+        regra?.tipoCalculo === "lucro_recorrente_mensal" ? "Meta da competência" : "Meta mensal de referência",
+        Calculations.formatarValor(resultado.metaReferenciaMensal, resultado.unidadeMedida)
+      ]);
     }
     if (resultado.percentualMetaMensal !== undefined) {
       details.push(["% da meta mensal", Calculations.formatarPercentual(resultado.percentualMetaMensal)]);
     }
     if (resultado.metaAcumulada !== undefined) {
-      details.push(["Meta acumulada", Calculations.formatarValor(resultado.metaAcumulada, resultado.unidadeMedida)]);
+      details.push([
+        regra?.tipoCalculo === "lucro_recorrente_mensal" ? "Meta acumulada até a competência" : "Meta acumulada",
+        Calculations.formatarValor(resultado.metaAcumulada, resultado.unidadeMedida)
+      ]);
     }
     if (resultado.realizadoAcumulado !== undefined) {
-      details.push(["Realizado acumulado", Calculations.formatarValor(resultado.realizadoAcumulado, resultado.unidadeMedida)]);
+      details.push([
+        regra?.tipoCalculo === "lucro_recorrente_mensal" ? "Resultado acumulado até a competência" : "Realizado acumulado",
+        Calculations.formatarValor(resultado.realizadoAcumulado, resultado.unidadeMedida)
+      ]);
     }
     if (resultado.percentualMetaAcumulada !== undefined) {
       details.push(["% atingido acumulado", Calculations.formatarPercentual(resultado.percentualMetaAcumulada)]);
@@ -1266,6 +1287,10 @@
       percentualAtingidoAcumulado: calculation.resultado.percentualAtingidoAcumulado,
       percentualAtingidoAnual: calculation.resultado.percentualAtingidoAnual,
       resultadoOficialAnual: calculation.resultado.resultadoOficialAnual,
+      ...(calculation.regra?.tipoCalculo === "lucro_recorrente_mensal" ? {
+        metaReferencia: calculation.resultado.metaReferenciaMensal,
+        metaMensal: calculation.resultado.metaReferenciaMensal
+      } : {}),
       situacaoCalculada: Situations.normalizarSituacao(calculation.resultado.situacao || getCalculatedSituation(calculation.resultado.percentualAtingidoAnual ?? calculation.resultado.percentualAtingidoMensal)),
       status: action === "send" ? "Enviado para homologação" : "Em preenchimento",
       observacaoArea: document.getElementById("launchObservacaoArea").value.trim(),

@@ -26,7 +26,8 @@
     "iniciativas_apoiadas",
     "plano_acao_por_elementos",
     "execucao_acoes_propostas",
-    "ggr_formula"
+    "ggr_formula",
+    "lucro_recorrente_mensal"
   ]);
   const PIX_QUARTER_TARGETS = Object.freeze({
     "1TRI/2026": 0.61,
@@ -123,6 +124,15 @@
 
   function getReferenceMeta(rule, quarterLaunches, quarterNumberValue, quarterLabel) {
     const params = rule?.parametrosCalculo || {};
+    if (rule?.tipoCalculo === "lucro_recorrente_mensal") {
+      const referenceLaunch = lastByMonth((quarterLaunches || []).filter((item) => item.status === STATUS_LANCAMENTO.HOMOLOGADO));
+      if (!referenceLaunch) return null;
+      const key = competenciaKey(referenceLaunch);
+      const monthlyCurve = params.metasMensaisPorCompetencia || {};
+      return Object.prototype.hasOwnProperty.call(monthlyCurve, key)
+        ? toNumber(monthlyCurve[key])
+        : toNumber(referenceLaunch.metaMensal ?? referenceLaunch.metaReferencia);
+    }
     if (rule?.tipoCalculo === "participacao_ecossistema_com_cenarios") {
       const referenceLaunch = lastByMonth((quarterLaunches || []).filter((item) => item.status === STATUS_LANCAMENTO.HOMOLOGADO)) || lastByMonth(quarterLaunches || []);
       const rawScenario = referenceLaunch?.camposEntrada?.cenarioApuracaoEcossistema || params.cenarioOficialResumoExecutivo || "lotex_marketplace";

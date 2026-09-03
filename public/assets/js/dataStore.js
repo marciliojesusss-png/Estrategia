@@ -257,20 +257,27 @@
     "2026-11": 8738217864.00,
     "2026-12": 10452751135.00
   };
-  const LUCRO_LIQUIDO_META_ACUMULADA_2026 = {
-    "2026-01": 89555555.56,
-    "2026-02": 179111111.11,
-    "2026-03": 268666666.67,
-    "2026-04": null,
-    "2026-05": null,
-    "2026-06": null,
-    "2026-07": null,
-    "2026-08": null,
-    "2026-09": null,
-    "2026-10": null,
-    "2026-11": null,
-    "2026-12": 1209000000
-  };
+  const LUCRO_RECORRENTE_META_MENSAL_2026 = Object.freeze({
+    "2026-01": 90811101.33,
+    "2026-02": 77462728.16,
+    "2026-03": 90084434.66,
+    "2026-04": 96068372.33,
+    "2026-05": 94438480.16,
+    "2026-06": 106104677.05,
+    "2026-07": 98144245.44,
+    "2026-08": 94094264.37,
+    "2026-09": 128614993.92,
+    "2026-10": 101071987.08,
+    "2026-11": 91522592.68,
+    "2026-12": 236900370.02
+  });
+  const LUCRO_RECORRENTE_META_ACUMULADA_2026 = Object.freeze(Object.entries(LUCRO_RECORRENTE_META_MENSAL_2026)
+    .reduce((curve, [competence, monthlyTarget]) => {
+      const previousCents = Object.values(curve).at(-1);
+      const accumulatedCents = Math.round(monthlyTarget * 100) + Math.round((previousCents || 0) * 100);
+      curve[competence] = accumulatedCents / 100;
+      return curve;
+    }, {}));
   const CURRENCY_FIELD_NAMES = new Set([
     "ggrRealizadoMes",
     "arrecadacaoTotalMes",
@@ -278,6 +285,7 @@
     "despesaPessoalMes",
     "despesasAdministrativasMes",
     "receitasLiquidasMes",
+    "lucroLiquidoRecorrenteCompetencia",
     "lucroLiquidoRecorrenteAcumulado",
     "arrecadacaoCanaisEletronicosMes",
     "arrecadacaoTotalProdutosLoteriasMes",
@@ -823,8 +831,12 @@
     return PILLAR_NAMES[5];
   }
 
-  function getLucroLiquidoMetaAcumulada(ano, mes) {
-    return LUCRO_LIQUIDO_META_ACUMULADA_2026[`${ano}-${String(mes).padStart(2, "0")}`] ?? null;
+  function getLucroRecorrenteMetaMensal(ano, mes) {
+    return LUCRO_RECORRENTE_META_MENSAL_2026[`${ano}-${String(mes).padStart(2, "0")}`] ?? null;
+  }
+
+  function getLucroRecorrenteMetaAcumulada(ano, mes) {
+    return LUCRO_RECORRENTE_META_ACUMULADA_2026[`${ano}-${String(mes).padStart(2, "0")}`] ?? null;
   }
 
   function getNpsMetaReferencia(ano, mes) {
@@ -1548,6 +1560,16 @@
             metrica: "NPS = % promotores - % detratores. Baseline 55; referência 70; redução esperada do gap 20%."
           };
         }
+        if (Number(indicator.id) === 7) {
+          return {
+            ...normalized,
+            periodicidade: "Mensal",
+            tipoCalculo: "lucro_recorrente_mensal",
+            unidadeMedida: "moeda",
+            metaAnualDescricao: "R$ 1.305.318.247,20",
+            metrica: "Lucro líquido recorrente da competência / Meta da competência"
+          };
+        }
         if (Number(indicator.id) === 17) {
           return {
             ...normalized,
@@ -1922,25 +1944,28 @@
           return {
             ...rule,
             nome: INDICATOR_NAMES[6],
-            tipoCalculo: "valor_financeiro_acumulado",
-            tipoConsolidacao: "ultima_posicao_acumulada",
+            tipoCalculo: "lucro_recorrente_mensal",
+            tipoConsolidacao: "ultima_posicao_mensal_homologada",
             unidadeMedida: "moeda",
-            metaAnualValor: 1209000000,
+            metaAnualValor: 1305318247.20,
             parametrosCalculo: {
               ...(rule.parametrosCalculo || {}),
-              valorAcumuladoCampo: "lucroLiquidoRecorrenteAcumulado",
-              metaTipo: "curva_acumulada_por_competencia",
-              metasAcumuladasPorCompetencia: LUCRO_LIQUIDO_META_ACUMULADA_2026
+              campoValorMensal: "lucroLiquidoRecorrenteCompetencia",
+              campoValorAcumuladoLegado: "lucroLiquidoRecorrenteAcumulado",
+              metaTipo: "curva_mensal_por_competencia",
+              metasMensaisPorCompetencia: LUCRO_RECORRENTE_META_MENSAL_2026,
+              metasAcumuladasPorCompetencia: LUCRO_RECORRENTE_META_ACUMULADA_2026,
+              sentidoMeta: "quanto_maior_melhor"
             },
             camposEntrada: [{
-              nome: "lucroLiquidoRecorrenteAcumulado",
-              rotulo: "Lucro líquido recorrente acumulado até a competência",
+              nome: "lucroLiquidoRecorrenteCompetencia",
+              rotulo: "Lucro líquido recorrente da competência",
               tipo: "moeda",
               obrigatorio: true
             }],
             campoResultadoPrincipal: "resultadoMensal",
             campoPercentualAtingido: "percentualAtingidoMensal",
-            resultadoOficial: "ultima_posicao_acumulada_homologada"
+            resultadoOficial: "ultima_posicao_mensal_homologada"
           };
         }
         if (Number(rule.indicadorId) === 16) {
@@ -2389,8 +2414,8 @@
         metaMensal: PIX_QUARTER_TARGETS[Math.ceil(Number(meta.mes) / 3) - 1]
       } : Number(meta.indicadorId) === 7 ? {
         ...meta,
-        metaMensal: getLucroLiquidoMetaAcumulada(meta.ano, meta.mes),
-        fonte: "curva_lucro_liquido_recorrente_2026"
+        metaMensal: getLucroRecorrenteMetaMensal(meta.ano, meta.mes),
+        fonte: "curva_mensal_lucro_liquido_recorrente_2026"
       } : meta);
     }
 
@@ -2465,8 +2490,9 @@
           metaAnualDescricao: "≤ 14,03%"
         } : {}),
         ...(Number(launch.indicadorId) === 7 ? {
-          metaMensal: getLucroLiquidoMetaAcumulada(launch.ano, launch.mes),
-          metaAnualDescricao: "R$ 1,209 bilhão"
+          metaMensal: getLucroRecorrenteMetaMensal(launch.ano, launch.mes),
+          metaAcumulada: getLucroRecorrenteMetaAcumulada(launch.ano, launch.mes),
+          metaAnualDescricao: "R$ 1.305.318.247,20"
         } : {}),
         ...(Number(launch.indicadorId) === 17 ? {
           metaMensal: getRepasseSocialMetaAcumulada(launch.ano, launch.mes),

@@ -351,7 +351,7 @@
       ]] : []),
       ...(Number(indicador.id) === 7 ? [[
         "Observacao de acompanhamento",
-        "Este indicador e acompanhado por posicao acumulada. A meta anual de R$ 1,209 bilhao representa o objetivo final do exercicio, mas a apuracao mensal e trimestral compara o realizado acumulado da competencia com a meta acumulada de referencia do periodo, conforme a curva orcamentaria vigente.",
+        "Este indicador é acompanhado mensalmente. A situação oficial de cada competência compara o lucro líquido recorrente realizado no mês com a meta mensal aprovada. O acumulado no ano permanece disponível apenas como informação gerencial secundária.",
         true
       ]] : []),
       ...(Number(indicador.id) === 17 ? [[
@@ -780,6 +780,18 @@
       ? resultadoCalculado
       : (calculated.resultadoOficial ?? lancamento.resultadoOficial ?? "-");
     const percent = calculated.percentualAtingidoMensal ?? calculated.percentualAtingido ?? lancamento.percentualAtingido;
+    const isLucroRecorrente = Number(indicador.id) === 7 && regra?.tipoCalculo === "lucro_recorrente_mensal";
+    const accumulatedBlock = isLucroRecorrente ? `
+      <article class="launch-detail-card full-span">
+        <h4>Acumulado no ano</h4>
+        <div class="detail-grid">
+          ${[
+            ["Meta acumulada até a competência", formatMeasureValue(calculated.metaAcumulada, regra?.unidadeMedida)],
+            ["Resultado acumulado até a competência", formatMeasureValue(calculated.resultadoAcumulado, regra?.unidadeMedida)]
+          ].map(launchDetailItem).join("")}
+        </div>
+      </article>
+    ` : "";
 
     panel.hidden = false;
     title.textContent = `${indicador.indicador} — ${lancamento.nomeMes}/${lancamento.ano}`;
@@ -802,13 +814,14 @@
             ["Diretoria responsável", indicador.diretoriaResponsavel || "Não informado"],
             ["Competência", `${lancamento.nomeMes}/${lancamento.ano}`],
             ["Situação", situation],
-            ["Meta de referência", formatMeasureValue(metaReferencia, regra?.unidadeMedida)],
-            ["Resultado calculado", formatMeasureValue(resultadoCalculado, regra?.unidadeMedida)],
+            [isLucroRecorrente ? "Meta da competência" : "Meta de referência", formatMeasureValue(metaReferencia, regra?.unidadeMedida)],
+            [isLucroRecorrente ? "Resultado da competência" : "Resultado calculado", formatMeasureValue(resultadoCalculado, regra?.unidadeMedida)],
             ["Resultado oficial", resultadoOficial === "-" ? "-" : formatMeasureValue(resultadoOficial, regra?.unidadeMedida)],
-            ["% atingido", Calculations.formatarPercentual(percent)]
+            [isLucroRecorrente ? "% da meta atingida" : "% atingido", Calculations.formatarPercentual(percent)]
           ].map(launchDetailItem).join("")}
         </div>
       </article>
+      ${accumulatedBlock}
       ${renderInputData(indicador, regra, lancamento)}
       ${renderTextBlock("Observação da área", lancamento.observacaoArea, "Sem observação registrada.")}
       ${renderTextBlock("Justificativa", lancamento.justificativa, "Sem justificativa registrada.")}
@@ -926,6 +939,7 @@
     const isBase2025Growth = growthTrackingModes.isBase2025Growth;
     const isGgrFormula = regra?.tipoCalculo === "ggr_formula";
     const isIeoInverse = Number(indicador.id) === 6;
+    const isLucroRecorrente = Number(indicador.id) === 7 && regra?.tipoCalculo === "lucro_recorrente_mensal";
     const isRepasseSocial = Number(indicador.id) === 17;
     const isAccumulatedGoalCurve = usesAccumulatedGoalCurve(regra);
     const launches = state.data.lancamentos
@@ -1126,6 +1140,14 @@
       <th>IEO calculado da competência</th>
       <th>% atingido</th>
       <th>Situação da competência</th>
+      <th>Status mensal</th>
+      <th>Ação</th>
+    ` : isLucroRecorrente ? `
+      <th>Mês</th>
+      <th>Meta da competência</th>
+      <th>Resultado da competência</th>
+      <th>% atingido</th>
+      <th>Situação</th>
       <th>Status mensal</th>
       <th>Ação</th>
     ` : isRepasseSocial ? `

@@ -617,6 +617,86 @@
     return resultado === 0 ? null : meta / resultado;
   }
 
+  function getLucroRecorrenteMetaMensal(regra, lancamento) {
+    const curve = regra?.parametrosCalculo?.metasMensaisPorCompetencia || {};
+    const key = competenciaKey(lancamento);
+    if (Object.prototype.hasOwnProperty.call(curve, key)) return toNumber(curve[key]);
+    return toNumber(lancamento?.metaMensal ?? lancamento?.metaReferencia);
+  }
+
+  function getLucroRecorrenteMensal(regra, lancamento, lancamentosDoAno) {
+    const monthlyField = regra?.parametrosCalculo?.campoValorMensal || "lucroLiquidoRecorrenteCompetencia";
+    const legacyField = regra?.parametrosCalculo?.campoValorAcumuladoLegado || "lucroLiquidoRecorrenteAcumulado";
+    const monthlyValue = campo(lancamento, monthlyField);
+    if (monthlyValue !== null) return monthlyValue;
+
+    const legacyAccumulated = campo(lancamento, legacyField);
+    if (legacyAccumulated === null) return null;
+    const month = Number(lancamento?.mes);
+    const year = Number(lancamento?.ano);
+    if (month === 1) return legacyAccumulated;
+
+    const previous = (lancamentosDoAno || []).find((item) => (
+      Number(item?.ano) === year && Number(item?.mes) === month - 1
+    ));
+    const previousAccumulated = previous ? campo(previous, legacyField) : null;
+    return previousAccumulated === null ? null : legacyAccumulated - previousAccumulated;
+  }
+
+  function calcularLucroRecorrenteMensal(indicador, regra, lancamentoAtual, lancamentosDoAno) {
+    const resultadoMensal = getLucroRecorrenteMensal(regra, lancamentoAtual, lancamentosDoAno);
+    if (resultadoMensal === null) {
+      return erro(
+        "Informe o lucro líquido recorrente da competência. O valor legado acumulado só pode ser convertido quando a competência anterior estiver disponível.",
+        regra.unidadeMedida
+      );
+    }
+    if (resultadoMensal < 0) return erro("Lucro líquido recorrente da competência não pode ser negativo.", regra.unidadeMedida);
+
+    const metaMensal = getLucroRecorrenteMetaMensal(regra, lancamentoAtual);
+    if (metaMensal === null || metaMensal <= 0) {
+      return erro("Meta mensal do lucro recorrente não configurada para a competência.", regra.unidadeMedida);
+    }
+
+    const ateMes = lancamentosAteMes(lancamentoAtual, lancamentosDoAno);
+    const resultadosMensais = ateMes
+      .map((item) => getLucroRecorrenteMensal(regra, item, lancamentosDoAno))
+      .filter((value) => value !== null && value >= 0);
+    const resultadoAcumulado = resultadosMensais.reduce((sum, value) => sum + value, 0);
+    const monthlyCurve = regra?.parametrosCalculo?.metasMensaisPorCompetencia || {};
+    const currentYear = Number(lancamentoAtual?.ano);
+    const currentMonth = Number(lancamentoAtual?.mes);
+    const metaAcumulada = Object.entries(monthlyCurve).reduce((sum, [key, value]) => {
+      const match = key.match(/^(\d{4})-(\d{2})$/);
+      if (!match || Number(match[1]) !== currentYear || Number(match[2]) > currentMonth) return sum;
+      const parsed = toNumber(value);
+      return parsed === null ? sum : sum + parsed;
+    }, 0);
+    const percentualMensal = resultadoMensal / metaMensal;
+    const percentualAcumulado = metaAcumulada > 0 ? resultadoAcumulado / metaAcumulada : null;
+    const situacaoMensal = percentualMensal >= 1 ? "Atingido" : "Abaixo da meta";
+
+    return ok(
+      resultadoMensal,
+      resultadoAcumulado,
+      percentualMensal,
+      percentualAcumulado,
+      regra.unidadeMedida,
+      "Lucro líquido recorrente da competência comparado com a meta mensal oficial.",
+      {
+        metaReferenciaMensal: metaMensal,
+        metaAcumulada,
+        realizadoAcumulado: resultadoAcumulado,
+        percentualMetaMensal: percentualMensal,
+        percentualMetaAcumulada: percentualAcumulado,
+        resultadoOficialAnual: resultadoMensal,
+        percentualAtingidoAnual: percentualMensal,
+        situacaoMensal,
+        situacao: situacaoMensal
+      }
+    );
+  }
+
   function getMetaReferenciaInversa(regra, lancamentoAtual) {
     const metaOficialIeo = Number(regra?.indicadorId) === 6
       ? root.IeoRecorrente?.getMetaCompetencia(lancamentoAtual)
@@ -1608,6 +1688,8 @@
         return calcularPercentualAcumulado(indicador, regra, lancamentoAtual, lancamentosDoAno);
       case "valor_financeiro_acumulado":
         return calcularValorFinanceiroAcumulado(indicador, regra, lancamentoAtual, lancamentosDoAno);
+      case "lucro_recorrente_mensal":
+        return calcularLucroRecorrenteMensal(indicador, regra, lancamentoAtual, lancamentosDoAno);
       case "ggr_formula":
         return calcularGgrFormula(indicador, regra, lancamentoAtual, lancamentosDoAno);
       case "indice_inverso_ajustado":
@@ -1679,6 +1761,7 @@
     calcularCrescimentoMediaMensal,
     calcularPercentualAcumulado,
     calcularValorFinanceiroAcumulado,
+    calcularLucroRecorrenteMensal,
     calcularIndiceInversoAjustado,
     calcularIncrementoPontosPercentuais,
     calcularRazaoCanaisDigitais,
