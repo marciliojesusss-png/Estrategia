@@ -14,7 +14,7 @@ const localStorage = {
   get length() { return storage.size; }
 };
 const context = {
-  console: { log() {}, warn() {}, error: console.error },
+  console: { log() {}, info() {}, warn() {}, error: console.error },
   TextDecoder,
   Uint8Array,
   localStorage,
@@ -26,7 +26,7 @@ const context = {
 context.window.window = context.window;
 context.window.localStorage = localStorage;
 vm.createContext(context);
-for (const file of ["currency.js", "dataStore.js"]) {
+for (const file of ["currency.js", "lucro-recorrente.js", "dataStore.js"]) {
   vm.runInContext(fs.readFileSync(path.join(root, "assets", "js", file), "utf8"), context, { filename: file });
   if (file === "currency.js") context.CurrencyBR = context.window.CurrencyBR;
 }
@@ -46,6 +46,8 @@ for (const file of ["currency.js", "dataStore.js"]) {
   assert.equal(rule.metaAnualValor, 1305318247.20);
   assert.deepEqual(Array.from(rule.camposEntrada, (field) => field.nome), ["lucroLiquidoRecorrenteCompetencia"]);
   assert.equal(rule.camposEntrada[0].rotulo, "Lucro líquido recorrente da competência");
+  assert.equal(rule.camposEntradaLegados[0].nome, "lucroLiquidoRecorrenteAcumulado");
+  assert.equal(rule.camposEntradaLegados[0].tipo, "moeda");
   assert.equal(Object.values(monthlyTargets).reduce((sum, value) => sum + Math.round(value * 100), 0) / 100, 1305318247.20);
   assert.equal(accumulatedTargets["2026-06"], 554969793.69);
   assert.equal(accumulatedTargets["2026-12"], 1305318247.20);
@@ -58,12 +60,18 @@ for (const file of ["currency.js", "dataStore.js"]) {
   assert.equal(january.camposEntrada.lucroLiquidoRecorrenteAcumulado, 119377680.03);
   assert.equal(january.camposEntrada.lucroLiquidoRecorrenteCompetencia, undefined, "A normalização não deve adulterar o JSON histórico antes da migration");
 
+  const lucroApi = context.window.LucroRecorrente;
+  const untouchedIeo = { indicadorId: 6, tipoCalculo: "indice_inverso" };
+  assert.strictEqual(lucroApi.ajustarRegra(untouchedIeo), untouchedIeo, "A regra específica não pode alterar o IEO");
+  assert.equal(lucroApi.normalizarDados({ indicadores: [{ id: 7 }], regrasIndicadores: [{ indicadorId: 7 }] }).regrasIndicadores[0].tipoCalculo, "lucro_recorrente_mensal");
+
   const migration = fs.readFileSync(
     path.join(root, "database", "sqlserver", "migrations", "20260902_001_indicador07_lucro_recorrente_mensal.sql"),
     "utf8"
   );
   assert.match(migration, /WHERE l\.indicador_id = @indicador_id[\s\S]*l\.ano = 2026/);
   assert.match(migration, /JSON_MODIFY[\s\S]*lucroLiquidoRecorrenteCompetencia/);
+  assert.match(migration, /WHERE chave = N'regrasIndicadores'/);
   assert.match(migration, /lucroLiquidoRecorrenteAcumulado/);
   assert.doesNotMatch(migration, /ALTER\s+TABLE/i);
   assert.doesNotMatch(migration, /INSERT\s+INTO\s+dbo\.lancamentos/i);

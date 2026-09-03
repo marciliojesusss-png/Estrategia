@@ -111,7 +111,17 @@
     const target = `${baseTarget}${baseTarget.includes("?") ? "&" : "?"}escopo=geral`;
     const response = await window.fetch(target, { cache: "no-store" });
     const payload = await response.json().catch(() => ({}));
-    const detail = payload?.dados;
+    const detailPayload = payload?.dados;
+    const detail = window.LucroRecorrente?.normalizarDados({
+      indicadores: detailPayload?.indicador ? [detailPayload.indicador] : [],
+      regrasIndicadores: detailPayload?.regrasIndicadores || []
+    }) || {};
+    if (detailPayload) {
+      detail.indicador = detail.indicadores?.[0] || detailPayload.indicador;
+      detail.lancamentos = detailPayload.lancamentos;
+      detail.consulta = detailPayload.consulta;
+      detail.fonte = detailPayload.fonte;
+    }
     if (!response.ok || payload?.sucesso === false || !detail?.indicador) {
       throw new Error(payload?.mensagem || "Não foi possível consultar o detalhe institucional.");
     }
@@ -628,7 +638,10 @@
 
   function renderInputData(indicador, regra, lancamento) {
     const campos = lancamento.camposEntrada || {};
-    const fieldMap = Object.fromEntries((regra?.camposEntrada || []).map((field) => [field.nome, field]));
+    const fieldMap = Object.fromEntries([
+      ...(regra?.camposEntradaLegados || []),
+      ...(regra?.camposEntrada || [])
+    ].map((field) => [field.nome, field]));
     const entries = Object.entries(campos)
       .filter(([, value]) => value !== null && value !== undefined && value !== "")
       .map(([key, value]) => {
@@ -1920,7 +1933,9 @@
       isGeneralDetailRequest,
       isInstitutionalReadOnly,
       resolveGrowthTrackingModes,
-      usesAccumulatedGoalCurve
+      usesAccumulatedGoalCurve,
+      formatInputValue,
+      renderInputData
     };
   }
   window.PageModules.indicadores = { init };

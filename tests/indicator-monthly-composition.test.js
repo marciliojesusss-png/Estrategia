@@ -6,6 +6,18 @@ const vm = require("node:vm");
 const context = {
   URLSearchParams,
   Calculations: {
+    formatarValor(value, unit) {
+      if (value === null || value === undefined || value === "") return "-";
+      if (unit === "moeda") {
+        return Number(value).toLocaleString("pt-BR", {
+          style: "currency",
+          currency: "BRL",
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        });
+      }
+      return String(value);
+    },
     calcularStatusDesempenho(value) {
       if (value === null || value === undefined || value === "") return "Sem cálculo";
       return Number(value) >= 1 ? "Atingido" : "Abaixo da meta";
@@ -42,8 +54,28 @@ const {
   resolveMonthlySituation,
   performanceBadge,
   resolveGrowthTrackingModes,
-  usesAccumulatedGoalCurve
+  usesAccumulatedGoalCurve,
+  formatInputValue,
+  renderInputData
 } = context.window.IndicatorsInternals;
+
+assert.equal(formatInputValue(119377680.03, { tipo: "moeda" }), "R$ 119.377.680,03");
+assert.equal(formatInputValue(null, { tipo: "moeda" }), "-");
+const legacyCurrencyMarkup = renderInputData(
+  {},
+  {
+    camposEntrada: [{ nome: "lucroLiquidoRecorrenteCompetencia", rotulo: "Lucro mensal", tipo: "moeda" }],
+    camposEntradaLegados: [{ nome: "lucroLiquidoRecorrenteAcumulado", rotulo: "Lucro acumulado", tipo: "moeda" }]
+  },
+  {
+    camposEntrada: {
+      lucroLiquidoRecorrenteAcumulado: 222011430.58,
+      lucroLiquidoRecorrenteCompetencia: 102633750.55
+    }
+  }
+);
+assert.match(legacyCurrencyMarkup, /Lucro acumulado[\s\S]*R\$ 222\.011\.430,58/);
+assert.match(legacyCurrencyMarkup, /Lucro mensal[\s\S]*R\$ 102\.633\.750,55/);
 
 context.window.location.search = "?view=detalhe&id=12&origem=resumo-executivo&escopo=geral";
 assert.equal(context.window.IndicatorsInternals.requestedDetailScope(), "geral");

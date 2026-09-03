@@ -257,7 +257,7 @@
     "2026-11": 8738217864.00,
     "2026-12": 10452751135.00
   };
-  const LUCRO_RECORRENTE_META_MENSAL_2026 = Object.freeze({
+  const LUCRO_RECORRENTE_META_MENSAL_2026 = window.LucroRecorrente?.METAS_MENSAIS_2026 || Object.freeze({
     "2026-01": 90811101.33,
     "2026-02": 77462728.16,
     "2026-03": 90084434.66,
@@ -271,7 +271,7 @@
     "2026-11": 91522592.68,
     "2026-12": 236900370.02
   });
-  const LUCRO_RECORRENTE_META_ACUMULADA_2026 = Object.freeze(Object.entries(LUCRO_RECORRENTE_META_MENSAL_2026)
+  const LUCRO_RECORRENTE_META_ACUMULADA_2026 = window.LucroRecorrente?.METAS_ACUMULADAS_2026 || Object.freeze(Object.entries(LUCRO_RECORRENTE_META_MENSAL_2026)
     .reduce((curve, [competence, monthlyTarget]) => {
       const previousCents = Object.values(curve).at(-1);
       const accumulatedCents = Math.round(monthlyTarget * 100) + Math.round((previousCents || 0) * 100);
@@ -1941,7 +1941,7 @@
           return window.IeoRecorrente?.ajustarRegraIeo(normalizedIeoRule) || normalizedIeoRule;
         }
         if (Number(rule.indicadorId) === 7) {
-          return {
+          const normalizedLucroRule = {
             ...rule,
             nome: INDICATOR_NAMES[6],
             tipoCalculo: "lucro_recorrente_mensal",
@@ -1967,6 +1967,7 @@
             campoPercentualAtingido: "percentualAtingidoMensal",
             resultadoOficial: "ultima_posicao_mensal_homologada"
           };
+          return window.LucroRecorrente?.ajustarRegra(normalizedLucroRule) || normalizedLucroRule;
         }
         if (Number(rule.indicadorId) === 16) {
           return {

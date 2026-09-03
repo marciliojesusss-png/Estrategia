@@ -4,6 +4,8 @@ SET XACT_ABORT ON;
 /*
   Indicador 7 — Lucro Líquido Recorrente
   Reparametrização institucional de 2026: acompanhamento oficial mensal.
+  Motivo administrativo: nova meta 2026 aprovada pelo Conselho de Administração;
+  altera a metodologia de acompanhamento sem alterar os valores originalmente apurados.
 
   - Não cria estrutura e não insere lançamentos.
   - Preserva lucroLiquidoRecorrenteAcumulado no JSON.
@@ -20,6 +22,9 @@ IF OBJECT_ID(N'dbo.indicadores', N'U') IS NULL
 
 IF OBJECT_ID(N'dbo.lancamentos', N'U') IS NULL
     THROW 50003, 'A tabela dbo.lancamentos nao existe.', 1;
+
+IF OBJECT_ID(N'dbo.configuracoes', N'U') IS NULL
+    THROW 50006, 'A tabela dbo.configuracoes nao existe.', 1;
 
 DECLARE @indicador_id NVARCHAR(100);
 DECLARE @quantidade INT;
@@ -58,6 +63,26 @@ VALUES
 IF (SELECT SUM(meta_mensal) FROM @metas) <> CAST(1305318247.20 AS DECIMAL(19,2))
     THROW 50005, 'A curva mensal nao fecha na meta anual aprovada.', 1;
 
+DECLARE @regras NVARCHAR(MAX);
+DECLARE @regra_indice INT;
+DECLARE @regra_path NVARCHAR(100);
+
+SELECT @regras = valor_json
+FROM dbo.configuracoes
+WHERE chave = N'regrasIndicadores';
+
+IF ISJSON(@regras) <> 1
+    THROW 50007, 'A configuracao regrasIndicadores nao contem JSON valido.', 1;
+
+SELECT TOP (1) @regra_indice = TRY_CONVERT(INT, [key])
+FROM OPENJSON(@regras)
+WHERE TRY_CONVERT(INT, JSON_VALUE([value], '$.indicadorId')) = 7;
+
+IF @regra_indice IS NULL
+    THROW 50008, 'A regra do indicador 7 nao foi localizada em regrasIndicadores.', 1;
+
+SET @regra_path = N'$[' + CONVERT(NVARCHAR(10), @regra_indice) + N']';
+
 /* Validação prévia: mostra somente as competências realmente existentes. */
 SELECT
     l.id,
@@ -91,6 +116,53 @@ WHERE id = @indicador_id
       OR ISNULL(meta_anual, N'') <> N'R$ 1.305.318.247,20'
       OR ISNULL(formula_referencia, N'') <> N'Lucro líquido recorrente da competência / Meta da competência'
   );
+
+/* Atualiza somente o objeto da regra 7, preservando todas as demais regras. */
+SET @regras = JSON_MODIFY(@regras, @regra_path + N'.tipoCalculo', N'lucro_recorrente_mensal');
+SET @regras = JSON_MODIFY(@regras, @regra_path + N'.tipoConsolidacao', N'ultima_posicao_mensal_homologada');
+SET @regras = JSON_MODIFY(@regras, @regra_path + N'.unidadeMedida', N'moeda');
+SET @regras = JSON_MODIFY(@regras, @regra_path + N'.metaAnualValor', CAST(1305318247.20 AS DECIMAL(19,2)));
+SET @regras = JSON_MODIFY(
+    @regras,
+    @regra_path + N'.parametrosCalculo',
+    JSON_QUERY(N'{
+      "campoValorMensal":"lucroLiquidoRecorrenteCompetencia",
+      "campoValorAcumuladoLegado":"lucroLiquidoRecorrenteAcumulado",
+      "metaTipo":"curva_mensal_por_competencia",
+      "metasMensaisPorCompetencia":{
+        "2026-01":90811101.33,"2026-02":77462728.16,"2026-03":90084434.66,
+        "2026-04":96068372.33,"2026-05":94438480.16,"2026-06":106104677.05,
+        "2026-07":98144245.44,"2026-08":94094264.37,"2026-09":128614993.92,
+        "2026-10":101071987.08,"2026-11":91522592.68,"2026-12":236900370.02
+      },
+      "metasAcumuladasPorCompetencia":{
+        "2026-01":90811101.33,"2026-02":168273829.49,"2026-03":258358264.15,
+        "2026-04":354426636.48,"2026-05":448865116.64,"2026-06":554969793.69,
+        "2026-07":653114039.13,"2026-08":747208303.50,"2026-09":875823297.42,
+        "2026-10":976895284.50,"2026-11":1068417877.18,"2026-12":1305318247.20
+      },
+      "sentidoMeta":"quanto_maior_melhor"
+    }')
+);
+SET @regras = JSON_MODIFY(
+    @regras,
+    @regra_path + N'.camposEntrada',
+    JSON_QUERY(N'[{
+      "nome":"lucroLiquidoRecorrenteCompetencia",
+      "rotulo":"Lucro líquido recorrente da competência",
+      "tipo":"moeda",
+      "obrigatorio":true
+    }]')
+);
+SET @regras = JSON_MODIFY(@regras, @regra_path + N'.campoResultadoPrincipal', N'resultadoMensal');
+SET @regras = JSON_MODIFY(@regras, @regra_path + N'.campoPercentualAtingido', N'percentualAtingidoMensal');
+SET @regras = JSON_MODIFY(@regras, @regra_path + N'.resultadoOficial', N'ultima_posicao_mensal_homologada');
+
+UPDATE dbo.configuracoes
+SET valor_json = @regras,
+    updated_at = CONVERT(NVARCHAR(50), SYSDATETIMEOFFSET(), 127)
+WHERE chave = N'regrasIndicadores'
+  AND valor_json <> @regras;
 
 /* A meta_referencia passa a representar exclusivamente a meta mensal. */
 UPDATE l

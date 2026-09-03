@@ -160,7 +160,7 @@
     if (normalizeText(data.escopoVisualizacao) !== requestedScope) {
       throw new Error("A fonte central retornou um escopo de visualização diferente do solicitado.");
     }
-    return data;
+    return window.LucroRecorrente?.normalizarDados(data) || data;
   }
 
   function viewScopeProfileCode(user) {

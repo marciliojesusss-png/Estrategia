@@ -1783,6 +1783,9 @@
   if (root.IeoRecorrente && typeof root.IeoRecorrente.instalarCorrecao === "function") {
     root.IeoRecorrente.instalarCorrecao();
   }
+  if (root.LucroRecorrente && typeof root.LucroRecorrente.instalarCorrecao === "function") {
+    root.LucroRecorrente.instalarCorrecao();
+  }
   if (typeof module !== "undefined" && module.exports) {
     module.exports = api;
   }
