@@ -77,6 +77,7 @@ assert.equal(internals.summarySituationGroup("Em acompanhamento"), "acompanhamen
 assert.equal(internals.chartSituation({ situacaoAtual: "Em acompanhamento", lancamento: {} }), "Em acompanhamento");
 assert.equal(internals.executiveCompetence({ competencia: "Março/2026", competenciaAtual: "Junho/2026" }), "Junho/2026");
 assert.equal(internals.measurementReference({ regra: { tipoCalculo: "nota_pesquisa_anual" }, competenciaMedicaoCurta: "Mar/2026" }), "Mar/2026");
+assert.equal(internals.measurementReference({ regra: { tipoCalculo: "nota_pesquisa_nps" }, competenciaMedicaoCurta: "Jun/2026" }), "Jun/2026");
 assert.equal(internals.measurementReference({ regra: { tipoCalculo: "cobertura_capacitacao" }, competenciaMedicaoCurta: "Mar/2026" }), null);
 const climateTotals = internals.aggregate([
   { situacaoAtual: "Em acompanhamento", statusAtual: "Homologado", lancamento: {} },
@@ -185,8 +186,8 @@ const executiveView = fs.readFileSync(path.join(root, "views", "frontend", "resu
 assert.match(executiveSource, /Pesquisa: \$\{measurement\}/);
 assert.match(executiveSource, /Medição: \$\{escapeHtml\(measurement\)\}/);
 assert.match(executiveSource, /performanceToneForResult/);
-assert.match(executiveView, /executiveSummary\.js\?v=LUCRO-RECORRENTE-MENSAL-001/);
-assert.match(executiveView, /dashboard\.js\?v=LUCRO-RECORRENTE-MENSAL-001/);
+assert.match(executiveView, /executiveSummary\.js\?v=NPS-VIGENCIA-001/);
+assert.match(executiveView, /dashboard\.js\?v=NPS-FORMULA-001/);
 assert.match(executiveView, /styles\.css\?v=CLIMA-EXECUTIVO-001/);
 assert.equal(executiveSource, fs.readFileSync(path.join(root, "public", "assets", "js", "executiveSummary.js"), "utf8"));
 assert.equal(

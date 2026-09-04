@@ -205,7 +205,7 @@
       const metaPontosPercentuais = regra?.parametrosCalculo?.curvaIncrementoTrimestral?.[quarterKey]?.metaIncremento;
       return metaPontosPercentuais === undefined ? null : metaPontosPercentuais / 100;
     }
-    if (["baseline_com_meta_anual", "baseline_com_meta_anual_corrigida"].includes(regra?.parametrosCalculo?.metaTipo)) {
+    if (["baseline_com_meta_anual", "baseline_com_meta_anual_corrigida", "meta_absoluta_por_competencia"].includes(regra?.parametrosCalculo?.metaTipo)) {
       const key = lancamento?.competencia || `${lancamento?.ano}-${String(lancamento?.mes).padStart(2, "0")}`;
       const referencias = regra.parametrosCalculo.referenciasPorCompetencia || {};
       if (Object.prototype.hasOwnProperty.call(referencias, key)) return toFiniteNumber(referencias[key]);
@@ -249,6 +249,17 @@
         lancamento?.resultadoOficial
       ].some((value) => toFiniteNumber(value) !== null);
     }
+    if (regra?.tipoCalculo === "nota_pesquisa_nps") {
+      const tipoPosicao = String(lancamento?.camposEntrada?.[regra.parametrosCalculo?.campoTipoPosicao || "tipoPosicaoNPS"] || "");
+      if (tipoPosicao.startsWith("Acompanhamento") || tipoPosicao === "Revisão metodológica") return false;
+      const campoNps = regra.parametrosCalculo?.campoNps || "npsApurado";
+      const campoPromotores = regra.parametrosCalculo?.campoPromotores || "percentualPromotores";
+      const campoDetratores = regra.parametrosCalculo?.campoDetratores || "percentualDetratores";
+      const hasPromoters = toFiniteNumber(lancamento?.camposEntrada?.[campoPromotores]) !== null;
+      const hasDetractors = toFiniteNumber(lancamento?.camposEntrada?.[campoDetratores]) !== null;
+      if (hasPromoters || hasDetractors) return hasPromoters && hasDetractors;
+      return toFiniteNumber(lancamento?.camposEntrada?.[campoNps]) !== null;
+    }
     return true;
   }
 
@@ -261,6 +272,7 @@
       "crescimento_rede_loterica_base_2025",
       "lucro_recorrente_mensal",
       "cobertura_capacitacao",
+      "nota_pesquisa_nps",
       "nota_pesquisa_anual"
     ]);
     const validSource = homologatedOnlyTypes.has(regra?.tipoCalculo)
@@ -283,7 +295,7 @@
   }
 
   function executiveCurrentSituation(regra, lancamento, resultadoCalculado = null) {
-    if (regra?.tipoCalculo !== "nota_pesquisa_anual" || !lancamento) return null;
+    if (!["nota_pesquisa_nps", "nota_pesquisa_anual"].includes(regra?.tipoCalculo) || !lancamento) return null;
     if (!isQuantitativePerformanceLaunch(regra, lancamento) && hasValidLaunchData(lancamento)) {
       return "Em acompanhamento";
     }
@@ -388,10 +400,10 @@
       lancamentoAcao,
       latestOperationalLaunch: lancamentoAcao,
       latestQuantitativeLaunch: lancamentoOficial,
-      competenciaAtual: regra?.tipoCalculo === "nota_pesquisa_anual" ? competencia(lancamentoAcao) : null,
-      competenciaMedicao: regra?.tipoCalculo === "nota_pesquisa_anual" ? competencia(lancamentoOficial) : null,
-      competenciaMedicaoCurta: regra?.tipoCalculo === "nota_pesquisa_anual" ? competenciaCurta(lancamentoOficial) : null,
-      statusAtual: regra?.tipoCalculo === "nota_pesquisa_anual" ? lancamentoAcao.status : null,
+      competenciaAtual: ["nota_pesquisa_nps", "nota_pesquisa_anual"].includes(regra?.tipoCalculo) ? competencia(lancamentoAcao) : null,
+      competenciaMedicao: ["nota_pesquisa_nps", "nota_pesquisa_anual"].includes(regra?.tipoCalculo) ? competencia(lancamentoOficial) : null,
+      competenciaMedicaoCurta: ["nota_pesquisa_nps", "nota_pesquisa_anual"].includes(regra?.tipoCalculo) ? competenciaCurta(lancamentoOficial) : null,
+      statusAtual: ["nota_pesquisa_nps", "nota_pesquisa_anual"].includes(regra?.tipoCalculo) ? lancamentoAcao.status : null,
       meta: getOfficialMeta(regra, lancamentoOficial, resultadoCalculado),
       situacaoAtual,
       situacaoCalculada: situacaoAtual || (resultadoCalculado && resultadoCalculado.situacao),

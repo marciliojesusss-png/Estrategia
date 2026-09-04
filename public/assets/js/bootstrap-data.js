@@ -238,8 +238,8 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "plano": "PEI",
       "unidadeApuradora": "SUCOL",
       "diretoriaResponsavel": "DICOT",
-      "metaAnualDescricao": "Meta anual correta: NPS 58",
-      "metrica": "NPS = % promotores - % detratores. Baseline 55; referência 70; redução esperada do gap 20%.",
+      "metaAnualDescricao": "Meta vigente: NPS 60 pontos a partir do 3TRI/2026.",
+      "metrica": "NPS = % promotores - % detratores. Histórico 2026: 1TRI referência 55; 2TRI referência 58; a partir do 3TRI meta absoluta 60.",
       "tipoCalculo": "nota_pesquisa_nps",
       "unidadeMedida": "pontos",
       "ativo": true
@@ -1852,13 +1852,13 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         {
           "nome": "baseClientesAtivosCompetencia",
           "rotulo": "Base de clientes ativos identificáveis da competência",
-          "tipo": "numero",
+          "tipo": "inteiro",
           "obrigatorio": true
         },
         {
           "nome": "clientesUnicosComOfertaPersonalizadaCompetencia",
           "rotulo": "Clientes únicos com oferta personalizada até a competência",
-          "tipo": "numero",
+          "tipo": "inteiro",
           "obrigatorio": true
         }
       ],
@@ -1875,7 +1875,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "tipoConsolidacao": "resultado_pesquisa_ou_ultima_posicao",
       "metaRecorrente": false,
       "unidadeMedida": "pontos",
-      "metaAnualValor": 58,
+      "metaAnualValor": 60,
       "parametrosCalculo": {
         "campoTipoPosicao": "tipoPosicaoNPS",
         "campoNps": "npsApurado",
@@ -1883,13 +1883,25 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "campoDetratores": "percentualDetratores",
         "campoDataBase": "dataBasePesquisaNPS",
         "campoFonte": "fontePesquisaNPS",
-        "metaTipo": "baseline_com_meta_anual_corrigida",
+        "metaTipo": "meta_absoluta_por_competencia",
         "baselineNPS": 55,
         "notaReferenciaNPS": 70,
         "percentualReducaoGap": 0.2,
-        "metaAnualMetodologica": 58,
+        "metaAnualMetodologica": 60,
+        "metaVigenteNPS2026": 60,
         "referenciasPorCompetencia": {
-          "2026-03": 55
+          "2026-01": 55,
+          "2026-02": 55,
+          "2026-03": 55,
+          "2026-04": 58,
+          "2026-05": 58,
+          "2026-06": 58,
+          "2026-07": 60,
+          "2026-08": 60,
+          "2026-09": 60,
+          "2026-10": 60,
+          "2026-11": 60,
+          "2026-12": 60
         },
         "sentidoMeta": "quanto_maior_melhor",
         "campoMetaReferencia": "metaReferenciaCompetenciaNPS"
@@ -1912,25 +1924,29 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
           "nome": "metaReferenciaCompetenciaNPS",
           "rotulo": "Meta de referência da competência",
           "tipo": "numero",
-          "obrigatorio": false
-        },
-        {
-          "nome": "npsApurado",
-          "rotulo": "NPS apurado na pesquisa",
-          "tipo": "numero",
-          "obrigatorio": false
+          "obrigatorio": false,
+          "somenteLeitura": true
         },
         {
           "nome": "percentualPromotores",
           "rotulo": "Percentual de promotores",
           "tipo": "percentual",
-          "obrigatorio": false
+          "obrigatorio": false,
+          "entradaPtBr": true
         },
         {
           "nome": "percentualDetratores",
           "rotulo": "Percentual de detratores",
           "tipo": "percentual",
-          "obrigatorio": false
+          "obrigatorio": false,
+          "entradaPtBr": true
+        },
+        {
+          "nome": "npsApurado",
+          "rotulo": "NPS calculado",
+          "tipo": "numero",
+          "obrigatorio": false,
+          "somenteLeitura": true
         },
         {
           "nome": "dataBasePesquisaNPS",
@@ -2035,7 +2051,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         {
           "nome": "melhoriasImplementadasMes",
           "rotulo": "Quantidade de melhorias implementadas no mês",
-          "tipo": "numero",
+          "tipo": "inteiro",
           "obrigatorio": true
         },
         {
@@ -2642,13 +2658,13 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         {
           "nome": "mulheresGestorasMes",
           "rotulo": "Mulheres gestoras no mês",
-          "tipo": "numero",
+          "tipo": "inteiro",
           "obrigatorio": true
         },
         {
           "nome": "totalGestoresMes",
           "rotulo": "Total de gestores no mês",
-          "tipo": "numero",
+          "tipo": "inteiro",
           "obrigatorio": true
         },
         {
@@ -2681,13 +2697,13 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         {
           "nome": "gestoresEnquadradosMes",
           "rotulo": "Gestores enquadrados no mês",
-          "tipo": "numero",
+          "tipo": "inteiro",
           "obrigatorio": true
         },
         {
           "nome": "totalGestoresMes",
           "rotulo": "Total de gestores no mês",
-          "tipo": "numero",
+          "tipo": "inteiro",
           "obrigatorio": true
         },
         {
@@ -2748,19 +2764,19 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         {
           "nome": "publicoAlvoElegivelCapacitacao",
           "rotulo": "Público-alvo elegível",
-          "tipo": "numero",
+          "tipo": "inteiro",
           "obrigatorio": true
         },
         {
           "nome": "empregadosCapacitadosCapacitacao",
           "rotulo": "Empregados capacitados no critério do trimestre",
-          "tipo": "numero",
+          "tipo": "inteiro",
           "obrigatorio": true
         },
         {
           "nome": "quantidadeCursosMinimaCapacitacao",
           "rotulo": "Quantidade mínima de cursos exigida",
-          "tipo": "numero",
+          "tipo": "inteiro",
           "obrigatorio": false
         },
         {
@@ -3327,19 +3343,19 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         {
           "nome": "publicoAlvoElegivelJR",
           "rotulo": "Público-alvo elegível",
-          "tipo": "numero",
+          "tipo": "inteiro",
           "obrigatorio": true
         },
         {
           "nome": "empregadosCapacitadosJR",
           "rotulo": "Empregados capacitados no critério do período",
-          "tipo": "numero",
+          "tipo": "inteiro",
           "obrigatorio": true
         },
         {
           "nome": "quantidadeMinimaIniciativasJR",
           "rotulo": "Quantidade mínima de iniciativas exigida",
-          "tipo": "numero",
+          "tipo": "inteiro",
           "obrigatorio": false
         },
         {
@@ -4079,13 +4095,13 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "pilar": "Cliente no Centro",
       "unidadeApuradora": "SUCOL",
       "diretoriaResponsavel": "DICOT",
-      "metaMensal": 58,
-      "metaAnualDescricao": "Meta anual correta: NPS 58",
+      "metaMensal": 55,
+      "metaAnualDescricao": "Meta vigente: NPS 60 pontos a partir do 3TRI/2026.",
       "status": "Homologado",
       "camposEntrada": {
         "tipoPosicaoNPS": "Acompanhamento",
         "observacaoArea": "Competência homologada sem nova pesquisa NPS; referência trimestral consolidada em março.",
-        "metaReferenciaCompetenciaNPS": 58
+        "metaReferenciaCompetenciaNPS": 55
       },
       "realizado": null,
       "realizadoMensal": null,
@@ -4128,13 +4144,13 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "pilar": "Cliente no Centro",
       "unidadeApuradora": "SUCOL",
       "diretoriaResponsavel": "DICOT",
-      "metaMensal": 58,
-      "metaAnualDescricao": "Meta anual correta: NPS 58",
+      "metaMensal": 55,
+      "metaAnualDescricao": "Meta vigente: NPS 60 pontos a partir do 3TRI/2026.",
       "status": "Homologado",
       "camposEntrada": {
         "tipoPosicaoNPS": "Acompanhamento",
         "observacaoArea": "Competência homologada sem nova pesquisa NPS; referência trimestral consolidada em março.",
-        "metaReferenciaCompetenciaNPS": 58
+        "metaReferenciaCompetenciaNPS": 55
       },
       "realizado": null,
       "realizadoMensal": null,
@@ -4178,7 +4194,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "unidadeApuradora": "SUCOL",
       "diretoriaResponsavel": "DICOT",
       "metaMensal": 55,
-      "metaAnualDescricao": "Meta anual correta: NPS 58",
+      "metaAnualDescricao": "Meta vigente: NPS 60 pontos a partir do 3TRI/2026.",
       "status": "Homologado",
       "camposEntrada": {
         "tipoPosicaoNPS": "Baseline",
@@ -4230,7 +4246,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "unidadeApuradora": "SUCOL",
       "diretoriaResponsavel": "DICOT",
       "metaMensal": 58,
-      "metaAnualDescricao": "Meta anual correta: NPS 58",
+      "metaAnualDescricao": "Meta vigente: NPS 60 pontos a partir do 3TRI/2026.",
       "status": "Não iniciado",
       "camposEntrada": {
         "metaReferenciaCompetenciaNPS": 58
@@ -4276,7 +4292,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "unidadeApuradora": "SUCOL",
       "diretoriaResponsavel": "DICOT",
       "metaMensal": 58,
-      "metaAnualDescricao": "Meta anual correta: NPS 58",
+      "metaAnualDescricao": "Meta vigente: NPS 60 pontos a partir do 3TRI/2026.",
       "status": "Não iniciado",
       "camposEntrada": {
         "metaReferenciaCompetenciaNPS": 58
@@ -4322,7 +4338,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "unidadeApuradora": "SUCOL",
       "diretoriaResponsavel": "DICOT",
       "metaMensal": 58,
-      "metaAnualDescricao": "Meta anual correta: NPS 58",
+      "metaAnualDescricao": "Meta vigente: NPS 60 pontos a partir do 3TRI/2026.",
       "status": "Não iniciado",
       "camposEntrada": {
         "metaReferenciaCompetenciaNPS": 58
@@ -4367,11 +4383,11 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "pilar": "Cliente no Centro",
       "unidadeApuradora": "SUCOL",
       "diretoriaResponsavel": "DICOT",
-      "metaMensal": 58,
-      "metaAnualDescricao": "Meta anual correta: NPS 58",
+      "metaMensal": 60,
+      "metaAnualDescricao": "Meta vigente: NPS 60 pontos a partir do 3TRI/2026.",
       "status": "Não iniciado",
       "camposEntrada": {
-        "metaReferenciaCompetenciaNPS": 58
+        "metaReferenciaCompetenciaNPS": 60
       },
       "realizado": null,
       "realizadoMensal": null,
@@ -4413,11 +4429,11 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "pilar": "Cliente no Centro",
       "unidadeApuradora": "SUCOL",
       "diretoriaResponsavel": "DICOT",
-      "metaMensal": 58,
-      "metaAnualDescricao": "Meta anual correta: NPS 58",
+      "metaMensal": 60,
+      "metaAnualDescricao": "Meta vigente: NPS 60 pontos a partir do 3TRI/2026.",
       "status": "Não iniciado",
       "camposEntrada": {
-        "metaReferenciaCompetenciaNPS": 58
+        "metaReferenciaCompetenciaNPS": 60
       },
       "realizado": null,
       "realizadoMensal": null,
@@ -4459,11 +4475,11 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "pilar": "Cliente no Centro",
       "unidadeApuradora": "SUCOL",
       "diretoriaResponsavel": "DICOT",
-      "metaMensal": 58,
-      "metaAnualDescricao": "Meta anual correta: NPS 58",
+      "metaMensal": 60,
+      "metaAnualDescricao": "Meta vigente: NPS 60 pontos a partir do 3TRI/2026.",
       "status": "Não iniciado",
       "camposEntrada": {
-        "metaReferenciaCompetenciaNPS": 58
+        "metaReferenciaCompetenciaNPS": 60
       },
       "realizado": null,
       "realizadoMensal": null,
@@ -4505,11 +4521,11 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "pilar": "Cliente no Centro",
       "unidadeApuradora": "SUCOL",
       "diretoriaResponsavel": "DICOT",
-      "metaMensal": 58,
-      "metaAnualDescricao": "Meta anual correta: NPS 58",
+      "metaMensal": 60,
+      "metaAnualDescricao": "Meta vigente: NPS 60 pontos a partir do 3TRI/2026.",
       "status": "Não iniciado",
       "camposEntrada": {
-        "metaReferenciaCompetenciaNPS": 58
+        "metaReferenciaCompetenciaNPS": 60
       },
       "realizado": null,
       "realizadoMensal": null,
@@ -4551,11 +4567,11 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "pilar": "Cliente no Centro",
       "unidadeApuradora": "SUCOL",
       "diretoriaResponsavel": "DICOT",
-      "metaMensal": 58,
-      "metaAnualDescricao": "Meta anual correta: NPS 58",
+      "metaMensal": 60,
+      "metaAnualDescricao": "Meta vigente: NPS 60 pontos a partir do 3TRI/2026.",
       "status": "Não iniciado",
       "camposEntrada": {
-        "metaReferenciaCompetenciaNPS": 58
+        "metaReferenciaCompetenciaNPS": 60
       },
       "realizado": null,
       "realizadoMensal": null,
@@ -4597,11 +4613,11 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "pilar": "Cliente no Centro",
       "unidadeApuradora": "SUCOL",
       "diretoriaResponsavel": "DICOT",
-      "metaMensal": 58,
-      "metaAnualDescricao": "Meta anual correta: NPS 58",
+      "metaMensal": 60,
+      "metaAnualDescricao": "Meta vigente: NPS 60 pontos a partir do 3TRI/2026.",
       "status": "Não iniciado",
       "camposEntrada": {
-        "metaReferenciaCompetenciaNPS": 58
+        "metaReferenciaCompetenciaNPS": 60
       },
       "realizado": null,
       "realizadoMensal": null,

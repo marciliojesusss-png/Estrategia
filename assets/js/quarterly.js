@@ -175,7 +175,7 @@
       return toNumber(params.curvaJogoResponsavel2026?.[quarterLabel]?.metaCobertura ?? params.metaCobertura ?? rule?.metaAnualValor);
     }
     if (params.metaTipo === "marco_anual") return null;
-    if (["baseline_com_meta_anual", "baseline_com_meta_anual_corrigida"].includes(params.metaTipo)) {
+    if (["baseline_com_meta_anual", "baseline_com_meta_anual_corrigida", "meta_absoluta_por_competencia"].includes(params.metaTipo)) {
       const year = getYear(quarterLabel);
       const quarterEnd = QUARTERS.find((item) => item.number === quarterNumberValue)?.months.at(-1);
       return getReferenciaNpsCompetencia(rule, { ano: year, mes: quarterEnd, competencia: `${year}-${String(quarterEnd).padStart(2, "0")}` });
@@ -233,6 +233,18 @@
       quarterMonths.includes(Number(item.mes)) &&
       item.status === STATUS_LANCAMENTO.HOMOLOGADO
     ));
+  }
+
+  function isQuantitativeNpsLaunch(rule, launch) {
+    if (rule?.tipoCalculo !== "nota_pesquisa_nps") return true;
+    const params = rule.parametrosCalculo || {};
+    const fields = launch?.camposEntrada || {};
+    const type = String(fields[params.campoTipoPosicao || "tipoPosicaoNPS"] || "");
+    if (type.startsWith("Acompanhamento") || type === "Revisão metodológica") return false;
+    const hasPromoters = toNumber(fields[params.campoPromotores || "percentualPromotores"]) !== null;
+    const hasDetractors = toNumber(fields[params.campoDetratores || "percentualDetratores"]) !== null;
+    if (hasPromoters || hasDetractors) return hasPromoters && hasDetractors;
+    return toNumber(fields[params.campoNps || "npsApurado"]) !== null;
   }
 
   function buildMessage(status, count, names, hasReturned, expectedCount = 3) {
@@ -298,6 +310,10 @@
       calculationScope = calculationScope.filter((item) => (
         root.IndicatorFormulas?.resolverTipoPosicaoCapacitacao?.(item) === "apuracao_quantitativa"
       ));
+    }
+    if (regra?.tipoCalculo === "nota_pesquisa_nps") {
+      const quantitativeNpsScope = calculationScope.filter((item) => isQuantitativeNpsLaunch(regra, item));
+      if (quantitativeNpsScope.length) calculationScope = quantitativeNpsScope;
     }
     const current = lastByMonth(calculationScope);
     const calculation = current

@@ -315,6 +315,20 @@
     "arrecadacaoRedeLoterica2025Acumulada",
     "arrecadacaoTotalLoteriasPeriodo"
   ]);
+  const INTEGER_FIELD_NAMES = new Set([
+    "baseClientesAtivosCompetencia",
+    "clientesUnicosComOfertaPersonalizadaCompetencia",
+    "melhoriasImplementadasMes",
+    "mulheresGestorasMes",
+    "gestoresEnquadradosMes",
+    "totalGestoresMes",
+    "publicoAlvoElegivelCapacitacao",
+    "empregadosCapacitadosCapacitacao",
+    "quantidadeCursosMinimaCapacitacao",
+    "publicoAlvoElegivelJR",
+    "empregadosCapacitadosJR",
+    "quantidadeMinimaIniciativasJR"
+  ]);
   const CP1252_BYTES = {
     "€": 0x80, "‚": 0x82, "Æ’": 0x83, "„": 0x84, "…": 0x85,
     "†": 0x86, "‡": 0x87, "Ë†": 0x88, "‰": 0x89, "Å ": 0x8a,
@@ -392,7 +406,18 @@
     return MESES.filter(([mes]) => expectedSet.has(mes));
   }
   const NPS_REFERENCIAS_2026 = {
-    "2026-03": 55
+    "2026-01": 55,
+    "2026-02": 55,
+    "2026-03": 55,
+    "2026-04": 58,
+    "2026-05": 58,
+    "2026-06": 58,
+    "2026-07": 60,
+    "2026-08": 60,
+    "2026-09": 60,
+    "2026-10": 60,
+    "2026-11": 60,
+    "2026-12": 60
   };
   const TIPOS_POSICAO_NPS = [
     "Baseline",
@@ -841,7 +866,8 @@
 
   function getNpsMetaReferencia(ano, mes) {
     const key = `${ano}-${String(mes).padStart(2, "0")}`;
-    return NPS_REFERENCIAS_2026[key] ?? 58;
+    if (Object.prototype.hasOwnProperty.call(NPS_REFERENCIAS_2026, key)) return NPS_REFERENCIAS_2026[key];
+    return Number(ano) > 2026 ? 60 : null;
   }
 
   function getGgrMetaAcumulada(ano, mes) {
@@ -1547,8 +1573,8 @@
             ...normalized,
             tipoCalculo: "indice_inverso",
             unidadeMedida: "percentual",
-            metaAnualDescricao: "≤ 14,03%",
-            metrica: "((Despesa de pessoal + Despesas Administrativas) / Receitas Líquidas) × 100"
+            metaAnualDescricao: "Jan-Jul/2026: ≤ 14,03%; Ago-Dez/2026: ≤ 26,64%",
+            metrica: "Jan-Jul/2026: ((Despesa de pessoal + Despesas Administrativas) / Receitas Líquidas) × 100. Ago-Dez/2026: ((Despesas Gerais e Administrativas + Despesas com Serviços de Pagamentos + Outras Despesas Operacionais) / (Receitas Operacionais - Despesas de Tributos)) × 100."
           };
         }
         if (Number(indicator.id) === 2) {
@@ -1556,8 +1582,8 @@
             ...normalized,
             tipoCalculo: "nota_pesquisa_nps",
             unidadeMedida: "pontos",
-            metaAnualDescricao: "Meta anual correta: NPS 58",
-            metrica: "NPS = % promotores - % detratores. Baseline 55; referência 70; redução esperada do gap 20%."
+            metaAnualDescricao: "Meta vigente: NPS 60 pontos a partir do 3TRI/2026.",
+            metrica: "NPS = % promotores - % detratores. Histórico 2026: 1TRI referência 55; 2TRI referência 58; a partir do 3TRI meta absoluta 60."
           };
         }
         if (Number(indicator.id) === 7) {
@@ -1701,9 +1727,11 @@
 
     if (key === "regrasIndicadores" && Array.isArray(value)) {
       return value.map((rule) => {
-        const normalizedFields = (rule.camposEntrada || []).map((field) => (
-          CURRENCY_FIELD_NAMES.has(field.nome) ? { ...field, tipo: "moeda" } : field
-        ));
+        const normalizedFields = (rule.camposEntrada || []).map((field) => {
+          if (CURRENCY_FIELD_NAMES.has(field.nome)) return { ...field, tipo: "moeda" };
+          if (INTEGER_FIELD_NAMES.has(field.nome)) return { ...field, tipo: "inteiro" };
+          return field;
+        });
         if (Number(rule.indicadorId) === 1) {
           return {
             ...rule,
@@ -1721,8 +1749,8 @@
               validarNumeradorAteDenominador: false
             },
             camposEntrada: [
-              { nome: "baseClientesAtivosCompetencia", rotulo: "Base de clientes ativos identificáveis da competência", tipo: "numero", obrigatorio: true },
-              { nome: "clientesUnicosComOfertaPersonalizadaCompetencia", rotulo: "Clientes únicos com oferta personalizada até a competência", tipo: "numero", obrigatorio: true }
+              { nome: "baseClientesAtivosCompetencia", rotulo: "Base de clientes ativos identificáveis da competência", tipo: "inteiro", obrigatorio: true },
+              { nome: "clientesUnicosComOfertaPersonalizadaCompetencia", rotulo: "Clientes únicos com oferta personalizada até a competência", tipo: "inteiro", obrigatorio: true }
             ],
             campoResultadoPrincipal: "resultadoMensal",
             campoPercentualAtingido: "percentualAtingidoMensal",
@@ -1736,7 +1764,7 @@
             tipoCalculo: "nota_pesquisa_nps",
             tipoConsolidacao: "resultado_pesquisa_ou_ultima_posicao",
             unidadeMedida: "pontos",
-            metaAnualValor: 58,
+            metaAnualValor: 60,
             parametrosCalculo: {
               campoTipoPosicao: "tipoPosicaoNPS",
               campoMetaReferencia: "metaReferenciaCompetenciaNPS",
@@ -1745,20 +1773,21 @@
               campoDetratores: "percentualDetratores",
               campoDataBase: "dataBasePesquisaNPS",
               campoFonte: "fontePesquisaNPS",
-              metaTipo: "baseline_com_meta_anual_corrigida",
+              metaTipo: "meta_absoluta_por_competencia",
               baselineNPS: 55,
               notaReferenciaNPS: 70,
               percentualReducaoGap: 0.20,
-              metaAnualMetodologica: 58,
+              metaAnualMetodologica: 60,
+              metaVigenteNPS2026: 60,
               referenciasPorCompetencia: NPS_REFERENCIAS_2026,
               sentidoMeta: "quanto_maior_melhor"
             },
             camposEntrada: [
               { nome: "tipoPosicaoNPS", rotulo: "Tipo da posição", tipo: "selecao", obrigatorio: true, opcoes: TIPOS_POSICAO_NPS },
-              { nome: "metaReferenciaCompetenciaNPS", rotulo: "Meta de referência da competência", tipo: "numero", obrigatorio: false },
-              { nome: "npsApurado", rotulo: "NPS apurado na pesquisa", tipo: "numero", obrigatorio: false },
-              { nome: "percentualPromotores", rotulo: "Percentual de promotores", tipo: "percentual", obrigatorio: false },
-              { nome: "percentualDetratores", rotulo: "Percentual de detratores", tipo: "percentual", obrigatorio: false },
+              { nome: "metaReferenciaCompetenciaNPS", rotulo: "Meta de referência da competência", tipo: "numero", obrigatorio: false, somenteLeitura: true },
+              { nome: "percentualPromotores", rotulo: "Percentual de promotores", tipo: "percentual", obrigatorio: false, entradaPtBr: true },
+              { nome: "percentualDetratores", rotulo: "Percentual de detratores", tipo: "percentual", obrigatorio: false, entradaPtBr: true },
+              { nome: "npsApurado", rotulo: "NPS calculado", tipo: "numero", obrigatorio: false, somenteLeitura: true },
               { nome: "dataBasePesquisaNPS", rotulo: "Data-base da pesquisa", tipo: "data", obrigatorio: false },
               { nome: "fontePesquisaNPS", rotulo: "Fonte/evidência da pesquisa", tipo: "texto", obrigatorio: false },
               { nome: "observacaoArea", rotulo: "Observação da área", tipo: "texto", obrigatorio: false }
@@ -1787,7 +1816,7 @@
               sentidoMeta: "quanto_maior_melhor"
             },
             camposEntrada: [
-              { nome: "melhoriasImplementadasMes", rotulo: "Quantidade de melhorias implementadas no mês", tipo: "numero", obrigatorio: true },
+              { nome: "melhoriasImplementadasMes", rotulo: "Quantidade de melhorias implementadas no mês", tipo: "inteiro", obrigatorio: true },
               { nome: "descricaoMelhoriasMes", rotulo: "Descrição da melhoria implementada", tipo: "texto", obrigatorio: false },
               { nome: "evidenciaMelhoriasMes", rotulo: "Evidência da melhoria", tipo: "texto", obrigatorio: false }
             ],
@@ -2089,9 +2118,9 @@
                 ]
               },
               { nome: "acoesAcompanhamentoCapacitacao", rotulo: "Ações realizadas / andamento", tipo: "textarea", obrigatorio: false },
-              { nome: "publicoAlvoElegivelCapacitacao", rotulo: "Público-alvo elegível", tipo: "numero", obrigatorio: false },
-              { nome: "empregadosCapacitadosCapacitacao", rotulo: "Empregados capacitados no critério do trimestre", tipo: "numero", obrigatorio: false },
-              { nome: "quantidadeCursosMinimaCapacitacao", rotulo: "Quantidade mínima de cursos exigida", tipo: "numero", obrigatorio: false, somenteLeitura: true },
+              { nome: "publicoAlvoElegivelCapacitacao", rotulo: "Público-alvo elegível", tipo: "inteiro", obrigatorio: false },
+              { nome: "empregadosCapacitadosCapacitacao", rotulo: "Empregados capacitados no critério do trimestre", tipo: "inteiro", obrigatorio: false },
+              { nome: "quantidadeCursosMinimaCapacitacao", rotulo: "Quantidade mínima de cursos exigida", tipo: "inteiro", obrigatorio: false, somenteLeitura: true },
               { nome: "cursosConsideradosCapacitacao", rotulo: "Curso(s)/trilha considerada", tipo: "texto", obrigatorio: false },
               { nome: "dataBaseApuracaoCapacitacao", rotulo: "Data-base da posição", tipo: "data", obrigatorio: false },
               { nome: "fonteEvidenciaCapacitacao", rotulo: "Fonte/evidência", tipo: "texto", obrigatorio: false },
@@ -2124,9 +2153,9 @@
               sentidoMeta: "quanto_maior_melhor"
             },
             camposEntrada: [
-              { nome: "publicoAlvoElegivelJR", rotulo: "Público-alvo elegível", tipo: "numero", obrigatorio: true },
-              { nome: "empregadosCapacitadosJR", rotulo: "Empregados capacitados no critério do período", tipo: "numero", obrigatorio: true },
-              { nome: "quantidadeMinimaIniciativasJR", rotulo: "Quantidade mínima de iniciativas exigida", tipo: "numero", obrigatorio: false },
+              { nome: "publicoAlvoElegivelJR", rotulo: "Público-alvo elegível", tipo: "inteiro", obrigatorio: true },
+              { nome: "empregadosCapacitadosJR", rotulo: "Empregados capacitados no critério do período", tipo: "inteiro", obrigatorio: true },
+              { nome: "quantidadeMinimaIniciativasJR", rotulo: "Quantidade mínima de iniciativas exigida", tipo: "inteiro", obrigatorio: false },
               { nome: "iniciativasConsideradasJR", rotulo: "Iniciativas consideradas", tipo: "texto", obrigatorio: false },
               { nome: "dataBaseApuracaoJR", rotulo: "Data-base da apuração", tipo: "data", obrigatorio: false },
               { nome: "fonteEvidenciaJR", rotulo: "Fonte/evidência", tipo: "texto", obrigatorio: false },
@@ -2448,7 +2477,11 @@
         } : {}),
         ...(Number(launch.indicadorId) === 2 ? {
           metaMensal: getNpsMetaReferencia(launch.ano, launch.mes),
-          metaAnualDescricao: "Meta anual correta: NPS 58"
+          metaAnualDescricao: "Meta vigente: NPS 60 pontos a partir do 3TRI/2026.",
+          camposEntrada: {
+            ...(launch.camposEntrada || {}),
+            metaReferenciaCompetenciaNPS: getNpsMetaReferencia(launch.ano, launch.mes)
+          }
         } : {}),
         ...(Number(launch.indicadorId) === 4 ? {
           metaMensal: getAprimoramentoMetaTrimestral(launch.ano, launch.mes),
@@ -2488,7 +2521,7 @@
         } : {}),
         ...(Number(launch.indicadorId) === 6 ? {
           metaMensal: getIeoMetaAcumulada(launch.ano, launch.mes),
-          metaAnualDescricao: "≤ 14,03%"
+          metaAnualDescricao: "Jan-Jul/2026: ≤ 14,03%; Ago-Dez/2026: ≤ 26,64%"
         } : {}),
         ...(Number(launch.indicadorId) === 7 ? {
           metaMensal: getLucroRecorrenteMetaMensal(launch.ano, launch.mes),

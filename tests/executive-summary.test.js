@@ -112,11 +112,47 @@ assert.ok(Math.abs(ofertasDashboardOficial.resultado - (1241587 / 2773599)) < 0.
 assert.ok(Math.abs(ofertasDashboardOficial.percentualAtingido - ((1241587 / 2773599) / 0.1)) < 0.000001);
 
 const npsDashboardOficial = results.find((item) => item.indicador.id === 2);
-assert.equal(context.window.StrategicResults.officialSituation(npsDashboardOficial), "Em acompanhamento");
+assert.equal(context.window.StrategicResults.officialSituation(npsDashboardOficial), "Atingido");
 assert.equal(npsDashboardOficial.competencia, "Março/2026");
 assert.equal(npsDashboardOficial.meta, 55);
 assert.equal(npsDashboardOficial.resultado, 55);
 assert.equal(npsDashboardOficial.percentualAtingido, 1);
+
+const npsBoundaryDashboard = context.window.StrategicResults.calcularDashboard({
+  indicadores: [indicators.find((item) => item.id === 2)],
+  regras: [rules.find((item) => item.indicadorId === 2)],
+  lancamentos: [
+    {
+      id: "nps-junho-historico",
+      indicadorId: 2,
+      ano: 2026,
+      mes: 6,
+      competencia: "2026-06",
+      nomeMes: "Junho",
+      status: "Homologado",
+      metaMensal: 58,
+      camposEntrada: { tipoPosicaoNPS: "Pesquisa oficial", metaReferenciaCompetenciaNPS: 58, percentualPromotores: 0.7263, percentualDetratores: 0.1343, npsApurado: 61 }
+    },
+    {
+      id: "nps-julho-acompanhamento",
+      indicadorId: 2,
+      ano: 2026,
+      mes: 7,
+      competencia: "2026-07",
+      nomeMes: "Julho",
+      status: "Homologado",
+      metaMensal: 60,
+      camposEntrada: { tipoPosicaoNPS: "Acompanhamento sem nova pesquisa", metaReferenciaCompetenciaNPS: 60 }
+    }
+  ]
+}).resultadosOficiais[0];
+assert.equal(npsBoundaryDashboard.competenciaAtual, "Julho/2026");
+assert.equal(npsBoundaryDashboard.competenciaMedicao, "Junho/2026");
+assert.equal(npsBoundaryDashboard.competenciaMedicaoCurta, "Jun/2026");
+assert.ok(Math.abs(npsBoundaryDashboard.resultado - 59.2) < 0.000001);
+assert.equal(npsBoundaryDashboard.meta, 58);
+assert.ok(Math.abs(npsBoundaryDashboard.percentualAtingido - (59.2 / 58)) < 0.000001);
+assert.equal(context.window.StrategicResults.officialSituation(npsBoundaryDashboard), "Em acompanhamento");
 
 const climaDashboardOficial = results.find((item) => item.indicador.id === 12);
 assert.equal(context.window.StrategicResults.officialSituation(climaDashboardOficial), "Em acompanhamento");
@@ -201,6 +237,34 @@ assert.equal(ieoDashboardOficial.competencia, "Março/2026");
 assert.ok(Math.abs(ieoDashboardOficial.meta - 0.1441) < 0.000001);
 assert.ok(Math.abs(ieoDashboardOficial.resultado - 0.108) < 0.000001);
 assert.ok(Math.abs(ieoDashboardOficial.percentualAtingido - (0.1441 / 0.108)) < 0.000001);
+
+const ieoIndicator = indicators.find((item) => item.id === 6);
+const ieoRule = rules.find((item) => item.indicadorId === 6);
+const ieoDashboardAgosto = context.window.StrategicResults.calcularDashboard({
+  indicadores: [ieoIndicator],
+  regras: [ieoRule],
+  lancamentos: [{
+    id: 6008,
+    indicadorId: 6,
+    ano: 2026,
+    mes: 8,
+    nomeMes: "Agosto",
+    competencia: "2026-08",
+    status: "Homologado",
+    camposEntrada: {
+      despesasGeraisAdministrativasMes: 100,
+      despesasServicosPagamentosMes: 50,
+      outrasDespesasOperacionaisMes: 30,
+      receitasOperacionaisMes: 1000,
+      despesasTributosMes: 100
+    }
+  }]
+}).resultadosOficiais[0];
+assert.equal(context.window.StrategicResults.officialSituation(ieoDashboardAgosto), "Atingido");
+assert.equal(ieoDashboardAgosto.competencia, "Agosto/2026");
+assert.ok(Math.abs(ieoDashboardAgosto.meta - 0.2664) < 0.000001);
+assert.ok(Math.abs(ieoDashboardAgosto.resultado - 0.20) < 0.000001);
+assert.ok(Math.abs(ieoDashboardAgosto.percentualAtingido - 1.332) < 0.000001);
 
 const repasseDashboardOficial = results.find((item) => item.indicador.id === 17);
 assert.equal(context.window.StrategicResults.officialSituation(repasseDashboardOficial), "Atingido");

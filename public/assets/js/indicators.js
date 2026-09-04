@@ -352,7 +352,7 @@
       ]] : []),
       ...(Number(indicador.id) === 6 ? [[
         "Observacao de acompanhamento",
-        "Este indicador possui regra inversa: quanto menor o indice, melhor o desempenho. A meta anual representa o limite maximo de eficiencia operacional recorrente. Assim, o indicador e considerado atingido quando o IEO realizado e menor ou igual a meta de referencia do periodo.",
+        "Este indicador possui regra inversa: quanto menor o indice, melhor. De janeiro a julho/2026 aplica a metodologia original e, a partir de agosto/2026, aplica a metodologia aprovada pelo Conselho de Administracao, com meta de referencia de 26,64%.",
         true
       ]] : []),      ...(Number(indicador.id) === 8 ? [[
         "Observação de acompanhamento",
@@ -458,6 +458,7 @@
     if (value === null || value === undefined || value === "") return "-";
     if (typeof value === "boolean") return value ? "Sim" : "Não";
     if (field.tipo === "numero") return Calculations.formatarValor(value, "numero");
+    if (field.tipo === "inteiro") return Calculations.formatarInteiroBR(value);
     if (field.tipo === "percentual") return Calculations.formatarValor(value, "percentual");
     if (field.tipo === "moeda") return Calculations.formatarValor(value, "moeda");
     if (Array.isArray(value)) return value.length ? value.join(", ") : "-";
@@ -638,12 +639,19 @@
 
   function renderInputData(indicador, regra, lancamento) {
     const campos = lancamento.camposEntrada || {};
+    const metodologiaIeoCa = Number(indicador?.id) === 6 &&
+      window.IeoRecorrente?.getMetodologiaIeoPorCompetencia?.(lancamento)?.codigo === "ca_agosto_2026";
+    const camposRegra = Number(indicador?.id) === 6
+      ? window.IeoRecorrente?.getCamposEntrada?.(lancamento) || regra?.camposEntrada || []
+      : regra?.camposEntrada || [];
     const fieldMap = Object.fromEntries([
       ...(regra?.camposEntradaLegados || []),
-      ...(regra?.camposEntrada || [])
+      ...camposRegra
     ].map((field) => [field.nome, field]));
     const entries = Object.entries(campos)
       .filter(([, value]) => value !== null && value !== undefined && value !== "")
+      .filter(([key]) => !(metodologiaIeoCa && key === "ieoApuradoInformado"))
+      .filter(([key]) => !(regra?.tipoCalculo === "nota_pesquisa_nps" && key === "npsApurado"))
       .map(([key, value]) => {
         const field = fieldMap[key] || {};
         return [field.rotulo || humanizeFieldName(key), formatInputValue(value, field)];
@@ -794,6 +802,14 @@
       : (calculated.resultadoOficial ?? lancamento.resultadoOficial ?? "-");
     const percent = calculated.percentualAtingidoMensal ?? calculated.percentualAtingido ?? lancamento.percentualAtingido;
     const isLucroRecorrente = Number(indicador.id) === 7 && regra?.tipoCalculo === "lucro_recorrente_mensal";
+    const isNps = regra?.tipoCalculo === "nota_pesquisa_nps";
+    const nomeMesNps = isNps && !lancamento.nomeMes
+      ? ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"][Number(lancamento.mes) - 1]
+      : lancamento.nomeMes;
+    const metodologiaIeo = Number(indicador.id) === 6
+      ? window.IeoRecorrente?.getMetodologiaIeoPorCompetencia?.(lancamento)
+      : null;
+    const metodologiaIeoCa = metodologiaIeo?.codigo === "ca_agosto_2026";
     const accumulatedBlock = isLucroRecorrente ? `
       <article class="launch-detail-card full-span">
         <h4>Acumulado no ano</h4>
@@ -807,14 +823,14 @@
     ` : "";
 
     panel.hidden = false;
-    title.textContent = `${indicador.indicador} — ${lancamento.nomeMes}/${lancamento.ano}`;
+    title.textContent = `${indicador.indicador} — ${nomeMesNps}/${lancamento.ano}`;
     subtitle.textContent = "Informações prestadas pela unidade apuradora na competência selecionada.";
     content.innerHTML = `
       <article class="launch-detail-card full-span">
         <div class="detail-header compact">
           <div>
             <p class="eyebrow">Competência</p>
-            <h4>${escapeHtml(lancamento.nomeMes)}/${escapeHtml(lancamento.ano)}</h4>
+            <h4>${escapeHtml(nomeMesNps)}/${escapeHtml(lancamento.ano)}</h4>
           </div>
           <span class="badge ${launchBadge(lancamento.status)}">${escapeHtml(lancamento.status || "Não iniciado")}</span>
         </div>
@@ -825,11 +841,22 @@
             ["Pilar", indicador.pilar],
             ["Unidade apuradora", indicador.unidadeApuradora || "Não informado"],
             ["Diretoria responsável", indicador.diretoriaResponsavel || "Não informado"],
-            ["Competência", `${lancamento.nomeMes}/${lancamento.ano}`],
+            ["Competência", `${nomeMesNps}/${lancamento.ano}`],
             ["Situação", situation],
+            ...(isNps ? [
+              ["Tipo da posição", lancamento.camposEntrada?.tipoPosicaoNPS || "-"],
+              ["Percentual de promotores", Calculations.formatarPercentual(calculated.percentualPromotores ?? lancamento.camposEntrada?.percentualPromotores)],
+              ["Percentual de detratores", Calculations.formatarPercentual(calculated.percentualDetratores ?? lancamento.camposEntrada?.percentualDetratores)],
+              ["Fórmula do NPS", "Percentual de promotores − percentual de detratores", true],
+              ["Data-base da pesquisa", lancamento.camposEntrada?.dataBasePesquisaNPS || "-"]
+            ] : []),
+            ...(metodologiaIeo ? [
+              ["Metodologia vigente", metodologiaIeo.descricao, true],
+              ["Fórmula vigente", metodologiaIeo.formula, true]
+            ] : []),
             [isLucroRecorrente ? "Meta da competência" : "Meta de referência", formatMeasureValue(metaReferencia, regra?.unidadeMedida)],
-            [isLucroRecorrente ? "Resultado da competência" : "Resultado calculado", formatMeasureValue(resultadoCalculado, regra?.unidadeMedida)],
-            ["Resultado oficial", resultadoOficial === "-" ? "-" : formatMeasureValue(resultadoOficial, regra?.unidadeMedida)],
+            [metodologiaIeoCa ? "IEO calculado da competência" : isNps ? "NPS calculado" : isLucroRecorrente ? "Resultado da competência" : "Resultado calculado", formatMeasureValue(resultadoCalculado, regra?.unidadeMedida)],
+            ...(!metodologiaIeoCa && !isNps ? [["Resultado oficial", resultadoOficial === "-" ? "-" : formatMeasureValue(resultadoOficial, regra?.unidadeMedida)]] : []),
             [isLucroRecorrente ? "% da meta atingida" : "% atingido", Calculations.formatarPercentual(percent)]
           ].map(launchDetailItem).join("")}
         </div>
@@ -866,7 +893,7 @@
       text.includes("semestre previsto")
     ) return "cell-compact col-tipo-posicao";
     if (text.includes("%")) return "cell-valor col-percentual nowrap";
-    if (text.includes("baseline") || text.includes("nps apurado")) return "cell-valor col-numero-curto";
+    if (text.includes("baseline") || text.includes("nps apurado") || text.includes("nps calculado")) return "cell-valor col-numero-curto";
     if (text.includes("meta")) return "cell-valor col-meta";
     if (
       text.includes("fonte") ||
@@ -1013,9 +1040,11 @@
       <th>Competência</th>
       <th>Tipo da posição</th>
       <th>Baseline NPS</th>
-      <th>Meta anual correta</th>
+      <th>Meta vigente 2026</th>
       <th>Meta de referência da competência</th>
-      <th>NPS apurado</th>
+      <th>Promotores</th>
+      <th>Detratores</th>
+      <th>NPS calculado</th>
       <th>Data-base</th>
       <th>Fonte/evidência</th>
       <th>% atingido</th>
@@ -1237,8 +1266,8 @@
         return `
           <tr>
             <td>${name}/2026</td>
-            <td>${Calculations.formatarValor(launch?.camposEntrada?.baseClientesAtivosCompetencia, "numero")}</td>
-            <td>${Calculations.formatarValor(launch?.camposEntrada?.clientesUnicosComOfertaPersonalizadaCompetencia, "numero")}</td>
+            <td>${Calculations.formatarInteiroBR(launch?.camposEntrada?.baseClientesAtivosCompetencia)}</td>
+            <td>${Calculations.formatarInteiroBR(launch?.camposEntrada?.clientesUnicosComOfertaPersonalizadaCompetencia)}</td>
             <td>${Calculations.formatarValor(resolved.resultadoMensal, "percentual")}</td>
             <td>${Calculations.formatarPercentual(percent)}</td>
             <td>${escapeHtml(situation)}</td>
@@ -1251,6 +1280,7 @@
         const calculated = launch
           ? calculateIndicatorForDisplay(indicador, regra, launch, launches.filter((item) => Number(item.mes) <= month))
           : null;
+        const metaReferenciaNps2026 = month <= 3 ? 55 : month <= 6 ? 58 : 60;
         const percent = calculated?.percentualAtingidoMensal ?? null;
         const situation = calculated?.situacao || (calculated?.statusCalculo === "aguardando_dados" ? "Sem calculo" : Calculations.calcularStatusDesempenho(percent));
         return `
@@ -1258,8 +1288,10 @@
             <td>${name}/2026</td>
             <td>${escapeHtml(launch?.camposEntrada?.tipoPosicaoNPS || "-")}</td>
             <td>${Calculations.formatarValor(calculated?.baselineNPS ?? regra?.parametrosCalculo?.baselineNPS, "pontos")}</td>
-            <td>${Calculations.formatarValor(calculated?.metaAnualCorretaNPS ?? regra?.parametrosCalculo?.metaAnualMetodologica, "pontos")}</td>
-            <td>${Calculations.formatarValor(calculated?.metaReferenciaPeriodo ?? launch?.metaMensal, "pontos")}</td>
+            <td>${Calculations.formatarValor(calculated?.metaAnualCorretaNPS ?? 60, "pontos")}</td>
+            <td>${Calculations.formatarValor(calculated?.metaReferenciaPeriodo ?? metaReferenciaNps2026, "pontos")}</td>
+            <td>${Calculations.formatarPercentual(calculated?.percentualPromotores ?? launch?.camposEntrada?.percentualPromotores)}</td>
+            <td>${Calculations.formatarPercentual(calculated?.percentualDetratores ?? launch?.camposEntrada?.percentualDetratores)}</td>
             <td>${Calculations.formatarValor(calculated?.npsRealizado ?? calculated?.resultadoMensal, "pontos")}</td>
             <td>${escapeHtml(launch?.camposEntrada?.dataBasePesquisaNPS || "-")}</td>
             <td>${escapeHtml(documentation.reference || "-")}</td>
@@ -1313,8 +1345,8 @@
             <td>${name}/2026</td>
             <td>${Calculations.formatarValor(calculated?.metaCoberturaCapacitacao ?? launch?.metaMensal ?? regra?.metaAnualValor, "percentual")}</td>
             <td>${escapeHtml(criterio)}</td>
-            <td>${Calculations.formatarValor(launch?.camposEntrada?.[campoPublico], "numero")}</td>
-            <td>${Calculations.formatarValor(launch?.camposEntrada?.[campoCapacitados], "numero")}</td>
+            <td>${Calculations.formatarInteiroBR(launch?.camposEntrada?.[campoPublico])}</td>
+            <td>${Calculations.formatarInteiroBR(launch?.camposEntrada?.[campoCapacitados])}</td>
             ${isCapacitacaoJogoResponsavel ? `<td>${escapeHtml(launch?.camposEntrada?.[campoIniciativas] || "-")}</td>` : ""}
             <td>${Calculations.formatarValor(calculated?.resultadoMensal, "percentual")}</td>
             <td>${Calculations.formatarPercentual(percent)}</td>
@@ -1341,10 +1373,10 @@
         return `
           <tr>
             <td>${name}/2026</td>
-            <td>${Calculations.formatarValor(launch?.camposEntrada?.melhoriasImplementadasMes, "numero")}</td>
+            <td>${Calculations.formatarInteiroBR(launch?.camposEntrada?.melhoriasImplementadasMes)}</td>
             <td>${escapeHtml(launch?.camposEntrada?.descricaoMelhoriasMes || "-")}</td>
             <td>${escapeHtml(documentation.reference || "-")}</td>
-            <td>${Calculations.formatarValor(accumulatedImprovements, "numero")}</td>
+            <td>${Calculations.formatarInteiroBR(accumulatedImprovements)}</td>
             <td>${Calculations.formatarValor(calculated?.resultadoMensal, "percentual")}</td>
             <td>${Calculations.formatarPercentual(percent)}</td>
             <td>${escapeHtml(situation)}</td>

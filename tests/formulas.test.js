@@ -150,19 +150,25 @@ const regraNps = {
   tipoCalculo: "nota_pesquisa_nps",
   tipoConsolidacao: "resultado_pesquisa_ou_ultima_posicao",
   unidadeMedida: "pontos",
-  metaAnualValor: 58,
+  metaAnualValor: 60,
   parametrosCalculo: {
     campoTipoPosicao: "tipoPosicaoNPS",
     campoNps: "npsApurado",
     campoPromotores: "percentualPromotores",
     campoDetratores: "percentualDetratores",
     campoMetaReferencia: "metaReferenciaCompetenciaNPS",
-    metaTipo: "baseline_com_meta_anual_corrigida",
+    metaTipo: "meta_absoluta_por_competencia",
     baselineNPS: 55,
     notaReferenciaNPS: 70,
     percentualReducaoGap: 0.20,
-    metaAnualMetodologica: 58,
-    referenciasPorCompetencia: { "2026-03": 55 },
+    metaAnualMetodologica: 60,
+    metaVigenteNPS2026: 60,
+    referenciasPorCompetencia: {
+      "2026-01": 55, "2026-02": 55, "2026-03": 55,
+      "2026-04": 58, "2026-05": 58, "2026-06": 58,
+      "2026-07": 60, "2026-08": 60, "2026-09": 60,
+      "2026-10": 60, "2026-11": 60, "2026-12": 60
+    },
     sentidoMeta: "quanto_maior_melhor"
   },
   camposEntrada: [{ nome: "tipoPosicaoNPS", obrigatorio: true }]
@@ -181,8 +187,9 @@ closeTo(nps.percentualAtingidoAnual, 1);
 assert.equal(nps.resultadoMensalFormatado, "55");
 assert.equal(nps.percentualAtingidoMensalFormatado, "100%");
 assert.equal(nps.metaReferenciaPeriodo, 55);
-assert.equal(nps.metaAnualCorretaNPS, 58);
-assert.equal(nps.situacao, "Em acompanhamento");
+assert.equal(nps.metaAnualCorretaNPS, 60);
+assert.equal(nps.situacao, "Atingido");
+assert.equal(nps.origemNps, "legado");
 
 const npsDetalhado = formulas.calcularIndicador(
   indicador(2, "Índice de Satisfação de Clientes - NPS"),
@@ -191,8 +198,91 @@ const npsDetalhado = formulas.calcularIndicador(
   [{ ano: 2026, mes: 12, competencia: "2026-12", camposEntrada: { tipoPosicaoNPS: "Pesquisa oficial", percentualPromotores: 0.72, percentualDetratores: 0.12 } }]
 );
 closeTo(npsDetalhado.resultadoMensal, 60);
-closeTo(npsDetalhado.percentualAtingidoMensal, 60 / 58);
+closeTo(npsDetalhado.percentualAtingidoMensal, 1);
 assert.equal(npsDetalhado.situacao, "Atingido");
+
+const npsJunhoHistorico = formulas.calcularIndicador(
+  indicador(2, "Índice de Satisfação de Clientes - NPS"),
+  regraNps,
+  { ano: 2026, mes: 6, competencia: "2026-06", camposEntrada: { tipoPosicaoNPS: "Pesquisa oficial", metaReferenciaCompetenciaNPS: 60, percentualPromotores: "72,63", percentualDetratores: "13,43", npsApurado: 61 } },
+  []
+);
+assert.equal(npsJunhoHistorico.metaReferenciaPeriodo, 58);
+closeTo(npsJunhoHistorico.resultadoMensal, 59.2);
+closeTo(npsJunhoHistorico.percentualAtingidoMensal, 59.2 / 58);
+assert.equal(npsJunhoHistorico.situacao, "Atingido");
+assert.equal(npsJunhoHistorico.origemNps, "componentes_formula");
+closeTo(npsJunhoHistorico.percentualPromotores, 0.7263);
+closeTo(npsJunhoHistorico.percentualDetratores, 0.1343);
+
+const npsComConfiguracaoCentralAntiga = formulas.calcularIndicador(
+  indicador(2, "Índice de Satisfação de Clientes - NPS"),
+  {
+    ...regraNps,
+    metaAnualValor: 58,
+    parametrosCalculo: {
+      ...regraNps.parametrosCalculo,
+      metaAnualMetodologica: 58,
+      metaVigenteNPS2026: 58,
+      referenciasPorCompetencia: {}
+    }
+  },
+  { ano: 2026, mes: 9, competencia: "2026-09", metaMensal: 58, camposEntrada: { tipoPosicaoNPS: "Pesquisa oficial", percentualPromotores: 0.72, percentualDetratores: 0.12 } },
+  []
+);
+assert.equal(npsComConfiguracaoCentralAntiga.metaReferenciaPeriodo, 60);
+assert.equal(npsComConfiguracaoCentralAntiga.metaAnualCorretaNPS, 60);
+closeTo(npsComConfiguracaoCentralAntiga.percentualAtingidoMensal, 1);
+
+const npsSetembroVigente = formulas.calcularIndicador(
+  indicador(2, "Índice de Satisfação de Clientes - NPS"),
+  regraNps,
+  { ano: 2026, mes: 9, competencia: "2026-09", camposEntrada: { tipoPosicaoNPS: "Pesquisa oficial", metaReferenciaCompetenciaNPS: 58, percentualPromotores: 0.715, percentualDetratores: 0.12 } },
+  []
+);
+assert.equal(npsSetembroVigente.metaReferenciaPeriodo, 60);
+closeTo(npsSetembroVigente.resultadoMensal, 59.5);
+closeTo(npsSetembroVigente.percentualAtingidoMensal, 59.5 / 60);
+assert.equal(npsSetembroVigente.situacao, "Abaixo da meta");
+
+const npsSetembroAtingido = formulas.calcularIndicador(
+  indicador(2, "Índice de Satisfação de Clientes - NPS"),
+  regraNps,
+  { ano: 2026, mes: 9, competencia: "2026-09", camposEntrada: { tipoPosicaoNPS: "Pesquisa oficial", percentualPromotores: 0.72, percentualDetratores: 0.12 } },
+  []
+);
+closeTo(npsSetembroAtingido.resultadoMensal, 60);
+assert.equal(npsSetembroAtingido.situacao, "Atingido");
+
+const npsSomaInvalida = formulas.calcularIndicador(
+  indicador(2, "Índice de Satisfação de Clientes - NPS"),
+  regraNps,
+  { ano: 2026, mes: 6, competencia: "2026-06", camposEntrada: { tipoPosicaoNPS: "Pesquisa oficial", percentualPromotores: 0.8, percentualDetratores: 0.3 } },
+  []
+);
+assert.equal(npsSomaInvalida.erro, true);
+assert.match(npsSomaInvalida.mensagem, /não pode superar 100%/);
+
+const npsParcial = formulas.calcularIndicador(
+  indicador(2, "Índice de Satisfação de Clientes - NPS"),
+  regraNps,
+  { ano: 2026, mes: 6, competencia: "2026-06", camposEntrada: { tipoPosicaoNPS: "Pesquisa oficial", percentualPromotores: 0.7263, npsApurado: 61 } },
+  []
+);
+assert.equal(npsParcial.statusCalculo, "aguardando_dados");
+assert.equal(npsParcial.resultadoMensal, null);
+assert.match(npsParcial.mensagem, /detratores/);
+
+const npsJulhoAcompanhamento = formulas.calcularIndicador(
+  indicador(2, "Índice de Satisfação de Clientes - NPS"),
+  regraNps,
+  { ano: 2026, mes: 7, competencia: "2026-07", camposEntrada: { tipoPosicaoNPS: "Acompanhamento sem nova pesquisa", metaReferenciaCompetenciaNPS: 58 } },
+  []
+);
+assert.equal(npsJulhoAcompanhamento.metaReferenciaPeriodo, 60);
+assert.equal(npsJulhoAcompanhamento.resultadoMensal, null);
+assert.equal(npsJulhoAcompanhamento.percentualAtingidoMensal, null);
+assert.equal(npsJulhoAcompanhamento.situacao, "Em acompanhamento");
 
 const regraClimaOrganizacional = {
   indicadorId: 12,
@@ -1526,7 +1616,7 @@ const amostras = {
   3: { qmaatu: 2480052, qmaant: 1424272, dataBaseApuracao: "2026-01-31" },
   4: { melhoriasImplementadasMes: 6, descricaoMelhoriasMes: "Melhorias executadas", evidenciaMelhoriasMes: "Informe" },
   5: { arrecadacaoTotalMes: 1900000000, premiosAPagarMes: 843406961.43 },
-  6: { ieoApuradoInformado: 0.0642 },
+  6: { despesasGeraisAdministrativasMes: 100, despesasServicosPagamentosMes: 50, outrasDespesasOperacionaisMes: 30, receitasOperacionaisMes: 1000, despesasTributosMes: 100 },
   7: { lucroLiquidoRecorrenteAcumulado: 1209000000 },
   8: { arrecadacaoCanaisEletronicosMes: 15, arrecadacaoTotalProdutosLoteriasMes: 100 },
   9: { arrecadacaoPixMes: 411428638.26, arrecadacaoTotalCanaisEletronicosMes: 600000000 },
@@ -1550,6 +1640,7 @@ assert.equal(regras.length, 23);
 assert.equal(new Set(regras.map((regra) => regra.indicadorId)).size, 23);
 for (const regra of regras) {
   const lancamento = {
+    ...(regra.indicadorId === 6 ? { ano: 2026, competencia: "2026-12" } : {}),
     mes: 12,
     metaMensal: regra.indicadorId === 5 ? 15600000000 : undefined,
     camposEntrada: amostras[regra.indicadorId]

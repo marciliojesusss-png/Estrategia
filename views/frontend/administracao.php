@@ -6,12 +6,12 @@
   <title>CAIXA Loterias | Configurações</title>
   <link rel="stylesheet" href="/assets/css/styles.css?v=PERSISTENCIA-CENTRAL-008">
   <script src="/assets/js/currency.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="/assets/js/ieo-recorrente.js?v=IEO-RECORRENTE-002" defer></script>
+  <script src="/assets/js/ieo-recorrente.js?v=IEO-UX-AUTOMATICO-004" defer></script>
   <script src="/assets/js/lucro-recorrente.js?v=LUCRO-RECORRENTE-MENSAL-003" defer></script>
   <script src="/assets/js/situations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="/assets/js/bootstrap-data.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
+  <script src="/assets/js/bootstrap-data.js?v=NPS-FORMULA-001" defer></script>
   <script src="/assets/js/indicator-periodicity.js?v=PERIODICIDADE-TRIMESTRAL-001" defer></script>
-  <script src="/assets/js/dataStore.js?v=LUCRO-RECORRENTE-MENSAL-001" defer></script>
+  <script src="/assets/js/dataStore.js?v=NPS-FORMULA-001" defer></script>
   <script src="/assets/js/databaseService.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/dataService.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/auth.js?v=RELATORIOS-ADMIN-001" defer></script>

@@ -54,7 +54,7 @@ assert.match(view, /id="launchPercentualCalculadoLabel">% da meta atingida</);
 assert.match(view, /id="launchPercentualAcumuladoLabel">% da meta atingida anual</);
 assert.match(view, /id="resultadoAnualWrapper"/);
 assert.match(view, /documentation-fields\.js\?v=DOCUMENTACAO-CENTRAL-001/);
-assert.match(view, /launches\.js\?v=LUCRO-RECORRENTE-MENSAL-001/);
+assert.match(view, /launches\.js\?v=NPS-FORMULA-001/);
 
 const dataStoreSource = fs.readFileSync(path.join(root, "assets", "js", "dataStore.js"), "utf8");
 assert.match(dataStoreSource, /nome: "tipoPosicaoCapacitacao"/);
@@ -64,6 +64,9 @@ assert.match(dataStoreSource, /nome: "quantidadeCursosMinimaCapacitacao"[^\n]+so
 
 const launchesSource = fs.readFileSync(path.join(root, "assets", "js", "launches.js"), "utf8");
 assert.match(launchesSource, /function updateCapacitacaoPositionFields/);
+assert.match(launchesSource, /function updateNpsPositionFields/);
+assert.match(launchesSource, /resultado\.origemNps === "componentes_formula"/);
+assert.match(launchesSource, /Percentual de promotores − percentual de detratores/);
 assert.match(launchesSource, /Informe as ações realizadas ou o andamento antes de enviar/);
 assert.match(launchesSource, /async function persistLaunch\(action\) \{\s+const lancamento = getSelectedLaunch\(\);/);
 assert.match(launchesSource, /Evidência anexada, mas não foi possível salvar o lançamento/);
@@ -72,5 +75,7 @@ const approvalsSource = fs.readFileSync(path.join(root, "assets", "js", "approva
 assert.match(approvalsSource, /Acompanhamento sem nova medição/);
 assert.match(approvalsSource, /Ações realizadas \/ andamento/);
 assert.match(approvalsSource, /"Em acompanhamento"/);
+assert.match(approvalsSource, /const componentesNps = regra\?\.tipoCalculo === "nota_pesquisa_nps"/);
+assert.match(approvalsSource, /Percentual de promotores − percentual de detratores/);
 
 console.log("Testes de apresentação da tela de lançamentos OK");

@@ -18,11 +18,11 @@ global.DataStore = {
   saveLocal: async () => true
 };
 global.IeoRecorrente = {
-  IEO_META_MENSAL_2026: {
+  getMetaCompetencia: (launch) => ({
     "2026-01": 0.1449,
-    "2026-02": 0.1445,
-    "2026-03": 0.1441
-  }
+    "2026-07": 0.1423833333333333,
+    "2026-08": 0.2664
+  })[launch.competencia] ?? null
 };
 
 require(assetPath);
@@ -55,6 +55,32 @@ assert.equal(prepared.updatedAt, undefined, "updated_at deve ser gerado pelo bac
 assert.equal(prepared.camposEntrada.percentualAtingidoOficialInformado, 1.0422);
 assert.equal(prepared.camposEntrada.observacaoAjusteOficial, "legado");
 assert.equal(prepared.camposEntrada.despesaPessoalMes, 5700000);
+
+const julyPrepared = global.CentralPersistence.prepareLaunchForCentral({
+  id: "teste-ieo-julho",
+  indicadorId: 6,
+  competencia: "2026-07",
+  ano: 2026,
+  mes: 7,
+  metaMensal: null,
+  metaReferencia: null,
+  camposEntrada: {}
+});
+assert.equal(julyPrepared.metaMensal, 0.1423833333333333);
+assert.equal(julyPrepared.metaReferencia, 0.1423833333333333);
+
+const augustPrepared = global.CentralPersistence.prepareLaunchForCentral({
+  id: "teste-ieo-agosto",
+  indicadorId: 6,
+  competencia: "2026-08",
+  ano: 2026,
+  mes: 8,
+  metaMensal: null,
+  metaReferencia: null,
+  camposEntrada: {}
+});
+assert.equal(augustPrepared.metaMensal, 0.2664);
+assert.equal(augustPrepared.metaReferencia, 0.2664);
 
 const normalLaunch = global.CentralPersistence.prepareLaunchForCentral({
   id: "outro-indicador",

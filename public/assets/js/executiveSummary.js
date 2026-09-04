@@ -522,7 +522,7 @@
   }
 
   function measurementReference(result) {
-    if (result?.regra?.tipoCalculo !== "nota_pesquisa_anual") return null;
+    if (!["nota_pesquisa_nps", "nota_pesquisa_anual"].includes(result?.regra?.tipoCalculo)) return null;
     return result.competenciaMedicaoCurta || result.competenciaMedicao || null;
   }
 
@@ -1233,7 +1233,7 @@
     const status = displayStatus(result);
     const competence = executiveCompetence(result) || "-";
     const measurement = measurementReference(result);
-    const isAnnualSurvey = result.regra?.tipoCalculo === "nota_pesquisa_anual";
+    const isResearchSurvey = ["nota_pesquisa_nps", "nota_pesquisa_anual"].includes(result.regra?.tipoCalculo);
     const previous = previousMonthlyResult(result);
     const variation = performanceVariation(result.percentualAtingido, previous?.percentualAtingido);
     const variationLabel = formatPerformanceVariation(variation);
@@ -1254,7 +1254,7 @@
       `Meta: ${meta}`,
       `Percentual de atingimento: ${percentLabel}`,
       `Última competência: ${competence}`,
-      ...(isAnnualSurvey ? [`Última medição: ${measurement || "Sem nova medição"}`] : []),
+      ...(isResearchSurvey ? [`Última medição: ${measurement || "Sem nova medição"}`] : []),
       `Resultado anterior: ${previous ? StrategicResults.formatOfficialResult(previous) : "-"}`,
       `Percentual anterior: ${previous ? performancePercentLabel(previous.percentualAtingido) : "Sem comparação"}`,
       `${variationTitle}: ${variationLabel}`,
@@ -1288,7 +1288,7 @@
             ${toFiniteNumber(result.percentualAtingido) === null ? "" : "<small>da meta</small>"}
           </span>
         </span>
-        ${isAnnualSurvey ? `
+        ${isResearchSurvey ? `
           <span class="executive-performance-footer executive-performance-context">
             <span>${escapeHtml(situation)}</span>
             <span>${escapeHtml(measurement ? `Pesquisa: ${measurement}` : "Sem nova medição")}</span>

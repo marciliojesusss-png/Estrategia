@@ -973,48 +973,96 @@
     const required = validarObrigatorios(regra, lancamentoAtual);
     if (required) return erro(required, regra.unidadeMedida);
     const params = regra.parametrosCalculo || {};
-    const campoNps = params.campoNps || "npsApurado";
-    const campoPromotores = params.campoPromotores || "percentualPromotores";
-    const campoDetratores = params.campoDetratores || "percentualDetratores";
-    let npsRealizado = campo(lancamentoAtual, campoNps);
-    const promotores = normalizarPercentual(raw(lancamentoAtual, campoPromotores));
-    const detratores = normalizarPercentual(raw(lancamentoAtual, campoDetratores));
-    if (npsRealizado === null && promotores !== null && detratores !== null) {
-      npsRealizado = (promotores - detratores) * 100;
-    }
-    if (npsRealizado === null) {
-      return pendente("NPS apurado ou percentuais de promotores e detratores devem ser informados.", regra.unidadeMedida);
-    }
-    if (npsRealizado < -100 || npsRealizado > 100) {
-      return erro("NPS deve estar entre -100 e 100 pontos.", regra.unidadeMedida);
-    }
     const key = competenciaKey(lancamentoAtual);
     const referencias = params.referenciasPorCompetencia || {};
+    const ano = Number(lancamentoAtual?.ano || String(key).slice(0, 4));
+    const mes = Number(lancamentoAtual?.mes || String(key).slice(5, 7));
+    const referenciaVigente2026 = ano === 2026 && mes >= 1 && mes <= 12
+      ? mes <= 3 ? 55 : mes <= 6 ? 58 : 60
+      : null;
     const metaReferenciaInformada = campo(lancamentoAtual, params.campoMetaReferencia || "metaReferenciaCompetenciaNPS");
-    const metaReferenciaPeriodo = metaReferenciaInformada !== null
-      ? metaReferenciaInformada
+    const metaReferenciaPeriodo = referenciaVigente2026 !== null
+      ? referenciaVigente2026
       : Object.prototype.hasOwnProperty.call(referencias, key)
-        ? toNumber(referencias[key])
-        : toNumber(params.metaAnualMetodologica ?? regra.metaAnualValor);
+      ? toNumber(referencias[key])
+      : metaReferenciaInformada !== null
+        ? metaReferenciaInformada
+        : toNumber(params.metaVigenteNPS2026 ?? params.metaAnualMetodologica ?? regra.metaAnualValor);
     if (metaReferenciaPeriodo === null || metaReferenciaPeriodo === 0) {
       return erro("Meta de referência do NPS não configurada.", regra.unidadeMedida);
     }
     const tipoPosicao = texto(lancamentoAtual, params.campoTipoPosicao || "tipoPosicaoNPS");
-    const metaAnual = toNumber(params.metaAnualMetodologica ?? regra.metaAnualValor);
-    const isBaselineOuAcompanhamento = ["Baseline", "Acompanhamento", "Revisão metodológica"].includes(tipoPosicao);
+    const metaVigente = ano === 2026
+      ? 60
+      : toNumber(params.metaVigenteNPS2026 ?? params.metaAnualMetodologica ?? regra.metaAnualValor);
+    if (tipoPosicao.startsWith("Acompanhamento") || tipoPosicao === "Revisão metodológica") {
+      return pendente("Acompanhamento registrado sem nova pesquisa NPS.", regra.unidadeMedida, {
+        statusCalculo: "acompanhamento",
+        metaReferenciaPeriodo,
+        metaAnualCorretaNPS: metaVigente,
+        metaVigenteNPS2026: metaVigente,
+        tipoPosicaoNPS: tipoPosicao,
+        baselineNPS: toNumber(params.baselineNPS),
+        notaReferenciaNPS: toNumber(params.notaReferenciaNPS),
+        situacao: "Em acompanhamento"
+      });
+    }
+    const campoNps = params.campoNps || "npsApurado";
+    const campoPromotores = params.campoPromotores || "percentualPromotores";
+    const campoDetratores = params.campoDetratores || "percentualDetratores";
+    const promotoresInformados = raw(lancamentoAtual, campoPromotores);
+    const detratoresInformados = raw(lancamentoAtual, campoDetratores);
+    const possuiPromotores = promotoresInformados !== null && promotoresInformados !== undefined && promotoresInformados !== "";
+    const possuiDetratores = detratoresInformados !== null && detratoresInformados !== undefined && detratoresInformados !== "";
+    let promotores = null;
+    let detratores = null;
+    let npsRealizado = null;
+    let origemNps = "legado";
+
+    if (possuiPromotores || possuiDetratores) {
+      if (!possuiPromotores) {
+        return pendente("NPS aguardando percentual de promotores.", regra.unidadeMedida, { metaReferenciaPeriodo });
+      }
+      if (!possuiDetratores) {
+        return pendente("NPS aguardando percentual de detratores.", regra.unidadeMedida, { metaReferenciaPeriodo });
+      }
+      promotores = normalizarPercentual(promotoresInformados);
+      detratores = normalizarPercentual(detratoresInformados);
+      if (promotores === null || promotores < 0 || promotores > 1) {
+        return erro("Percentual de promotores deve estar entre 0% e 100%.", regra.unidadeMedida);
+      }
+      if (detratores === null || detratores < 0 || detratores > 1) {
+        return erro("Percentual de detratores deve estar entre 0% e 100%.", regra.unidadeMedida);
+      }
+      if (promotores + detratores > 1 + Number.EPSILON) {
+        return erro("A soma dos percentuais de promotores e detratores não pode superar 100%.", regra.unidadeMedida);
+      }
+      npsRealizado = (promotores - detratores) * 100;
+      origemNps = "componentes_formula";
+    } else {
+      npsRealizado = campo(lancamentoAtual, campoNps);
+    }
+    if (npsRealizado === null) {
+      return pendente("Informe os percentuais de promotores e detratores para calcular o NPS.", regra.unidadeMedida);
+    }
+    if (npsRealizado < -100 || npsRealizado > 100) {
+      return erro("NPS deve estar entre -100 e 100 pontos.", regra.unidadeMedida);
+    }
+    const metaAnual = metaVigente;
     const isFechamentoAnual = tipoPosicao === "Fechamento anual";
     const referenciaSituacao = isFechamentoAnual && metaAnual ? metaAnual : metaReferenciaPeriodo;
     const percentualAtingido = npsRealizado / metaReferenciaPeriodo;
     const percentualAnual = isFechamentoAnual && metaAnual ? npsRealizado / metaAnual : percentualAtingido;
-    const situacao = isBaselineOuAcompanhamento
-      ? "Em acompanhamento"
-      : npsRealizado >= referenciaSituacao
-        ? "Atingido"
-        : "Abaixo da meta";
+    const situacao = npsRealizado >= referenciaSituacao ? "Atingido" : "Abaixo da meta";
     return ok(npsRealizado, npsRealizado, percentualAtingido, percentualAtingido, regra.unidadeMedida, "NPS calculado por posição de pesquisa.", {
       npsRealizado,
+      npsCalculado: npsRealizado,
+      origemNps,
+      percentualPromotores: promotores,
+      percentualDetratores: detratores,
       metaReferenciaPeriodo,
       metaAnualCorretaNPS: metaAnual,
+      metaVigenteNPS2026: metaVigente,
       desempenhoReferencia: percentualAtingido,
       tipoPosicaoNPS: tipoPosicao,
       baselineNPS: toNumber(params.baselineNPS),

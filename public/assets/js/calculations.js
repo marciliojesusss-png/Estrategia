@@ -104,9 +104,35 @@
     return `${(numero * 100).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;
   }
 
+  function parseInteiroBR(value) {
+    if (value === null || value === undefined || value === "") return null;
+    if (typeof value === "number") {
+      return Number.isSafeInteger(value) && value >= 0 ? value : null;
+    }
+
+    const text = String(value).trim();
+    if (!text || !/^(?:\d+|\d{1,3}(?:\.\d{3})+)$/.test(text)) return null;
+    const digits = text.replace(/\./g, "");
+    if (!digits) return null;
+    const parsed = Number(digits);
+    return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : null;
+  }
+
+  function formatarInteiroBR(value) {
+    const inteiro = parseInteiroBR(value);
+    if (inteiro === null) return "-";
+    return inteiro.toLocaleString("pt-BR", {
+      maximumFractionDigits: 0,
+      minimumFractionDigits: 0
+    });
+  }
+
   function formatarValor(valor, unidadeMedida) {
     if (unidadeMedida === "moeda") {
       return CurrencyBR.formatarMoedaBR(valor);
+    }
+    if (unidadeMedida === "inteiro") {
+      return formatarInteiroBR(valor);
     }
     const numero = toNumber(valor);
     if (numero === null) return "-";
@@ -123,6 +149,8 @@
     normalizarSituacao: (value) => window.Situations ? Situations.normalizarSituacao(value) : value,
     formatarPercentual,
     formatarValor,
+    parseInteiroBR,
+    formatarInteiroBR,
     parseMoedaBR: CurrencyBR.parseMoedaBR,
     formatarMoedaBR: CurrencyBR.formatarMoedaBR
   };

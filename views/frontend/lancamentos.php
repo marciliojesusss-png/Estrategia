@@ -6,20 +6,20 @@
   <title>CAIXA Loterias | Lançamentos</title>
   <link rel="stylesheet" href="<?= APP_BASE_PATH ?>/assets/css/styles.css?v=ACTION-FEEDBACK-001">
   <script src="/assets/js/currency.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="/assets/js/ieo-recorrente.js?v=IEO-RECORRENTE-002" defer></script>
+  <script src="/assets/js/ieo-recorrente.js?v=IEO-UX-AUTOMATICO-004" defer></script>
   <script src="/assets/js/lucro-recorrente.js?v=LUCRO-RECORRENTE-MENSAL-003" defer></script>
   <script src="/assets/js/situations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="/assets/js/bootstrap-data.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
+  <script src="/assets/js/bootstrap-data.js?v=NPS-FORMULA-001" defer></script>
   <script src="/assets/js/indicator-periodicity.js?v=PERIODICIDADE-TRIMESTRAL-001" defer></script>
-  <script src="/assets/js/dataStore.js?v=LUCRO-RECORRENTE-MENSAL-001" defer></script>
-  <script src="/assets/js/central-persistence.js?v=ACTION-FEEDBACK-001" defer></script>
+  <script src="/assets/js/dataStore.js?v=NPS-FORMULA-001" defer></script>
+  <script src="/assets/js/central-persistence.js?v=IEO-VIGENCIA-CA-001" defer></script>
   <script src="/assets/js/databaseService.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/auth.js?v=RELATORIOS-ADMIN-001" defer></script>
-  <script src="/assets/js/calculations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="/assets/js/formulas.js?v=LUCRO-RECORRENTE-MENSAL-001" defer></script>
+  <script src="/assets/js/calculations.js?v=INTEIROS-BR-001" defer></script>
+  <script src="/assets/js/formulas.js?v=NPS-FORMULA-001" defer></script>
   <script src="/assets/js/documentation-fields.js?v=DOCUMENTACAO-CENTRAL-001" defer></script>
   <script src="/assets/js/action-feedback.js?v=ACTION-FEEDBACK-001" defer></script>
-  <script src="/assets/js/launches.js?v=LUCRO-RECORRENTE-MENSAL-001" defer></script>
+  <script src="/assets/js/launches.js?v=NPS-FORMULA-001" defer></script>
   <script src="/assets/js/app.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
 </head>
 <body data-page="lancamentos">

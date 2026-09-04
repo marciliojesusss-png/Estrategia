@@ -1,5 +1,5 @@
 ﻿const assert = require("node:assert/strict");
-require("../assets/js/ieo-recorrente.js");
+const ieo = require("../assets/js/ieo-recorrente.js");
 const formulas = require("../assets/js/formulas.js");
 require("../assets/js/indicator-periodicity.js");
 
@@ -99,30 +99,38 @@ const returned = consolidarTrimestre(
 assert.equal(returned.possuiMesDevolvido, true);
 assert.match(returned.mensagem, /mês devolvido para ajuste/);
 
-const npsQuarter = consolidarTrimestre(
-  { id: 2, indicador: "Índice de Satisfação de Clientes - NPS", unidadeMedida: "pontos" },
-  {
-    indicadorId: 2,
-    tipoCalculo: "nota_pesquisa_nps",
-    tipoConsolidacao: "resultado_pesquisa_ou_ultima_posicao",
-    unidadeMedida: "pontos",
-    metaAnualValor: 58,
-    parametrosCalculo: {
-      campoTipoPosicao: "tipoPosicaoNPS",
-      campoNps: "npsApurado",
-      campoPromotores: "percentualPromotores",
-      campoDetratores: "percentualDetratores",
-      campoMetaReferencia: "metaReferenciaCompetenciaNPS",
-      metaTipo: "baseline_com_meta_anual_corrigida",
-      baselineNPS: 55,
-      notaReferenciaNPS: 70,
-      percentualReducaoGap: 0.20,
-      metaAnualMetodologica: 58,
-      referenciasPorCompetencia: { "2026-03": 55 },
-      sentidoMeta: "quanto_maior_melhor"
+const npsIndicator = { id: 2, indicador: "Índice de Satisfação de Clientes - NPS", unidadeMedida: "pontos" };
+const npsRule = {
+  indicadorId: 2,
+  tipoCalculo: "nota_pesquisa_nps",
+  tipoConsolidacao: "resultado_pesquisa_ou_ultima_posicao",
+  unidadeMedida: "pontos",
+  metaAnualValor: 60,
+  parametrosCalculo: {
+    campoTipoPosicao: "tipoPosicaoNPS",
+    campoNps: "npsApurado",
+    campoPromotores: "percentualPromotores",
+    campoDetratores: "percentualDetratores",
+    campoMetaReferencia: "metaReferenciaCompetenciaNPS",
+    metaTipo: "meta_absoluta_por_competencia",
+    baselineNPS: 55,
+    notaReferenciaNPS: 70,
+    percentualReducaoGap: 0.20,
+    metaAnualMetodologica: 60,
+    metaVigenteNPS2026: 60,
+    referenciasPorCompetencia: {
+      "2026-01": 55, "2026-02": 55, "2026-03": 55,
+      "2026-04": 58, "2026-05": 58, "2026-06": 58,
+      "2026-07": 60, "2026-08": 60, "2026-09": 60,
+      "2026-10": 60, "2026-11": 60, "2026-12": 60
     },
-    camposEntrada: [{ nome: "tipoPosicaoNPS", obrigatorio: true }]
+    sentidoMeta: "quanto_maior_melhor"
   },
+  camposEntrada: [{ nome: "tipoPosicaoNPS", obrigatorio: true }]
+};
+const npsQuarter = consolidarTrimestre(
+  npsIndicator,
+  npsRule,
   [
     { ano: 2026, mes: 1, status: "Homologado", competencia: "2026-01", trimestre: "1TRI/2026", camposEntrada: { tipoPosicaoNPS: "Acompanhamento" } },
     { ano: 2026, mes: 2, status: "Homologado", competencia: "2026-02", trimestre: "1TRI/2026", camposEntrada: { tipoPosicaoNPS: "Acompanhamento" } },
@@ -135,7 +143,49 @@ assert.equal(npsQuarter.mesesHomologados, 3);
 assert.equal(npsQuarter.metaTrimestral, 55);
 assert.equal(npsQuarter.resultadoTrimestral, 55);
 assert.equal(npsQuarter.desempenhoTrimestral, 1);
-assert.equal(npsQuarter.situacaoTrimestral, "Em acompanhamento");
+assert.equal(npsQuarter.situacaoTrimestral, "Atingido");
+
+const npsSecondQuarter = consolidarTrimestre(
+  npsIndicator,
+  npsRule,
+  [
+    { ano: 2026, mes: 4, status: "Homologado", competencia: "2026-04", camposEntrada: { tipoPosicaoNPS: "Acompanhamento" } },
+    { ano: 2026, mes: 5, status: "Homologado", competencia: "2026-05", camposEntrada: { tipoPosicaoNPS: "Acompanhamento sem nova pesquisa" } },
+    { ano: 2026, mes: 6, status: "Homologado", competencia: "2026-06", camposEntrada: { tipoPosicaoNPS: "Pesquisa oficial", metaReferenciaCompetenciaNPS: 60, percentualPromotores: 0.7263, percentualDetratores: 0.1343, npsApurado: 61 } }
+  ],
+  "2TRI/2026"
+);
+assert.equal(npsSecondQuarter.metaTrimestral, 58);
+assert.ok(Math.abs(npsSecondQuarter.resultadoTrimestral - 59.2) < 0.000001);
+assert.ok(Math.abs(npsSecondQuarter.desempenhoTrimestral - (59.2 / 58)) < 0.000001);
+assert.equal(npsSecondQuarter.situacaoTrimestral, "Atingido");
+
+const npsThirdQuarterTracking = consolidarTrimestre(
+  npsIndicator,
+  npsRule,
+  [
+    { ano: 2026, mes: 7, status: "Homologado", competencia: "2026-07", camposEntrada: { tipoPosicaoNPS: "Acompanhamento sem nova pesquisa", metaReferenciaCompetenciaNPS: 58 } }
+  ],
+  "3TRI/2026"
+);
+assert.equal(npsThirdQuarterTracking.metaTrimestral, 60);
+assert.equal(npsThirdQuarterTracking.resultadoTrimestral, null);
+assert.equal(npsThirdQuarterTracking.desempenhoTrimestral, null);
+assert.equal(npsThirdQuarterTracking.situacaoTrimestral, "Em acompanhamento");
+
+const npsThirdQuarterMeasurement = consolidarTrimestre(
+  npsIndicator,
+  npsRule,
+  [
+    { ano: 2026, mes: 7, status: "Homologado", competencia: "2026-07", camposEntrada: { tipoPosicaoNPS: "Pesquisa oficial", percentualPromotores: 0.715, percentualDetratores: 0.12 } },
+    { ano: 2026, mes: 8, status: "Homologado", competencia: "2026-08", camposEntrada: { tipoPosicaoNPS: "Acompanhamento" } }
+  ],
+  "3TRI/2026"
+);
+assert.equal(npsThirdQuarterMeasurement.metaTrimestral, 60);
+assert.ok(Math.abs(npsThirdQuarterMeasurement.resultadoTrimestral - 59.5) < 0.000001);
+assert.ok(Math.abs(npsThirdQuarterMeasurement.desempenhoTrimestral - (59.5 / 60)) < 0.000001);
+assert.equal(npsThirdQuarterMeasurement.situacaoTrimestral, "Abaixo da meta");
 
 const climaQuarter = consolidarTrimestre(
   { id: 12, indicador: "Clima Organizacional", unidadeMedida: "pontos" },
@@ -568,6 +618,38 @@ assert.ok(Math.abs(ieoQuarter.metaTrimestral - 0.1441) < 0.000001);
 assert.ok(Math.abs(ieoQuarter.resultadoTrimestral - 0.108) < 0.000001);
 assert.ok(Math.abs(ieoQuarter.desempenhoTrimestral - (0.1441 / 0.108)) < 0.000001);
 assert.equal(ieoQuarter.situacaoTrimestral, "Atingido");
+
+const ieoQuarterNovaMetodologia = consolidarTrimestre(
+  { id: 6, indicador: "IEO Recorrente", unidadeMedida: "percentual" },
+  ieo.ajustarRegraIeo({
+    indicadorId: 6,
+    tipoCalculo: "indice_inverso",
+    tipoConsolidacao: "ultima_posicao_acumulada",
+    unidadeMedida: "percentual",
+    parametrosCalculo: {},
+    camposEntrada: []
+  }, "2026-09"),
+  [
+    {
+      ano: 2026, mes: 7, status: "Homologado", competencia: "2026-07",
+      camposEntrada: { despesaPessoalMes: 10, despesasAdministrativasMes: 4, receitasLiquidasMes: 100 }
+    },
+    {
+      ano: 2026, mes: 8, status: "Homologado", competencia: "2026-08",
+      camposEntrada: { despesasGeraisAdministrativasMes: 100, despesasServicosPagamentosMes: 50, outrasDespesasOperacionaisMes: 30, receitasOperacionaisMes: 1000, despesasTributosMes: 100 }
+    },
+    {
+      ano: 2026, mes: 9, status: "Homologado", competencia: "2026-09",
+      camposEntrada: { despesasGeraisAdministrativasMes: 100, despesasServicosPagamentosMes: 50, outrasDespesasOperacionaisMes: 66, receitasOperacionaisMes: 1000, despesasTributosMes: 100 }
+    }
+  ],
+  "3TRI/2026"
+);
+assert.equal(ieoQuarterNovaMetodologia.statusTrimestre, "Fechado");
+assert.ok(Math.abs(ieoQuarterNovaMetodologia.metaTrimestral - 0.2664) < 0.000001);
+assert.ok(Math.abs(ieoQuarterNovaMetodologia.resultadoTrimestral - 0.24) < 0.000001);
+assert.ok(Math.abs(ieoQuarterNovaMetodologia.desempenhoTrimestral - 1.11) < 0.000001);
+assert.equal(ieoQuarterNovaMetodologia.situacaoTrimestral, "Atingido");
 
 const ofertasQuarter = consolidarTrimestre(
   { id: 1, indicador: "Índice de Ofertas Personalizadas aos Clientes Ativos", unidadeMedida: "percentual" },

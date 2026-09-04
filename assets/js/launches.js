@@ -134,6 +134,11 @@
     return regra?.tipoCalculo === "indice_inverso" && Number(regra?.indicadorId) === 6;
   }
 
+  function isIeoCaCompetence(regra, lancamento = getSelectedLaunch()) {
+    return isIeoRule(regra) &&
+      window.IeoRecorrente?.getMetodologiaIeoPorCompetencia?.(lancamento)?.codigo === "ca_agosto_2026";
+  }
+
   function appUrl(path) {
     return typeof window.appUrl === "function" ? window.appUrl(path) : path;
   }
@@ -409,7 +414,43 @@
 
   function formatEntryValue(field, value) {
     if (field.tipo === "moeda" && value !== "") return CurrencyBR.formatarMoedaBR(value).replace(/^R\$\s?/, "");
+    if (field.tipo === "inteiro" && value !== "") return Calculations.formatarInteiroBR(value);
+    if (field.tipo === "percentual" && field.entradaPtBr && value !== "") {
+      const normalized = normalizarPercentual(value);
+      return normalized === null ? "" : (normalized * 100).toLocaleString("pt-BR", { maximumFractionDigits: 4 });
+    }
     return value ?? "";
+  }
+
+  function formatIntegerEntryInput(input, event) {
+    const rawValue = input.value.trim();
+    if (!rawValue) {
+      input.setCustomValidity("");
+      return;
+    }
+    let parsed = Calculations.parseInteiroBR(rawValue);
+    if (parsed === null && event?.inputType !== "insertFromPaste" && /^\d[\d.]*$/.test(rawValue)) {
+      parsed = Calculations.parseInteiroBR(rawValue.replace(/\./g, ""));
+    }
+    if (parsed === null) {
+      input.setCustomValidity("Informe uma quantidade inteira não negativa, sem casas decimais.");
+      return;
+    }
+    const selectionStart = input.selectionStart ?? input.value.length;
+    const digitsBeforeCursor = input.value.slice(0, selectionStart).replace(/\D/g, "").length;
+    input.value = Calculations.formatarInteiroBR(parsed);
+    let cursorPosition = digitsBeforeCursor === 0 ? 0 : input.value.length;
+    let digitsSeen = 0;
+    for (let index = 0; index < input.value.length && digitsBeforeCursor > 0; index += 1) {
+      if (!/\d/.test(input.value[index])) continue;
+      digitsSeen += 1;
+      if (digitsSeen === digitsBeforeCursor) {
+        cursorPosition = index + 1;
+        break;
+      }
+    }
+    input.setSelectionRange(cursorPosition, cursorPosition);
+    input.setCustomValidity("");
   }
 
   function renderEntryInput(field, value, extra = "") {
@@ -456,8 +497,8 @@
           class="dynamic-entry-field"
           data-entry-field="${escapeHtml(field.nome)}"
           data-entry-type="${escapeHtml(field.tipo || "numero")}"
-          type="${field.tipo === "texto" || field.tipo === "moeda" ? "text" : field.tipo === "data" ? "date" : "number"}"
-          ${field.tipo === "moeda" ? "inputmode=\"decimal\" placeholder=\"0,00\"" : field.tipo === "texto" || field.tipo === "data" ? "" : "step=\"any\""}
+          type="${["texto", "moeda", "inteiro"].includes(field.tipo) || (field.tipo === "percentual" && field.entradaPtBr) ? "text" : field.tipo === "data" ? "date" : "number"}"
+          ${field.tipo === "moeda" || (field.tipo === "percentual" && field.entradaPtBr) ? "inputmode=\"decimal\" placeholder=\"0,00\"" : field.tipo === "inteiro" ? "inputmode=\"numeric\" placeholder=\"0\"" : field.tipo === "texto" || field.tipo === "data" ? "" : "step=\"any\""}
           value="${escapeHtml(formatEntryValue(field, value))}"
           ${field.obrigatorio ? "required" : ""}
           ${field.somenteLeitura ? "readonly" : ""}
@@ -546,8 +587,26 @@
         : isEditable(item)
           ? "Preencher"
           : "Visualizar";
-      const resultadoMensal = item.resultadoMensal ?? item.realizadoMensal;
-      const situacao = Situations.normalizarSituacao(item.situacaoCalculada || getCalculatedSituation(item.percentualAtingido ?? item.percentualAtingidoMensal));
+      const npsCalculation = regra?.tipoCalculo === "nota_pesquisa_nps"
+        ? IndicatorFormulas.calcularIndicador(
+          indicador,
+          regra,
+          item,
+          state.lancamentos.filter((candidate) => (
+            Number(candidate.indicadorId) === Number(item.indicadorId) &&
+            Number(candidate.ano) === Number(item.ano) &&
+            Number(candidate.mes) <= Number(item.mes)
+          ))
+        )
+        : null;
+      const resultadoMensal = npsCalculation
+        ? npsCalculation.resultadoMensal
+        : item.resultadoMensal ?? item.realizadoMensal;
+      const situacao = Situations.normalizarSituacao(
+        npsCalculation?.situacao ||
+        item.situacaoCalculada ||
+        getCalculatedSituation(npsCalculation?.percentualAtingidoMensal ?? item.percentualAtingido ?? item.percentualAtingidoMensal)
+      );
       return `
         <tr>
           <td>${escapeHtml(indicador ? indicador.indicador : item.indicadorId)}</td>
@@ -563,6 +622,9 @@
   }
 
   function renderReference(indicador, lancamento, regra) {
+    const metodologiaIeo = isIeoRule(regra)
+      ? window.IeoRecorrente?.getMetodologiaIeoPorCompetencia?.(lancamento)
+      : null;
     document.getElementById("launchReference").innerHTML = [
       ["Plano", indicador.plano],
       ["Pilar", indicador.pilar],
@@ -573,6 +635,10 @@
       ["Consolidação anual", regra.tipoConsolidacao],
       ["Exige evidência", regra.exigeEvidencia ? "Sim" : "Não"],
       ["Meta anual", indicador.metaAnualDescricao, true],
+      ...(metodologiaIeo ? [
+        ["Metodologia vigente", metodologiaIeo.descricao, true],
+        ["Fórmula vigente", metodologiaIeo.formula, true]
+      ] : []),
       ["Regra", regra.aviso || "Regra específica configurada.", true],
       ["Status atual", lancamento.status, true]
     ].map(([label, value, full]) => `
@@ -625,6 +691,7 @@
     if (isIeoRule(regra)) {
       document.getElementById("percentualMensalWrapper").hidden = false;
       document.getElementById("percentualAnualWrapper").hidden = true;
+      document.getElementById("resultadoAnualWrapper").hidden = isIeoCaCompetence(regra);
     }
     if (regra?.tipoCalculo === "cobertura_capacitacao") {
       document.getElementById("percentualMensalWrapper").hidden = false;
@@ -634,6 +701,8 @@
 
     document.getElementById("launchResultadoMensalLabel").textContent = isIeoRule(regra)
       ? "IEO calculado da competência"
+      : regra?.tipoCalculo === "nota_pesquisa_nps"
+        ? "Resultado NPS calculado"
       : regra?.tipoCalculo === "incremento_rede_loterica_base_2025"
         ? "Incremento percentual"
       : ["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(regra?.tipoCalculo)
@@ -682,6 +751,7 @@
       input.disabled = false;
     });
     updateCapacitacaoPositionFields(regra, getSelectedLaunch());
+    updateNpsPositionFields(regra, getSelectedLaunch());
   }
 
   function getCalculatedSituation(percentualAtingido) {
@@ -692,31 +762,40 @@
   }
 
   function renderDynamicFields(lancamento, regra) {
-    const values = getEntryValuesFromLaunch(lancamento, regra);
+    const metodologiaIeo = isIeoRule(regra)
+      ? window.IeoRecorrente?.getMetodologiaIeoPorCompetencia?.(lancamento)
+      : null;
+    const camposIeo = isIeoRule(regra)
+      ? window.IeoRecorrente?.getCamposEntrada?.(lancamento) || regra.camposEntrada || []
+      : null;
+    const regraCompetencia = camposIeo ? { ...regra, camposEntrada: camposIeo } : regra;
+    const values = getEntryValuesFromLaunch(lancamento, regraCompetencia);
     document.getElementById("realizadoWrapper").hidden = hasSpecificInputRule(regra);
     if (isIeoRule(regra)) {
-      const mainFields = [
-        { nome: "despesaPessoalMes", rotulo: "Despesa de pessoal", tipo: "moeda", obrigatorio: true },
-        { nome: "despesasAdministrativasMes", rotulo: "Despesas administrativas", tipo: "moeda", obrigatorio: true },
-        { nome: "receitasLiquidasMes", rotulo: "Receitas líquidas", tipo: "moeda", obrigatorio: true }
-      ];
+      const metodologiaCa = metodologiaIeo?.codigo === "ca_agosto_2026";
+      const mainFields = camposIeo.filter((field) => field.nome !== "ieoApuradoInformado");
       const directChecked = values.ieoApuradoInformado !== "" && values.ieoApuradoInformado !== null && values.ieoApuradoInformado !== undefined;
       const admin = canAdjustOfficialPerformance();
       document.getElementById("dynamicInputFields").innerHTML = `
+        ${metodologiaCa ? `
+          <p class="notice full-span"><strong>Metodologia vigente a partir de agosto/2026</strong> — aprovada pelo Conselho de Administração.</p>
+        ` : ""}
         ${mainFields.map((field) => renderEntryInput(field, values[field.nome] ?? "")).join("")}
-        <label class="full-span">
-          <input id="ieoDirectToggle" class="dynamic-entry-toggle" type="checkbox" ${directChecked ? "checked" : ""}>
-          Informar IEO apurado diretamente pela unidade?
-        </label>
-        <div id="ieoDirectFieldWrapper" class="full-span" ${directChecked ? "" : "hidden"}>
-          <p class="notice">Use este campo apenas quando a unidade responsável possuir o índice oficial já apurado e validado.</p>
-          ${renderEntryInput(
-            { nome: "ieoApuradoInformado", rotulo: "IEO apurado pela unidade", tipo: "percentual", obrigatorio: false },
-            values.ieoApuradoInformado ?? "",
-            directChecked ? "" : "disabled"
-          )}
-        </div>
-        ${admin ? `
+        ${!metodologiaCa ? `
+          <label class="full-span">
+            <input id="ieoDirectToggle" class="dynamic-entry-toggle" type="checkbox" ${directChecked ? "checked" : ""}>
+            Informar IEO apurado diretamente pela unidade?
+          </label>
+          <div id="ieoDirectFieldWrapper" class="full-span" ${directChecked ? "" : "hidden"}>
+            <p class="notice">Use este campo somente para compatibilidade e conferência da metodologia histórica.</p>
+            ${renderEntryInput(
+              { nome: "ieoApuradoInformado", rotulo: "IEO apurado pela unidade", tipo: "percentual", obrigatorio: false },
+              values.ieoApuradoInformado ?? "",
+              directChecked ? "" : "disabled"
+            )}
+          </div>
+        ` : ""}
+        ${admin && !metodologiaCa ? `
           <div class="full-span">
             <p class="eyebrow">Ajuste de desempenho oficial</p>
             <p class="notice">Use apenas para reproduzir desempenho oficial já informado ao Conselho de Administração.</p>
@@ -740,6 +819,7 @@
       ${renderEntryInput(field, values[field.nome] ?? "")}
     `).join("");
     updateCapacitacaoPositionFields(regra, lancamento);
+    updateNpsPositionFields(regra, lancamento);
     updateEcossistemaCurveFields(regra, lancamento);
     updateRedeLotericaCurveFields(regra, lancamento);
   }
@@ -776,6 +856,24 @@
       quantityInput.value = criterion.quantidadeCursosMinima ?? "";
       quantityInput.readOnly = true;
     }
+  }
+
+  function updateNpsPositionFields(regra, lancamento) {
+    if (regra?.tipoCalculo !== "nota_pesquisa_nps") return;
+    const type = String(document.querySelector('[data-entry-field="tipoPosicaoNPS"]')?.value || "");
+    const tracking = type.startsWith("Acompanhamento") || type === "Revisão metodológica";
+    const visibleFields = new Set([
+      "tipoPosicaoNPS",
+      "metaReferenciaCompetenciaNPS",
+      ...(!tracking ? ["percentualPromotores", "percentualDetratores", "npsApurado", "dataBasePesquisaNPS"] : [])
+    ]);
+    document.querySelectorAll("[data-entry-wrapper]").forEach((wrapper) => {
+      const fieldName = wrapper.dataset.entryWrapper;
+      const visible = visibleFields.has(fieldName);
+      wrapper.hidden = !visible;
+      const input = wrapper.querySelector(".dynamic-entry-field");
+      if (input) input.disabled = !visible || !isEditable(lancamento);
+    });
   }
 
   function updateEcossistemaCurveFields(regra, lancamento) {
@@ -841,6 +939,26 @@
     const wrapper = document.getElementById("formulaDetailsWrapper");
     const target = document.getElementById("formulaDetails");
     const details = [];
+    const metodologiaCa = isIeoCaCompetence(regra, lancamento);
+
+    if (resultado.descricaoMetodologiaIeo !== undefined) {
+      details.push(["Metodologia vigente", resultado.descricaoMetodologiaIeo]);
+    }
+    if (resultado.formulaVigenteIeo !== undefined) {
+      details.push(["Fórmula vigente", resultado.formulaVigenteIeo]);
+    }
+    if (resultado.numeradorIeo !== undefined) {
+      details.push(["Numerador do IEO", Calculations.formatarValor(resultado.numeradorIeo, "moeda")]);
+    }
+    if (resultado.denominadorIeo !== undefined) {
+      details.push(["Denominador do IEO", Calculations.formatarValor(resultado.denominadorIeo, "moeda")]);
+    }
+    if (resultado.origemNps === "componentes_formula") {
+      details.push(["Percentual de promotores", Calculations.formatarPercentual(resultado.percentualPromotores)]);
+      details.push(["Percentual de detratores", Calculations.formatarPercentual(resultado.percentualDetratores)]);
+      details.push(["Fórmula do NPS", "Percentual de promotores − percentual de detratores"]);
+      details.push(["NPS calculado", Calculations.formatarValor(resultado.npsCalculado, "pontos")]);
+    }
 
     if (resultado.cenarioApuracaoEcossistemaLabel !== undefined) {
       details.push(["Cenário de apuração", resultado.cenarioApuracaoEcossistemaLabel]);
@@ -903,14 +1021,14 @@
     }
     if (resultado.metaReferenciaMensal !== undefined) {
       details.push([
-        regra?.tipoCalculo === "lucro_recorrente_mensal" ? "Meta da competência" : "Meta mensal de referência",
+        metodologiaCa ? "Meta de referência" : regra?.tipoCalculo === "lucro_recorrente_mensal" ? "Meta da competência" : "Meta mensal de referência",
         Calculations.formatarValor(resultado.metaReferenciaMensal, resultado.unidadeMedida)
       ]);
     }
     if (resultado.percentualMetaMensal !== undefined) {
-      details.push(["% da meta mensal", Calculations.formatarPercentual(resultado.percentualMetaMensal)]);
+      details.push([metodologiaCa ? "% da meta" : "% da meta mensal", Calculations.formatarPercentual(resultado.percentualMetaMensal)]);
     }
-    if (resultado.metaAcumulada !== undefined) {
+    if (resultado.metaAcumulada !== undefined && !metodologiaCa) {
       details.push([
         regra?.tipoCalculo === "lucro_recorrente_mensal" ? "Meta acumulada até a competência" : "Meta acumulada",
         Calculations.formatarValor(resultado.metaAcumulada, resultado.unidadeMedida)
@@ -922,7 +1040,7 @@
         Calculations.formatarValor(resultado.realizadoAcumulado, resultado.unidadeMedida)
       ]);
     }
-    if (resultado.percentualMetaAcumulada !== undefined) {
+    if (resultado.percentualMetaAcumulada !== undefined && !metodologiaCa) {
       details.push(["% atingido acumulado", Calculations.formatarPercentual(resultado.percentualMetaAcumulada)]);
     }
     if (resultado.percentualMetaAnual !== undefined) {
@@ -980,7 +1098,9 @@
       };
     document.getElementById("launchObservacaoArea").value = documentation.observation;
     document.getElementById("launchEvidenceReference").value = documentation.reference;
-    document.getElementById("launchMetrica").value = indicador.metrica || "";
+    document.getElementById("launchMetrica").value = isIeoRule(regra)
+      ? window.IeoRecorrente?.getMetodologiaIeoPorCompetencia?.(lancamento)?.formula || indicador.metrica || ""
+      : indicador.metrica || "";
     document.getElementById("manualPercentWrapper").hidden = !isManual(indicador);
     document.getElementById("evidenceRequirementText").textContent = regra.exigeEvidencia
       ? "Arquivo obrigatório para envio"
@@ -1018,6 +1138,10 @@
       const type = input.dataset.entryType || "numero";
       if (type === "numero") {
         values[input.dataset.entryField] = input.value === "" ? "" : toNumberOrNull(input.value);
+        return;
+      }
+      if (type === "inteiro") {
+        values[input.dataset.entryField] = input.value === "" ? "" : Calculations.parseInteiroBR(input.value);
         return;
       }
       if (type === "moeda") {
@@ -1083,6 +1207,18 @@
       .filter((item) => item.indicadorId === indicador.id && item.ano === lancamento.ano && item.mes <= lancamento.mes)
       .sort((a, b) => a.mes - b.mes);
     const resultado = IndicatorFormulas.calcularIndicador(indicador, regra, lancamentoComEntrada, lancamentosDoIndicador);
+    if (regra?.tipoCalculo === "nota_pesquisa_nps") {
+      const hasPromoters = camposEntrada.percentualPromotores !== "" && camposEntrada.percentualPromotores !== null && camposEntrada.percentualPromotores !== undefined;
+      const hasDetractors = camposEntrada.percentualDetratores !== "" && camposEntrada.percentualDetratores !== null && camposEntrada.percentualDetratores !== undefined;
+      const calculatedInput = document.querySelector('[data-entry-field="npsApurado"]');
+      if (resultado.origemNps === "componentes_formula") {
+        camposEntrada.npsApurado = resultado.npsCalculado;
+        if (calculatedInput) calculatedInput.value = String(Math.round(resultado.npsCalculado * 1000000) / 1000000);
+      } else if (hasPromoters || hasDetractors) {
+        camposEntrada.npsApurado = "";
+        if (calculatedInput) calculatedInput.value = "";
+      }
+    }
     const realizadoCalculado = automatic ? resultado.resultadoMensal : realizado;
 
     return {
@@ -1110,6 +1246,7 @@
     if (isIeoRule(result.regra)) {
       document.getElementById("percentualMensalWrapper").hidden = false;
       document.getElementById("percentualAnualWrapper").hidden = true;
+      document.getElementById("resultadoAnualWrapper").hidden = isIeoCaCompetence(result.regra, lancamento);
       document.getElementById("launchPercentualCalculadoLabel").textContent = "% atingido";
     }
     if (result.regra?.tipoCalculo === "cobertura_capacitacao") {
@@ -1140,6 +1277,15 @@
     const observacaoArea = document.getElementById("launchObservacaoArea").value.trim();
     const percentualManual = document.getElementById("launchPercentualManual").value;
     const result = updateCalculatedPreview();
+    const invalidIntegerInput = [...document.querySelectorAll('[data-entry-type="inteiro"]')]
+      .find((input) => input.value.trim() !== "" && Calculations.parseInteiroBR(input.value) === null);
+    if (invalidIntegerInput) {
+      invalidIntegerInput.setCustomValidity("Informe uma quantidade inteira não negativa, sem casas decimais.");
+      invalidIntegerInput.reportValidity();
+      invalidIntegerInput.focus();
+      showMessage("Corrija a quantidade informada: use apenas números inteiros não negativos.", "warning");
+      return false;
+    }
 
     if (action === "send" && regra.tipoCalculo === "cobertura_capacitacao") {
       const tipoPosicao = IndicatorFormulas.resolverTipoPosicaoCapacitacao({
@@ -1164,6 +1310,19 @@
       }
     }
 
+    if (action === "send" && regra.tipoCalculo === "nota_pesquisa_nps") {
+      const type = String(result.camposEntrada.tipoPosicaoNPS || "");
+      const tracking = type.startsWith("Acompanhamento") || type === "Revisão metodológica";
+      if (!tracking && result.resultado.statusCalculo !== "calculado") {
+        showMessage(result.resultado.mensagem || "Informe os percentuais de promotores e detratores para calcular o NPS.", "warning");
+        return false;
+      }
+      if (!tracking && !String(result.camposEntrada.dataBasePesquisaNPS || "").trim()) {
+        showMessage("Informe a data-base da pesquisa antes de enviar para homologação.", "warning");
+        return false;
+      }
+    }
+
     if (
       action === "send" &&
       regra.tipoCalculo === "razao_pix" &&
@@ -1185,7 +1344,13 @@
       isIeoRule(regra) &&
       (result.resultado.resultadoMensal === null || result.resultado.resultadoMensal === undefined)
     ) {
-      showMessage("Informe despesa de pessoal, despesas administrativas e receitas líquidas para calcular o IEO antes de enviar.", "warning");
+      const metodologia = window.IeoRecorrente?.getMetodologiaIeoPorCompetencia?.(getSelectedLaunch());
+      showMessage(
+        metodologia?.codigo === "ca_agosto_2026"
+          ? "Informe Despesas Gerais e Administrativas, Serviços de Pagamentos, Outras Despesas Operacionais, Receitas Operacionais e Despesas de Tributos para calcular o IEO antes de enviar."
+          : "Informe despesa de pessoal, despesas administrativas e receitas líquidas para calcular o IEO antes de enviar.",
+        "warning"
+      );
       return false;
     }
 
@@ -1287,6 +1452,10 @@
       percentualAtingidoAcumulado: calculation.resultado.percentualAtingidoAcumulado,
       percentualAtingidoAnual: calculation.resultado.percentualAtingidoAnual,
       resultadoOficialAnual: calculation.resultado.resultadoOficialAnual,
+      ...(isIeoRule(calculation.regra) ? {
+        metaReferencia: calculation.resultado.metaReferenciaMensal,
+        metaMensal: calculation.resultado.metaReferenciaMensal
+      } : {}),
       ...(calculation.regra?.tipoCalculo === "lucro_recorrente_mensal" ? {
         metaReferencia: calculation.resultado.metaReferenciaMensal,
         metaMensal: calculation.resultado.metaReferenciaMensal
@@ -1368,7 +1537,7 @@
     const ieoDirectToggle = document.getElementById("ieoDirectToggle");
     if (ieoDirectToggle) {
       ieoDirectToggle.checked = false;
-      updateIeoOptionalVisibility();
+      if (!metodologiaCa) updateIeoOptionalVisibility();
     }
     const indicador = lancamento && getIndicatorMap()[lancamento.indicadorId];
     updateCapacitacaoPositionFields(getRule(indicador), lancamento);
@@ -1427,7 +1596,10 @@
       document.getElementById(id).addEventListener("input", updateCalculatedPreview);
     });
 
-    document.getElementById("dynamicInputFields").addEventListener("input", updateCalculatedPreview);
+    document.getElementById("dynamicInputFields").addEventListener("input", (event) => {
+      if (event.target.dataset.entryType === "inteiro") formatIntegerEntryInput(event.target, event);
+      updateCalculatedPreview();
+    });
     document.getElementById("dynamicInputFields").addEventListener("change", (event) => {
       if (event.target.id === "ieoDirectToggle") updateIeoOptionalVisibility();
       if (event.target.dataset.entryField === "marcoAlcancadoTIC") {
@@ -1442,6 +1614,7 @@
       const indicador = lancamento && getIndicatorMap()[lancamento.indicadorId];
       if (indicador) {
         const regra = getRule(indicador);
+        if (event.target.dataset.entryField === "tipoPosicaoNPS") updateNpsPositionFields(regra, lancamento);
         updateEcossistemaCurveFields(regra, lancamento);
         updateRedeLotericaCurveFields(regra, lancamento);
       }

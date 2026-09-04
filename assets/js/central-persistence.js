@@ -75,9 +75,7 @@
     delete prepared.updatedAt;
 
     if (Number(prepared.indicadorId ?? prepared.indicador_id) === 6) {
-      const key = prepared.competencia || `${prepared.ano}-${String(prepared.mes).padStart(2, "0")}`;
-      const curve = root.IeoRecorrente?.IEO_META_MENSAL_2026 || {};
-      const meta = Object.prototype.hasOwnProperty.call(curve, key) ? curve[key] : prepared.metaMensal;
+      const meta = root.IeoRecorrente?.getMetaCompetencia?.(prepared) ?? prepared.metaMensal;
       if (meta !== null && meta !== undefined) {
         prepared.metaMensal = meta;
         prepared.metaReferencia = meta;

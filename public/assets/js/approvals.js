@@ -158,8 +158,28 @@
   }
 
   function launchForDisplay(indicador, lancamento, regra) {
-    if (Number(indicador?.id) !== 6 || !window.IeoRecorrente) return lancamento;
-    return window.IeoRecorrente.normalizarLancamentoParaExibicao(lancamento, regra);
+    if (Number(indicador?.id) === 6 && window.IeoRecorrente) {
+      return window.IeoRecorrente.normalizarLancamentoParaExibicao(lancamento, regra);
+    }
+    if (regra?.tipoCalculo !== "nota_pesquisa_nps" || !window.IndicatorFormulas) return lancamento;
+
+    const scope = state.lancamentos.filter((item) => (
+      Number(item.indicadorId) === Number(indicador.id) &&
+      Number(item.ano) === Number(lancamento.ano) &&
+      Number(item.mes) <= Number(lancamento.mes)
+    ));
+    const calculated = window.IndicatorFormulas.calcularIndicador(indicador, regra, lancamento, scope);
+    if (!calculated || calculated.statusCalculo === "erro") return lancamento;
+    return {
+      ...lancamento,
+      resultadoMensal: calculated.resultadoMensal,
+      realizadoMensal: calculated.resultadoMensal,
+      resultadoAcumulado: calculated.resultadoAcumulado,
+      percentualAtingido: calculated.percentualAtingidoMensal,
+      percentualAtingidoAcumulado: calculated.percentualAtingidoAcumulado,
+      situacaoCalculada: calculated.situacao || lancamento.situacaoCalculada,
+      __npsCalculation: calculated
+    };
   }
 
   function getSelectedLaunch() {
@@ -277,6 +297,29 @@
     const regra = getRule(indicador);
     const documentation = launchDocumentation(regra, lancamento);
     const displayLaunch = launchForDisplay(indicador, lancamento, regra);
+    const npsCalculation = displayLaunch.__npsCalculation || null;
+    const metodologiaIeo = Number(indicador?.id) === 6
+      ? window.IeoRecorrente?.getMetodologiaIeoPorCompetencia?.(lancamento)
+      : null;
+    const metodologiaIeoCa = metodologiaIeo?.codigo === "ca_agosto_2026";
+    const componentesIeo = metodologiaIeo
+      ? (window.IeoRecorrente?.getCamposEntrada?.(lancamento) || []).map((field) => [
+        field.rotulo,
+        Calculations.formatarValor(lancamento.camposEntrada?.[field.nome], field.tipo)
+      ])
+      : [];
+    const componentesInteiros = metodologiaIeo
+      ? []
+      : (regra?.camposEntrada || [])
+        .filter((field) => field.tipo === "inteiro")
+        .filter((field) => {
+          const value = lancamento.camposEntrada?.[field.nome];
+          return value !== null && value !== undefined && value !== "";
+        })
+        .map((field) => [
+          field.rotulo || field.nome,
+          Calculations.formatarInteiroBR(lancamento.camposEntrada[field.nome])
+        ]);
     const tipoCapacitacao = regra?.tipoCalculo === "cobertura_capacitacao"
       ? window.IndicatorFormulas?.resolverTipoPosicaoCapacitacao?.(lancamento)
       : null;
@@ -289,7 +332,17 @@
       ["Fonte/evidência informada", documentation.reference || "-"],
       ["Situação", tipoCapacitacao === "acompanhamento" ? "Em acompanhamento" : displayLaunch.situacaoCalculada || "-"]
     ] : [];
-    const metaReferencia = regra?.parametrosCalculo?.metaTipo === "curva_acumulada_por_competencia"
+    const componentesNps = regra?.tipoCalculo === "nota_pesquisa_nps" ? [
+      ["Tipo da posição", lancamento.camposEntrada?.tipoPosicaoNPS || "-"],
+      ["Percentual de promotores", Calculations.formatarPercentual(npsCalculation?.percentualPromotores)],
+      ["Percentual de detratores", Calculations.formatarPercentual(npsCalculation?.percentualDetratores)],
+      ["NPS calculado", Calculations.formatarValor(npsCalculation?.npsCalculado ?? displayLaunch.resultadoMensal, "pontos")],
+      ["Data-base da pesquisa", lancamento.camposEntrada?.dataBasePesquisaNPS || "-"],
+      ["Fórmula do NPS", "Percentual de promotores − percentual de detratores", true]
+    ] : [];
+    const metaReferencia = regra?.tipoCalculo === "nota_pesquisa_nps"
+      ? Calculations.formatarValor(npsCalculation?.metaReferenciaPeriodo ?? lancamento.metaMensal, "pontos")
+      : regra?.parametrosCalculo?.metaTipo === "curva_acumulada_por_competencia"
       ? (() => {
         const key = lancamento?.competencia || `${lancamento?.ano}-${String(lancamento?.mes).padStart(2, "0")}`;
         const curva = regra.parametrosCalculo.metasAcumuladasPorCompetencia || {};
@@ -305,12 +358,18 @@
       ["Diretoria responsável", indicador.diretoriaResponsavel || "Não informado"],
       ["Mês/Ano", `${lancamento.nomeMes}/${lancamento.ano}`],
       ["Meta de referência", metaReferencia],
-      ["Realizado mensal", Calculations.formatarValor(displayLaunch.resultadoMensal ?? displayLaunch.realizadoMensal, regra && regra.unidadeMedida)],
+      [metodologiaIeoCa ? "IEO calculado da competência" : regra?.tipoCalculo === "nota_pesquisa_nps" ? "NPS calculado" : "Realizado mensal", Calculations.formatarValor(displayLaunch.resultadoMensal ?? displayLaunch.realizadoMensal, regra && regra.unidadeMedida)],
       ["Percentual atingido", Calculations.formatarPercentual(displayLaunch.percentualAtingido)],
-      ["Resultado acumulado", Calculations.formatarValor(displayLaunch.resultadoAcumulado, regra && regra.unidadeMedida)],
-      ["Percentual acumulado", Calculations.formatarPercentual(displayLaunch.percentualAtingidoAcumulado)],
+      ...(!metodologiaIeoCa ? [
+        ["Resultado acumulado", Calculations.formatarValor(displayLaunch.resultadoAcumulado, regra && regra.unidadeMedida)],
+        ["Percentual acumulado", Calculations.formatarPercentual(displayLaunch.percentualAtingidoAcumulado)]
+      ] : []),
       ["Tipo de cálculo", indicador.tipoCalculo],
-      ["Métrica/Fórmula", indicador.metrica, true],
+      ["Métrica/Fórmula", metodologiaIeo?.formula || indicador.metrica, true],
+      ...(metodologiaIeo ? [["Metodologia vigente", metodologiaIeo.descricao, true]] : []),
+      ...componentesIeo,
+      ...componentesNps,
+      ...componentesInteiros,
       ...detalhesCapacitacao
     ].map(([label, value, full]) => `
       <article class="detail-item ${full ? "full-span" : ""}">
