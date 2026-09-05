@@ -31,10 +31,10 @@
     return Math.max(0, Math.min(1, number > 1 ? number / 100 : number));
   }
 
-  function formatarPercentual(value) {
+  function formatarPercentual(value, minimumFractionDigits = 0) {
     const number = toNumber(value);
     if (number === null) return "-";
-    return `${(number * 100).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;
+    return `${(number * 100).toLocaleString("pt-BR", { minimumFractionDigits, maximumFractionDigits: 2 })}%`;
   }
 
   function formatarValor(value, unidadeMedida) {
@@ -150,6 +150,37 @@
     ACOMPANHAMENTO: "acompanhamento",
     APURACAO_QUANTITATIVA: "apuracao_quantitativa"
   });
+
+  const TIPO_POSICAO_APRIMORAMENTO = Object.freeze({
+    ACOMPANHAMENTO: "acompanhamento",
+    FECHAMENTO_QUANTITATIVO: "fechamento_quantitativo"
+  });
+
+  function resolverTipoPosicaoAprimoramento(lancamento) {
+    const camposEntrada = lancamento?.camposEntrada || {};
+    const tipoExplicito = String(camposEntrada.tipoPosicaoAprimoramento || "").trim();
+    if (Object.values(TIPO_POSICAO_APRIMORAMENTO).includes(tipoExplicito)) return tipoExplicito;
+
+    const possuiAcumulado = camposEntrada.melhoriasImplementadasAcumuladas !== undefined &&
+      camposEntrada.melhoriasImplementadasAcumuladas !== null &&
+      camposEntrada.melhoriasImplementadasAcumuladas !== "";
+    if (possuiAcumulado) return TIPO_POSICAO_APRIMORAMENTO.FECHAMENTO_QUANTITATIVO;
+
+    const possuiValorHistorico = ["melhoriasImplementadasMes", "melhoriasEntreguesMes"]
+      .some((nome) => camposEntrada[nome] !== undefined && camposEntrada[nome] !== null && camposEntrada[nome] !== "");
+    return possuiValorHistorico ? TIPO_POSICAO_APRIMORAMENTO.FECHAMENTO_QUANTITATIVO : null;
+  }
+
+  function resultadoAcompanhamentoAprimoramento(regra, lancamentoAtual) {
+    return {
+      ...pendente("Acompanhamento registrado sem nova posição quantitativa.", regra.unidadeMedida, {
+        statusCalculo: "acompanhamento",
+        tipoPosicaoAprimoramento: TIPO_POSICAO_APRIMORAMENTO.ACOMPANHAMENTO,
+        situacao: "Em acompanhamento"
+      }),
+      descricaoMelhoriasMes: raw(lancamentoAtual, "descricaoMelhoriasMes") || null
+    };
+  }
 
   function resolverTipoPosicaoCapacitacao(lancamento) {
     const camposEntrada = lancamento?.camposEntrada || {};
@@ -894,8 +925,72 @@
   function calcularProjetoMarcoEntrega(indicador, regra, lancamentoAtual) {
     const required = validarObrigatorios(regra, lancamentoAtual);
     if (required) return erro(required, regra.unidadeMedida);
-    const statusOriginal = texto(lancamentoAtual, regra.parametrosCalculo?.campoStatus || "statusProjeto");
+    const params = regra.parametrosCalculo || {};
+    const statusOriginal = texto(lancamentoAtual, params.campoStatus || "statusProjeto");
     const status = statusOriginal.toLowerCase();
+    if (params.metaTipo === "meta_oficial_trimestral_projeto") {
+      const campoMarco = params.campoMarco || "marcoAtualProjeto";
+      const campoPercentualOficial = params.campoPercentual || "percentualEvolucaoProjeto";
+      const marcoAtual = texto(lancamentoAtual, campoMarco);
+      const trimestre = lancamentoAtual.trimestre || `${Math.ceil(Number(lancamentoAtual.mes) / 3)}TRI/${lancamentoAtual.ano || 2026}`;
+      const metas = params.metasTrimestraisOficiais || {};
+      const metaTrimestral = Object.prototype.hasOwnProperty.call(metas, trimestre)
+        ? toNumber(metas[trimestre])
+        : null;
+      const valorInformado = raw(lancamentoAtual, campoPercentualOficial);
+      const possuiPercentualOficial = valorInformado !== null && valorInformado !== undefined && valorInformado !== "";
+      const detalhes = {
+        marcoAtual,
+        statusProjeto: statusOriginal,
+        metaTrimestral,
+        metaTrimestralUnidadeMedida: "percentual",
+        metaAnualMarco: params.metaAnualMarco || regra.metaAnualDescricao || "Piloto/MVP",
+        percentualEvolucaoProjeto: null,
+        situacao: "Em acompanhamento"
+      };
+
+      if (!possuiPercentualOficial) {
+        return pendente(
+          "Acompanhamento qualitativo registrado sem percentual oficial de evolução do projeto.",
+          "percentual",
+          { ...detalhes, desempenhoNaoAplicavel: true }
+        );
+      }
+
+      const percentualOficial = normalizarPercentual(valorInformado);
+      if (percentualOficial === null || percentualOficial < 0 || percentualOficial > 1) {
+        return erro("Percentual oficial de evolução do projeto deve estar entre 0% e 100%.", "percentual");
+      }
+
+      const percentualAtingido = metaTrimestral !== null && metaTrimestral > 0
+        ? percentualOficial / metaTrimestral
+        : null;
+      const situacao = metaTrimestral === null
+        ? "Em acompanhamento"
+        : percentualOficial >= metaTrimestral
+          ? "Atingido"
+          : "Abaixo da meta";
+      return ok(
+        percentualOficial,
+        percentualOficial,
+        percentualAtingido,
+        percentualAtingido,
+        "percentual",
+        "Evolução oficial do projeto registrada com sucesso.",
+        {
+          ...detalhes,
+          percentualEvolucaoProjeto: percentualOficial,
+          situacao,
+          desempenhoNaoAplicavel: metaTrimestral === null,
+          resultadoMensalFormatado: formatarPercentual(percentualOficial, 2),
+          resultadoAcumuladoFormatado: formatarPercentual(percentualOficial, 2),
+          resultadoOficialAnualFormatado: formatarPercentual(percentualOficial, 2),
+          percentualAtingidoMensalFormatado: formatarPercentual(percentualAtingido, 2),
+          percentualAtingidoAcumuladoFormatado: formatarPercentual(percentualAtingido, 2),
+          percentualAtingidoAnualFormatado: formatarPercentual(percentualAtingido, 2)
+        }
+      );
+    }
     if (regra.parametrosCalculo?.metaTipo === "marco_anual") {
       const campoMarco = regra.parametrosCalculo?.campoMarco || regra.parametrosCalculo?.campoStatus || "marcoAtualProjeto";
       const marcoAtual = texto(lancamentoAtual, campoMarco);
@@ -1120,19 +1215,83 @@
   }
 
   function calcularQuantidadeAcumulada(indicador, regra, lancamentoAtual, lancamentosDoAno) {
-    const required = validarObrigatorios(regra, lancamentoAtual);
-    if (required) return erro(required, regra.unidadeMedida);
+    const aprimoramentoExperiencia = Number(indicador?.id) === 4 && regra?.tipoCalculo === "melhorias_acumuladas";
+    const tipoPosicaoAprimoramento = aprimoramentoExperiencia
+      ? resolverTipoPosicaoAprimoramento(lancamentoAtual)
+      : null;
+    if (aprimoramentoExperiencia && !tipoPosicaoAprimoramento) {
+      return pendente("Selecione o tipo da posição.", regra.unidadeMedida, { tipoPosicaoAprimoramento: null });
+    }
+    if (tipoPosicaoAprimoramento === TIPO_POSICAO_APRIMORAMENTO.ACOMPANHAMENTO) {
+      return resultadoAcompanhamentoAprimoramento(regra, lancamentoAtual);
+    }
+    if (!aprimoramentoExperiencia) {
+      const required = validarObrigatorios(regra, lancamentoAtual);
+      if (required) return erro(required, regra.unidadeMedida);
+    }
     const campoValor = regra.parametrosCalculo?.campoValor || regra.parametrosCalculo?.campoMelhorias || "quantidadeRealizadaMes";
     const totalMelhoriasPlano = toNumber(regra.parametrosCalculo?.totalMelhoriasPlano2026);
     const metaMinimaMelhorias = toNumber(regra.parametrosCalculo?.metaMinimaMelhoriasAno);
     if (totalMelhoriasPlano && metaMinimaMelhorias) {
       const ateMes = lancamentosAteMes(lancamentoAtual, lancamentosDoAno);
-      const mensal = campo(lancamentoAtual, campoValor);
-      if (mensal === null || mensal < 0) return erro("Melhorias entregues no mês devem ser informadas e não podem ser negativas.", regra.unidadeMedida);
-      if (!Number.isInteger(mensal)) return erro("Melhorias entregues no mês devem ser números inteiros.", regra.unidadeMedida);
-      const acumulado = somaCampo(ateMes, campoValor);
+      const campoLegado = regra.parametrosCalculo?.campoValorLegado || "melhoriasEntreguesMes";
+      const campoAcumulado = regra.parametrosCalculo?.campoPosicaoAcumulada || "melhoriasImplementadasAcumuladas";
+      const incrementoAtual = campo(lancamentoAtual, campoValor);
+      const incrementoLegadoAtual = incrementoAtual === null ? campo(lancamentoAtual, campoLegado) : null;
+      const acumuladoCompatibilidadeAtual = aprimoramentoExperiencia ? campo(lancamentoAtual, campoAcumulado) : null;
+      const mensal = incrementoAtual ?? incrementoLegadoAtual;
+      if (aprimoramentoExperiencia && mensal === null && acumuladoCompatibilidadeAtual === null) {
+        return erro("Melhorias implementadas no período de apuração devem ser informadas.", regra.unidadeMedida);
+      }
+      if (!aprimoramentoExperiencia && (mensal === null || mensal < 0)) {
+        return erro("Melhorias entregues no mês devem ser informadas e não podem ser negativas.", regra.unidadeMedida);
+      }
+      const valorInformado = mensal ?? acumuladoCompatibilidadeAtual;
+      if (valorInformado < 0 || !Number.isInteger(valorInformado)) {
+        return erro("As melhorias implementadas no período devem ser uma quantidade inteira não negativa.", regra.unidadeMedida);
+      }
+
+      let acumulado;
+      let acumuladoAnterior = 0;
+      if (aprimoramentoExperiencia) {
+        const mesmaCompetencia = (item) => (
+          Number(item?.indicadorId ?? indicador?.id) === Number(lancamentoAtual?.indicadorId ?? indicador?.id) &&
+          Number(item?.ano) === Number(lancamentoAtual?.ano) &&
+          Number(item?.mes) === Number(lancamentoAtual?.mes)
+        );
+        const escopo = [
+          ...ateMes.filter((item) => !mesmaCompetencia(item)),
+          lancamentoAtual
+        ].sort((a, b) => Number(a.mes) - Number(b.mes));
+        acumulado = 0;
+        for (const item of escopo) {
+          if (resolverTipoPosicaoAprimoramento(item) === TIPO_POSICAO_APRIMORAMENTO.ACOMPANHAMENTO) continue;
+          const atual = item === lancamentoAtual;
+          if (atual) acumuladoAnterior = acumulado;
+          const incremento = campo(item, campoValor);
+          const incrementoLegado = incremento === null ? campo(item, campoLegado) : null;
+          const valorIncremental = incremento ?? incrementoLegado;
+          const posicaoAbsoluta = campo(item, campoAcumulado);
+          if (valorIncremental !== null) {
+            if (valorIncremental < 0 || !Number.isInteger(valorIncremental)) {
+              return erro("As melhorias implementadas no período devem ser uma quantidade inteira não negativa.", regra.unidadeMedida);
+            }
+            acumulado += valorIncremental;
+          } else if (posicaoAbsoluta !== null) {
+            if (posicaoAbsoluta < 0 || !Number.isInteger(posicaoAbsoluta)) {
+              return erro("A posição acumulada de compatibilidade deve ser uma quantidade inteira não negativa.", regra.unidadeMedida);
+            }
+            if (atual && posicaoAbsoluta < acumuladoAnterior) {
+              return erro("A posição acumulada não pode ser inferior à última posição quantitativa registrada.", regra.unidadeMedida);
+            }
+            acumulado = posicaoAbsoluta;
+          }
+        }
+      } else {
+        acumulado = somaCampo(ateMes, campoValor);
+      }
       if (acumulado > totalMelhoriasPlano) {
-        return erro("O total de melhorias entregues não pode ser maior que o total de melhorias previstas no plano.", regra.unidadeMedida);
+        return erro(`A posição acumulada não pode ser maior que ${totalMelhoriasPlano}, a base de melhorias mapeadas.`, regra.unidadeMedida);
       }
       let percentualPlanoExecutado = acumulado / totalMelhoriasPlano;
       const percentualPlanoExecutadoCalculado = percentualPlanoExecutado;
@@ -1144,7 +1303,16 @@
       if (metaTrimestral && metaQuantidadeTrimestral !== null && acumulado === metaQuantidadeTrimestral) {
         percentualPlanoExecutado = metaTrimestral;
       }
-      const percentualAtingidoCurva = metaTrimestral ? percentualPlanoExecutado / metaTrimestral : percentualMetaAnualAtingida;
+      const metaPercentualPelaQuantidade = metaQuantidadeTrimestral !== null
+        ? metaQuantidadeTrimestral / totalMelhoriasPlano
+        : null;
+      const curvaEquivalenteAQuantidade = metaTrimestral && metaQuantidadeTrimestral > 0 &&
+        Math.abs(metaTrimestral - metaPercentualPelaQuantidade) <= 0.0001;
+      const percentualAtingidoCurva = curvaEquivalenteAQuantidade
+        ? acumulado / metaQuantidadeTrimestral
+        : metaTrimestral
+          ? percentualPlanoExecutado / metaTrimestral
+          : percentualMetaAnualAtingida;
       const situacao = metaTrimestral
         ? percentualPlanoExecutado >= metaTrimestral
           ? "Atingido"
@@ -1164,8 +1332,13 @@
         {
           melhoriasEntreguesMes: mensal,
           melhoriasImplementadasMes: mensal,
+          novasMelhoriasPeriodo: mensal,
+          melhoriasImplementadasAcumuladasAnterior: acumuladoAnterior,
           melhoriasEntreguesAcumuladas: acumulado,
           melhoriasImplementadasAcumuladas: acumulado,
+          melhoriasImplementadasAcumuladasCompatibilidade: acumuladoCompatibilidadeAtual,
+          fonteCalculoAprimoramento: mensal !== null ? "incremento_periodo" : "posicao_absoluta_compatibilidade",
+          tipoPosicaoAprimoramento: tipoPosicaoAprimoramento || TIPO_POSICAO_APRIMORAMENTO.FECHAMENTO_QUANTITATIVO,
           totalMelhoriasPlano2026: totalMelhoriasPlano,
           metaMinimaMelhoriasAno: metaMinimaMelhorias,
           metaPercentualReferencia: toNumber(regra.parametrosCalculo?.metaPercentualReferencia),
@@ -1796,7 +1969,9 @@
 
   const api = {
     TIPO_POSICAO_CAPACITACAO,
+    TIPO_POSICAO_APRIMORAMENTO,
     resolverTipoPosicaoCapacitacao,
+    resolverTipoPosicaoAprimoramento,
     obterRegra,
     regraFallback,
     toNumber,

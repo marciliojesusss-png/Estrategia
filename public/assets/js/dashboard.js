@@ -180,6 +180,13 @@
       const trimestre = lancamento?.trimestre || `${Math.ceil(Number(lancamento?.mes) / 3)}TRI/${lancamento?.ano || 2026}`;
       return toFiniteNumber(regra.parametrosCalculo.curvaTrimestralPercentual?.[trimestre]?.metaPercentual);
     }
+    if (regra?.parametrosCalculo?.metaTipo === "meta_oficial_trimestral_projeto") {
+      const calculada = toFiniteNumber(resultado?.metaTrimestral);
+      if (calculada !== null) return calculada;
+      const trimestre = lancamento?.trimestre || `${Math.ceil(Number(lancamento?.mes) / 3)}TRI/${lancamento?.ano || 2026}`;
+      const metas = regra.parametrosCalculo.metasTrimestraisOficiais || {};
+      return Object.prototype.hasOwnProperty.call(metas, trimestre) ? toFiniteNumber(metas[trimestre]) : null;
+    }
     if (regra?.parametrosCalculo?.metaTipo === "curva_trimestral_quantidade_cursos") {
       const trimestre = lancamento?.trimestre || `${Math.ceil(Number(lancamento?.mes) / 3)}TRI/${lancamento?.ano || 2026}`;
       return toFiniteNumber(regra.parametrosCalculo.curvaTrimestralCursos?.[trimestre]?.metaCobertura ?? regra.parametrosCalculo.metaCobertura ?? regra.metaAnualValor);
@@ -237,6 +244,14 @@
   }
 
   function isQuantitativePerformanceLaunch(regra, lancamento) {
+    if (regra?.parametrosCalculo?.metaTipo === "meta_oficial_trimestral_projeto") {
+      const field = regra.parametrosCalculo.campoPercentual || "percentualEvolucaoProjeto";
+      const value = lancamento?.camposEntrada?.[field];
+      return value !== null && value !== undefined && value !== "" && toFiniteNumber(value) !== null;
+    }
+    if (regra?.tipoCalculo === "melhorias_acumuladas") {
+      return window.IndicatorFormulas?.resolverTipoPosicaoAprimoramento?.(lancamento) === "fechamento_quantitativo";
+    }
     if (regra?.tipoCalculo === "cobertura_capacitacao") {
       return window.IndicatorFormulas?.resolverTipoPosicaoCapacitacao?.(lancamento) === "apuracao_quantitativa";
     }
@@ -273,7 +288,9 @@
       "lucro_recorrente_mensal",
       "cobertura_capacitacao",
       "nota_pesquisa_nps",
-      "nota_pesquisa_anual"
+      "nota_pesquisa_anual",
+      "melhorias_acumuladas",
+      "projeto_marco_entrega"
     ]);
     const validSource = homologatedOnlyTypes.has(regra?.tipoCalculo)
       ? (lancamentosDoIndicador || []).filter((item) => item.status === "Homologado")
@@ -295,7 +312,7 @@
   }
 
   function executiveCurrentSituation(regra, lancamento, resultadoCalculado = null) {
-    if (!["nota_pesquisa_nps", "nota_pesquisa_anual"].includes(regra?.tipoCalculo) || !lancamento) return null;
+    if (!["nota_pesquisa_nps", "nota_pesquisa_anual", "melhorias_acumuladas", "projeto_marco_entrega"].includes(regra?.tipoCalculo) || !lancamento) return null;
     if (!isQuantitativePerformanceLaunch(regra, lancamento) && hasValidLaunchData(lancamento)) {
       return "Em acompanhamento";
     }
@@ -340,6 +357,8 @@
   }
 
   function obterResultadoDashboard(indicador, regra, lancamentosDoIndicador) {
+    const positionBased = ["nota_pesquisa_nps", "nota_pesquisa_anual", "melhorias_acumuladas", "projeto_marco_entrega"].includes(regra?.tipoCalculo);
+    const researchBased = ["nota_pesquisa_nps", "nota_pesquisa_anual"].includes(regra?.tipoCalculo);
     const positions = resolveLatestQuantitativePosition(indicador, regra, lancamentosDoIndicador);
     const lancamentosHistoricosValidos = positions.historicalLaunches;
     const lancamentosOperacionaisValidos = positions.operationalLaunches;
@@ -400,10 +419,10 @@
       lancamentoAcao,
       latestOperationalLaunch: lancamentoAcao,
       latestQuantitativeLaunch: lancamentoOficial,
-      competenciaAtual: ["nota_pesquisa_nps", "nota_pesquisa_anual"].includes(regra?.tipoCalculo) ? competencia(lancamentoAcao) : null,
-      competenciaMedicao: ["nota_pesquisa_nps", "nota_pesquisa_anual"].includes(regra?.tipoCalculo) ? competencia(lancamentoOficial) : null,
-      competenciaMedicaoCurta: ["nota_pesquisa_nps", "nota_pesquisa_anual"].includes(regra?.tipoCalculo) ? competenciaCurta(lancamentoOficial) : null,
-      statusAtual: ["nota_pesquisa_nps", "nota_pesquisa_anual"].includes(regra?.tipoCalculo) ? lancamentoAcao.status : null,
+      competenciaAtual: researchBased ? competencia(lancamentoAcao) : null,
+      competenciaMedicao: researchBased ? competencia(lancamentoOficial) : null,
+      competenciaMedicaoCurta: researchBased ? competenciaCurta(lancamentoOficial) : null,
+      statusAtual: positionBased ? lancamentoAcao.status : null,
       meta: getOfficialMeta(regra, lancamentoOficial, resultadoCalculado),
       situacaoAtual,
       situacaoCalculada: situacaoAtual || (resultadoCalculado && resultadoCalculado.situacao),
@@ -649,6 +668,9 @@
   }
 
   function formatOfficialResult(resultado) {
+    if (resultado?.regra?.parametrosCalculo?.metaTipo === "meta_oficial_trimestral_projeto") {
+      return Calculations.formatarPercentual(resultado.resultado, 2);
+    }
     if (resultado?.regra?.tipoCalculo === "execucao_acoes_propostas") {
       return Calculations.formatarValor(resultado.resultado, "quantidade");
     }
@@ -656,6 +678,9 @@
   }
 
   function formatOfficialMeta(resultado) {
+    if (resultado?.regra?.parametrosCalculo?.metaTipo === "meta_oficial_trimestral_projeto") {
+      return Calculations.formatarPercentual(resultado.meta, 2);
+    }
     if (resultado?.regra?.parametrosCalculo?.metaTipo === "curva_acumulada_por_competencia" && resultado.meta === null) {
       return "Pendente de curva orcamentaria";
     }

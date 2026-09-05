@@ -296,6 +296,8 @@
   }
 
   function getMetaLabel(regra) {
+    if (regra?.tipoCalculo === "melhorias_acumuladas") return "Meta acumulada do período";
+    if (regra?.parametrosCalculo?.metaTipo === "meta_oficial_trimestral_projeto") return "Meta oficial do período";
     if (regra?.tipoCalculo === "participacao_ecossistema_com_cenarios") return "Meta trimestral 2026";
     if (regra?.tipoCalculo === "incremento_rede_loterica_base_2025") return "Meta trimestral de incremento";
     if (regra?.tipoCalculo === "crescimento_comparado_base_2025") return "Meta em indice (110% da base 2025)";
@@ -318,6 +320,15 @@
   }
 
   function getDisplayMeta(regra, lancamento) {
+    if (regra?.parametrosCalculo?.metaTipo === "meta_oficial_trimestral_projeto") {
+      const trimestre = lancamento?.trimestre || `${Math.ceil(Number(lancamento?.mes) / 3)}TRI/${lancamento?.ano || 2026}`;
+      const metas = regra.parametrosCalculo.metasTrimestraisOficiais || {};
+      return Object.prototype.hasOwnProperty.call(metas, trimestre) ? metas[trimestre] : null;
+    }
+    if (regra?.tipoCalculo === "melhorias_acumuladas") {
+      const trimestre = lancamento?.trimestre || `${Math.ceil(Number(lancamento?.mes) / 3)}TRI/${lancamento?.ano || 2026}`;
+      return regra?.parametrosCalculo?.curvaTrimestralAcumulada?.[trimestre]?.metaPercentual ?? null;
+    }
     if (regra?.tipoCalculo === "participacao_ecossistema_com_cenarios") {
       const curve = getEcossistemaCurveForLaunch(regra, lancamento, lancamento?.camposEntrada?.cenarioApuracaoEcossistema);
       return curve ? curve.meta2026 / 100 : lancamento.metaMensal ?? regra?.metaAnualValor;
@@ -408,6 +419,9 @@
       const trimestre = lancamento.trimestre || `${Math.ceil(Number(lancamento.mes) / 3)}TRI/${lancamento.ano || 2026}`;
       const criterio = regra.parametrosCalculo?.curvaTrimestralCursos?.[trimestre] || {};
       values.quantidadeCursosMinimaCapacitacao = criterio.quantidadeCursosMinima ?? "";
+    }
+    if (regra?.tipoCalculo === "melhorias_acumuladas") {
+      values.tipoPosicaoAprimoramento = IndicatorFormulas.resolverTipoPosicaoAprimoramento(lancamento) || "";
     }
     return values;
   }
@@ -527,6 +541,8 @@
     if (regra?.tipoCalculo === "incremento_rede_loterica_base_2025") return false;
     if (["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(regra?.tipoCalculo)) return false;
     if (isOfertasPersonalizadasIndicator(indicador, regra)) return false;
+    if (regra?.tipoCalculo === "melhorias_acumuladas") return false;
+    if (regra?.parametrosCalculo?.metaTipo === "meta_oficial_trimestral_projeto") return false;
     return usesAutomaticCalculation(indicador, regra) && regra && (regra.unidadeMedida === "percentual" || regra.parametrosCalculo?.quantoMenorMelhor);
   }
 
@@ -698,11 +714,25 @@
       document.getElementById("resultadoAnualWrapper").hidden = true;
       document.getElementById("percentualAnualWrapper").hidden = true;
     }
+    if (regra?.tipoCalculo === "melhorias_acumuladas") {
+      document.getElementById("percentualMensalWrapper").hidden = false;
+      document.getElementById("resultadoAnualWrapper").hidden = true;
+      document.getElementById("percentualAnualWrapper").hidden = true;
+    }
+    if (regra?.parametrosCalculo?.metaTipo === "meta_oficial_trimestral_projeto") {
+      document.getElementById("percentualMensalWrapper").hidden = false;
+      document.getElementById("resultadoAnualWrapper").hidden = true;
+      document.getElementById("percentualAnualWrapper").hidden = true;
+    }
 
     document.getElementById("launchResultadoMensalLabel").textContent = isIeoRule(regra)
       ? "IEO calculado da competência"
       : regra?.tipoCalculo === "nota_pesquisa_nps"
         ? "Resultado NPS calculado"
+      : regra?.tipoCalculo === "melhorias_acumuladas"
+        ? "Resultado acumulado"
+      : regra?.parametrosCalculo?.metaTipo === "meta_oficial_trimestral_projeto"
+        ? "Evolução oficial do projeto"
       : regra?.tipoCalculo === "incremento_rede_loterica_base_2025"
         ? "Incremento percentual"
       : ["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(regra?.tipoCalculo)
@@ -751,6 +781,7 @@
       input.disabled = false;
     });
     updateCapacitacaoPositionFields(regra, getSelectedLaunch());
+    updateAprimoramentoPositionFields(regra, getSelectedLaunch());
     updateNpsPositionFields(regra, getSelectedLaunch());
   }
 
@@ -819,6 +850,7 @@
       ${renderEntryInput(field, values[field.nome] ?? "")}
     `).join("");
     updateCapacitacaoPositionFields(regra, lancamento);
+    updateAprimoramentoPositionFields(regra, lancamento);
     updateNpsPositionFields(regra, lancamento);
     updateEcossistemaCurveFields(regra, lancamento);
     updateRedeLotericaCurveFields(regra, lancamento);
@@ -855,6 +887,27 @@
     if (quantityInput) {
       quantityInput.value = criterion.quantidadeCursosMinima ?? "";
       quantityInput.readOnly = true;
+    }
+  }
+
+  function updateAprimoramentoPositionFields(regra, lancamento) {
+    if (regra?.tipoCalculo !== "melhorias_acumuladas") return;
+    const type = document.querySelector('[data-entry-field="tipoPosicaoAprimoramento"]')?.value || "";
+    const quantitative = type === "fechamento_quantitativo";
+    const incrementWrapper = document.querySelector('[data-entry-wrapper="melhoriasImplementadasMes"]');
+    const positionWrapper = document.querySelector('[data-entry-wrapper="melhoriasImplementadasAcumuladas"]');
+    if (incrementWrapper) {
+      incrementWrapper.hidden = !quantitative;
+      const input = incrementWrapper.querySelector(".dynamic-entry-field");
+      if (input) input.disabled = !quantitative || !isEditable(lancamento);
+    }
+    if (positionWrapper) {
+      positionWrapper.hidden = !quantitative;
+      const input = positionWrapper.querySelector(".dynamic-entry-field");
+      if (input) {
+        input.readOnly = true;
+        input.disabled = true;
+      }
     }
   }
 
@@ -1008,13 +1061,22 @@
     }
 
     if (resultado.totalMelhoriasPlano2026 !== undefined) {
-      details.push(["Total de melhorias previstas no plano", resultado.totalMelhoriasPlano2026]);
+      details.push(["Base de melhorias mapeadas", Calculations.formatarInteiroBR(resultado.totalMelhoriasPlano2026)]);
+    }
+    if (resultado.melhoriasImplementadasAcumuladasAnterior !== undefined) {
+      details.push(["Posição acumulada anterior", Calculations.formatarInteiroBR(resultado.melhoriasImplementadasAcumuladasAnterior)]);
+    }
+    if (resultado.novasMelhoriasPeriodo !== undefined && resultado.novasMelhoriasPeriodo !== null) {
+      details.push(["Novas melhorias no período", Calculations.formatarInteiroBR(resultado.novasMelhoriasPeriodo)]);
     }
     if (resultado.metaMinimaMelhoriasAno !== undefined) {
       details.push(["Meta anual de melhorias", resultado.metaMinimaMelhoriasAno]);
     }
     if (resultado.melhoriasEntreguesAcumuladas !== undefined) {
-      details.push(["Melhorias acumuladas no ano", resultado.melhoriasEntreguesAcumuladas]);
+      details.push(["Posição acumulada oficial", Calculations.formatarInteiroBR(resultado.melhoriasEntreguesAcumuladas)]);
+    }
+    if (resultado.metaQuantidadeTrimestral !== undefined && resultado.metaQuantidadeTrimestral !== null) {
+      details.push(["Quantidade-meta acumulada", Calculations.formatarInteiroBR(resultado.metaQuantidadeTrimestral)]);
     }
     if (resultado.percentualMetaAnualAtingida !== undefined) {
       details.push(["% da meta anual atingida", Calculations.formatarPercentual(resultado.percentualMetaAnualAtingida)]);
@@ -1254,6 +1316,22 @@
       document.getElementById("resultadoAnualWrapper").hidden = true;
       document.getElementById("percentualAnualWrapper").hidden = true;
     }
+    if (result.regra?.tipoCalculo === "melhorias_acumuladas") {
+      document.getElementById("percentualMensalWrapper").hidden = false;
+      document.getElementById("resultadoAnualWrapper").hidden = true;
+      document.getElementById("percentualAnualWrapper").hidden = true;
+      const accumulatedInput = document.querySelector('[data-entry-field="melhoriasImplementadasAcumuladas"]');
+      if (accumulatedInput) {
+        accumulatedInput.value = result.resultado.melhoriasImplementadasAcumuladas === null || result.resultado.melhoriasImplementadasAcumuladas === undefined
+          ? ""
+          : Calculations.formatarInteiroBR(result.resultado.melhoriasImplementadasAcumuladas);
+      }
+    }
+    if (result.regra?.parametrosCalculo?.metaTipo === "meta_oficial_trimestral_projeto") {
+      document.getElementById("percentualMensalWrapper").hidden = false;
+      document.getElementById("resultadoAnualWrapper").hidden = true;
+      document.getElementById("percentualAnualWrapper").hidden = true;
+    }
     document.getElementById("launchResultadoMensal").value = result.resultado.resultadoMensalFormatado || Calculations.formatarValor(result.resultado.resultadoMensal, result.resultado.unidadeMedida);
     document.getElementById("launchPercentualCalculado").value = isIeoRule(result.regra) && result.resultado.percentualAtingidoMensal === null
       ? "Sem cálculo"
@@ -1307,6 +1385,21 @@
           showMessage("Informe o público-alvo elegível e os empregados capacitados antes de enviar para homologação.", "warning");
           return false;
         }
+      }
+    }
+
+    if (regra.tipoCalculo === "melhorias_acumuladas") {
+      const tipoPosicao = IndicatorFormulas.resolverTipoPosicaoAprimoramento({
+        ...getSelectedLaunch(),
+        camposEntrada: result.camposEntrada
+      });
+      if (action === "send" && !tipoPosicao) {
+        showMessage("Selecione o tipo da posição antes de enviar para homologação.", "warning");
+        return false;
+      }
+      if (tipoPosicao === "fechamento_quantitativo" && result.resultado.statusCalculo !== "calculado") {
+        showMessage(result.resultado.mensagem || "Informe as melhorias implementadas no período para o fechamento quantitativo.", "warning");
+        return false;
       }
     }
 
@@ -1614,6 +1707,7 @@
       const indicador = lancamento && getIndicatorMap()[lancamento.indicadorId];
       if (indicador) {
         const regra = getRule(indicador);
+        if (event.target.dataset.entryField === "tipoPosicaoAprimoramento") updateAprimoramentoPositionFields(regra, lancamento);
         if (event.target.dataset.entryField === "tipoPosicaoNPS") updateNpsPositionFields(regra, lancamento);
         updateEcossistemaCurveFields(regra, lancamento);
         updateRedeLotericaCurveFields(regra, lancamento);

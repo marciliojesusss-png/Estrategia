@@ -14,7 +14,7 @@ const rulesByIndicator = Object.fromEntries(
 
 const expectedDocumentationFields = {
   2: ["fontePesquisaNPS", "observacaoArea"],
-  4: ["evidenciaMelhoriasMes"],
+  4: [],
   10: ["evidenciaPlataformaJogos", "observacaoArea"],
   11: ["evidenciaTIC"],
   12: ["fonteEvidenciaClima", "observacaoArea"],
@@ -43,6 +43,7 @@ test("inventário global usa uma lista explícita e remove somente campos docume
   assert.equal(DocumentationFields.isCentralDocumentationField("descricaoAndamentoVisibilidade"), false);
   assert.equal(DocumentationFields.isCentralDocumentationField("dataBasePesquisaClima"), false);
   assert.equal(DocumentationFields.isCentralDocumentationField("evidencia"), false);
+  assert.equal(DocumentationFields.isCentralDocumentationField("evidenciaMelhoriasMes"), true);
 });
 
 test("indicador 19 prioriza os controles centrais e mantém os valores legados", () => {

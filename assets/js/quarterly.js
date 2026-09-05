@@ -168,6 +168,10 @@
     if (params.metaTipo === "curva_trimestral_percentual") {
       return toNumber(params.curvaTrimestralPercentual?.[quarterLabel]?.metaPercentual);
     }
+    if (params.metaTipo === "meta_oficial_trimestral_projeto") {
+      const metas = params.metasTrimestraisOficiais || {};
+      return Object.prototype.hasOwnProperty.call(metas, quarterLabel) ? toNumber(metas[quarterLabel]) : null;
+    }
     if (params.metaTipo === "curva_trimestral_quantidade_cursos") {
       return toNumber(params.curvaTrimestralCursos?.[quarterLabel]?.metaCobertura ?? params.metaCobertura ?? rule?.metaAnualValor);
     }
@@ -247,6 +251,13 @@
     return toNumber(fields[params.campoNps || "npsApurado"]) !== null;
   }
 
+  function isQuantitativeProjectLaunch(rule, launch) {
+    if (rule?.parametrosCalculo?.metaTipo !== "meta_oficial_trimestral_projeto") return true;
+    const field = rule.parametrosCalculo.campoPercentual || "percentualEvolucaoProjeto";
+    const value = launch?.camposEntrada?.[field];
+    return value !== null && value !== undefined && value !== "" && toNumber(value) !== null;
+  }
+
   function buildMessage(status, count, names, hasReturned, expectedCount = 3) {
     if (status === "Sem dados") return "Nenhum mês homologado no trimestre.";
     if (status === "Fechado") return "Consolidado trimestral calculado com todas as competências oficiais homologadas.";
@@ -311,9 +322,18 @@
         root.IndicatorFormulas?.resolverTipoPosicaoCapacitacao?.(item) === "apuracao_quantitativa"
       ));
     }
+    if (regra?.tipoCalculo === "melhorias_acumuladas") {
+      calculationScope = calculationScope.filter((item) => (
+        root.IndicatorFormulas?.resolverTipoPosicaoAprimoramento?.(item) === "fechamento_quantitativo"
+      ));
+    }
     if (regra?.tipoCalculo === "nota_pesquisa_nps") {
       const quantitativeNpsScope = calculationScope.filter((item) => isQuantitativeNpsLaunch(regra, item));
       if (quantitativeNpsScope.length) calculationScope = quantitativeNpsScope;
+    }
+    if (regra?.parametrosCalculo?.metaTipo === "meta_oficial_trimestral_projeto") {
+      const quantitativeProjectScope = calculationScope.filter((item) => isQuantitativeProjectLaunch(regra, item));
+      if (quantitativeProjectScope.length) calculationScope = quantitativeProjectScope;
     }
     const current = lastByMonth(calculationScope);
     const calculation = current
@@ -346,8 +366,7 @@
       result !== null &&
       meta !== null &&
       (["soma_acumulada_no_ano", "valor_acumulado_com_meta_dinamica", "acumulado_por_soma_mensal"].includes(regra?.tipoConsolidacao) ||
-        regra?.tipoCalculo === "quantidade_acumulada" ||
-        regra?.tipoCalculo === "melhorias_acumuladas")
+        regra?.tipoCalculo === "quantidade_acumulada")
     ) {
       performance = result / meta;
     }

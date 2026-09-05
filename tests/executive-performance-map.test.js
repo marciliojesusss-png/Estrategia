@@ -186,8 +186,8 @@ const executiveView = fs.readFileSync(path.join(root, "views", "frontend", "resu
 assert.match(executiveSource, /Pesquisa: \$\{measurement\}/);
 assert.match(executiveSource, /Medição: \$\{escapeHtml\(measurement\)\}/);
 assert.match(executiveSource, /performanceToneForResult/);
-assert.match(executiveView, /executiveSummary\.js\?v=NPS-VIGENCIA-001/);
-assert.match(executiveView, /dashboard\.js\?v=NPS-FORMULA-001/);
+assert.match(executiveView, /executiveSummary\.js\?v=PLATAFORMA-JOGOS-001/);
+assert.match(executiveView, /dashboard\.js\?v=PLATAFORMA-JOGOS-001/);
 assert.match(executiveView, /styles\.css\?v=CLIMA-EXECUTIVO-001/);
 assert.equal(executiveSource, fs.readFileSync(path.join(root, "public", "assets", "js", "executiveSummary.js"), "utf8"));
 assert.equal(

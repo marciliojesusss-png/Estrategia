@@ -472,7 +472,10 @@ const regraAprimoramento = {
   unidadeMedida: "percentual",
   metaAnualValor: 0.25,
   parametrosCalculo: {
+    campoTipoPosicao: "tipoPosicaoAprimoramento",
+    campoPosicaoAcumulada: "melhoriasImplementadasAcumuladas",
     campoValor: "melhoriasImplementadasMes",
+    campoValorLegado: "melhoriasEntreguesMes",
     totalMelhoriasPlano2026: 22,
     metaPercentualAnualAprimoramento: 0.25,
     metaMinimaMelhoriasAno: 6,
@@ -486,9 +489,10 @@ const regraAprimoramento = {
     sentidoMeta: "quanto_maior_melhor"
   },
   camposEntrada: [
-    { nome: "melhoriasImplementadasMes", obrigatorio: true },
-    { nome: "descricaoMelhoriasMes", obrigatorio: false },
-    { nome: "evidenciaMelhoriasMes", obrigatorio: false }
+    { nome: "tipoPosicaoAprimoramento", obrigatorio: true },
+    { nome: "melhoriasImplementadasMes", obrigatorio: false },
+    { nome: "melhoriasImplementadasAcumuladas", obrigatorio: false, somenteLeitura: true },
+    { nome: "descricaoMelhoriasMes", obrigatorio: false }
   ]
 };
 
@@ -525,7 +529,120 @@ const melhoriasAcimaDoPlano = formulas.calcularIndicador(
   ]
 );
 assert.equal(melhoriasAcimaDoPlano.erro, true);
-assert.equal(melhoriasAcimaDoPlano.mensagem, "O total de melhorias entregues não pode ser maior que o total de melhorias previstas no plano.");
+assert.equal(melhoriasAcimaDoPlano.mensagem, "A posição acumulada não pode ser maior que 22, a base de melhorias mapeadas.");
+
+const aprimoramentoAcompanhamento = formulas.calcularIndicador(
+  indicador(4, "Aprimoramento da Experiência do Cliente"),
+  regraAprimoramento,
+  { ano: 2026, mes: 4, camposEntrada: { tipoPosicaoAprimoramento: "acompanhamento" } },
+  melhoriasLancamentos
+);
+assert.equal(aprimoramentoAcompanhamento.statusCalculo, "acompanhamento");
+assert.equal(aprimoramentoAcompanhamento.resultadoMensal, null);
+assert.equal(aprimoramentoAcompanhamento.percentualAtingidoMensal, null);
+assert.equal(aprimoramentoAcompanhamento.situacao, "Em acompanhamento");
+
+const aprimoramentoPosicoes2Tri = [
+  ...melhoriasLancamentos,
+  { ano: 2026, mes: 4, status: "Homologado", camposEntrada: { tipoPosicaoAprimoramento: "acompanhamento" } },
+  { ano: 2026, mes: 5, status: "Homologado", camposEntrada: { tipoPosicaoAprimoramento: "acompanhamento" } },
+  { ano: 2026, mes: 6, status: "Homologado", camposEntrada: { tipoPosicaoAprimoramento: "fechamento_quantitativo", melhoriasImplementadasMes: 3 } }
+];
+const aprimoramentoJunho = formulas.calcularIndicador(
+  indicador(4, "Aprimoramento da Experiência do Cliente"),
+  regraAprimoramento,
+  aprimoramentoPosicoes2Tri.at(-1),
+  aprimoramentoPosicoes2Tri
+);
+closeTo(aprimoramentoJunho.resultadoMensal, 4 / 22);
+closeTo(aprimoramentoJunho.metaTrimestral, 0.1364);
+closeTo(aprimoramentoJunho.percentualAtingidoMensal, 4 / 3);
+assert.equal(aprimoramentoJunho.resultadoMensalFormatado, "18,18%");
+assert.equal(aprimoramentoJunho.percentualAtingidoMensalFormatado, "133,33%");
+assert.equal(aprimoramentoJunho.melhoriasImplementadasAcumuladasAnterior, 1);
+assert.equal(aprimoramentoJunho.novasMelhoriasPeriodo, 3);
+assert.equal(aprimoramentoJunho.melhoriasImplementadasAcumuladas, 4);
+assert.equal(aprimoramentoJunho.situacao, "Atingido");
+
+const aprimoramentoSetembro = formulas.calcularIndicador(
+  indicador(4, "Aprimoramento da Experiência do Cliente"),
+  regraAprimoramento,
+  { ano: 2026, mes: 9, camposEntrada: { tipoPosicaoAprimoramento: "fechamento_quantitativo", melhoriasImplementadasMes: 2 } },
+  [
+    ...aprimoramentoPosicoes2Tri,
+    { ano: 2026, mes: 9, camposEntrada: { tipoPosicaoAprimoramento: "fechamento_quantitativo", melhoriasImplementadasMes: 2 } }
+  ]
+);
+closeTo(aprimoramentoSetembro.resultadoMensal, 6 / 22);
+assert.equal(aprimoramentoSetembro.melhoriasImplementadasAcumuladas, 6);
+
+const aprimoramentoDecrescente = formulas.calcularIndicador(
+  indicador(4, "Aprimoramento da Experiência do Cliente"),
+  regraAprimoramento,
+  { ano: 2026, mes: 6, camposEntrada: { tipoPosicaoAprimoramento: "fechamento_quantitativo", melhoriasImplementadasAcumuladas: 0 } },
+  [...melhoriasLancamentos, { ano: 2026, mes: 6, camposEntrada: { tipoPosicaoAprimoramento: "fechamento_quantitativo", melhoriasImplementadasAcumuladas: 0 } }]
+);
+assert.equal(aprimoramentoDecrescente.erro, true);
+assert.equal(aprimoramentoDecrescente.mensagem, "A posição acumulada não pode ser inferior à última posição quantitativa registrada.");
+
+const aprimoramentoLimite = formulas.calcularIndicador(
+  indicador(4, "Aprimoramento da Experiência do Cliente"),
+  regraAprimoramento,
+  { ano: 2026, mes: 6, camposEntrada: { tipoPosicaoAprimoramento: "fechamento_quantitativo", melhoriasImplementadasMes: 2 } },
+  [
+    { ano: 2026, mes: 3, camposEntrada: { tipoPosicaoAprimoramento: "fechamento_quantitativo", melhoriasImplementadasAcumuladas: 21 } },
+    { ano: 2026, mes: 6, camposEntrada: { tipoPosicaoAprimoramento: "fechamento_quantitativo", melhoriasImplementadasMes: 2 } }
+  ]
+);
+assert.equal(aprimoramentoLimite.erro, true);
+
+const aprimoramentoCompatibilidadeAcumulada = formulas.calcularIndicador(
+  indicador(4, "Aprimoramento da Experiência do Cliente"),
+  regraAprimoramento,
+  { ano: 2026, mes: 6, camposEntrada: { tipoPosicaoAprimoramento: "fechamento_quantitativo", melhoriasImplementadasAcumuladas: 4 } },
+  [...melhoriasLancamentos, { ano: 2026, mes: 6, camposEntrada: { tipoPosicaoAprimoramento: "fechamento_quantitativo", melhoriasImplementadasAcumuladas: 4 } }]
+);
+assert.equal(aprimoramentoCompatibilidadeAcumulada.melhoriasImplementadasAcumuladas, 4);
+assert.equal(aprimoramentoCompatibilidadeAcumulada.fonteCalculoAprimoramento, "posicao_absoluta_compatibilidade");
+
+const aprimoramentoDuplaFonte = formulas.calcularIndicador(
+  indicador(4, "Aprimoramento da Experiência do Cliente"),
+  regraAprimoramento,
+  { ano: 2026, mes: 6, camposEntrada: { tipoPosicaoAprimoramento: "fechamento_quantitativo", melhoriasImplementadasMes: 3, melhoriasImplementadasAcumuladas: 4 } },
+  [...melhoriasLancamentos, { ano: 2026, mes: 6, camposEntrada: { tipoPosicaoAprimoramento: "fechamento_quantitativo", melhoriasImplementadasMes: 3, melhoriasImplementadasAcumuladas: 4 } }]
+);
+assert.equal(aprimoramentoDuplaFonte.melhoriasImplementadasAcumuladas, 4);
+assert.equal(aprimoramentoDuplaFonte.fonteCalculoAprimoramento, "incremento_periodo");
+
+const aprimoramentoAposPosicaoAbsoluta = formulas.calcularIndicador(
+  indicador(4, "Aprimoramento da Experiência do Cliente"),
+  regraAprimoramento,
+  { ano: 2026, mes: 9, camposEntrada: { tipoPosicaoAprimoramento: "fechamento_quantitativo", melhoriasImplementadasMes: 2 } },
+  [
+    { ano: 2026, mes: 3, camposEntrada: { tipoPosicaoAprimoramento: "fechamento_quantitativo", melhoriasImplementadasMes: 1 } },
+    { ano: 2026, mes: 6, camposEntrada: { tipoPosicaoAprimoramento: "fechamento_quantitativo", melhoriasImplementadasAcumuladas: 4 } },
+    { ano: 2026, mes: 9, camposEntrada: { tipoPosicaoAprimoramento: "fechamento_quantitativo", melhoriasImplementadasMes: 2 } }
+  ]
+);
+assert.equal(aprimoramentoAposPosicaoAbsoluta.melhoriasImplementadasAcumuladas, 6);
+
+const aprimoramentoZeroIncremental = formulas.calcularIndicador(
+  indicador(4, "Aprimoramento da Experiência do Cliente"),
+  regraAprimoramento,
+  { ano: 2026, mes: 6, camposEntrada: { tipoPosicaoAprimoramento: "fechamento_quantitativo", melhoriasImplementadasMes: 0 } },
+  [...melhoriasLancamentos, { ano: 2026, mes: 6, camposEntrada: { tipoPosicaoAprimoramento: "fechamento_quantitativo", melhoriasImplementadasMes: 0 } }]
+);
+assert.equal(aprimoramentoZeroIncremental.erro, undefined);
+assert.equal(aprimoramentoZeroIncremental.melhoriasImplementadasAcumuladas, 1);
+
+const aprimoramentoLegado = formulas.calcularIndicador(
+  indicador(4, "Aprimoramento da Experiência do Cliente"),
+  regraAprimoramento,
+  { ano: 2026, mes: 3, camposEntrada: { melhoriasEntreguesMes: 1 } },
+  [{ ano: 2026, mes: 3, camposEntrada: { melhoriasEntreguesMes: 1 } }]
+);
+assert.equal(aprimoramentoLegado.melhoriasImplementadasAcumuladas, 1);
+assert.equal(aprimoramentoLegado.resultadoMensalFormatado, "4,54%");
 
 const regraGgr = {
   indicadorId: 5,
@@ -1198,13 +1315,20 @@ const regraPlataformaJogos = {
   indicadorId: 10,
   tipoCalculo: "projeto_marco_entrega",
   tipoConsolidacao: "ultima_posicao_trimestral",
-  unidadeMedida: "marco",
+  unidadeMedida: "percentual",
   metaAnualValor: null,
   parametrosCalculo: {
     campoMarco: "marcoAtualPlataformaJogos",
     campoStatus: "statusProjetoPlataformaJogos",
-    metaTipo: "marco_anual",
-    sentidoMeta: "marco_concluido",
+    campoPercentual: "percentualEvolucaoPlataformaJogos",
+    metaTipo: "meta_oficial_trimestral_projeto",
+    metasTrimestraisOficiais: {
+      "1TRI/2026": null,
+      "2TRI/2026": 1 / 3,
+      "3TRI/2026": null,
+      "4TRI/2026": null
+    },
+    sentidoMeta: "quanto_maior_melhor",
     metaAnualMarco: "Piloto/MVP da Plataforma de Jogos",
     marcoConcluido: "Piloto/MVP concluído",
     statusConcluido: "Piloto/MVP concluído"
@@ -1232,25 +1356,68 @@ const plataformaJogos1Tri = formulas.calcularIndicador(
 assert.equal(plataformaJogos1Tri.resultadoMensal, null);
 assert.equal(plataformaJogos1Tri.percentualAtingidoMensal, null);
 assert.equal(plataformaJogos1Tri.desempenhoNaoAplicavel, true);
-assert.equal(plataformaJogos1Tri.situacao, "Em andamento");
+assert.equal(plataformaJogos1Tri.metaTrimestral, null);
+assert.equal(plataformaJogos1Tri.situacao, "Em acompanhamento");
 
-const plataformaJogosConcluida = formulas.calcularIndicador(
+const plataformaJogos2Tri = formulas.calcularIndicador(
   indicador(10, "Share da Plataforma de Jogos"),
   regraPlataformaJogos,
   {
     ano: 2026,
-    mes: 12,
-    trimestre: "4TRI/2026",
+    mes: 6,
+    trimestre: "2TRI/2026",
     camposEntrada: {
-      marcoAtualPlataformaJogos: "Piloto/MVP concluído",
-      statusProjetoPlataformaJogos: "Piloto/MVP concluído"
+      marcoAtualPlataformaJogos: "Registro de Aposta finalizado em ambiente de desenvolvimento",
+      statusProjetoPlataformaJogos: "Piloto/MVP em desenvolvimento",
+      percentualEvolucaoPlataformaJogos: 0.10
     }
   },
   []
 );
-assert.equal(plataformaJogosConcluida.resultadoMensal, 1);
-assert.equal(plataformaJogosConcluida.percentualAtingidoMensal, null);
-assert.equal(plataformaJogosConcluida.situacao, "Atingido");
+closeTo(plataformaJogos2Tri.resultadoMensal, 0.10);
+closeTo(plataformaJogos2Tri.metaTrimestral, 1 / 3);
+closeTo(plataformaJogos2Tri.percentualAtingidoMensal, 0.30);
+assert.equal(plataformaJogos2Tri.resultadoMensalFormatado, "10,00%");
+assert.equal(plataformaJogos2Tri.percentualAtingidoMensalFormatado, "30,00%");
+assert.equal(plataformaJogos2Tri.situacao, "Abaixo da meta");
+
+const plataformaJogosSemMetaFutura = formulas.calcularIndicador(
+  indicador(10, "Share da Plataforma de Jogos"),
+  regraPlataformaJogos,
+  {
+    ano: 2026,
+    mes: 7,
+    trimestre: "3TRI/2026",
+    camposEntrada: {
+      marcoAtualPlataformaJogos: "Registro de Aposta finalizado em ambiente de desenvolvimento",
+      statusProjetoPlataformaJogos: "Piloto/MVP em desenvolvimento",
+      percentualEvolucaoPlataformaJogos: 0.15
+    }
+  },
+  []
+);
+closeTo(plataformaJogosSemMetaFutura.resultadoMensal, 0.15);
+assert.equal(plataformaJogosSemMetaFutura.metaTrimestral, null);
+assert.equal(plataformaJogosSemMetaFutura.percentualAtingidoMensal, null);
+assert.equal(plataformaJogosSemMetaFutura.situacao, "Em acompanhamento");
+
+for (const percentualInvalido of [-1, 101]) {
+  const invalido = formulas.calcularIndicador(
+    indicador(10, "Share da Plataforma de Jogos"),
+    regraPlataformaJogos,
+    {
+      ano: 2026,
+      mes: 6,
+      camposEntrada: {
+        marcoAtualPlataformaJogos: "Registro de Aposta finalizado em ambiente de desenvolvimento",
+        statusProjetoPlataformaJogos: "Piloto/MVP em desenvolvimento",
+        percentualEvolucaoPlataformaJogos: percentualInvalido
+      }
+    },
+    []
+  );
+  assert.equal(invalido.erro, true);
+}
 
 const regraPrincipiosJogoResponsavel = {
   indicadorId: 18,
@@ -1620,7 +1787,7 @@ const amostras = {
   7: { lucroLiquidoRecorrenteAcumulado: 1209000000 },
   8: { arrecadacaoCanaisEletronicosMes: 15, arrecadacaoTotalProdutosLoteriasMes: 100 },
   9: { arrecadacaoPixMes: 411428638.26, arrecadacaoTotalCanaisEletronicosMes: 600000000 },
-  10: { marcoAtualPlataformaJogos: "Piloto/MVP concluído", statusProjetoPlataformaJogos: "Piloto/MVP concluído", descricaoAndamentoPlataformaJogos: "MVP concluído", evidenciaPlataformaJogos: "Termo" },
+  10: { marcoAtualPlataformaJogos: "Registro de Aposta finalizado em ambiente de desenvolvimento", statusProjetoPlataformaJogos: "Piloto/MVP em desenvolvimento", percentualEvolucaoPlataformaJogos: 0.10, descricaoAndamentoPlataformaJogos: "Projeto em desenvolvimento", evidenciaPlataformaJogos: "Termo" },
   11: { marcoAlcancadoTIC: "Contrato assinado com fornecedor", percentualRealizadoTIC: 1, descricaoAndamentoTIC: "Contrato assinado", evidenciaTIC: "Termo" },
   12: { tipoPosicaoClima: "Fechamento anual", metaReferenciaClima: 60, notaClimaApurada: 60, dataBasePesquisaClima: "2026-12-01", fonteEvidenciaClima: "Relatorio oficial" },
   13: { mulheresGestorasMes: 425, totalGestoresMes: 1000, dataBaseApuracao: "2026-12-31" },
@@ -1649,7 +1816,8 @@ for (const regra of regras) {
   assert.equal(resultado.erro, undefined, `Regra ${regra.indicadorId} não deveria falhar: ${resultado.mensagem}`);
   if (regra.indicadorId === 10) {
     assert.equal(resultado.percentualAtingidoMensal, null, "Regra 10 não deve calcular percentual mensal em 2026");
-    assert.equal(resultado.situacao, "Atingido");
+    assert.equal(resultado.resultadoMensal, 0.10);
+    assert.equal(resultado.situacao, "Em acompanhamento");
   } else {
     assert.notEqual(resultado.percentualAtingidoMensal, null, `Regra ${regra.indicadorId} sem percentual mensal`);
   }

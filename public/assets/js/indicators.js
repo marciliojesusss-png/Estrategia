@@ -312,7 +312,7 @@
       ]] : []),
       ...(Number(indicador.id) === 4 ? [[
         "Observacao de acompanhamento",
-        "Este indicador acompanha a implementacao de melhorias derivadas da pesquisa NPS de baseline. O plano de trabalho de 2026 possui 22 melhorias mapeadas. A meta anual corresponde a entrega de 6 melhorias, equivalente a 25% do plano. O resultado mensal e trimestral e calculado pela quantidade de melhorias implementadas e homologadas acumuladas no periodo.",
+        "Este indicador acompanha a implementação de melhorias derivadas da pesquisa NPS de baseline. A unidade informa as novas melhorias implementadas no período de apuração, e o sistema calcula a posição acumulada sobre as 22 melhorias mapeadas. A meta anual e o tratamento institucional de 25% permanecem inalterados.",
         true
       ]] : []),
       ...(Number(indicador.id) === 2 ? [[
@@ -342,7 +342,7 @@
       ]] : []),
       ...(Number(indicador.id) === 10 ? [[
         "Observacao de acompanhamento",
-        "Em 2026, este indicador e acompanhado como marco de projeto, pois a meta do exercicio e a entrega de Piloto ou MVP da Plataforma de Jogos. A formula de share de mercado sera aplicavel futuramente, apos a implementacao da plataforma e disponibilidade de dados oficiais de GGR de mercado.",
+        "Em 2026, a meta do indicador corresponde a entrega de Piloto/MVP da Plataforma de Jogos. O percentual informado representa a evolucao oficial do projeto no periodo, nao participacao de mercado. A formula institucional de share permanece como referencia historica para aplicacao futura.",
         true
       ]] : []),
       ...(Number(indicador.id) === 5 ? [[
@@ -410,7 +410,43 @@
   }
 
   function getRule(indicador) {
-    return IndicatorFormulas.obterRegra(indicador, state.data.regrasIndicadores || []);
+    const regra = IndicatorFormulas.obterRegra(indicador, state.data.regrasIndicadores || []);
+    if (!regra) return regra;
+    if (Number(indicador?.id) === 3) {
+      return {
+        ...regra,
+        camposEntrada: (regra.camposEntrada || []).map((field) => (
+          ["qmaatu", "qmaant"].includes(field.nome) ? { ...field, tipo: "inteiro" } : field
+        ))
+      };
+    }
+    if (Number(indicador?.id) === 4) {
+      return {
+        ...regra,
+        parametrosCalculo: {
+          ...(regra.parametrosCalculo || {}),
+          campoTipoPosicao: "tipoPosicaoAprimoramento",
+          campoPosicaoAcumulada: "melhoriasImplementadasAcumuladas"
+        },
+        camposEntrada: [
+          {
+            nome: "tipoPosicaoAprimoramento",
+            rotulo: "Tipo da posição",
+            tipo: "selecao",
+            obrigatorio: true,
+            opcoes: [
+              { value: "", label: "Selecione..." },
+              { value: "acompanhamento", label: "Acompanhamento" },
+              { value: "fechamento_quantitativo", label: "Fechamento quantitativo" }
+            ]
+          },
+          { nome: "melhoriasImplementadasMes", rotulo: "Melhorias implementadas no período de apuração", tipo: "inteiro", obrigatorio: false },
+          { nome: "melhoriasImplementadasAcumuladas", rotulo: "Melhorias implementadas acumuladas", tipo: "inteiro", obrigatorio: false, somenteLeitura: true },
+          { nome: "descricaoMelhoriasMes", rotulo: "Descrição das melhorias implementadas no período", tipo: "textarea", obrigatorio: false }
+        ]
+      };
+    }
+    return regra;
   }
 
   function formatPerformance(value, rule) {
@@ -652,6 +688,7 @@
       .filter(([, value]) => value !== null && value !== undefined && value !== "")
       .filter(([key]) => !(metodologiaIeoCa && key === "ieoApuradoInformado"))
       .filter(([key]) => !(regra?.tipoCalculo === "nota_pesquisa_nps" && key === "npsApurado"))
+      .filter(([key]) => !(regra?.tipoCalculo === "melhorias_acumuladas" && key === "melhoriasImplementadasAcumuladas"))
       .map(([key, value]) => {
         const field = fieldMap[key] || {};
         return [field.rotulo || humanizeFieldName(key), formatInputValue(value, field)];
@@ -795,7 +832,7 @@
     const regra = getRule(indicador);
     const calculated = launchCalculation(indicador, regra, lancamento) || {};
     const situation = calculated.situacao || lancamento.situacaoCalculada || Calculations.calcularStatusDesempenho(calculated.percentualAtingidoMensal ?? lancamento.percentualAtingido);
-    const metaReferencia = calculated.metaReferenciaMensal ?? calculated.metaReferenciaPeriodo ?? calculated.metaAcumulada ?? lancamento.metaMensal ?? regra?.metaAnualValor;
+    const metaReferencia = calculated.metaReferenciaMensal ?? calculated.metaReferenciaPeriodo ?? calculated.metaTrimestral ?? calculated.metaAcumulada ?? lancamento.metaMensal ?? regra?.metaAnualValor;
     const resultadoCalculado = calculated.resultadoMensal ?? calculated.resultadoCalculado ?? lancamento.resultadoMensal ?? lancamento.realizadoMensal;
     const resultadoOficial = lancamento.status === "Homologado"
       ? resultadoCalculado
@@ -803,6 +840,11 @@
     const percent = calculated.percentualAtingidoMensal ?? calculated.percentualAtingido ?? lancamento.percentualAtingido;
     const isLucroRecorrente = Number(indicador.id) === 7 && regra?.tipoCalculo === "lucro_recorrente_mensal";
     const isNps = regra?.tipoCalculo === "nota_pesquisa_nps";
+    const isAprimoramento = Number(indicador.id) === 4 && regra?.tipoCalculo === "melhorias_acumuladas";
+    const isPlataformaJogos = Number(indicador.id) === 10 && regra?.parametrosCalculo?.metaTipo === "meta_oficial_trimestral_projeto";
+    const tipoPosicaoAprimoramento = isAprimoramento
+      ? IndicatorFormulas.resolverTipoPosicaoAprimoramento(lancamento)
+      : null;
     const nomeMesNps = isNps && !lancamento.nomeMes
       ? ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"][Number(lancamento.mes) - 1]
       : lancamento.nomeMes;
@@ -843,6 +885,22 @@
             ["Diretoria responsável", indicador.diretoriaResponsavel || "Não informado"],
             ["Competência", `${nomeMesNps}/${lancamento.ano}`],
             ["Situação", situation],
+            ...(isAprimoramento ? [
+              ["Tipo da posição", tipoPosicaoAprimoramento === "acompanhamento" ? "Acompanhamento" : "Fechamento quantitativo"],
+              ["Posição acumulada anterior", Calculations.formatarInteiroBR(calculated.melhoriasImplementadasAcumuladasAnterior)],
+              ["Novas melhorias no período", Calculations.formatarInteiroBR(calculated.novasMelhoriasPeriodo)],
+              ["Melhorias implementadas acumuladas", Calculations.formatarInteiroBR(calculated.melhoriasImplementadasAcumuladas)],
+              ["Base de melhorias mapeadas", Calculations.formatarInteiroBR(calculated.totalMelhoriasPlano2026 ?? regra?.parametrosCalculo?.totalMelhoriasPlano2026)]
+            ] : []),
+            ...(isPlataformaJogos ? [
+              ["Meta anual", calculated.metaAnualMarco || indicador.metaAnualDescricao || "Piloto ou MVP da Plataforma de Jogos", true],
+              ["Meta oficial do período", Calculations.formatarPercentual(calculated.metaTrimestral, 2)],
+              ["Evolução oficial do projeto", Calculations.formatarPercentual(calculated.percentualEvolucaoProjeto ?? resultadoCalculado, 2)],
+              ["% da meta atingida", Calculations.formatarPercentual(percent, 2)],
+              ["Status do projeto", lancamento.camposEntrada?.statusProjetoPlataformaJogos || "-"],
+              ["Marco/etapa atual", lancamento.camposEntrada?.marcoAtualPlataformaJogos || "-", true],
+              ["Descrição do andamento", lancamento.camposEntrada?.descricaoAndamentoPlataformaJogos || "-", true]
+            ] : []),
             ...(isNps ? [
               ["Tipo da posição", lancamento.camposEntrada?.tipoPosicaoNPS || "-"],
               ["Percentual de promotores", Calculations.formatarPercentual(calculated.percentualPromotores ?? lancamento.camposEntrada?.percentualPromotores)],
@@ -854,15 +912,17 @@
               ["Metodologia vigente", metodologiaIeo.descricao, true],
               ["Fórmula vigente", metodologiaIeo.formula, true]
             ] : []),
-            [isLucroRecorrente ? "Meta da competência" : "Meta de referência", formatMeasureValue(metaReferencia, regra?.unidadeMedida)],
-            [metodologiaIeoCa ? "IEO calculado da competência" : isNps ? "NPS calculado" : isLucroRecorrente ? "Resultado da competência" : "Resultado calculado", formatMeasureValue(resultadoCalculado, regra?.unidadeMedida)],
-            ...(!metodologiaIeoCa && !isNps ? [["Resultado oficial", resultadoOficial === "-" ? "-" : formatMeasureValue(resultadoOficial, regra?.unidadeMedida)]] : []),
-            [isLucroRecorrente ? "% da meta atingida" : "% atingido", Calculations.formatarPercentual(percent)]
+            ...(!isPlataformaJogos ? [
+              [isLucroRecorrente ? "Meta da competência" : isAprimoramento ? "Meta do período" : "Meta de referência", formatMeasureValue(metaReferencia, regra?.unidadeMedida)],
+              [metodologiaIeoCa ? "IEO calculado da competência" : isNps ? "NPS calculado" : isLucroRecorrente ? "Resultado da competência" : "Resultado calculado", formatMeasureValue(resultadoCalculado, regra?.unidadeMedida)],
+              ...(!metodologiaIeoCa && !isNps ? [["Resultado oficial", resultadoOficial === "-" ? "-" : formatMeasureValue(resultadoOficial, regra?.unidadeMedida)]] : []),
+              [isLucroRecorrente ? "% da meta atingida" : "% atingido", Calculations.formatarPercentual(percent)]
+            ] : [])
           ].map(launchDetailItem).join("")}
         </div>
       </article>
       ${accumulatedBlock}
-      ${renderInputData(indicador, regra, lancamento)}
+      ${isPlataformaJogos ? "" : renderInputData(indicador, regra, lancamento)}
       ${renderTextBlock("Observação da área", lancamento.observacaoArea, "Sem observação registrada.")}
       ${renderTextBlock("Justificativa", lancamento.justificativa, "Sem justificativa registrada.")}
       ${renderEvidence(lancamento)}
@@ -1081,15 +1141,16 @@
       <th>Status</th>
       <th>Ação</th>
     ` : isAprimoramentoExperiencia ? `
-      <th>Mês</th>
-      <th>Melhorias implementadas no mês</th>
-      <th>Descrição da melhoria</th>
-      <th>Evidência</th>
-      <th>Melhorias acumuladas</th>
-      <th>Resultado acumulado</th>
+      <th>Competência</th>
+      <th>Tipo da posição</th>
+      <th>Novas no período</th>
+      <th>Posição acumulada</th>
+      <th>Descrição</th>
+      <th>Resultado</th>
+      <th>Meta do período</th>
       <th>% atingido</th>
       <th>Situação</th>
-      <th>Status mensal</th>
+      <th>Status</th>
       <th>Ação</th>
     ` : isCapacidadeTic ? `
       <th>Mês/competência</th>
@@ -1104,12 +1165,14 @@
       <th>Ação</th>
     ` : isPlataformaJogos ? `
       <th>Mês/competência</th>
-      <th>Meta anual</th>
-      <th>Marco/etapa atual</th>
       <th>Status do projeto</th>
+      <th>Marco/etapa atual</th>
+      <th>Evolução</th>
+      <th>Meta</th>
+      <th>% atingido</th>
+      <th>Situação</th>
       <th>Descrição do andamento</th>
       <th>Evidência</th>
-      <th>Observação da área</th>
       <th>Status mensal</th>
       <th>Ação</th>
     ` : isPrincipiosJogoResponsavel ? `
@@ -1359,7 +1422,9 @@
         `;
       }
       if (isAprimoramentoExperiencia) {
-        const calculationScope = launches.filter((item) => Number(item.mes) <= month && item.status === "Homologado");
+        const calculationScope = launches
+          .filter((item) => Number(item.mes) <= month && (item.status === "Homologado" || item === launch))
+          .sort((a, b) => Number(a.mes) - Number(b.mes));
         const calculated = launch
           ? calculateIndicatorForDisplay(indicador, regra, launch, calculationScope)
           : null;
@@ -1370,15 +1435,19 @@
           (Number.isFinite(totalImprovements) && calculated?.resultadoMensal != null
             ? Math.round(Number(calculated.resultadoMensal) * totalImprovements)
             : null);
+        const positionType = launch
+          ? IndicatorFormulas.resolverTipoPosicaoAprimoramento(launch)
+          : null;
         return `
           <tr>
             <td>${name}/2026</td>
-            <td>${Calculations.formatarInteiroBR(launch?.camposEntrada?.melhoriasImplementadasMes)}</td>
-            <td>${escapeHtml(launch?.camposEntrada?.descricaoMelhoriasMes || "-")}</td>
-            <td>${escapeHtml(documentation.reference || "-")}</td>
+            <td>${escapeHtml(positionType === "acompanhamento" ? "Acompanhamento" : positionType ? "Fechamento quantitativo" : "-")}</td>
+            <td>${Calculations.formatarInteiroBR(calculated?.novasMelhoriasPeriodo)}</td>
             <td>${Calculations.formatarInteiroBR(accumulatedImprovements)}</td>
-            <td>${Calculations.formatarValor(calculated?.resultadoMensal, "percentual")}</td>
-            <td>${Calculations.formatarPercentual(percent)}</td>
+            <td>${escapeHtml(launch?.camposEntrada?.descricaoMelhoriasMes || "-")}</td>
+            <td>${Calculations.formatarPercentual(calculated?.resultadoMensal, 2)}</td>
+            <td>${Calculations.formatarPercentual(calculated?.metaTrimestral, 2)}</td>
+            <td>${Calculations.formatarPercentual(percent, 2)}</td>
             <td>${escapeHtml(situation)}</td>
             <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologação" ? "warn" : "info"}">${escapeHtml(launch?.status || "Não iniciado")}</span></td>
             <td>${monthlyAction(launch)}</td>
@@ -1410,15 +1479,22 @@
         `;
       }
       if (isPlataformaJogos) {
+        const calculated = launch
+          ? calculateIndicatorForDisplay(indicador, regra, launch, launches.filter((item) => Number(item.mes) <= month))
+          : null;
+        const percent = calculated?.percentualAtingidoMensal ?? null;
+        const situation = calculated?.situacao || "Em acompanhamento";
         return `
           <tr>
             <td>${name}/2026</td>
-            <td>${escapeHtml(launch?.metaAnualDescricao || indicador.metaAnualDescricao || "Piloto ou MVP da Plataforma de Jogos")}</td>
-            <td>${escapeHtml(launch?.camposEntrada?.marcoAtualPlataformaJogos || "-")}</td>
             <td>${escapeHtml(launch?.camposEntrada?.statusProjetoPlataformaJogos || "-")}</td>
+            <td>${escapeHtml(launch?.camposEntrada?.marcoAtualPlataformaJogos || "-")}</td>
+            <td>${Calculations.formatarValor(calculated?.resultadoMensal, "percentual")}</td>
+            <td>${Calculations.formatarValor(calculated?.metaTrimestral, "percentual")}</td>
+            <td>${Calculations.formatarPercentual(percent)}</td>
+            <td>${escapeHtml(situation)}</td>
             <td>${escapeHtml(launch?.camposEntrada?.descricaoAndamentoPlataformaJogos || "-")}</td>
             <td>${escapeHtml(documentation.reference || "-")}</td>
-            <td>${escapeHtml(documentation.observation || "-")}</td>
             <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologação" ? "warn" : "info"}">${escapeHtml(launch?.status || "Não iniciado")}</span></td>
             <td>${monthlyAction(launch)}</td>
           </tr>

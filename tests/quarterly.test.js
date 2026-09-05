@@ -321,6 +321,27 @@ assert.ok(Math.abs(aprimoramentoQuarter.desempenhoTrimestral - 1) < 0.000001);
 assert.equal(aprimoramentoQuarter.dadosCalculados.melhoriasImplementadasAcumuladas, 1);
 assert.equal(aprimoramentoQuarter.situacaoTrimestral, "Atingido");
 
+const aprimoramentoQuarter2 = consolidarTrimestre(
+  aprimoramentoQuarter.indicador,
+  aprimoramentoQuarter.regra,
+  [
+    { ano: 2026, mes: 1, status: "Homologado", competencia: "2026-01", trimestre: "1TRI/2026", camposEntrada: { melhoriasImplementadasMes: 0 } },
+    { ano: 2026, mes: 2, status: "Homologado", competencia: "2026-02", trimestre: "1TRI/2026", camposEntrada: { melhoriasImplementadasMes: 0 } },
+    { ano: 2026, mes: 3, status: "Homologado", competencia: "2026-03", trimestre: "1TRI/2026", camposEntrada: { melhoriasImplementadasMes: 1 } },
+    { ano: 2026, mes: 4, status: "Homologado", competencia: "2026-04", trimestre: "2TRI/2026", camposEntrada: { tipoPosicaoAprimoramento: "acompanhamento" } },
+    { ano: 2026, mes: 5, status: "Homologado", competencia: "2026-05", trimestre: "2TRI/2026", camposEntrada: { tipoPosicaoAprimoramento: "acompanhamento" } },
+    { ano: 2026, mes: 6, status: "Homologado", competencia: "2026-06", trimestre: "2TRI/2026", camposEntrada: { tipoPosicaoAprimoramento: "fechamento_quantitativo", melhoriasImplementadasMes: 3 } }
+  ],
+  "2TRI/2026"
+);
+assert.equal(aprimoramentoQuarter2.statusTrimestre, "Fechado");
+assert.equal(aprimoramentoQuarter2.mesesHomologados, 3);
+assert.ok(Math.abs(aprimoramentoQuarter2.metaTrimestral - 0.1364) < 0.000001);
+assert.ok(Math.abs(aprimoramentoQuarter2.resultadoTrimestral - (4 / 22)) < 0.000001);
+assert.ok(Math.abs(aprimoramentoQuarter2.desempenhoTrimestral - (4 / 3)) < 0.000001);
+assert.equal(aprimoramentoQuarter2.dadosCalculados.melhoriasImplementadasAcumuladas, 4);
+assert.equal(aprimoramentoQuarter2.situacaoTrimestral, "Atingido");
+
 const capacidadeTicQuarter = consolidarTrimestre(
   { id: 11, indicador: "Ampliar Capacidade de Desenvolvimento de Soluções de TIC", unidadeMedida: "percentual" },
   {
@@ -365,18 +386,25 @@ assert.equal(capacidadeTicQuarter.dadosCalculados.marcoAlcancado, "Consulta Púb
 assert.equal(capacidadeTicQuarter.situacaoTrimestral, "Atingido");
 
 const plataformaJogosQuarter = consolidarTrimestre(
-  { id: 10, indicador: "Share da Plataforma de Jogos", unidadeMedida: "marco" },
+  { id: 10, indicador: "Share da Plataforma de Jogos", unidadeMedida: "percentual" },
   {
     indicadorId: 10,
     tipoCalculo: "projeto_marco_entrega",
     tipoConsolidacao: "ultima_posicao_trimestral",
-    unidadeMedida: "marco",
+    unidadeMedida: "percentual",
     metaAnualValor: null,
     parametrosCalculo: {
       campoMarco: "marcoAtualPlataformaJogos",
       campoStatus: "statusProjetoPlataformaJogos",
-      metaTipo: "marco_anual",
-      sentidoMeta: "marco_concluido",
+      campoPercentual: "percentualEvolucaoPlataformaJogos",
+      metaTipo: "meta_oficial_trimestral_projeto",
+      metasTrimestraisOficiais: {
+        "1TRI/2026": null,
+        "2TRI/2026": 1 / 3,
+        "3TRI/2026": null,
+        "4TRI/2026": null
+      },
+      sentidoMeta: "quanto_maior_melhor",
       metaAnualMarco: "Piloto/MVP da Plataforma de Jogos",
       marcoConcluido: "Piloto/MVP concluído",
       statusConcluido: "Piloto/MVP concluído"
@@ -398,8 +426,36 @@ assert.equal(plataformaJogosQuarter.mesesHomologados, 3);
 assert.equal(plataformaJogosQuarter.metaTrimestral, null);
 assert.equal(plataformaJogosQuarter.resultadoTrimestral, null);
 assert.equal(plataformaJogosQuarter.desempenhoTrimestral, null);
-assert.equal(plataformaJogosQuarter.situacaoTrimestral, "Em andamento");
+assert.equal(plataformaJogosQuarter.situacaoTrimestral, "Em acompanhamento");
 assert.equal(plataformaJogosQuarter.dadosCalculados.desempenhoNaoAplicavel, true);
+
+const regraPlataformaJogosQuarter = plataformaJogosQuarter.regra;
+const plataformaJogos2TriQuarter = consolidarTrimestre(
+  { id: 10, indicador: "Share da Plataforma de Jogos", unidadeMedida: "percentual" },
+  regraPlataformaJogosQuarter,
+  [
+    { ano: 2026, mes: 4, status: "Homologado", competencia: "2026-04", camposEntrada: { marcoAtualPlataformaJogos: "Arquitetura do sistema em definição", statusProjetoPlataformaJogos: "Piloto/MVP em desenvolvimento" } },
+    { ano: 2026, mes: 5, status: "Homologado", competencia: "2026-05", camposEntrada: { marcoAtualPlataformaJogos: "Funcionalidade negocial definida", statusProjetoPlataformaJogos: "Piloto/MVP em desenvolvimento" } },
+    { ano: 2026, mes: 6, status: "Homologado", competencia: "2026-06", camposEntrada: { marcoAtualPlataformaJogos: "Registro de Aposta finalizado em ambiente de desenvolvimento", statusProjetoPlataformaJogos: "Piloto/MVP em desenvolvimento", percentualEvolucaoPlataformaJogos: 0.10 } }
+  ],
+  "2TRI/2026"
+);
+assert.ok(Math.abs(plataformaJogos2TriQuarter.metaTrimestral - (1 / 3)) < 0.000001);
+assert.ok(Math.abs(plataformaJogos2TriQuarter.resultadoTrimestral - 0.10) < 0.000001);
+assert.ok(Math.abs(plataformaJogos2TriQuarter.desempenhoTrimestral - 0.30) < 0.000001);
+assert.equal(plataformaJogos2TriQuarter.situacaoTrimestral, "Abaixo da meta");
+
+const plataformaJogosUltimaPosicaoQuantitativa = consolidarTrimestre(
+  { id: 10, indicador: "Share da Plataforma de Jogos", unidadeMedida: "percentual" },
+  regraPlataformaJogosQuarter,
+  [
+    { ano: 2026, mes: 4, status: "Homologado", competencia: "2026-04", camposEntrada: { marcoAtualPlataformaJogos: "Funcionalidade negocial definida", statusProjetoPlataformaJogos: "Piloto/MVP em desenvolvimento", percentualEvolucaoPlataformaJogos: 0.08 } },
+    { ano: 2026, mes: 5, status: "Homologado", competencia: "2026-05", camposEntrada: { marcoAtualPlataformaJogos: "Registro de Aposta finalizado em ambiente de desenvolvimento", statusProjetoPlataformaJogos: "Piloto/MVP em desenvolvimento" } },
+    { ano: 2026, mes: 6, status: "Homologado", competencia: "2026-06", camposEntrada: { marcoAtualPlataformaJogos: "Registro de Aposta finalizado em ambiente de desenvolvimento", statusProjetoPlataformaJogos: "Piloto/MVP em desenvolvimento" } }
+  ],
+  "2TRI/2026"
+);
+assert.ok(Math.abs(plataformaJogosUltimaPosicaoQuantitativa.resultadoTrimestral - 0.08) < 0.000001);
 
 const principiosJogoResponsavelQuarter = consolidarTrimestre(
   { id: 18, indicador: "Princípios de Jogo Responsável", unidadeMedida: "quantidade" },

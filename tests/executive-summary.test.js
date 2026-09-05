@@ -99,7 +99,7 @@ const results = context.window.StrategicResults.calcularDashboard({
 }).resultadosOficiais;
 
 assert.equal(results.length, 23);
-assert.equal(results.filter((item) => context.window.StrategicResults.officialSituation(item) === "Sem dados").length, 2);
+assert.equal(results.filter((item) => context.window.StrategicResults.officialSituation(item) === "Sem dados").length, 3);
 assert.equal(results.filter((item) => item.indicador.plano === "PEI").length, 11);
 assert.equal(results.filter((item) => item.indicador.plano === "PN").length, 12);
 assert.equal(new Set(results.map((item) => item.indicador.pilar)).size, 6);
@@ -176,11 +176,41 @@ assert.ok(Math.abs(capacidadeTicDashboardOficial.resultado - 0.35) < 0.000001);
 assert.ok(Math.abs(capacidadeTicDashboardOficial.percentualAtingido - 1) < 0.000001);
 
 const plataformaJogosDashboardOficial = results.find((item) => item.indicador.id === 10);
-assert.equal(context.window.StrategicResults.officialSituation(plataformaJogosDashboardOficial), "Em andamento");
-assert.equal(plataformaJogosDashboardOficial.competencia, "Março/2026");
+assert.equal(context.window.StrategicResults.officialSituation(plataformaJogosDashboardOficial), "Sem dados");
+assert.equal(plataformaJogosDashboardOficial.competencia, null);
 assert.equal(plataformaJogosDashboardOficial.meta, null);
 assert.equal(plataformaJogosDashboardOficial.resultado, null);
 assert.equal(plataformaJogosDashboardOficial.percentualAtingido, null);
+
+const indicadorPlataformaJogos = indicators.find((item) => item.id === 10);
+const regraPlataformaJogos = rules.find((item) => item.indicadorId === 10);
+const plataformaJogos1TriHistorico = context.window.StrategicResults.calcularDashboard({
+  indicadores: [indicadorPlataformaJogos],
+  regras: [regraPlataformaJogos],
+  lancamentos: [
+    { id: "pj-mar-historico", indicadorId: 10, ano: 2026, mes: 3, nomeMes: "Março", status: "Homologado", camposEntrada: { marcoAtualPlataformaJogos: "Sprints iniciais executadas", statusProjetoPlataformaJogos: "Em andamento" } }
+  ]
+}).resultadosOficiais[0];
+assert.equal(context.window.StrategicResults.officialSituation(plataformaJogos1TriHistorico), "Em acompanhamento");
+assert.equal(plataformaJogos1TriHistorico.resultado, null);
+assert.equal(plataformaJogos1TriHistorico.percentualAtingido, null);
+
+const plataformaJogos2TriDashboard = context.window.StrategicResults.calcularDashboard({
+  indicadores: [indicadorPlataformaJogos],
+  regras: [regraPlataformaJogos],
+  lancamentos: [
+    { id: "pj-abr", indicadorId: 10, ano: 2026, mes: 4, nomeMes: "Abril", status: "Homologado", camposEntrada: { marcoAtualPlataformaJogos: "Arquitetura do sistema em definição", statusProjetoPlataformaJogos: "Piloto/MVP em desenvolvimento" } },
+    { id: "pj-mai", indicadorId: 10, ano: 2026, mes: 5, nomeMes: "Maio", status: "Homologado", camposEntrada: { marcoAtualPlataformaJogos: "Funcionalidade negocial definida", statusProjetoPlataformaJogos: "Piloto/MVP em desenvolvimento" } },
+    { id: "pj-jun", indicadorId: 10, ano: 2026, mes: 6, nomeMes: "Junho", status: "Homologado", camposEntrada: { marcoAtualPlataformaJogos: "Registro de Aposta finalizado em ambiente de desenvolvimento", statusProjetoPlataformaJogos: "Piloto/MVP em desenvolvimento", percentualEvolucaoPlataformaJogos: 0.10 } }
+  ]
+}).resultadosOficiais[0];
+assert.equal(plataformaJogos2TriDashboard.competencia, "Junho/2026");
+assert.ok(Math.abs(plataformaJogos2TriDashboard.meta - (1 / 3)) < 0.000001);
+assert.ok(Math.abs(plataformaJogos2TriDashboard.resultado - 0.10) < 0.000001);
+assert.ok(Math.abs(plataformaJogos2TriDashboard.percentualAtingido - 0.30) < 0.000001);
+assert.equal(context.window.StrategicResults.officialSituation(plataformaJogos2TriDashboard), "Abaixo da meta");
+assert.equal(context.window.StrategicResults.formatOfficialResult(plataformaJogos2TriDashboard), "10,00%");
+assert.equal(context.window.StrategicResults.formatOfficialMeta(plataformaJogos2TriDashboard), "33,33%");
 
 const principiosJogoResponsavelDashboardOficial = results.find((item) => item.indicador.id === 18);
 assert.equal(context.window.StrategicResults.officialSituation(principiosJogoResponsavelDashboardOficial), "Atingido");
@@ -299,6 +329,34 @@ assert.equal(digitalDashboard.meta, 0.2805);
 
 const principiosIndicator = { ...indicators.find((item) => item.id === 18), periodicidade: "Trimestral" };
 const principiosRule = rules.find((item) => item.indicadorId === 18);
+const aprimoramentoIndicator = { ...indicators.find((item) => item.id === 4), periodicidade: "Mensal" };
+const aprimoramentoRule = rules.find((item) => item.indicadorId === 4);
+const aprimoramentoPositions = [
+  { id: "A-MAR", indicadorId: 4, ano: 2026, mes: 3, nomeMes: "Março", trimestre: "1TRI/2026", status: "Homologado", camposEntrada: { melhoriasImplementadasMes: 1 } },
+  { id: "A-ABR", indicadorId: 4, ano: 2026, mes: 4, nomeMes: "Abril", trimestre: "2TRI/2026", status: "Homologado", camposEntrada: { tipoPosicaoAprimoramento: "acompanhamento" } },
+  { id: "A-MAI", indicadorId: 4, ano: 2026, mes: 5, nomeMes: "Maio", trimestre: "2TRI/2026", status: "Homologado", camposEntrada: { tipoPosicaoAprimoramento: "acompanhamento" } }
+];
+const aprimoramentoEntrePosicoes = context.window.StrategicResults.calcularDashboard({
+  indicadores: [aprimoramentoIndicator], regras: [aprimoramentoRule], lancamentos: aprimoramentoPositions
+}).resultadosOficiais[0];
+assert.equal(aprimoramentoEntrePosicoes.competencia, "Março/2026");
+assert.ok(Math.abs(aprimoramentoEntrePosicoes.resultado - 0.0454) < 0.000001);
+assert.equal(aprimoramentoEntrePosicoes.situacaoAtual, "Em acompanhamento");
+
+const aprimoramentoJunhoDashboard = context.window.StrategicResults.calcularDashboard({
+  indicadores: [aprimoramentoIndicator],
+  regras: [aprimoramentoRule],
+  lancamentos: [
+    ...aprimoramentoPositions,
+    { id: "A-JUN", indicadorId: 4, ano: 2026, mes: 6, nomeMes: "Junho", trimestre: "2TRI/2026", status: "Homologado", camposEntrada: { tipoPosicaoAprimoramento: "fechamento_quantitativo", melhoriasImplementadasMes: 3 } }
+  ]
+}).resultadosOficiais[0];
+assert.equal(aprimoramentoJunhoDashboard.competencia, "Junho/2026");
+assert.ok(Math.abs(aprimoramentoJunhoDashboard.resultado - (4 / 22)) < 0.000001);
+assert.ok(Math.abs(aprimoramentoJunhoDashboard.meta - 0.1364) < 0.000001);
+assert.ok(Math.abs(aprimoramentoJunhoDashboard.percentualAtingido - (4 / 3)) < 0.000001);
+assert.equal(aprimoramentoJunhoDashboard.situacaoCalculada, "Atingido");
+
 const principiosBase = [
   { id: "P-MAR", indicadorId: 18, ano: 2026, mes: 3, nomeMes: "Março", trimestre: "1TRI/2026", status: "Homologado", camposEntrada: { elementoRGF: "Envolvimento das partes interessadas", acaoExecutada: "Instituição do Fórum", statusAcao: "Concluída" } },
   { id: "P-ABR", indicadorId: 18, ano: 2026, mes: 4, nomeMes: "Abril", trimestre: "2TRI/2026", status: "Em preenchimento", camposEntrada: { elementoRGF: "Orientação ao jogador para tratamento", acaoExecutada: "Revisão da relação de entidades", statusAcao: "Concluída" } },

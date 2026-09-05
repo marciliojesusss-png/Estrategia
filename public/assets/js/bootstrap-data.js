@@ -361,7 +361,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "metaAnualDescricao": "Piloto ou MVP da Plataforma de Jogos",
       "metrica": "Referência futura: (GGR da CAIXA Loterias) / (Total de GGR do Mercado) x 100. Aplicável após implementação da plataforma e disponibilidade de dados oficiais de mercado.",
       "tipoCalculo": "projeto_marco_entrega",
-      "unidadeMedida": "marco",
+      "unidadeMedida": "percentual",
       "ativo": true
     },
     {
@@ -1990,13 +1990,13 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         {
           "nome": "qmaatu",
           "rotulo": "QMAATU - Quantidade Média Mensal de Clientes Ativos no Ano nos canais digitais",
-          "tipo": "numero",
+          "tipo": "inteiro",
           "obrigatorio": true
         },
         {
           "nome": "qmaant",
           "rotulo": "QMAANT - Quantidade Média Mensal de Clientes Ativos do Ano anterior nos canais digitais",
-          "tipo": "numero",
+          "tipo": "inteiro",
           "obrigatorio": true
         },
         {
@@ -2021,6 +2021,8 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "unidadeMedida": "percentual",
       "metaAnualValor": 0.25,
       "parametrosCalculo": {
+        "campoTipoPosicao": "tipoPosicaoAprimoramento",
+        "campoPosicaoAcumulada": "melhoriasImplementadasAcumuladas",
         "campoValor": "melhoriasImplementadasMes",
         "campoValorLegado": "melhoriasEntreguesMes",
         "totalMelhoriasPlano2026": 22,
@@ -2049,21 +2051,42 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       },
       "camposEntrada": [
         {
-          "nome": "melhoriasImplementadasMes",
-          "rotulo": "Quantidade de melhorias implementadas no mês",
-          "tipo": "inteiro",
-          "obrigatorio": true
+          "nome": "tipoPosicaoAprimoramento",
+          "rotulo": "Tipo da posição",
+          "tipo": "selecao",
+          "obrigatorio": true,
+          "opcoes": [
+            {
+              "value": "",
+              "label": "Selecione..."
+            },
+            {
+              "value": "acompanhamento",
+              "label": "Acompanhamento"
+            },
+            {
+              "value": "fechamento_quantitativo",
+              "label": "Fechamento quantitativo"
+            }
+          ]
         },
         {
-          "nome": "descricaoMelhoriasMes",
-          "rotulo": "Descrição da melhoria implementada",
-          "tipo": "texto",
+          "nome": "melhoriasImplementadasMes",
+          "rotulo": "Melhorias implementadas no período de apuração",
+          "tipo": "inteiro",
           "obrigatorio": false
         },
         {
-          "nome": "evidenciaMelhoriasMes",
-          "rotulo": "Evidência da melhoria",
-          "tipo": "texto",
+          "nome": "melhoriasImplementadasAcumuladas",
+          "rotulo": "Melhorias implementadas acumuladas",
+          "tipo": "inteiro",
+          "obrigatorio": false,
+          "somenteLeitura": true
+        },
+        {
+          "nome": "descricaoMelhoriasMes",
+          "rotulo": "Descrição das melhorias implementadas no período",
+          "tipo": "textarea",
           "obrigatorio": false
         }
       ],
@@ -2311,13 +2334,20 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "tipoCalculo": "projeto_marco_entrega",
       "tipoConsolidacao": "ultima_posicao_trimestral",
       "metaRecorrente": false,
-      "unidadeMedida": "marco",
+      "unidadeMedida": "percentual",
       "metaAnualValor": null,
       "parametrosCalculo": {
         "campoMarco": "marcoAtualPlataformaJogos",
         "campoStatus": "statusProjetoPlataformaJogos",
-        "metaTipo": "marco_anual",
-        "sentidoMeta": "marco_concluido",
+        "campoPercentual": "percentualEvolucaoPlataformaJogos",
+        "metaTipo": "meta_oficial_trimestral_projeto",
+        "metasTrimestraisOficiais": {
+          "1TRI/2026": null,
+          "2TRI/2026": 0.3333333333333333,
+          "3TRI/2026": null,
+          "4TRI/2026": null
+        },
+        "sentidoMeta": "quanto_maior_melhor",
         "metaAnualMarco": "Piloto/MVP da Plataforma de Jogos",
         "marcoConcluido": "Piloto/MVP concluído",
         "statusConcluido": "Piloto/MVP concluído",
@@ -2355,6 +2385,10 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
             "percentualReferencia": null
           },
           {
+            "label": "Registro de Aposta finalizado em ambiente de desenvolvimento",
+            "percentualReferencia": null
+          },
+          {
             "label": "Piloto/MVP concluído",
             "percentualReferencia": 1
           }
@@ -2369,6 +2403,20 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         ]
       },
       "camposEntrada": [
+        {
+          "nome": "statusProjetoPlataformaJogos",
+          "rotulo": "Status do projeto",
+          "tipo": "selecao",
+          "obrigatorio": true,
+          "opcoes": [
+            "Não iniciado",
+            "Em planejamento",
+            "Em andamento",
+            "Piloto/MVP em desenvolvimento",
+            "Piloto/MVP concluído",
+            "Cancelado"
+          ]
+        },
         {
           "nome": "marcoAtualPlataformaJogos",
           "rotulo": "Marco/etapa atual do projeto",
@@ -2408,24 +2456,21 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
               "percentualReferencia": null
             },
             {
+              "label": "Registro de Aposta finalizado em ambiente de desenvolvimento",
+              "percentualReferencia": null
+            },
+            {
               "label": "Piloto/MVP concluído",
               "percentualReferencia": 1
             }
           ]
         },
         {
-          "nome": "statusProjetoPlataformaJogos",
-          "rotulo": "Status do projeto",
-          "tipo": "selecao",
-          "obrigatorio": true,
-          "opcoes": [
-            "Não iniciado",
-            "Em planejamento",
-            "Em andamento",
-            "Piloto/MVP em desenvolvimento",
-            "Piloto/MVP concluído",
-            "Cancelado"
-          ]
+          "nome": "percentualEvolucaoPlataformaJogos",
+          "rotulo": "Percentual oficial de evolução do projeto",
+          "tipo": "percentual",
+          "entradaPtBr": true,
+          "obrigatorio": false
         },
         {
           "nome": "descricaoAndamentoPlataformaJogos",
@@ -2446,8 +2491,8 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
           "obrigatorio": false
         }
       ],
-      "campoResultadoPrincipal": "marcoAtual",
-      "campoPercentualAtingido": null,
+      "campoResultadoPrincipal": "resultadoMensal",
+      "campoPercentualAtingido": "percentualAtingidoMensal",
       "exigeJustificativa": false,
       "exigeEvidencia": true,
       "resultadoOficial": "ultima_posicao_trimestral"

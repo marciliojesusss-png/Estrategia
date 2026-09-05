@@ -97,6 +97,11 @@
     "3TRI/2026": { metaPercentual: 0.1818, metaQuantidadeAcumulada: 4 },
     "4TRI/2026": { metaPercentual: 0.25, metaQuantidadeAcumulada: 6 }
   };
+  const TIPOS_POSICAO_APRIMORAMENTO = [
+    { value: "", label: "Selecione..." },
+    { value: "acompanhamento", label: "Acompanhamento" },
+    { value: "fechamento_quantitativo", label: "Fechamento quantitativo" }
+  ];
   const CAPACIDADE_TIC_CURVA_TRIMESTRAL_2026 = {
     "1TRI/2026": { metaPercentual: 0.35, marcoEsperado: "Realização de Consulta Pública de Informações - RFI" },
     "2TRI/2026": { metaPercentual: 0.70, marcoEsperado: "Realização de Consulta Pública de Propostas - RFP" },
@@ -152,8 +157,15 @@
     { label: "Ambiente tecnológico criado", percentualReferencia: null },
     { label: "Acessos concedidos", percentualReferencia: null },
     { label: "Funcionalidade negocial definida", percentualReferencia: null },
+    { label: "Registro de Aposta finalizado em ambiente de desenvolvimento", percentualReferencia: null },
     { label: "Piloto/MVP concluído", percentualReferencia: 1 }
   ];
+  const PLATAFORMA_JOGOS_METAS_2026 = Object.freeze({
+    "1TRI/2026": null,
+    "2TRI/2026": 1 / 3,
+    "3TRI/2026": null,
+    "4TRI/2026": null
+  });
   const APOIO_SOCIOAMBIENTAL_CURVA_2026 = {
     "1TRI/2026": {
       metaPercentual: 0,
@@ -318,7 +330,10 @@
   const INTEGER_FIELD_NAMES = new Set([
     "baseClientesAtivosCompetencia",
     "clientesUnicosComOfertaPersonalizadaCompetencia",
+    "qmaatu",
+    "qmaant",
     "melhoriasImplementadasMes",
+    "melhoriasImplementadasAcumuladas",
     "mulheresGestorasMes",
     "gestoresEnquadradosMes",
     "totalGestoresMes",
@@ -893,6 +908,13 @@
     return CAPACIDADE_TIC_CURVA_TRIMESTRAL_2026[trimestre]?.metaPercentual ?? null;
   }
 
+  function getPlataformaJogosMetaTrimestral(ano, mes) {
+    const trimestre = `${Math.ceil(Number(mes) / 3)}TRI/${ano}`;
+    return Object.prototype.hasOwnProperty.call(PLATAFORMA_JOGOS_METAS_2026, trimestre)
+      ? PLATAFORMA_JOGOS_METAS_2026[trimestre]
+      : null;
+  }
+
   function getPrincipiosJogoResponsavelMetaTrimestral(ano, mes) {
     const trimestre = `${Math.ceil(Number(mes) / 3)}TRI/${ano}`;
     return PRINCIPIOS_JOGO_RESPONSAVEL_CURVA_2026[trimestre]?.metaElementosAcumulados ?? null;
@@ -1149,7 +1171,6 @@
     if (camposEntrada.melhoriasEntreguesMes !== undefined && camposEntrada.melhoriasImplementadasMes === undefined) {
       camposEntrada.melhoriasImplementadasMes = camposEntrada.melhoriasEntreguesMes;
       camposEntrada.melhoriasEntreguesMesMigrado = camposEntrada.melhoriasEntreguesMes;
-      delete camposEntrada.melhoriasEntreguesMes;
     }
     return { ...launch, camposEntrada };
   }
@@ -1650,7 +1671,7 @@
           return {
             ...normalized,
             tipoCalculo: "projeto_marco_entrega",
-            unidadeMedida: "marco",
+            unidadeMedida: "percentual",
             metaAnualDescricao: "Piloto ou MVP da Plataforma de Jogos",
             metrica: "Referência futura: (GGR da CAIXA Loterias) / (Total de GGR do Mercado) x 100. Aplicável após implementação da plataforma e disponibilidade de dados oficiais de mercado."
           };
@@ -1806,6 +1827,8 @@
             unidadeMedida: "percentual",
             metaAnualValor: 0.25,
             parametrosCalculo: {
+              campoTipoPosicao: "tipoPosicaoAprimoramento",
+              campoPosicaoAcumulada: "melhoriasImplementadasAcumuladas",
               campoValor: "melhoriasImplementadasMes",
               campoValorLegado: "melhoriasEntreguesMes",
               totalMelhoriasPlano2026: 22,
@@ -1816,9 +1839,10 @@
               sentidoMeta: "quanto_maior_melhor"
             },
             camposEntrada: [
-              { nome: "melhoriasImplementadasMes", rotulo: "Quantidade de melhorias implementadas no mês", tipo: "inteiro", obrigatorio: true },
-              { nome: "descricaoMelhoriasMes", rotulo: "Descrição da melhoria implementada", tipo: "texto", obrigatorio: false },
-              { nome: "evidenciaMelhoriasMes", rotulo: "Evidência da melhoria", tipo: "texto", obrigatorio: false }
+              { nome: "tipoPosicaoAprimoramento", rotulo: "Tipo da posição", tipo: "selecao", obrigatorio: true, opcoes: TIPOS_POSICAO_APRIMORAMENTO },
+              { nome: "melhoriasImplementadasMes", rotulo: "Melhorias implementadas no período de apuração", tipo: "inteiro", obrigatorio: false },
+              { nome: "melhoriasImplementadasAcumuladas", rotulo: "Melhorias implementadas acumuladas", tipo: "inteiro", obrigatorio: false, somenteLeitura: true },
+              { nome: "descricaoMelhoriasMes", rotulo: "Descrição das melhorias implementadas no período", tipo: "textarea", obrigatorio: false }
             ],
             campoResultadoPrincipal: "resultadoMensal",
             campoPercentualAtingido: "percentualAtingidoMensal",
@@ -1831,13 +1855,15 @@
             nome: INDICATOR_NAMES[9],
             tipoCalculo: "projeto_marco_entrega",
             tipoConsolidacao: "ultima_posicao_trimestral",
-            unidadeMedida: "marco",
+            unidadeMedida: "percentual",
             metaAnualValor: null,
             parametrosCalculo: {
               campoMarco: "marcoAtualPlataformaJogos",
               campoStatus: "statusProjetoPlataformaJogos",
-              metaTipo: "marco_anual",
-              sentidoMeta: "marco_concluido",
+              campoPercentual: "percentualEvolucaoPlataformaJogos",
+              metaTipo: "meta_oficial_trimestral_projeto",
+              metasTrimestraisOficiais: PLATAFORMA_JOGOS_METAS_2026,
+              sentidoMeta: "quanto_maior_melhor",
               metaAnualMarco: "Piloto/MVP da Plataforma de Jogos",
               marcoConcluido: "Piloto/MVP concluído",
               statusConcluido: "Piloto/MVP concluído",
@@ -1845,14 +1871,15 @@
               statusProjetoPlataformaJogos: STATUS_PROJETO_PLATAFORMA_JOGOS
             },
             camposEntrada: [
-              { nome: "marcoAtualPlataformaJogos", rotulo: "Marco/etapa atual do projeto", tipo: "selecao", obrigatorio: true, opcoes: MARCOS_PLATAFORMA_JOGOS_2026 },
               { nome: "statusProjetoPlataformaJogos", rotulo: "Status do projeto", tipo: "selecao", obrigatorio: true, opcoes: STATUS_PROJETO_PLATAFORMA_JOGOS },
+              { nome: "marcoAtualPlataformaJogos", rotulo: "Marco/etapa atual do projeto", tipo: "selecao", obrigatorio: true, opcoes: MARCOS_PLATAFORMA_JOGOS_2026 },
+              { nome: "percentualEvolucaoPlataformaJogos", rotulo: "Percentual oficial de evolução do projeto", tipo: "percentual", entradaPtBr: true, obrigatorio: false },
               { nome: "descricaoAndamentoPlataformaJogos", rotulo: "Descrição do andamento", tipo: "texto", obrigatorio: false },
               { nome: "evidenciaPlataformaJogos", rotulo: "Evidência", tipo: "texto", obrigatorio: false },
               { nome: "observacaoArea", rotulo: "Observação da área", tipo: "texto", obrigatorio: false }
             ],
-            campoResultadoPrincipal: "marcoAtual",
-            campoPercentualAtingido: null,
+            campoResultadoPrincipal: "resultadoMensal",
+            campoPercentualAtingido: "percentualAtingidoMensal",
             resultadoOficial: "ultima_posicao_trimestral"
           };
         }
@@ -2385,8 +2412,8 @@
         fonte: "curva_trimestral_aprimoramento_experiencia_2026"
       } : Number(meta.indicadorId) === 10 ? {
         ...meta,
-        metaMensal: null,
-        fonte: "marco_anual_plataforma_jogos_2026"
+        metaMensal: getPlataformaJogosMetaTrimestral(meta.ano, meta.mes),
+        fonte: "meta_oficial_trimestral_plataforma_jogos_2026"
       } : Number(meta.indicadorId) === 11 ? {
         ...meta,
         metaMensal: getCapacidadeTicMetaTrimestral(meta.ano, meta.mes),
@@ -2488,7 +2515,7 @@
           metaAnualDescricao: "Implementar melhorias que atendam a 25% das ocorrências apontadas na pesquisa NPS de baseline."
         } : {}),
         ...(Number(launch.indicadorId) === 10 ? {
-          metaMensal: null,
+          metaMensal: getPlataformaJogosMetaTrimestral(launch.ano, launch.mes),
           metaAnualDescricao: "Piloto ou MVP da Plataforma de Jogos"
         } : {}),
         ...(Number(launch.indicadorId) === 11 ? {

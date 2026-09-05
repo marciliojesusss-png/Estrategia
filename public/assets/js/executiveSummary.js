@@ -1234,6 +1234,7 @@
     const competence = executiveCompetence(result) || "-";
     const measurement = measurementReference(result);
     const isResearchSurvey = ["nota_pesquisa_nps", "nota_pesquisa_anual"].includes(result.regra?.tipoCalculo);
+    const isPlataformaJogos = Number(result.indicador.id) === 10 && result.regra?.parametrosCalculo?.metaTipo === "meta_oficial_trimestral_projeto";
     const previous = previousMonthlyResult(result);
     const variation = performanceVariation(result.percentualAtingido, previous?.percentualAtingido);
     const variationLabel = formatPerformanceVariation(variation);
@@ -1250,7 +1251,7 @@
     const deadlineStatus = deadlineStatusForResult(result);
     const tooltipLines = [
       `Indicador: ${name}`,
-      `Resultado oficial: ${officialResult}`,
+      `${isPlataformaJogos ? "Evolução oficial do projeto" : "Resultado oficial"}: ${officialResult}`,
       `Meta: ${meta}`,
       `Percentual de atingimento: ${percentLabel}`,
       `Última competência: ${competence}`,
@@ -1292,6 +1293,11 @@
           <span class="executive-performance-footer executive-performance-context">
             <span>${escapeHtml(situation)}</span>
             <span>${escapeHtml(measurement ? `Pesquisa: ${measurement}` : "Sem nova medição")}</span>
+          </span>
+        ` : isPlataformaJogos ? `
+          <span class="executive-performance-footer executive-performance-context">
+            <span>Evolução do projeto</span>
+            <span>${escapeHtml(result.lancamento?.camposEntrada?.statusProjetoPlataformaJogos || situation)}</span>
           </span>
         ` : `
           <span class="executive-performance-footer">
@@ -1378,6 +1384,7 @@
       const status = displayStatus(result);
       const measurement = measurementReference(result);
       const officialValue = result.lancamento ? StrategicResults.formatOfficialResult(result) : "-";
+      const isPlataformaJogos = Number(result.indicador.id) === 10 && result.regra?.parametrosCalculo?.metaTipo === "meta_oficial_trimestral_projeto";
       return `
         <tr>
           <td>${planBadgesMarkup(result.indicador)}</td>
@@ -1385,7 +1392,7 @@
           <td class="indicator-name"><span class="executive-indicator-cell"><span>${escapeHtml(limparNomeIndicador(result.indicador.indicador))}</span>${responsibilityBadgeMarkup(result.indicador)}</span></td>
           <td>${escapeHtml(executiveCompetence(result) || "-")}</td>
           <td>${StrategicResults.formatOfficialMeta(result)}</td>
-          <td class="official-value"><span class="executive-official-measurement"><strong>${escapeHtml(officialValue)}</strong>${measurement ? `<small>Medição: ${escapeHtml(measurement)}</small>` : ""}</span></td>
+          <td class="official-value"><span class="executive-official-measurement"><strong>${escapeHtml(officialValue)}</strong>${isPlataformaJogos ? "<small>Evolução do projeto</small>" : measurement ? `<small>Medição: ${escapeHtml(measurement)}</small>` : ""}</span></td>
           <td class="col-situacao"><span class="badge badge-situacao ${badgeClass(situation)} ${String(situation).length > 16 ? "long" : ""}">${escapeHtml(situation)}</span></td>
           ${shouldHideStatusColumn() ? "" : `<td class="col-status"><span class="badge badge-status ${badgeClass(status)}">${escapeHtml(status)}</span></td>`}
           <td><a class="secondary-action table-action dashboard-action" href="${window.AppRoutes ? window.AppRoutes.page("indicadores", indicatorDetailNavigationParams(result.indicador.id)) : `/indicadores?${new URLSearchParams(indicatorDetailNavigationParams(result.indicador.id)).toString()}`}" title="Visualizar indicador">Ver</a></td>

@@ -161,7 +161,7 @@
     if (Number(indicador?.id) === 6 && window.IeoRecorrente) {
       return window.IeoRecorrente.normalizarLancamentoParaExibicao(lancamento, regra);
     }
-    if (regra?.tipoCalculo !== "nota_pesquisa_nps" || !window.IndicatorFormulas) return lancamento;
+    if (!["nota_pesquisa_nps", "melhorias_acumuladas"].includes(regra?.tipoCalculo) || !window.IndicatorFormulas) return lancamento;
 
     const scope = state.lancamentos.filter((item) => (
       Number(item.indicadorId) === Number(indicador.id) &&
@@ -178,7 +178,8 @@
       percentualAtingido: calculated.percentualAtingidoMensal,
       percentualAtingidoAcumulado: calculated.percentualAtingidoAcumulado,
       situacaoCalculada: calculated.situacao || lancamento.situacaoCalculada,
-      __npsCalculation: calculated
+      __npsCalculation: regra.tipoCalculo === "nota_pesquisa_nps" ? calculated : null,
+      __indicatorCalculation: calculated
     };
   }
 
@@ -298,6 +299,7 @@
     const documentation = launchDocumentation(regra, lancamento);
     const displayLaunch = launchForDisplay(indicador, lancamento, regra);
     const npsCalculation = displayLaunch.__npsCalculation || null;
+    const indicatorCalculation = displayLaunch.__indicatorCalculation || null;
     const metodologiaIeo = Number(indicador?.id) === 6
       ? window.IeoRecorrente?.getMetodologiaIeoPorCompetencia?.(lancamento)
       : null;
@@ -312,6 +314,7 @@
       ? []
       : (regra?.camposEntrada || [])
         .filter((field) => field.tipo === "inteiro")
+        .filter((field) => !(regra?.tipoCalculo === "melhorias_acumuladas" && ["melhoriasImplementadasMes", "melhoriasImplementadasAcumuladas"].includes(field.nome)))
         .filter((field) => {
           const value = lancamento.camposEntrada?.[field.nome];
           return value !== null && value !== undefined && value !== "";
@@ -332,6 +335,28 @@
       ["Fonte/evidência informada", documentation.reference || "-"],
       ["Situação", tipoCapacitacao === "acompanhamento" ? "Em acompanhamento" : displayLaunch.situacaoCalculada || "-"]
     ] : [];
+    const tipoAprimoramento = regra?.tipoCalculo === "melhorias_acumuladas"
+      ? window.IndicatorFormulas?.resolverTipoPosicaoAprimoramento?.(lancamento)
+      : null;
+    const detalhesAprimoramento = tipoAprimoramento ? [
+      ["Tipo da posição", tipoAprimoramento === "acompanhamento" ? "Acompanhamento" : "Fechamento quantitativo"],
+      ["Posição acumulada anterior", Calculations.formatarInteiroBR(indicatorCalculation?.melhoriasImplementadasAcumuladasAnterior)],
+      ["Novas melhorias no período", Calculations.formatarInteiroBR(indicatorCalculation?.novasMelhoriasPeriodo)],
+      ["Melhorias implementadas acumuladas", Calculations.formatarInteiroBR(indicatorCalculation?.melhoriasImplementadasAcumuladas)],
+      ["Base de melhorias mapeadas", Calculations.formatarInteiroBR(indicatorCalculation?.totalMelhoriasPlano2026 ?? regra?.parametrosCalculo?.totalMelhoriasPlano2026)],
+      ["Meta do período", Calculations.formatarValor(indicatorCalculation?.metaTrimestral, "percentual")],
+      ["Quantidade-meta acumulada", Calculations.formatarInteiroBR(indicatorCalculation?.metaQuantidadeTrimestral)],
+      ["Descrição das melhorias implementadas no período", lancamento.camposEntrada?.descricaoMelhoriasMes || "-", true],
+      ["Situação", indicatorCalculation?.situacao || displayLaunch.situacaoCalculada || "-"]
+    ] : [];
+    const isPlataformaJogos = regra?.parametrosCalculo?.metaTipo === "meta_oficial_trimestral_projeto";
+    const detalhesPlataformaJogos = isPlataformaJogos ? [
+      ["Meta anual", indicatorCalculation?.metaAnualMarco || indicador.metaAnualDescricao || "Piloto ou MVP da Plataforma de Jogos", true],
+      ["Status do projeto", lancamento.camposEntrada?.statusProjetoPlataformaJogos || "-"],
+      ["Marco/etapa atual", lancamento.camposEntrada?.marcoAtualPlataformaJogos || "-", true],
+      ["Descrição do andamento", lancamento.camposEntrada?.descricaoAndamentoPlataformaJogos || "-", true],
+      ["Situação", indicatorCalculation?.situacao || displayLaunch.situacaoCalculada || "-"]
+    ] : [];
     const componentesNps = regra?.tipoCalculo === "nota_pesquisa_nps" ? [
       ["Tipo da posição", lancamento.camposEntrada?.tipoPosicaoNPS || "-"],
       ["Percentual de promotores", Calculations.formatarPercentual(npsCalculation?.percentualPromotores)],
@@ -340,7 +365,11 @@
       ["Data-base da pesquisa", lancamento.camposEntrada?.dataBasePesquisaNPS || "-"],
       ["Fórmula do NPS", "Percentual de promotores − percentual de detratores", true]
     ] : [];
-    const metaReferencia = regra?.tipoCalculo === "nota_pesquisa_nps"
+    const metaReferencia = isPlataformaJogos
+      ? Calculations.formatarPercentual(indicatorCalculation?.metaTrimestral, 2)
+      : regra?.tipoCalculo === "melhorias_acumuladas"
+      ? Calculations.formatarValor(indicatorCalculation?.metaTrimestral, "percentual")
+      : regra?.tipoCalculo === "nota_pesquisa_nps"
       ? Calculations.formatarValor(npsCalculation?.metaReferenciaPeriodo ?? lancamento.metaMensal, "pontos")
       : regra?.parametrosCalculo?.metaTipo === "curva_acumulada_por_competencia"
       ? (() => {
@@ -358,9 +387,9 @@
       ["Diretoria responsável", indicador.diretoriaResponsavel || "Não informado"],
       ["Mês/Ano", `${lancamento.nomeMes}/${lancamento.ano}`],
       ["Meta de referência", metaReferencia],
-      [metodologiaIeoCa ? "IEO calculado da competência" : regra?.tipoCalculo === "nota_pesquisa_nps" ? "NPS calculado" : "Realizado mensal", Calculations.formatarValor(displayLaunch.resultadoMensal ?? displayLaunch.realizadoMensal, regra && regra.unidadeMedida)],
-      ["Percentual atingido", Calculations.formatarPercentual(displayLaunch.percentualAtingido)],
-      ...(!metodologiaIeoCa ? [
+      [metodologiaIeoCa ? "IEO calculado da competência" : regra?.tipoCalculo === "nota_pesquisa_nps" ? "NPS calculado" : regra?.tipoCalculo === "melhorias_acumuladas" ? "Resultado da posição" : isPlataformaJogos ? "Evolução oficial do projeto" : "Realizado mensal", isPlataformaJogos ? Calculations.formatarPercentual(displayLaunch.resultadoMensal ?? displayLaunch.realizadoMensal, 2) : Calculations.formatarValor(displayLaunch.resultadoMensal ?? displayLaunch.realizadoMensal, regra && regra.unidadeMedida)],
+      ["Percentual atingido", Calculations.formatarPercentual(displayLaunch.percentualAtingido, isPlataformaJogos ? 2 : 0)],
+      ...(!metodologiaIeoCa && !isPlataformaJogos ? [
         ["Resultado acumulado", Calculations.formatarValor(displayLaunch.resultadoAcumulado, regra && regra.unidadeMedida)],
         ["Percentual acumulado", Calculations.formatarPercentual(displayLaunch.percentualAtingidoAcumulado)]
       ] : []),
@@ -370,6 +399,8 @@
       ...componentesIeo,
       ...componentesNps,
       ...componentesInteiros,
+      ...detalhesAprimoramento,
+      ...detalhesPlataformaJogos,
       ...detalhesCapacitacao
     ].map(([label, value, full]) => `
       <article class="detail-item ${full ? "full-span" : ""}">

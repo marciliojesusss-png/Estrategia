@@ -54,22 +54,33 @@ assert.match(view, /id="launchPercentualCalculadoLabel">% da meta atingida</);
 assert.match(view, /id="launchPercentualAcumuladoLabel">% da meta atingida anual</);
 assert.match(view, /id="resultadoAnualWrapper"/);
 assert.match(view, /documentation-fields\.js\?v=DOCUMENTACAO-CENTRAL-001/);
-assert.match(view, /launches\.js\?v=NPS-FORMULA-001/);
+assert.match(view, /launches\.js\?v=PLATAFORMA-JOGOS-001/);
 
 const dataStoreSource = fs.readFileSync(path.join(root, "assets", "js", "dataStore.js"), "utf8");
 assert.match(dataStoreSource, /nome: "tipoPosicaoCapacitacao"/);
 assert.match(dataStoreSource, /Acompanhamento sem nova medição/);
 assert.match(dataStoreSource, /nome: "acoesAcompanhamentoCapacitacao"/);
 assert.match(dataStoreSource, /nome: "quantidadeCursosMinimaCapacitacao"[^\n]+somenteLeitura: true/);
+assert.match(dataStoreSource, /nome: "tipoPosicaoAprimoramento"/);
+assert.match(dataStoreSource, /nome: "melhoriasImplementadasMes"[^\n]+Melhorias implementadas no período de apuração[^\n]+tipo: "inteiro"/);
+assert.match(dataStoreSource, /nome: "melhoriasImplementadasAcumuladas"[^\n]+tipo: "inteiro"[^\n]+somenteLeitura: true/);
+assert.match(dataStoreSource, /Descrição das melhorias implementadas no período/);
+assert.match(dataStoreSource, /nome: "percentualEvolucaoPlataformaJogos"[^\n]+Percentual oficial de evolução do projeto[^\n]+tipo: "percentual"[^\n]+entradaPtBr: true/);
+assert.match(dataStoreSource, /"2TRI\/2026": 1 \/ 3/);
+assert.match(dataStoreSource, /Registro de Aposta finalizado em ambiente de desenvolvimento/);
 
 const launchesSource = fs.readFileSync(path.join(root, "assets", "js", "launches.js"), "utf8");
 assert.match(launchesSource, /function updateCapacitacaoPositionFields/);
 assert.match(launchesSource, /function updateNpsPositionFields/);
+assert.match(launchesSource, /function updateAprimoramentoPositionFields/);
+assert.match(launchesSource, /melhorias implementadas no período para o fechamento quantitativo/);
 assert.match(launchesSource, /resultado\.origemNps === "componentes_formula"/);
 assert.match(launchesSource, /Percentual de promotores − percentual de detratores/);
 assert.match(launchesSource, /Informe as ações realizadas ou o andamento antes de enviar/);
 assert.match(launchesSource, /async function persistLaunch\(action\) \{\s+const lancamento = getSelectedLaunch\(\);/);
 assert.match(launchesSource, /Evidência anexada, mas não foi possível salvar o lançamento/);
+assert.match(launchesSource, /meta_oficial_trimestral_projeto/);
+assert.match(launchesSource, /Evolução oficial do projeto/);
 
 const approvalsSource = fs.readFileSync(path.join(root, "assets", "js", "approvals.js"), "utf8");
 assert.match(approvalsSource, /Acompanhamento sem nova medição/);
@@ -77,5 +88,10 @@ assert.match(approvalsSource, /Ações realizadas \/ andamento/);
 assert.match(approvalsSource, /"Em acompanhamento"/);
 assert.match(approvalsSource, /const componentesNps = regra\?\.tipoCalculo === "nota_pesquisa_nps"/);
 assert.match(approvalsSource, /Percentual de promotores − percentual de detratores/);
+assert.match(approvalsSource, /Novas melhorias no período/);
+assert.match(approvalsSource, /Melhorias implementadas acumuladas/);
+assert.match(approvalsSource, /Base de melhorias mapeadas/);
+assert.match(approvalsSource, /const detalhesPlataformaJogos = isPlataformaJogos/);
+assert.match(approvalsSource, /Marco\/etapa atual/);
 
 console.log("Testes de apresentação da tela de lançamentos OK");

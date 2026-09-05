@@ -9,13 +9,13 @@
   <script src="<?= APP_BASE_PATH ?>/assets/js/ieo-recorrente.js?v=IEO-UX-AUTOMATICO-004" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/lucro-recorrente.js?v=LUCRO-RECORRENTE-MENSAL-003" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/situations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/bootstrap-data.js?v=NPS-FORMULA-001" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/bootstrap-data.js?v=PLATAFORMA-JOGOS-001" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/indicator-periodicity.js?v=PERIODICIDADE-TRIMESTRAL-001" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/dataStore.js?v=NPS-FORMULA-001" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/dataStore.js?v=PLATAFORMA-JOGOS-001" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/databaseService.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/dataService.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/auth.js?v=RELATORIOS-ADMIN-001" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/calculations.js?v=INTEIROS-BR-001" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/calculations.js?v=PLATAFORMA-JOGOS-001" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/reports.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/app.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
 </head>

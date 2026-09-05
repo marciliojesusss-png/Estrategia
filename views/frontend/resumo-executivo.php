@@ -11,13 +11,13 @@
   <script src="<?= APP_BASE_PATH ?>/assets/js/lucro-recorrente.js?v=LUCRO-RECORRENTE-MENSAL-003" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/situations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/auth.js?v=RELATORIOS-ADMIN-001" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/calculations.js?v=INTEIROS-BR-001" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/formulas.js?v=NPS-FORMULA-001" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/calculations.js?v=PLATAFORMA-JOGOS-001" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/formulas.js?v=PLATAFORMA-JOGOS-001" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/indicator-periodicity.js?v=PERIODICIDADE-TRIMESTRAL-001" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/quarterly.js?v=NPS-FORMULA-001" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/quarterly.js?v=PLATAFORMA-JOGOS-001" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/prazo-apuracao.js?v=PRAZOS-APURACAO-001" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/dashboard.js?v=NPS-FORMULA-001" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/executiveSummary.js?v=NPS-VIGENCIA-001" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/dashboard.js?v=PLATAFORMA-JOGOS-001" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/executiveSummary.js?v=PLATAFORMA-JOGOS-001" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/app.js?v=PERSISTENCIA-CENTRAL-009" defer></script>
 </head>
 <body data-page="resumoExecutivo">
