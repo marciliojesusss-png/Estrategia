@@ -11,11 +11,11 @@
   <script src="/assets/js/situations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/bootstrap-data.js?v=PLATAFORMA-JOGOS-001" defer></script>
   <script src="/assets/js/indicator-periodicity.js?v=PERIODICIDADE-TRIMESTRAL-001" defer></script>
-  <script src="/assets/js/dataStore.js?v=PLATAFORMA-JOGOS-001" defer></script>
+  <script src="/assets/js/dataStore.js?v=APOIO-SOCIOAMBIENTAL-001" defer></script>
   <script src="/assets/js/databaseService.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/auth.js?v=RELATORIOS-ADMIN-001" defer></script>
   <script src="/assets/js/calculations.js?v=PLATAFORMA-JOGOS-001" defer></script>
-  <script src="/assets/js/formulas.js?v=PLATAFORMA-JOGOS-001" defer></script>
+  <script src="/assets/js/formulas.js?v=APOIO-SOCIOAMBIENTAL-001" defer></script>
   <script src="/assets/js/quarterly.js?v=PLATAFORMA-JOGOS-001" defer></script>
   <script src="/assets/js/documentation-fields.js?v=DOCUMENTACAO-CENTRAL-001" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/indicators.js?v=PLATAFORMA-JOGOS-001" defer></script>

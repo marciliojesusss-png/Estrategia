@@ -508,6 +508,7 @@ const apoioSocioambientalRule = {
   parametrosCalculo: {
     campoNome: "nomeIniciativaSocioambiental",
     campoStatus: "statusIniciativaSocioambiental",
+    campoDataApoio: "dataApoioIniciativa",
     statusQueConta: "Apoiada/realizada",
     metaTipo: "curva_trimestral_acumulada",
     curvaTrimestralAcumulada: {
@@ -548,7 +549,7 @@ const apoioSocioambiental2TriQuarter = consolidarTrimestre(
     { ano: 2026, mes: 3, status: "Homologado", competencia: "2026-03", trimestre: "1TRI/2026", camposEntrada: { nomeIniciativaSocioambiental: "Projeto socioambiental em prospecção", statusIniciativaSocioambiental: "Em estruturação" } },
     { ano: 2026, mes: 4, status: "Homologado", competencia: "2026-04", trimestre: "2TRI/2026", camposEntrada: { nomeIniciativaSocioambiental: "1ª iniciativa socioambiental apoiada", statusIniciativaSocioambiental: "Em rito de governança" } },
     { ano: 2026, mes: 5, status: "Homologado", competencia: "2026-05", trimestre: "2TRI/2026", camposEntrada: { nomeIniciativaSocioambiental: "1ª iniciativa socioambiental apoiada", statusIniciativaSocioambiental: "Em rito de governança" } },
-    { ano: 2026, mes: 6, status: "Homologado", competencia: "2026-06", trimestre: "2TRI/2026", camposEntrada: { nomeIniciativaSocioambiental: "1ª iniciativa socioambiental apoiada", statusIniciativaSocioambiental: "Apoiada/realizada" } }
+    { ano: 2026, mes: 6, status: "Homologado", competencia: "2026-06", trimestre: "2TRI/2026", camposEntrada: { nomeIniciativaSocioambiental: "1ª iniciativa socioambiental apoiada", statusIniciativaSocioambiental: "Apoiada/realizada", dataApoioIniciativa: "2026-06-17" } }
   ],
   "2TRI/2026"
 );

@@ -2353,6 +2353,31 @@ th {
   color: var(--warning, #ffb020);
 }
 
+.launch-validation-feedback {
+  margin: 0 0 12px;
+}
+
+.launch-validation-feedback > span:last-child {
+  white-space: pre-line;
+}
+
+[data-entry-wrapper].has-validation-error {
+  color: #ffb8ad;
+}
+
+.dynamic-entry-field.is-validation-invalid,
+.dynamic-entry-field[aria-invalid="true"] {
+  border-color: #ff725e;
+  box-shadow: 0 0 0 3px rgba(255, 114, 94, 0.16);
+}
+
+.entry-validation-message {
+  color: #ffb8ad;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
 @media (max-width: 900px) {
   .action-feedback-bar {
     flex-wrap: wrap;

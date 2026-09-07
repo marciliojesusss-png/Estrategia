@@ -2036,13 +2036,14 @@
             parametrosCalculo: {
               campoNome: "nomeIniciativaSocioambiental",
               campoStatus: "statusIniciativaSocioambiental",
+              campoDataApoio: "dataApoioIniciativa",
               statusQueConta: "Apoiada/realizada",
               metaTipo: "curva_trimestral_acumulada",
               curvaTrimestralAcumulada: APOIO_SOCIOAMBIENTAL_CURVA_2026,
               sentidoMeta: "quanto_maior_melhor"
             },
             camposEntrada: [
-              { nome: "nomeIniciativaSocioambiental", rotulo: "Nome da iniciativa", tipo: "texto", obrigatorio: true },
+              { nome: "nomeIniciativaSocioambiental", rotulo: "Nome da iniciativa", tipo: "texto", obrigatorio: false },
               { nome: "tipoIniciativaSocioambiental", rotulo: "Tipo da iniciativa", tipo: "texto", obrigatorio: false },
               { nome: "statusIniciativaSocioambiental", rotulo: "Status da iniciativa", tipo: "selecao", obrigatorio: true, opcoes: STATUS_INICIATIVA_SOCIOAMBIENTAL },
               { nome: "dataApoioIniciativa", rotulo: "Data de apoio/realização", tipo: "data", obrigatorio: false },

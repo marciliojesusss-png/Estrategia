@@ -1516,6 +1516,7 @@ const regraApoioSocioambiental = {
   parametrosCalculo: {
     campoNome: "nomeIniciativaSocioambiental",
     campoStatus: "statusIniciativaSocioambiental",
+    campoDataApoio: "dataApoioIniciativa",
     statusQueConta: "Apoiada/realizada",
     metaTipo: "curva_trimestral_acumulada",
     curvaTrimestralAcumulada: {
@@ -1556,6 +1557,66 @@ assert.equal(apoioSocioambiental1Tri.percentualAtingidoMensal, null);
 assert.equal(apoioSocioambiental1Tri.situacao, "Em prospecção/estruturação");
 assert.equal(apoioSocioambiental1Tri.statusCalculo, "sem_meta_periodo");
 
+const apoioSocioambientalAbril = formulas.calcularIndicador(
+  indicador(16, "Apoio ao Desenvolvimento Socioambiental"),
+  regraApoioSocioambiental,
+  {
+    ano: 2026,
+    mes: 4,
+    trimestre: "2TRI/2026",
+    camposEntrada: { nomeIniciativaSocioambiental: "", statusIniciativaSocioambiental: "Em prospecção" }
+  },
+  [
+    { ano: 2026, mes: 4, trimestre: "2TRI/2026", camposEntrada: { nomeIniciativaSocioambiental: "", statusIniciativaSocioambiental: "Em prospecção" } }
+  ]
+);
+assert.notEqual(apoioSocioambientalAbril.erro, true);
+assert.equal(apoioSocioambientalAbril.resultadoMensal, 0);
+assert.equal(apoioSocioambientalAbril.iniciativasApoiadasAcumuladas, 0);
+closeTo(apoioSocioambientalAbril.percentualAtingidoMensal, 0);
+assert.equal(apoioSocioambientalAbril.situacao, "Em acompanhamento");
+
+const apoioSocioambientalMaio = formulas.calcularIndicador(
+  indicador(16, "Apoio ao Desenvolvimento Socioambiental"),
+  regraApoioSocioambiental,
+  {
+    ano: 2026,
+    mes: 5,
+    trimestre: "2TRI/2026",
+    camposEntrada: { nomeIniciativaSocioambiental: "", statusIniciativaSocioambiental: "Em prospecção" }
+  },
+  [
+    { ano: 2026, mes: 4, trimestre: "2TRI/2026", camposEntrada: { nomeIniciativaSocioambiental: "", statusIniciativaSocioambiental: "Em prospecção" } },
+    { ano: 2026, mes: 5, trimestre: "2TRI/2026", camposEntrada: { nomeIniciativaSocioambiental: "", statusIniciativaSocioambiental: "Em prospecção" } }
+  ]
+);
+assert.notEqual(apoioSocioambientalMaio.erro, true);
+assert.equal(apoioSocioambientalMaio.resultadoMensal, 0);
+assert.equal(apoioSocioambientalMaio.iniciativasApoiadasAcumuladas, 0);
+closeTo(apoioSocioambientalMaio.percentualAtingidoMensal, 0);
+assert.equal(apoioSocioambientalMaio.situacao, "Em acompanhamento");
+
+const apoioSocioambientalJunhoSemEntrega = formulas.calcularIndicador(
+  indicador(16, "Apoio ao Desenvolvimento Socioambiental"),
+  regraApoioSocioambiental,
+  {
+    ano: 2026,
+    mes: 6,
+    trimestre: "2TRI/2026",
+    camposEntrada: { nomeIniciativaSocioambiental: "", statusIniciativaSocioambiental: "Em prospecção" }
+  },
+  [
+    { ano: 2026, mes: 4, trimestre: "2TRI/2026", camposEntrada: { nomeIniciativaSocioambiental: "", statusIniciativaSocioambiental: "Em prospecção" } },
+    { ano: 2026, mes: 5, trimestre: "2TRI/2026", camposEntrada: { nomeIniciativaSocioambiental: "", statusIniciativaSocioambiental: "Em prospecção" } },
+    { ano: 2026, mes: 6, trimestre: "2TRI/2026", camposEntrada: { nomeIniciativaSocioambiental: "", statusIniciativaSocioambiental: "Em prospecção" } }
+  ]
+);
+assert.equal(apoioSocioambientalJunhoSemEntrega.metaTrimestral, 1);
+assert.equal(apoioSocioambientalJunhoSemEntrega.resultadoMensal, 0);
+assert.equal(apoioSocioambientalJunhoSemEntrega.iniciativasApoiadasAcumuladas, 0);
+closeTo(apoioSocioambientalJunhoSemEntrega.percentualAtingidoMensal, 0);
+assert.equal(apoioSocioambientalJunhoSemEntrega.situacao, "Abaixo da meta");
+
 const apoioSocioambiental2Tri = formulas.calcularIndicador(
   indicador(16, "Apoio ao Desenvolvimento Socioambiental"),
   regraApoioSocioambiental,
@@ -1564,19 +1625,51 @@ const apoioSocioambiental2Tri = formulas.calcularIndicador(
     mes: 6,
     trimestre: "2TRI/2026",
     camposEntrada: {
-      nomeIniciativaSocioambiental: "1ª iniciativa socioambiental apoiada",
-      statusIniciativaSocioambiental: "Apoiada/realizada"
+      nomeIniciativaSocioambiental: "Projeto socioambiental teste",
+      statusIniciativaSocioambiental: "Apoiada/realizada",
+      dataApoioIniciativa: "2026-06-17"
     }
   },
   [
     { ano: 2026, mes: 3, trimestre: "1TRI/2026", camposEntrada: { nomeIniciativaSocioambiental: "Projeto socioambiental em prospecção", statusIniciativaSocioambiental: "Em prospecção" } },
-    { ano: 2026, mes: 6, trimestre: "2TRI/2026", camposEntrada: { nomeIniciativaSocioambiental: "1ª iniciativa socioambiental apoiada", statusIniciativaSocioambiental: "Apoiada/realizada" } }
+    { ano: 2026, mes: 4, trimestre: "2TRI/2026", camposEntrada: { nomeIniciativaSocioambiental: "Projeto socioambiental teste", statusIniciativaSocioambiental: "Em prospecção" } },
+    { ano: 2026, mes: 5, trimestre: "2TRI/2026", camposEntrada: { nomeIniciativaSocioambiental: "Projeto socioambiental teste", statusIniciativaSocioambiental: "Em rito de governança" } },
+    { ano: 2026, mes: 6, trimestre: "2TRI/2026", camposEntrada: { nomeIniciativaSocioambiental: "Projeto socioambiental teste", statusIniciativaSocioambiental: "Apoiada/realizada", dataApoioIniciativa: "2026-06-17" } }
   ]
 );
 assert.equal(apoioSocioambiental2Tri.resultadoMensal, 1);
 assert.equal(apoioSocioambiental2Tri.iniciativasApoiadasAcumuladas, 1);
 closeTo(apoioSocioambiental2Tri.percentualAtingidoMensal, 1);
 assert.equal(apoioSocioambiental2Tri.situacao, "Atingido");
+
+const apoioSemNome = formulas.calcularIndicador(
+  indicador(16, "Apoio ao Desenvolvimento Socioambiental"),
+  regraApoioSocioambiental,
+  { ano: 2026, mes: 6, trimestre: "2TRI/2026", camposEntrada: { nomeIniciativaSocioambiental: "", statusIniciativaSocioambiental: "Apoiada/realizada", dataApoioIniciativa: "2026-06-17" } },
+  []
+);
+assert.equal(apoioSemNome.erro, true);
+assert.equal(apoioSemNome.mensagem, "Informe o nome da iniciativa apoiada/realizada.");
+
+const apoioSemData = formulas.calcularIndicador(
+  indicador(16, "Apoio ao Desenvolvimento Socioambiental"),
+  regraApoioSocioambiental,
+  { ano: 2026, mes: 6, trimestre: "2TRI/2026", camposEntrada: { nomeIniciativaSocioambiental: "Projeto socioambiental teste", statusIniciativaSocioambiental: "Apoiada/realizada", dataApoioIniciativa: "" } },
+  []
+);
+assert.equal(apoioSemData.erro, true);
+assert.equal(apoioSemData.mensagem, "Informe a data de apoio/realização da iniciativa.");
+
+const apoioSocioambientalJulhoAtrasado = formulas.calcularIndicador(
+  indicador(16, "Apoio ao Desenvolvimento Socioambiental"),
+  regraApoioSocioambiental,
+  { ano: 2026, mes: 7, trimestre: "3TRI/2026", camposEntrada: { nomeIniciativaSocioambiental: "", statusIniciativaSocioambiental: "Em prospecção" } },
+  [
+    { ano: 2026, mes: 6, trimestre: "2TRI/2026", camposEntrada: { nomeIniciativaSocioambiental: "", statusIniciativaSocioambiental: "Em prospecção" } },
+    { ano: 2026, mes: 7, trimestre: "3TRI/2026", camposEntrada: { nomeIniciativaSocioambiental: "", statusIniciativaSocioambiental: "Em prospecção" } }
+  ]
+);
+assert.equal(apoioSocioambientalJulhoAtrasado.situacao, "Abaixo da meta");
 
 const regraIncentivoSocioambiental = {
   indicadorId: 19,
@@ -1701,6 +1794,53 @@ assert.equal(visibilidade1Tri.percentualAtingidoMensal, null);
 assert.equal(visibilidade1Tri.statusCalculo, "sem_meta_periodo");
 assert.equal(visibilidade1Tri.situacao, "Em elaboração/homologação");
 
+const visibilidadeAbril = formulas.calcularIndicador(
+  indicador(20, "Visibilidade dos Repasses Sociais das Loterias CAIXA"),
+  regraVisibilidadeRepasses,
+  {
+    ano: 2026,
+    mes: 4,
+    trimestre: "2TRI/2026",
+    camposEntrada: {
+      acaoPropostaVisibilidade: "relatorio_sorte_em_numeros_2025",
+      statusAcaoVisibilidade: "Em elaboração"
+    }
+  },
+  [
+    { ano: 2026, mes: 4, trimestre: "2TRI/2026", camposEntrada: { acaoPropostaVisibilidade: "relatorio_sorte_em_numeros_2025", statusAcaoVisibilidade: "Em elaboração" } }
+  ]
+);
+closeTo(visibilidadeAbril.metaPercentualTrimestral, 0.5);
+assert.equal(visibilidadeAbril.metaAcoesRealizadasAcumuladas, 1);
+assert.equal(visibilidadeAbril.acoesRealizadasAcumuladas, 0);
+closeTo(visibilidadeAbril.resultadoMensal, 0);
+closeTo(visibilidadeAbril.percentualAtingidoMensal, 0);
+assert.equal(visibilidadeAbril.situacao, "Em acompanhamento");
+
+const visibilidadeMaio = formulas.calcularIndicador(
+  indicador(20, "Visibilidade dos Repasses Sociais das Loterias CAIXA"),
+  regraVisibilidadeRepasses,
+  {
+    ano: 2026,
+    mes: 5,
+    trimestre: "2TRI/2026",
+    camposEntrada: {
+      acaoPropostaVisibilidade: "relatorio_sorte_em_numeros_2025",
+      statusAcaoVisibilidade: "Em homologação"
+    }
+  },
+  [
+    { ano: 2026, mes: 4, trimestre: "2TRI/2026", camposEntrada: { acaoPropostaVisibilidade: "relatorio_sorte_em_numeros_2025", statusAcaoVisibilidade: "Em elaboração" } },
+    { ano: 2026, mes: 5, trimestre: "2TRI/2026", camposEntrada: { acaoPropostaVisibilidade: "relatorio_sorte_em_numeros_2025", statusAcaoVisibilidade: "Em homologação" } }
+  ]
+);
+closeTo(visibilidadeMaio.metaPercentualTrimestral, 0.5);
+assert.equal(visibilidadeMaio.metaAcoesRealizadasAcumuladas, 1);
+assert.equal(visibilidadeMaio.acoesRealizadasAcumuladas, 0);
+closeTo(visibilidadeMaio.resultadoMensal, 0);
+closeTo(visibilidadeMaio.percentualAtingidoMensal, 0);
+assert.equal(visibilidadeMaio.situacao, "Em acompanhamento");
+
 const visibilidade2Tri = formulas.calcularIndicador(
   indicador(20, "Visibilidade dos Repasses Sociais das Loterias CAIXA"),
   regraVisibilidadeRepasses,
@@ -1711,19 +1851,45 @@ const visibilidade2Tri = formulas.calcularIndicador(
     camposEntrada: {
       acaoPropostaVisibilidade: "relatorio_sorte_em_numeros_2025",
       statusAcaoVisibilidade: "Publicada/realizada",
-      dataConclusaoVisibilidade: "2026-06-30"
+      dataConclusaoVisibilidade: "2026-06-17"
     }
   },
   [
     { ano: 2026, mes: 3, trimestre: "1TRI/2026", camposEntrada: { acaoPropostaVisibilidade: "relatorio_sorte_em_numeros_2025", statusAcaoVisibilidade: "Em homologação" } },
-    { ano: 2026, mes: 5, trimestre: "2TRI/2026", camposEntrada: { acaoPropostaVisibilidade: "relatorio_sorte_em_numeros_2025", statusAcaoVisibilidade: "Publicada/realizada" } },
+    { ano: 2026, mes: 4, trimestre: "2TRI/2026", camposEntrada: { acaoPropostaVisibilidade: "relatorio_sorte_em_numeros_2025", statusAcaoVisibilidade: "Em elaboração" } },
+    { ano: 2026, mes: 5, trimestre: "2TRI/2026", camposEntrada: { acaoPropostaVisibilidade: "relatorio_sorte_em_numeros_2025", statusAcaoVisibilidade: "Em homologação" } },
     { ano: 2026, mes: 6, trimestre: "2TRI/2026", camposEntrada: { acaoPropostaVisibilidade: "relatorio_sorte_em_numeros_2025", statusAcaoVisibilidade: "Publicada/realizada" } }
   ]
 );
 closeTo(visibilidade2Tri.resultadoMensal, 0.5);
 assert.equal(visibilidade2Tri.acoesRealizadasAcumuladas, 1);
+assert.equal(visibilidade2Tri.totalAcoesPropostasVisibilidade, 2);
+assert.equal(visibilidade2Tri.metaAcoesRealizadasAcumuladas, 1);
+closeTo(visibilidade2Tri.metaPercentualTrimestral, 0.5);
 closeTo(visibilidade2Tri.percentualAtingidoMensal, 1);
 assert.equal(visibilidade2Tri.situacao, "Atingido");
+
+const visibilidadeJunhoSemEntrega = formulas.calcularIndicador(
+  indicador(20, "Visibilidade dos Repasses Sociais das Loterias CAIXA"),
+  regraVisibilidadeRepasses,
+  {
+    ano: 2026,
+    mes: 6,
+    trimestre: "2TRI/2026",
+    camposEntrada: {
+      acaoPropostaVisibilidade: "relatorio_sorte_em_numeros_2025",
+      statusAcaoVisibilidade: "Em homologação"
+    }
+  },
+  [
+    { ano: 2026, mes: 4, trimestre: "2TRI/2026", camposEntrada: { acaoPropostaVisibilidade: "relatorio_sorte_em_numeros_2025", statusAcaoVisibilidade: "Em elaboração" } },
+    { ano: 2026, mes: 5, trimestre: "2TRI/2026", camposEntrada: { acaoPropostaVisibilidade: "relatorio_sorte_em_numeros_2025", statusAcaoVisibilidade: "Em homologação" } },
+    { ano: 2026, mes: 6, trimestre: "2TRI/2026", camposEntrada: { acaoPropostaVisibilidade: "relatorio_sorte_em_numeros_2025", statusAcaoVisibilidade: "Em homologação" } }
+  ]
+);
+assert.equal(visibilidadeJunhoSemEntrega.acoesRealizadasAcumuladas, 0);
+closeTo(visibilidadeJunhoSemEntrega.percentualAtingidoMensal, 0);
+assert.equal(visibilidadeJunhoSemEntrega.situacao, "Abaixo da meta");
 
 const regraJogoResponsavelCapacitacao = {
   indicadorId: 21,

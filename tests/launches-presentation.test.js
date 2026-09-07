@@ -54,7 +54,9 @@ assert.match(view, /id="launchPercentualCalculadoLabel">% da meta atingida</);
 assert.match(view, /id="launchPercentualAcumuladoLabel">% da meta atingida anual</);
 assert.match(view, /id="resultadoAnualWrapper"/);
 assert.match(view, /documentation-fields\.js\?v=DOCUMENTACAO-CENTRAL-001/);
-assert.match(view, /launches\.js\?v=PLATAFORMA-JOGOS-001/);
+assert.match(view, /styles\.css\?v=SOCIOAMBIENTAL-UX-001/);
+assert.match(view, /launches\.js\?v=SOCIOAMBIENTAL-UX-001/);
+assert.match(view, /id="launchValidationFeedback"[^>]+role="alert"[^>]+aria-live="assertive"/);
 
 const dataStoreSource = fs.readFileSync(path.join(root, "assets", "js", "dataStore.js"), "utf8");
 assert.match(dataStoreSource, /nome: "tipoPosicaoCapacitacao"/);
@@ -81,6 +83,57 @@ assert.match(launchesSource, /async function persistLaunch\(action\) \{\s+const 
 assert.match(launchesSource, /Evidência anexada, mas não foi possível salvar o lançamento/);
 assert.match(launchesSource, /meta_oficial_trimestral_projeto/);
 assert.match(launchesSource, /Evolução oficial do projeto/);
+assert.match(launchesSource, /\["nota_pesquisa_nps", "iniciativas_apoiadas", "execucao_acoes_propostas"\]\.includes\(regra\?\.tipoCalculo\)/);
+assert.match(launchesSource, /function updateSocioambientalInitiativeFields/);
+assert.match(launchesSource, /function validateSocioambientalRequiredFields/);
+assert.match(launchesSource, /Campo obrigatório para iniciativa apoiada\/realizada\./);
+assert.match(dataStoreSource, /nome: "nomeIniciativaSocioambiental"[^\n]+obrigatorio: false/);
+
+const socioambientalRule = {
+  tipoCalculo: "iniciativas_apoiadas",
+  parametrosCalculo: {
+    campoStatus: "statusIniciativaSocioambiental",
+    campoNome: "nomeIniciativaSocioambiental",
+    campoDataApoio: "dataApoioIniciativa",
+    statusQueConta: "Apoiada/realizada"
+  }
+};
+function socioambientalValidation(values) {
+  return JSON.parse(JSON.stringify(internals.socioambientalRequiredFieldState(socioambientalRule, values)));
+}
+assert.deepEqual(socioambientalValidation({ statusIniciativaSocioambiental: "Apoiada/realizada" }), {
+  applies: true,
+  missing: ["nomeIniciativaSocioambiental", "dataApoioIniciativa"],
+  message: "Para registrar uma iniciativa como Apoiada/realizada, preencha:\n• Nome da iniciativa\n• Data de apoio/realização"
+});
+assert.deepEqual(socioambientalValidation({
+  statusIniciativaSocioambiental: "Apoiada/realizada",
+  nomeIniciativaSocioambiental: "Iniciativa A"
+}), {
+  applies: true,
+  missing: ["dataApoioIniciativa"],
+  message: "Informe a data de apoio/realização da iniciativa."
+});
+assert.deepEqual(socioambientalValidation({
+  statusIniciativaSocioambiental: "Apoiada/realizada",
+  dataApoioIniciativa: "2026-06-10"
+}), {
+  applies: true,
+  missing: ["nomeIniciativaSocioambiental"],
+  message: "Informe o nome da iniciativa apoiada/realizada."
+});
+assert.deepEqual(socioambientalValidation({
+  statusIniciativaSocioambiental: "Apoiada/realizada",
+  nomeIniciativaSocioambiental: "Iniciativa A",
+  dataApoioIniciativa: "2026-06-10"
+}), { applies: true, missing: [], message: "" });
+["Em prospecção", "Em estruturação", "Em rito de governança"].forEach((status) => {
+  assert.deepEqual(socioambientalValidation({ statusIniciativaSocioambiental: status }), {
+    applies: false,
+    missing: [],
+    message: ""
+  });
+});
 
 const approvalsSource = fs.readFileSync(path.join(root, "assets", "js", "approvals.js"), "utf8");
 assert.match(approvalsSource, /Acompanhamento sem nova medição/);
@@ -93,5 +146,43 @@ assert.match(approvalsSource, /Melhorias implementadas acumuladas/);
 assert.match(approvalsSource, /Base de melhorias mapeadas/);
 assert.match(approvalsSource, /const detalhesPlataformaJogos = isPlataformaJogos/);
 assert.match(approvalsSource, /Marco\/etapa atual/);
+
+const actionOptionsHtml = internals.renderEntryInput({
+  nome: "acaoPropostaVisibilidade",
+  rotulo: "Ação proposta",
+  tipo: "selecao",
+  opcoes: [
+    "Opção em texto",
+    { value: "valor_label", label: "Opção value/label" },
+    { id: "id_label", label: "Opção id/label" },
+    { id: "relatorio_sorte_em_numeros_2025", nome: "Publicar relatório institucional \"A Sorte em Números — 2025\"" },
+    { id: "campanha_repasses_sociais", nome: "Realizar campanha publicitária exclusiva com foco no repasse social das Loterias CAIXA" }
+  ]
+}, "relatorio_sorte_em_numeros_2025");
+assert.match(actionOptionsHtml, /value="Opção em texto"[^>]*>Opção em texto<\/option>/);
+assert.match(actionOptionsHtml, /value="valor_label"[^>]*>Opção value\/label<\/option>/);
+assert.match(actionOptionsHtml, /value="id_label"[^>]*>Opção id\/label<\/option>/);
+assert.match(actionOptionsHtml, /value="relatorio_sorte_em_numeros_2025"[^>]*selected[^>]*>Publicar relatório institucional &quot;A Sorte em Números — 2025&quot;<\/option>/);
+assert.match(actionOptionsHtml, /value="campanha_repasses_sociais"[^>]*>Realizar campanha publicitária exclusiva com foco no repasse social das Loterias CAIXA<\/option>/);
+
+const visibilityRule = {
+  tipoCalculo: "execucao_acoes_propostas",
+  unidadeMedida: "percentual",
+  metaAnualValor: 1,
+  parametrosCalculo: {
+    curvaTrimestralAcumulada: {
+      "2TRI/2026": { metaPercentual: 0.5, metaAcoesRealizadasAcumuladas: 1 }
+    }
+  }
+};
+assert.equal(internals.getDisplayMeta(visibilityRule, { ano: 2026, mes: 6, trimestre: "2TRI/2026" }), 0.5);
+assert.deepEqual(
+  JSON.parse(JSON.stringify(internals.quarterlyMetaDetail(
+    { metaTrimestral: 1, metaPercentualTrimestral: 0.5, unidadeMedida: "percentual" },
+    visibilityRule,
+    { ano: 2026, mes: 6, trimestre: "2TRI/2026" }
+  ))),
+  ["Meta trimestral", "50%"]
+);
 
 console.log("Testes de apresentação da tela de lançamentos OK");

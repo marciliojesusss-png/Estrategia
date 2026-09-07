@@ -1407,11 +1407,23 @@
   }
 
   function calcularIniciativasApoiadas(indicador, regra, lancamentoAtual, lancamentosDoAno) {
-    const required = validarObrigatorios(regra, lancamentoAtual);
-    if (required) return erro(required, regra.unidadeMedida);
     const campoNome = regra.parametrosCalculo?.campoNome || "nomeIniciativaSocioambiental";
     const campoStatus = regra.parametrosCalculo?.campoStatus || "statusIniciativaSocioambiental";
+    const campoDataApoio = regra.parametrosCalculo?.campoDataApoio || "dataApoioIniciativa";
     const statusQueConta = regra.parametrosCalculo?.statusQueConta || "Apoiada/realizada";
+    const regraComNomeCondicional = {
+      ...regra,
+      camposEntrada: (regra.camposEntrada || []).filter((campoEntrada) => campoEntrada.nome !== campoNome)
+    };
+    const required = validarObrigatorios(regraComNomeCondicional, lancamentoAtual);
+    if (required) return erro(required, regra.unidadeMedida);
+    const statusAtual = texto(lancamentoAtual, campoStatus);
+    if (statusAtual === statusQueConta && !texto(lancamentoAtual, campoNome).trim()) {
+      return erro("Informe o nome da iniciativa apoiada/realizada.", regra.unidadeMedida);
+    }
+    if (statusAtual === statusQueConta && !texto(lancamentoAtual, campoDataApoio).trim()) {
+      return erro("Informe a data de apoio/realização da iniciativa.", regra.unidadeMedida);
+    }
     const ateMes = lancamentosAteMes(lancamentoAtual, lancamentosDoAno);
     const iniciativasApoiadas = [...new Set(ateMes
       .filter((item) => texto(item, campoStatus) === statusQueConta)
@@ -1436,10 +1448,13 @@
     }
     const metaReferencia = metaTrimestral ?? toNumber(regra.metaAnualValor);
     const percentual = metaReferencia ? acumulado / metaReferencia : null;
-    const situacao = metaReferencia
-      ? acumulado >= metaReferencia
-        ? "Atingido"
-        : "Abaixo da meta"
+    const acompanhamentoAntesPrimeiroFechamento = Number(lancamentoAtual.ano) === 2026 && [4, 5].includes(Number(lancamentoAtual.mes));
+    const situacao = acompanhamentoAntesPrimeiroFechamento
+      ? "Em acompanhamento"
+      : metaReferencia
+        ? acumulado >= metaReferencia
+          ? "Atingido"
+          : "Abaixo da meta"
       : "Sem cálculo";
     return ok(acumulado, acumulado, percentual, percentual, regra.unidadeMedida, "Iniciativas apoiadas calculadas com sucesso.", {
       iniciativasApoiadas,
@@ -1509,9 +1524,13 @@
     const metaReferencia = metaAcoesRealizadasAcumuladas ?? toNumber(regra.metaAnualValor);
     if (!metaReferencia) return erro("Meta trimestral de ações propostas não configurada.", regra.unidadeMedida);
     const percentual = acoesRealizadasAcumuladas / metaReferencia;
-    const situacao = acoesRealizadasAcumuladas >= metaReferencia
-      ? "Atingido"
-      : "Abaixo da meta";
+    const mesCompetencia = Number(lancamentoAtual.mes);
+    const mesFechamentoTrimestre = Number.isInteger(mesCompetencia) && mesCompetencia % 3 === 0;
+    const situacao = !mesFechamentoTrimestre
+      ? "Em acompanhamento"
+      : acoesRealizadasAcumuladas >= metaReferencia
+        ? "Atingido"
+        : "Abaixo da meta";
 
     return ok(resultadoPercentual, resultadoPercentual, percentual, percentual, regra.unidadeMedida, "Execução de ações propostas calculada.", {
       resultadoPercentualVisibilidade: resultadoPercentual,

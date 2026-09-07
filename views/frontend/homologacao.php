@@ -11,12 +11,12 @@
   <script src="/assets/js/situations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/bootstrap-data.js?v=PLATAFORMA-JOGOS-001" defer></script>
   <script src="/assets/js/indicator-periodicity.js?v=PERIODICIDADE-TRIMESTRAL-001" defer></script>
-  <script src="/assets/js/dataStore.js?v=PLATAFORMA-JOGOS-001" defer></script>
+  <script src="/assets/js/dataStore.js?v=APOIO-SOCIOAMBIENTAL-001" defer></script>
   <script src="/assets/js/central-persistence.js?v=IEO-VIGENCIA-CA-001" defer></script>
   <script src="/assets/js/databaseService.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/auth.js?v=RELATORIOS-ADMIN-001" defer></script>
   <script src="/assets/js/calculations.js?v=PLATAFORMA-JOGOS-001" defer></script>
-  <script src="/assets/js/formulas.js?v=PLATAFORMA-JOGOS-001" defer></script>
+  <script src="/assets/js/formulas.js?v=APOIO-SOCIOAMBIENTAL-001" defer></script>
   <script src="/assets/js/documentation-fields.js?v=DOCUMENTACAO-CENTRAL-001" defer></script>
   <script src="/assets/js/action-feedback.js?v=ACTION-FEEDBACK-001" defer></script>
   <script src="/assets/js/approvals.js?v=PLATAFORMA-JOGOS-001" defer></script>

@@ -12,6 +12,7 @@
     evidenceOperationInProgress: false,
     selectedId: null
   };
+  let socioambientalValidationActive = false;
 
   function unique(values) {
     return [...new Set(values.filter(Boolean))];
@@ -329,6 +330,10 @@
       const trimestre = lancamento?.trimestre || `${Math.ceil(Number(lancamento?.mes) / 3)}TRI/${lancamento?.ano || 2026}`;
       return regra?.parametrosCalculo?.curvaTrimestralAcumulada?.[trimestre]?.metaPercentual ?? null;
     }
+    if (regra?.tipoCalculo === "execucao_acoes_propostas") {
+      const trimestre = lancamento?.trimestre || `${Math.ceil(Number(lancamento?.mes) / 3)}TRI/${lancamento?.ano || 2026}`;
+      return regra?.parametrosCalculo?.curvaTrimestralAcumulada?.[trimestre]?.metaPercentual ?? null;
+    }
     if (regra?.tipoCalculo === "participacao_ecossistema_com_cenarios") {
       const curve = getEcossistemaCurveForLaunch(regra, lancamento, lancamento?.camposEntrada?.cenarioApuracaoEcossistema);
       return curve ? curve.meta2026 / 100 : lancamento.metaMensal ?? regra?.metaAnualValor;
@@ -481,8 +486,12 @@
             ${extra}
           >
             ${options.map((option) => {
-              const label = typeof option === "string" ? option : option.label;
-              const optionValue = typeof option === "string" ? option : option.value ?? option.id ?? option.label;
+              const label = typeof option === "string"
+                ? option
+                : option.label ?? option.nome ?? option.id ?? "";
+              const optionValue = typeof option === "string"
+                ? option
+                : option.value ?? option.id ?? option.label ?? option.nome ?? "";
               const selected = [optionValue, label].some((candidate) => String(value || "") === String(candidate));
               return `<option value="${escapeHtml(optionValue)}" ${selected ? "selected" : ""}>${escapeHtml(label)}</option>`;
             }).join("")}
@@ -603,7 +612,7 @@
         : isEditable(item)
           ? "Preencher"
           : "Visualizar";
-      const npsCalculation = regra?.tipoCalculo === "nota_pesquisa_nps"
+      const tableCalculation = ["nota_pesquisa_nps", "iniciativas_apoiadas", "execucao_acoes_propostas"].includes(regra?.tipoCalculo)
         ? IndicatorFormulas.calcularIndicador(
           indicador,
           regra,
@@ -615,13 +624,13 @@
           ))
         )
         : null;
-      const resultadoMensal = npsCalculation
-        ? npsCalculation.resultadoMensal
+      const resultadoMensal = tableCalculation
+        ? tableCalculation.resultadoMensal
         : item.resultadoMensal ?? item.realizadoMensal;
       const situacao = Situations.normalizarSituacao(
-        npsCalculation?.situacao ||
+        tableCalculation?.situacao ||
         item.situacaoCalculada ||
-        getCalculatedSituation(npsCalculation?.percentualAtingidoMensal ?? item.percentualAtingido ?? item.percentualAtingidoMensal)
+        getCalculatedSituation(tableCalculation?.percentualAtingidoMensal ?? item.percentualAtingido ?? item.percentualAtingidoMensal)
       );
       return `
         <tr>
@@ -852,6 +861,7 @@
     updateCapacitacaoPositionFields(regra, lancamento);
     updateAprimoramentoPositionFields(regra, lancamento);
     updateNpsPositionFields(regra, lancamento);
+    updateSocioambientalInitiativeFields(regra);
     updateEcossistemaCurveFields(regra, lancamento);
     updateRedeLotericaCurveFields(regra, lancamento);
   }
@@ -929,6 +939,107 @@
     });
   }
 
+  function updateSocioambientalInitiativeFields(regra) {
+    if (regra?.tipoCalculo !== "iniciativas_apoiadas") return;
+    const statusField = regra.parametrosCalculo?.campoStatus || "statusIniciativaSocioambiental";
+    const nameField = regra.parametrosCalculo?.campoNome || "nomeIniciativaSocioambiental";
+    const dateField = regra.parametrosCalculo?.campoDataApoio || "dataApoioIniciativa";
+    const completedStatus = regra.parametrosCalculo?.statusQueConta || "Apoiada/realizada";
+    const completed = document.querySelector(`[data-entry-field="${statusField}"]`)?.value === completedStatus;
+    [nameField, dateField].forEach((fieldName) => {
+      const input = document.querySelector(`[data-entry-field="${fieldName}"]`);
+      if (input) input.required = completed;
+    });
+    if (!completed) clearSocioambientalValidation(regra);
+  }
+
+  function socioambientalRequiredFieldState(regra, values = {}) {
+    if (regra?.tipoCalculo !== "iniciativas_apoiadas") {
+      return { applies: false, missing: [], message: "" };
+    }
+    const statusField = regra.parametrosCalculo?.campoStatus || "statusIniciativaSocioambiental";
+    const nameField = regra.parametrosCalculo?.campoNome || "nomeIniciativaSocioambiental";
+    const dateField = regra.parametrosCalculo?.campoDataApoio || "dataApoioIniciativa";
+    const completedStatus = regra.parametrosCalculo?.statusQueConta || "Apoiada/realizada";
+    if (values[statusField] !== completedStatus) {
+      return { applies: false, missing: [], message: "" };
+    }
+
+    const missing = [nameField, dateField].filter((fieldName) => !String(values[fieldName] || "").trim());
+    let message = "";
+    if (missing.length === 2) {
+      message = "Para registrar uma iniciativa como Apoiada/realizada, preencha:\n• Nome da iniciativa\n• Data de apoio/realização";
+    } else if (missing[0] === nameField) {
+      message = "Informe o nome da iniciativa apoiada/realizada.";
+    } else if (missing[0] === dateField) {
+      message = "Informe a data de apoio/realização da iniciativa.";
+    }
+    return { applies: true, missing, message };
+  }
+
+  function setSocioambientalFieldValidation(fieldName, invalid) {
+    const input = document.querySelector(`[data-entry-field="${fieldName}"]`);
+    const wrapper = document.querySelector(`[data-entry-wrapper="${fieldName}"]`);
+    if (!input || !wrapper) return;
+    const messageId = `entryValidation-${fieldName}`;
+    let message = wrapper.querySelector(`[data-entry-validation="${fieldName}"]`);
+    input.classList.toggle("is-validation-invalid", invalid);
+    wrapper.classList.toggle("has-validation-error", invalid);
+    if (invalid) {
+      input.setAttribute("aria-invalid", "true");
+      input.setAttribute("aria-describedby", messageId);
+      if (!message) {
+        message = document.createElement("small");
+        message.id = messageId;
+        message.className = "entry-validation-message";
+        message.dataset.entryValidation = fieldName;
+        message.textContent = "Campo obrigatório para iniciativa apoiada/realizada.";
+        wrapper.appendChild(message);
+      }
+      return;
+    }
+    input.removeAttribute("aria-invalid");
+    input.removeAttribute("aria-describedby");
+    message?.remove();
+  }
+
+  function clearSocioambientalValidation(regra = null) {
+    const fields = regra?.tipoCalculo === "iniciativas_apoiadas"
+      ? [
+        regra.parametrosCalculo?.campoNome || "nomeIniciativaSocioambiental",
+        regra.parametrosCalculo?.campoDataApoio || "dataApoioIniciativa"
+      ]
+      : ["nomeIniciativaSocioambiental", "dataApoioIniciativa"];
+    fields.forEach((fieldName) => setSocioambientalFieldValidation(fieldName, false));
+    window.ActionFeedback?.clear("launchValidationFeedback");
+    socioambientalValidationActive = false;
+  }
+
+  function validateSocioambientalRequiredFields(regra, options = {}) {
+    if (regra?.tipoCalculo !== "iniciativas_apoiadas") return true;
+    const values = collectEntryValues();
+    const validation = socioambientalRequiredFieldState(regra, values);
+    const nameField = regra.parametrosCalculo?.campoNome || "nomeIniciativaSocioambiental";
+    const dateField = regra.parametrosCalculo?.campoDataApoio || "dataApoioIniciativa";
+    [nameField, dateField].forEach((fieldName) => {
+      setSocioambientalFieldValidation(fieldName, validation.missing.includes(fieldName));
+    });
+    if (!validation.applies || !validation.missing.length) {
+      window.ActionFeedback?.clear("launchValidationFeedback");
+      socioambientalValidationActive = false;
+      return true;
+    }
+
+    socioambientalValidationActive = true;
+    window.ActionFeedback?.show("launchValidationFeedback", validation.message, "error");
+    if (options.focus) {
+      const firstInvalid = document.querySelector(`[data-entry-field="${validation.missing[0]}"]`);
+      firstInvalid?.focus({ preventScroll: true });
+      firstInvalid?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+    return false;
+  }
+
   function updateEcossistemaCurveFields(regra, lancamento) {
     if (regra?.tipoCalculo !== "participacao_ecossistema_com_cenarios") return;
     const scenarioInput = document.querySelector('[data-entry-field="cenarioApuracaoEcossistema"]');
@@ -972,6 +1083,9 @@
   function quarterlyMetaDetail(resultado, regra, lancamento) {
     if (resultado?.metaTrimestral === undefined) return null;
     const value = resultado.metaTrimestral;
+    if (regra?.tipoCalculo === "execucao_acoes_propostas") {
+      return ["Meta trimestral", Calculations.formatarPercentual(resultado.metaPercentualTrimestral)];
+    }
     if (regra?.tipoCalculo === "plano_acao_por_elementos") {
       const formatted = Calculations.formatarValor(value, "quantidade");
       const suffix = Number(value) === 1 ? "elemento acumulado" : "elementos acumulados";
@@ -1042,6 +1156,17 @@
     }
     const quarterlyMeta = quarterlyMetaDetail(resultado, regra, lancamento);
     if (quarterlyMeta) details.push(quarterlyMeta);
+    if (regra?.tipoCalculo === "execucao_acoes_propostas") {
+      const metaQuantidade = resultado.metaAcoesRealizadasAcumuladas;
+      const realizadas = resultado.acoesRealizadasAcumuladas;
+      const total = resultado.totalAcoesPropostasVisibilidade;
+      details.push(["Meta em quantidade", `${Calculations.formatarValor(metaQuantidade, "quantidade")} ${Number(metaQuantidade) === 1 ? "ação" : "ações"}`]);
+      details.push(["Ações realizadas acumuladas", `${Calculations.formatarValor(realizadas, "quantidade")} ${Number(realizadas) === 1 ? "ação" : "ações"}`]);
+      details.push(["Total de ações propostas", Calculations.formatarValor(total, "quantidade")]);
+      details.push(["Execução anual", Calculations.formatarPercentual(resultado.resultadoPercentualVisibilidade)]);
+      details.push(["% da meta atingida", Calculations.formatarPercentual(resultado.percentualAtingidoMensal)]);
+      details.push(["Situação", resultado.situacao || "-"]);
+    }
     if (resultado.baseReferencia2025Periodo !== undefined) {
       details.push(["Base 2025 equivalente", Calculations.formatarValor(resultado.baseReferencia2025Periodo, "moeda")]);
     } else if (resultado.resultadoReferencia2025 !== undefined) {
@@ -1140,6 +1265,7 @@
       return;
     }
 
+    clearSocioambientalValidation();
     panel.hidden = false;
     document.getElementById("launchEditorTitle").textContent = `${indicador.indicador} - ${launchMonthName(lancamento)}/${lancamento.ano}`;
     document.getElementById("launchStatusBadge").textContent = lancamento.status;
@@ -1364,6 +1490,8 @@
       showMessage("Corrija a quantidade informada: use apenas números inteiros não negativos.", "warning");
       return false;
     }
+
+    if (!validateSocioambientalRequiredFields(regra, { focus: true })) return false;
 
     if (action === "send" && regra.tipoCalculo === "cobertura_capacitacao") {
       const tipoPosicao = IndicatorFormulas.resolverTipoPosicaoCapacitacao({
@@ -1627,6 +1755,7 @@
     document.querySelectorAll(".dynamic-entry-field").forEach((input) => {
       input.value = "";
     });
+    clearSocioambientalValidation();
     const ieoDirectToggle = document.getElementById("ieoDirectToggle");
     if (ieoDirectToggle) {
       ieoDirectToggle.checked = false;
@@ -1692,6 +1821,12 @@
     document.getElementById("dynamicInputFields").addEventListener("input", (event) => {
       if (event.target.dataset.entryType === "inteiro") formatIntegerEntryInput(event.target, event);
       updateCalculatedPreview();
+      const lancamento = getSelectedLaunch();
+      const indicador = lancamento && getIndicatorMap()[lancamento.indicadorId];
+      const regra = indicador && getRule(indicador);
+      if (socioambientalValidationActive && regra?.tipoCalculo === "iniciativas_apoiadas") {
+        validateSocioambientalRequiredFields(regra);
+      }
     });
     document.getElementById("dynamicInputFields").addEventListener("change", (event) => {
       if (event.target.id === "ieoDirectToggle") updateIeoOptionalVisibility();
@@ -1709,6 +1844,10 @@
         const regra = getRule(indicador);
         if (event.target.dataset.entryField === "tipoPosicaoAprimoramento") updateAprimoramentoPositionFields(regra, lancamento);
         if (event.target.dataset.entryField === "tipoPosicaoNPS") updateNpsPositionFields(regra, lancamento);
+        if (event.target.dataset.entryField === (regra.parametrosCalculo?.campoStatus || "statusIniciativaSocioambiental")) {
+          updateSocioambientalInitiativeFields(regra);
+          if (socioambientalValidationActive) validateSocioambientalRequiredFields(regra);
+        }
         updateEcossistemaCurveFields(regra, lancamento);
         updateRedeLotericaCurveFields(regra, lancamento);
       }
@@ -1767,6 +1906,9 @@
     filterLaunches,
     officialOperationalLaunches,
     quarterLabel,
-    quarterlyMetaDetail
+    quarterlyMetaDetail,
+    getDisplayMeta,
+    renderEntryInput,
+    socioambientalRequiredFieldState
   };
 })();
