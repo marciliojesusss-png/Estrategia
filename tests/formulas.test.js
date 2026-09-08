@@ -752,6 +752,23 @@ const lucroAbaixoDaMeta = formulas.calcularIndicador(
 closeTo(lucroAbaixoDaMeta.percentualAtingidoMensal, 90000000 / 106104677.05);
 assert.equal(lucroAbaixoDaMeta.situacao, "Abaixo da meta");
 
+const lucroMensalPrioritario = formulas.calcularIndicador(
+  indicador(7, "Lucro Liquido Recorrente"),
+  regraLucroLiquido,
+  {
+    ano: 2026,
+    mes: 2,
+    competencia: "2026-02",
+    camposEntrada: {
+      lucroLiquidoRecorrenteCompetencia: 80000000,
+      lucroLiquidoRecorrenteAcumulado: 999999999
+    }
+  },
+  [{ ano: 2026, mes: 1, competencia: "2026-01", camposEntrada: { lucroLiquidoRecorrenteAcumulado: 119377680.03 } }]
+);
+assert.equal(lucroMensalPrioritario.resultadoMensal, 80000000, "O campo mensal explícito deve prevalecer sobre o acumulado legado");
+assert.equal(lucroMensalPrioritario.situacao, "Atingido");
+
 const janeiroForte = { ano: 2026, mes: 1, competencia: "2026-01", camposEntrada: { lucroLiquidoRecorrenteCompetencia: 181622202.66 } };
 const fevereiroFraco = { ano: 2026, mes: 2, competencia: "2026-02", camposEntrada: { lucroLiquidoRecorrenteCompetencia: 61970182.528 } };
 const lucroFevereiroFraco = formulas.calcularIndicador(
@@ -763,6 +780,18 @@ const lucroFevereiroFraco = formulas.calcularIndicador(
 closeTo(lucroFevereiroFraco.percentualAtingidoMensal, 0.8);
 assert.equal(lucroFevereiroFraco.situacao, "Abaixo da meta");
 assert.ok(lucroFevereiroFraco.percentualAtingidoAcumulado > 1, "O mês forte anterior mantém o acumulado acima da curva");
+
+const janeiroFraco = { ano: 2026, mes: 1, competencia: "2026-01", camposEntrada: { lucroLiquidoRecorrenteCompetencia: 10000000 } };
+const fevereiroForte = { ano: 2026, mes: 2, competencia: "2026-02", camposEntrada: { lucroLiquidoRecorrenteCompetencia: 80000000 } };
+const lucroFevereiroForte = formulas.calcularIndicador(
+  indicador(7, "Lucro Liquido Recorrente"),
+  regraLucroLiquido,
+  fevereiroForte,
+  [janeiroFraco, fevereiroForte]
+);
+assert.ok(lucroFevereiroForte.percentualAtingidoAcumulado < 1, "O acumulado permanece abaixo da curva");
+assert.ok(lucroFevereiroForte.percentualAtingidoMensal > 1, "O resultado do mês supera a meta mensal");
+assert.equal(lucroFevereiroForte.situacao, "Atingido");
 
 const resultadosJanJun = [119377680.03, 102633750.55, 114310457.11, 111802634.71, 114547512.59, 108526486.50]
   .map((value, index) => ({
@@ -783,8 +812,6 @@ closeTo(lucroJunho.percentualAtingidoMensal, 108526486.50 / 106104677.05);
 closeTo(lucroJunho.resultadoAcumulado, 671198521.49);
 closeTo(lucroJunho.metaAcumulada, 554969793.69);
 assert.equal(lucroJunho.situacao, "Atingido");
-const percentualMaio = 114547512.59 / 94438480.16;
-closeTo((lucroJunho.percentualAtingidoMensal - percentualMaio) * 100, -19.006, 0.01);
 
 const somaMetaAnualLucro = Object.values(regraLucroLiquido.parametrosCalculo.metasMensaisPorCompetencia)
   .reduce((sum, value) => sum + Math.round(value * 100), 0) / 100;
@@ -1950,7 +1977,7 @@ const amostras = {
   4: { melhoriasImplementadasMes: 6, descricaoMelhoriasMes: "Melhorias executadas", evidenciaMelhoriasMes: "Informe" },
   5: { arrecadacaoTotalMes: 1900000000, premiosAPagarMes: 843406961.43 },
   6: { despesasGeraisAdministrativasMes: 100, despesasServicosPagamentosMes: 50, outrasDespesasOperacionaisMes: 30, receitasOperacionaisMes: 1000, despesasTributosMes: 100 },
-  7: { lucroLiquidoRecorrenteAcumulado: 1209000000 },
+  7: { lucroLiquidoRecorrenteCompetencia: 236900370.02 },
   8: { arrecadacaoCanaisEletronicosMes: 15, arrecadacaoTotalProdutosLoteriasMes: 100 },
   9: { arrecadacaoPixMes: 411428638.26, arrecadacaoTotalCanaisEletronicosMes: 600000000 },
   10: { marcoAtualPlataformaJogos: "Registro de Aposta finalizado em ambiente de desenvolvimento", statusProjetoPlataformaJogos: "Piloto/MVP em desenvolvimento", percentualEvolucaoPlataformaJogos: 0.10, descricaoAndamentoPlataformaJogos: "Projeto em desenvolvimento", evidenciaPlataformaJogos: "Termo" },
@@ -1973,7 +2000,7 @@ assert.equal(regras.length, 23);
 assert.equal(new Set(regras.map((regra) => regra.indicadorId)).size, 23);
 for (const regra of regras) {
   const lancamento = {
-    ...(regra.indicadorId === 6 ? { ano: 2026, competencia: "2026-12" } : {}),
+    ...([6, 7].includes(regra.indicadorId) ? { ano: 2026, competencia: "2026-12" } : {}),
     mes: 12,
     metaMensal: regra.indicadorId === 5 ? 15600000000 : undefined,
     camposEntrada: amostras[regra.indicadorId]

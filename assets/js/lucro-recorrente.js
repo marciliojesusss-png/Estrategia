@@ -32,6 +32,10 @@
     return Number(value && (value.indicadorId ?? value.id)) === INDICADOR_LUCRO_RECORRENTE_ID;
   }
 
+  function competencia(item) {
+    return item?.competencia || `${item?.ano}-${String(item?.mes).padStart(2, "0")}`;
+  }
+
   function ajustarIndicador(indicador) {
     if (!isIndicador7(indicador)) return indicador;
     return Object.assign({}, indicador, {
@@ -79,6 +83,28 @@
     });
   }
 
+  function normalizarMeta(meta) {
+    if (!meta || Number(meta.indicadorId) !== INDICADOR_LUCRO_RECORRENTE_ID || Number(meta.ano) !== 2026) return meta;
+    const key = competencia(meta);
+    return Object.assign({}, meta, {
+      metaMensal: METAS_MENSAIS_2026[key] ?? meta.metaMensal,
+      fonte: "curva_mensal_lucro_liquido_recorrente_2026"
+    });
+  }
+
+  function normalizarLancamento(lancamento) {
+    if (!lancamento || Number(lancamento.indicadorId) !== INDICADOR_LUCRO_RECORRENTE_ID || Number(lancamento.ano) !== 2026) return lancamento;
+    const key = competencia(lancamento);
+    const metaMensal = METAS_MENSAIS_2026[key];
+    if (metaMensal === undefined) return lancamento;
+    return Object.assign({}, lancamento, {
+      metaMensal,
+      metaReferencia: metaMensal,
+      metaAcumulada: METAS_ACUMULADAS_2026[key],
+      metaAnualDescricao: "R$ 1.305.318.247,20"
+    });
+  }
+
   function normalizarDados(data) {
     if (!data || typeof data !== "object") return data;
     return Object.assign({}, data, {
@@ -87,7 +113,11 @@
         : data.indicadores,
       regrasIndicadores: Array.isArray(data.regrasIndicadores)
         ? data.regrasIndicadores.map(ajustarRegra)
-        : data.regrasIndicadores
+        : data.regrasIndicadores,
+      metas: Array.isArray(data.metas) ? data.metas.map(normalizarMeta) : data.metas,
+      lancamentos: Array.isArray(data.lancamentos)
+        ? data.lancamentos.map(normalizarLancamento)
+        : data.lancamentos
     });
   }
 
@@ -110,6 +140,8 @@
     METAS_ACUMULADAS_2026,
     ajustarIndicador,
     ajustarRegra,
+    normalizarMeta,
+    normalizarLancamento,
     normalizarDados,
     instalarCorrecao
   };

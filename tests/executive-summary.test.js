@@ -53,45 +53,6 @@ const bootstrap = loadBootstrapData(root);
 const indicators = bootstrap.indicadores;
 const launches = bootstrap.lancamentos;
 const rules = bootstrap.regrasIndicadores;
-const lucroMensalTargets = {
-  1: 90811101.33,
-  2: 77462728.16,
-  3: 90084434.66
-};
-const lucroMensalResults = {
-  1: 119377680.03,
-  2: 102633750.55,
-  3: 114310457.11
-};
-Object.assign(rules.find((item) => item.indicadorId === 7), {
-  tipoCalculo: "lucro_recorrente_mensal",
-  tipoConsolidacao: "ultima_posicao_mensal_homologada",
-  unidadeMedida: "moeda",
-  metaAnualValor: 1305318247.20,
-  parametrosCalculo: {
-    campoValorMensal: "lucroLiquidoRecorrenteCompetencia",
-    campoValorAcumuladoLegado: "lucroLiquidoRecorrenteAcumulado",
-    metaTipo: "curva_mensal_por_competencia",
-    metasMensaisPorCompetencia: {
-      "2026-01": lucroMensalTargets[1],
-      "2026-02": lucroMensalTargets[2],
-      "2026-03": lucroMensalTargets[3]
-    }
-  },
-  camposEntrada: [{ nome: "lucroLiquidoRecorrenteCompetencia", obrigatorio: true }]
-});
-launches.filter((item) => item.indicadorId === 7 && lucroMensalResults[item.mes]).forEach((item) => {
-  const result = lucroMensalResults[item.mes];
-  const target = lucroMensalTargets[item.mes];
-  item.camposEntrada = { ...item.camposEntrada, lucroLiquidoRecorrenteCompetencia: result };
-  item.metaMensal = target;
-  item.resultadoMensal = result;
-  item.resultadoOficialAnual = result;
-  item.percentualAtingido = result / target;
-  item.percentualAtingidoMensal = result / target;
-  item.percentualAtingidoAnual = result / target;
-  item.situacaoCalculada = result >= target ? "Atingido" : "Abaixo da meta";
-});
 const results = context.window.StrategicResults.calcularDashboard({
   indicadores: indicators,
   lancamentos: launches,

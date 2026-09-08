@@ -54,7 +54,10 @@ const integerFields = new Set([
   "empregadosCapacitadosJR",
   "quantidadeMinimaIniciativasJR"
 ]);
-const fields = data.regrasIndicadores.flatMap((rule) => rule.camposEntrada || []);
+const fields = data.regrasIndicadores.flatMap((rule) => [
+  ...(rule.camposEntradaLegados || []),
+  ...(rule.camposEntrada || [])
+]);
 for (const fieldName of integerFields) {
   const matches = fields.filter((field) => field.nome === fieldName);
   assert.ok(matches.length > 0, `campo inteiro ausente: ${fieldName}`);

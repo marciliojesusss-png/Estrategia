@@ -114,11 +114,12 @@
     const detailPayload = payload?.dados;
     const detail = window.LucroRecorrente?.normalizarDados({
       indicadores: detailPayload?.indicador ? [detailPayload.indicador] : [],
-      regrasIndicadores: detailPayload?.regrasIndicadores || []
+      regrasIndicadores: detailPayload?.regrasIndicadores || [],
+      lancamentos: detailPayload?.lancamentos || []
     }) || {};
     if (detailPayload) {
       detail.indicador = detail.indicadores?.[0] || detailPayload.indicador;
-      detail.lancamentos = detailPayload.lancamentos;
+      detail.lancamentos = detail.lancamentos || detailPayload.lancamentos;
       detail.consulta = detailPayload.consulta;
       detail.fonte = detailPayload.fonte;
     }

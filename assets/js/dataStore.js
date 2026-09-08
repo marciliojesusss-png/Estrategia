@@ -2218,6 +2218,7 @@
         ...(Number(launch.indicadorId) === 7 ? {
           metaMensal: getLucroRecorrenteMetaMensal(launch.ano, launch.mes),
           metaAcumulada: getLucroRecorrenteMetaAcumulada(launch.ano, launch.mes),
+          metaReferencia: getLucroRecorrenteMetaMensal(launch.ano, launch.mes),
           metaAnualDescricao: "R$ 1.305.318.247,20"
         } : {}),
         ...(Number(launch.indicadorId) === 17 ? {

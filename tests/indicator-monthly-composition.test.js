@@ -141,21 +141,21 @@ assert.equal(socialTransfer.resultadoAcumulado, "769496203.1");
 assert.equal(socialTransfer.percentualAtingido, "1.0439246363695416");
 assert.equal(socialTransfer.situacao, "Atingido");
 
-const recurringProfit = resolveAccumulatedGoalCalculation(
+const accumulatedFinancial = resolveAccumulatedGoalCalculation(
   {
-    resultadoOficialAnual: "119377680.03",
-    percentualAtingidoAnual: "0.09874084369727047",
+    resultadoOficialAnual: "120",
+    percentualAtingidoAnual: "0.5",
     situacao: "Abaixo da meta"
   },
   {
-    metaReferencia: "89555555.56",
-    resultadoOficialAnual: "119377680.03",
-    percentualAtingido: "0.09874084369727047",
+    metaReferencia: "100",
+    resultadoOficialAnual: "120",
+    percentualAtingido: "0.5",
     situacaoCalculada: "Abaixo da meta"
   }
 );
-assert.ok(Math.abs(recurringProfit.percentualAtingido - (119377680.03 / 89555555.56)) < 0.000001);
-assert.equal(recurringProfit.situacao, "Atingido");
+assert.equal(accumulatedFinancial.percentualAtingido, 1.2);
+assert.equal(accumulatedFinancial.situacao, "Atingido");
 
 const mergedPersisted = mergeCalculationForDisplay(
   {
