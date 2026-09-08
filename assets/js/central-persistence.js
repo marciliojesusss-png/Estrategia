@@ -48,12 +48,12 @@
 
   async function getBackendInfo(force) {
     if (!hasPhpBackendContext()) {
-      return { available: false, database: "browser", mode: "browser" };
+      throw new Error("A aplicacao exige o backend PHP conectado ao SQL Server.");
     }
     if (!backendInfoPromise || force) {
       backendInfoPromise = requestJson("api/database?ping=1", { method: "GET" })
         .then((payload) => ({
-          available: payload?.ok === true,
+          available: payload?.ok === true && String(payload?.database || "").toLowerCase() === "sqlsrv",
           database: String(payload?.database || "").toLowerCase(),
           mode: payload?.mode || null
         }))
@@ -148,15 +148,8 @@
     const originalSaveLocal = root.DataStore.saveLocal.bind(root.DataStore);
 
     root.DataStore.salvarLancamentos = async function (lancamentos) {
-      if (!hasPhpBackendContext()) {
-        return originalSalvarLancamentos(lancamentos);
-      }
-
       try {
-        const confirmation = await persistCollection("lancamentos", lancamentos);
-        await originalSalvarLancamentos(lancamentos);
-        root.DataStore.__lastCentralPersistence = confirmation;
-        return true;
+        return await originalSalvarLancamentos(prepareValueForCentral("lancamentos", lancamentos));
       } catch (error) {
         showPersistenceError(error);
         throw error;
@@ -164,15 +157,8 @@
     };
 
     root.DataStore.saveLocal = async function (key, value) {
-      if (!hasPhpBackendContext() || key !== "homologacoes") {
-        return originalSaveLocal(key, value);
-      }
-
       try {
-        const confirmation = await persistCollection(key, value);
-        await originalSaveLocal(key, value);
-        root.DataStore.__lastCentralPersistence = confirmation;
-        return true;
+        return await originalSaveLocal(key, prepareValueForCentral(key, value));
       } catch (error) {
         showPersistenceError(error);
         throw error;

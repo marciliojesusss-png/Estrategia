@@ -105,24 +105,14 @@ if ($envBase !== false) {
 define('APP_BASE_PATH', $base);
 $dbConnectionValue = getenv('DB_CONNECTION');
 $dbDriverValue = getenv('DB_DRIVER');
-$dbConnection = $dbConnectionValue === false ? false : config_normalize_db_driver($dbConnectionValue);
-$dbDriver = $dbDriverValue === false ? false : config_normalize_db_driver($dbDriverValue);
-if ($dbDriver === false || $dbDriver === '') {
-    if ($dbConnection === 'sqlsrv') {
-        $dbDriver = 'sqlsrv';
-    } elseif ($dbConnection !== false && $dbConnection !== '') {
-        $dbDriver = $dbConnection;
-    } else {
-        $dbDriver = APP_ENV === 'production' ? 'sqlsrv' : 'sqlite';
-    }
+$dbConnection = $dbConnectionValue === false ? '' : config_normalize_db_driver($dbConnectionValue);
+$dbDriver = $dbDriverValue === false ? '' : config_normalize_db_driver($dbDriverValue);
+$configuredDriver = $dbDriver !== '' ? $dbDriver : ($dbConnection !== '' ? $dbConnection : 'sqlsrv');
+if ($configuredDriver !== 'sqlsrv') {
+    throw new RuntimeException('DB_DRIVER_INCOMPATIVEL: esta aplicacao aceita somente SQL Server com driver sqlsrv.');
 }
-define('DB_DRIVER', strtolower((string) $dbDriver));
-if ($dbConnection === false || $dbConnection === '') {
-    $dbConnection = DB_DRIVER === 'sqlsrv' ? 'sqlsrv' : DB_DRIVER;
-}
-define('DB_CONNECTION', strtolower((string) $dbConnection));
-define('DB_PATH', APP_ROOT . '/database/indicadores.sqlite');
-define('SCHEMA_PATH', APP_ROOT . '/database/schema.sql');
+define('DB_DRIVER', 'sqlsrv');
+define('DB_CONNECTION', 'sqlsrv');
 define('STORAGE_PATH', APP_ROOT . '/storage');
 define('LOG_PATH', STORAGE_PATH . '/logs');
 define('BACKUP_DIR', STORAGE_PATH . '/backups');

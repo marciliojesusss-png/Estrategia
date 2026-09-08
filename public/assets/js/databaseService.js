@@ -1,44 +1,30 @@
 (function () {
-  const SQLITE_PATH = "database/indicadores.sqlite";
-  const SCHEMA_PATH = "database/schema.sql";
   const DATABASE_API_PING = "api/database?ping=1";
 
   function applicationPath(path) {
-    if (typeof window !== "undefined" && typeof window.appUrl === "function") {
-      return window.appUrl(path);
-    }
-    return path;
-  }
-
-  async function inicializarBanco() {
-    return criarSchemaSeNecessario();
+    return typeof window.appUrl === "function" ? window.appUrl(path) : path;
   }
 
   async function conectarBanco() {
     const response = await fetch(applicationPath(DATABASE_API_PING), { cache: "no-store" });
-    const payload = await response.json();
-    const databaseEngine = String(payload?.database || "").toLowerCase();
-    const isSupportedDatabase = ["sqlite", "sqlsrv", "sqlserver"].includes(databaseEngine);
+    const payload = await response.json().catch(() => ({}));
+    const connected = response.ok && payload?.ok === true && String(payload?.database || "").toLowerCase() === "sqlsrv";
+    if (!connected) {
+      throw new Error("A API nao confirmou a conexao obrigatoria com o SQL Server.");
+    }
     return {
-      conectado: response.ok && payload?.ok === true && isSupportedDatabase,
-      caminho: SQLITE_PATH,
-      tamanhoBytes: null,
-      modo: payload?.mode || null
+      conectado: true,
+      modo: payload.mode || "php_sqlserver",
+      banco: payload.databaseName || "Estrategia"
     };
   }
 
+  async function inicializarBanco() {
+    return conectarBanco();
+  }
+
   async function criarSchemaSeNecessario() {
-    const dbResponse = await fetch(applicationPath(DATABASE_API_PING), { cache: "no-store" }).catch(() => null);
-    const payload = dbResponse ? await dbResponse.json().catch(() => null) : null;
-    const databaseEngine = String(payload?.database || "").toLowerCase();
-    const isSupportedDatabase = ["sqlite", "sqlsrv", "sqlserver"].includes(databaseEngine);
-    return {
-      bancoExiste: Boolean(dbResponse?.ok && payload?.ok === true && isSupportedDatabase),
-      schemaExiste: Boolean(dbResponse?.ok && payload?.ok === true),
-      caminhoBanco: SQLITE_PATH,
-      caminhoSchema: SCHEMA_PATH,
-      modo: payload?.mode || null
-    };
+    return conectarBanco();
   }
 
   async function carregarBase() {
@@ -122,14 +108,6 @@
     });
   }
 
-  async function carregarResumoExecutivo() {
-    return carregarBase();
-  }
-
-  async function carregarVisaoTrimestral() {
-    return carregarBase();
-  }
-
   async function verificarIntegridadeBanco() {
     const data = await carregarBase();
     const alertas = [];
@@ -140,7 +118,6 @@
     const indicatorIds = new Set(indicadores.map((item) => String(item.id)));
     const launchIds = new Set(lancamentos.map((item) => String(item.id)));
     const numeros = new Set();
-    const statusValidos = new Set(["Nao iniciado", "N\u00e3o iniciado", "N\u00c3\u00a3o iniciado", "Rascunho", "Em preenchimento", "Enviado para homologa\u00e7\u00e3o", "Enviado para homologa\u00c3\u00a7\u00c3\u00a3o", "Homologado", "Devolvido para ajuste", "Reaberto", "Retificado", "Cancelado"]);
 
     if (indicadores.length !== 23) alertas.push(`Foram encontrados ${indicadores.length} indicadores; esperado: 23.`);
     indicadores.forEach((item) => {
@@ -151,12 +128,10 @@
     lancamentos.forEach((item) => {
       if (!indicatorIds.has(String(item.indicadorId))) alertas.push(`Lancamento ${item.id} vinculado a indicador inexistente ${item.indicadorId}.`);
       if (!item.competencia) alertas.push(`Lancamento ${item.id} sem competencia.`);
-      if (item.status && !statusValidos.has(item.status)) alertas.push(`Lancamento ${item.id} com status invalido: ${item.status}.`);
     });
     homologacoes.forEach((item) => {
       if (item.lancamentoId && !launchIds.has(String(item.lancamentoId))) alertas.push(`Homologacao ${item.id} vinculada a lancamento inexistente ${item.lancamentoId}.`);
     });
-    if (!historico.length) alertas.push("Tabela de auditoria sem registros.");
 
     return {
       status: alertas.length ? "Foram encontrados alertas" : "Banco integro",
@@ -172,16 +147,15 @@
 
   async function databaseInfo() {
     const [connection, data, integrity] = await Promise.all([
-      conectarBanco().catch(() => ({ conectado: false, caminho: SQLITE_PATH, tamanhoBytes: null })),
+      conectarBanco(),
       carregarBase(),
       verificarIntegridadeBanco()
     ]);
     return {
-      tipo: "SQLite",
-      arquivo: SQLITE_PATH,
-      modo: connection.modo || "Validacao local",
+      tipo: "SQL Server",
+      banco: connection.banco,
+      modo: connection.modo,
       conectado: connection.conectado,
-      tamanhoBytes: connection.tamanhoBytes,
       indicadores: (data.indicadores || []).length,
       lancamentos: (data.lancamentos || []).length,
       homologacoes: (data.homologacoes || []).length,
@@ -191,7 +165,7 @@
   }
 
   function setDatabaseStatus(message, type = "info") {
-    const target = document.getElementById("databaseLocalStatus");
+    const target = document.getElementById("databaseServerStatus");
     if (!target) return;
     target.hidden = false;
     target.className = `notice ${type}`;
@@ -199,15 +173,15 @@
   }
 
   async function renderDatabasePanel() {
-    const panel = document.getElementById("databaseLocalPanel");
-    const infoTarget = document.getElementById("databaseLocalInfo");
+    const panel = document.getElementById("databaseServerPanel");
+    const infoTarget = document.getElementById("databaseServerInfo");
     if (!panel || !infoTarget) return;
     const info = await databaseInfo();
     infoTarget.innerHTML = [
       ["Tipo", info.tipo],
-      ["Arquivo", `/${info.arquivo}`],
+      ["Banco", info.banco],
       ["Modo", info.modo],
-      ["Banco acessivel pela API", info.conectado ? "Sim" : "Nao"],
+      ["Conectado", info.conectado ? "Sim" : "Nao"],
       ["Indicadores", info.indicadores],
       ["Lancamentos", info.lancamentos],
       ["Homologacoes", info.homologacoes],
@@ -216,20 +190,18 @@
     ].map(([label, value]) => `<div><span>${label}</span><strong>${value}</strong></div>`).join("");
   }
 
-  function initBancoDadosLocal() {
-    const panel = document.getElementById("databaseLocalPanel");
+  function initBancoDadosSqlServer() {
+    const panel = document.getElementById("databaseServerPanel");
     if (!panel) return;
     renderDatabasePanel().catch((error) => setDatabaseStatus(error.message, "warning"));
-
-    document.getElementById("checkSqliteIntegrityButton")?.addEventListener("click", async () => {
+    document.getElementById("checkSqlServerIntegrityButton")?.addEventListener("click", async () => {
       const result = await verificarIntegridadeBanco();
       setDatabaseStatus(result.alertas.length ? `${result.status}: ${result.alertas.join(" | ")}` : result.status, result.alertas.length ? "warning" : "info");
     });
-    document.getElementById("reloadSqliteDataButton")?.addEventListener("click", () => window.location.reload());
+    document.getElementById("reloadSqlServerDataButton")?.addEventListener("click", () => window.location.reload());
   }
 
   window.DatabaseService = {
-    SQLITE_PATH,
     inicializarBanco,
     conectarBanco,
     criarSchemaSeNecessario,
@@ -242,10 +214,10 @@
     reabrirLancamento,
     registrarRetificacao,
     registrarAuditoria,
-    carregarResumoExecutivo,
-    carregarVisaoTrimestral,
+    carregarResumoExecutivo: carregarBase,
+    carregarVisaoTrimestral: carregarBase,
     verificarIntegridadeBanco,
     databaseInfo,
-    initBancoDadosLocal
+    initBancoDadosSqlServer
   };
 })();

@@ -4,12 +4,10 @@ declare(strict_types=1);
 final class LancamentosRepository
 {
     private $db;
-    private $driver;
 
     public function __construct($db)
     {
         $this->db = $db;
-        $this->driver = (string) $db->getAttribute(PDO::ATTR_DRIVER_NAME);
     }
 
     public function all(array $filters = array())

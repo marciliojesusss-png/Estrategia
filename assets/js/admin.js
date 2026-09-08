@@ -191,19 +191,15 @@
         relatorios: "Relatórios",
         administracao: "Configurações"
       }[page] || page));
-    const modeLabel = state.storageInfo?.mode === "validacao_local"
-      ? "Validação local"
-      : state.storageInfo?.mode === "central"
-        ? "SQL local"
-        : "Navegador local";
+    const modeLabel = "SQL Server";
 
     target.innerHTML = [
       ["Modo de armazenamento", modeLabel],
       ["Perfil atual", state.user?.perfil || "-"],
-      ["Usuário simulado", state.user?.nome || "-"],
+      ["Usuário atual", state.user?.nome || "-"],
       ["Escopo", state.user?.unidadeApuradora || state.user?.diretoriaResponsavel || "Geral"],
       ["Permissões", allowedPages.join(", ") || "-"],
-      ["Chave da base local", DataStore.VALIDATION_BASE_KEY]
+      ["Fonte de dados", "SQL Server central"]
     ].map(([label, value]) => `
       <article class="detail-item">
         <span>${escapeHtml(label)}</span>
@@ -261,10 +257,7 @@
   }
 
   function accessStorageLabel() {
-    if (!state.accessStorage) return "banco ativo";
-    return state.accessStorage.driver === "sqlsrv"
-      ? `SQL Server (${state.accessStorage.database || "Estrategia"})`
-      : "SQLite local";
+    return `SQL Server (${state.accessStorage?.database || "Estrategia"})`;
   }
 
   function renderAccessUsers() {

@@ -4,12 +4,10 @@ declare(strict_types=1);
 final class IndicadoresRepository
 {
     private $db;
-    private $driver;
 
     public function __construct($db)
     {
         $this->db = $db;
-        $this->driver = (string) $db->getAttribute(PDO::ATTR_DRIVER_NAME);
     }
 
     public function all(array $filters = array())
@@ -32,9 +30,7 @@ final class IndicadoresRepository
         $total = (int) $count->fetchColumn();
         $offset = ($page - 1) * $perPage;
         $sql = 'SELECT * FROM indicadores' . $where . ' ORDER BY numero ASC, id ASC';
-        $sql .= $this->driver === 'sqlsrv'
-            ? ' OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY'
-            : ' LIMIT :limit OFFSET :offset';
+        $sql .= ' OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY';
         $stmt = $this->db->prepare($sql);
         foreach ($params as $key => $value) $stmt->bindValue($key, $value);
         $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
@@ -147,9 +143,7 @@ final class IndicadoresRepository
 
     private function nextId()
     {
-        $sql = $this->driver === 'sqlsrv'
-            ? 'SELECT COALESCE(MAX(TRY_CONVERT(INT, id)), 0) + 1 FROM indicadores'
-            : 'SELECT COALESCE(MAX(CAST(id AS INTEGER)), 0) + 1 FROM indicadores';
+        $sql = 'SELECT COALESCE(MAX(TRY_CONVERT(INT, id)), 0) + 1 FROM indicadores';
         return (string) ((int) $this->db->query($sql)->fetchColumn());
     }
 

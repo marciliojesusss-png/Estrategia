@@ -1,15 +1,9 @@
-﻿# Bancos SQLite locais e artefatos de migração podem ser recriados.
-*.sqlite
-!/database/schema.sql
-
 # Segredos de ambiente locais. O modelo versionado não contém credenciais.
 /.env
 /.env.*
 !/.env.example
 /app/config/servidor.local.php
 
-# Backups locais gerados pelo script de migracao podem ser recriados.
-database/backups/*.sqlite
 # Caches e arquivos temporarios
 __pycache__/
 *.py[cod]

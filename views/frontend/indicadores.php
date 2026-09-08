@@ -53,7 +53,6 @@
       <section id="indicatorCatalogPanel" class="panel">
         <div class="panel-actions indicators-actions">
           <span id="indicatorCount" class="result-count"></span>
-          <button id="resetIndicatorData" class="secondary-action admin-only" type="button" hidden>Restaurar dados da planilha</button>
         </div>
         <div class="table-wrap">
           <table>

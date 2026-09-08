@@ -27,38 +27,23 @@
       <section class="page-heading">
         <p class="eyebrow">Parâmetros do sistema</p>
         <h1>Configurações</h1>
-        <p>Parâmetros do sistema, perfis de validação e integridade da base local.</p>
+        <p>Parâmetros do sistema, perfis de acesso e integridade da base SQL Server.</p>
       </section>
 
-      <section id="databaseLocalPanel" class="panel database-local-panel" aria-labelledby="database-local-title">
+      <section id="databaseServerPanel" class="panel database-local-panel" aria-labelledby="database-server-title">
         <div class="panel-title-row">
           <div>
-            <p class="eyebrow">SQL local</p>
-            <h2 id="database-local-title">Banco de Dados Local</h2>
+            <p class="eyebrow">Fonte central</p>
+            <h2 id="database-server-title">SQL Server</h2>
           </div>
         </div>
-        <p class="help-text">Modo SQL local ativo. A base está salva no arquivo <strong>/database/indicadores.sqlite</strong>, é ignorada pelo Git e não substitui o banco corporativo.</p>
-        <div id="databaseLocalInfo" class="detail-grid"></div>
+        <p class="help-text">Indicadores, lançamentos, regras, prazos, acessos e auditoria utilizam exclusivamente o SQL Server.</p>
+        <div id="databaseServerInfo" class="detail-grid"></div>
         <div class="validation-base-actions">
-          <button id="checkSqliteIntegrityButton" class="secondary-action" type="button">Verificar integridade do banco</button>
-          <button id="reloadSqliteDataButton" class="secondary-action" type="button">Recarregar dados do banco</button>
+          <button id="checkSqlServerIntegrityButton" class="secondary-action" type="button">Verificar integridade do banco</button>
+          <button id="reloadSqlServerDataButton" class="secondary-action" type="button">Recarregar dados do banco</button>
         </div>
-        <div id="databaseLocalStatus" class="notice info" hidden></div>
-      </section>
-
-      <section id="baseValidacaoLocal" class="panel validation-base-panel" aria-labelledby="config-validacao-title">
-        <div class="panel-title-row">
-          <div>
-            <p class="eyebrow">Validação local</p>
-            <h2 id="config-validacao-title">Base e permissões</h2>
-          </div>
-        </div>
-        <div id="configurationLocalInfo" class="detail-grid"></div>
-        <div class="validation-base-actions">
-          <button id="checkBaseIntegrityButton" class="secondary-action" type="button">Verificar integridade da base</button>
-          <button id="clearLocalDataButton" class="secondary-action danger-action" type="button">Limpar dados locais</button>
-        </div>
-        <div id="baseValidacaoStatus" class="notice info" hidden></div>
+        <div id="databaseServerStatus" class="notice info" hidden></div>
       </section>
 
       <section id="adminGrid" class="admin-grid"></section>

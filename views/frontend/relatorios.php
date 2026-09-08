@@ -27,23 +27,23 @@
       <section class="page-heading">
         <p class="eyebrow">Consulta e análise</p>
         <h1>Relatórios</h1>
-        <p>Consulta dos dados operacionais e acompanhamento da base SQL local.</p>
+        <p>Consulta dos dados operacionais armazenados no SQL Server.</p>
       </section>
 
-      <section id="databaseLocalPanel" class="panel database-local-panel" aria-labelledby="database-local-title">
+      <section id="databaseServerPanel" class="panel database-local-panel" aria-labelledby="database-server-title">
         <div class="panel-title-row">
           <div>
-            <p class="eyebrow">SQL local</p>
-            <h2 id="database-local-title">Banco de Dados Local</h2>
+            <p class="eyebrow">Fonte central</p>
+            <h2 id="database-server-title">SQL Server</h2>
           </div>
         </div>
-        <p class="help-text">Modo SQL local ativo. A base está salva no arquivo <strong>/database/indicadores.sqlite</strong>, é ignorada pelo Git e não substitui o banco corporativo.</p>
-        <div id="databaseLocalInfo" class="detail-grid"></div>
+        <p class="help-text">Todos os dados deste relatório são carregados exclusivamente do SQL Server.</p>
+        <div id="databaseServerInfo" class="detail-grid"></div>
         <div class="validation-base-actions">
-          <button id="checkSqliteIntegrityButton" class="secondary-action" type="button">Verificar integridade do banco</button>
-          <button id="reloadSqliteDataButton" class="secondary-action" type="button">Recarregar dados do banco</button>
+          <button id="checkSqlServerIntegrityButton" class="secondary-action" type="button">Verificar integridade do banco</button>
+          <button id="reloadSqlServerDataButton" class="secondary-action" type="button">Recarregar dados do banco</button>
         </div>
-        <div id="databaseLocalStatus" class="notice info" hidden></div>
+        <div id="databaseServerStatus" class="notice info" hidden></div>
       </section>
 
       <section class="filters" aria-label="Filtros dos relatórios">

@@ -5,26 +5,27 @@ const vm = require("node:vm");
 const { loadBootstrapData } = require("./helpers/bootstrap-data");
 
 const root = path.resolve(__dirname, "..");
-const storage = new Map();
-const localStorage = {
-  getItem(key) { return storage.has(key) ? storage.get(key) : null; },
-  setItem(key, value) { storage.set(key, String(value)); },
-  removeItem(key) { storage.delete(key); },
-  key(index) { return [...storage.keys()][index] ?? null; },
-  get length() { return storage.size; }
-};
+const bootstrap = loadBootstrapData(root);
 const context = {
   console: { log() {}, info() {}, warn() {}, error: console.error },
   TextDecoder,
   Uint8Array,
-  localStorage,
+  fetch: async (target) => {
+    const value = String(target);
+    if (value.includes("ping=1")) {
+      return { ok: true, status: 200, json: async () => ({ ok: true, database: "sqlsrv" }) };
+    }
+    const match = value.match(/[?&]collection=([^&]+)/);
+    const key = match ? decodeURIComponent(match[1]) : "";
+    return { ok: true, status: 200, json: async () => bootstrap[key] || [] };
+  },
   window: {
-    location: { protocol: "file:" },
-    CAIXA_LOTERIAS_BOOTSTRAP_DATA: loadBootstrapData(root)
+    location: { protocol: "http:" },
+    CAIXA_LOTERIAS_AUTH_USER: { perfilCodigo: "administrador" },
+    appUrl: (route) => route
   }
 };
 context.window.window = context.window;
-context.window.localStorage = localStorage;
 vm.createContext(context);
 for (const file of ["currency.js", "lucro-recorrente.js", "dataStore.js"]) {
   vm.runInContext(fs.readFileSync(path.join(root, "assets", "js", file), "utf8"), context, { filename: file });

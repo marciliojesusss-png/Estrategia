@@ -15,8 +15,8 @@ final class ExportacaoJsonService
             'metadata' => [
                 'sistema' => 'Central de Indicadores Estratégicos',
                 'empresa' => 'CAIXA Loterias',
-                'modo' => 'php_sqlite_local',
-                'banco' => 'SQLite',
+                'modo' => 'php_sqlserver',
+                'banco' => 'SQL Server',
                 'dataExportacao' => date('c'),
                 'anoReferencia' => 2026,
             ],

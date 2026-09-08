@@ -15,39 +15,12 @@ final class Database
             return self::$connection;
         }
 
-        if (DB_DRIVER === 'sqlsrv') {
-            self::$connection = self::connectSqlsrvNative();
-            return self::$connection;
+        if (DB_DRIVER !== 'sqlsrv') {
+            throw new RuntimeException('DB_DRIVER_INCOMPATIVEL: esta aplicacao aceita somente SQL Server com driver sqlsrv.');
         }
 
-        if (DB_DRIVER !== 'sqlite') {
-            throw new RuntimeException('DB_DRIVER_INCOMPATIVEL: configure DB_DRIVER=sqlsrv ou DB_DRIVER=sqlite.');
-        }
-
-        self::$connection = self::connectSqlite();
+        self::$connection = self::connectSqlsrvNative();
         return self::$connection;
-    }
-
-    private static function connectSqlite()
-    {
-        if (!file_exists(DB_PATH)) {
-            if (!file_exists(SCHEMA_PATH)) {
-                throw new RuntimeException('Banco SQLite não encontrado e schema.sql indisponível.');
-            }
-            $pdo = new PDO('sqlite:' . DB_PATH);
-            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-            $pdo->exec('PRAGMA foreign_keys = ON');
-            $pdo->exec((string) file_get_contents(SCHEMA_PATH));
-            return $pdo;
-        }
-
-        $pdo = new PDO('sqlite:' . DB_PATH);
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-        $pdo->exec('PRAGMA foreign_keys = ON');
-
-        return $pdo;
     }
 
     private static function connectSqlsrvNative()
@@ -83,15 +56,20 @@ final class Database
             $options['PWD'] = SQLSERVER_PASSWORD;
         }
         if (SQLSERVER_ENCRYPT !== '') {
-            $options['Encrypt'] = SQLSERVER_ENCRYPT;
+            $options['Encrypt'] = filter_var(
+                SQLSERVER_ENCRYPT,
+                FILTER_VALIDATE_BOOLEAN,
+                FILTER_NULL_ON_FAILURE
+            ) ?? false;
         }
         if (SQLSERVER_TRUST_SERVER_CERTIFICATE !== '') {
-            $options['TrustServerCertificate'] = SQLSERVER_TRUST_SERVER_CERTIFICATE;
+            $options['TrustServerCertificate'] = filter_var(
+                SQLSERVER_TRUST_SERVER_CERTIFICATE,
+                FILTER_VALIDATE_BOOLEAN,
+                FILTER_NULL_ON_FAILURE
+            ) ?? false;
         }
-        
-        // inserido por william 07/08
-        $options['TrustServerCertificate'] = "yes";
-        
+
         $connection = sqlsrv_connect($server, $options);
         if ($connection === false) {
             Logger::error('[DATABASE] Falha ao conectar via sqlsrv nativo.', array(

@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 ob_start();
 putenv('APP_ENV=local');
-putenv('DB_CONNECTION=sqlite');
+putenv('DB_CONNECTION=sqlsrv');
 putenv('SESSION_IDLE_TIMEOUT=1');
 require_once __DIR__ . '/../app/bootstrap.php';
 require_once __DIR__ . '/../app/auth/Auth.php';
@@ -74,7 +74,7 @@ Session::start();
 assert_auth(Session::consumeExpired(), 'sessao inativa deve expirar');
 
 AccessLogger::record('teste_autorizacao', array('matricula' => 'C123456', 'nome' => 'Teste', 'perfil' => 'administrador', 'sg_unidade' => 'SUCOL'));
-$row = Database::getConnection()->query('SELECT user_agent FROM acessos_log ORDER BY id DESC LIMIT 1')->fetchColumn();
+$row = Database::getConnection()->query('SELECT TOP 1 user_agent FROM acessos_log ORDER BY id DESC')->fetchColumn();
 assert_auth(strpos((string) $row, '[evento=teste_autorizacao]') === 0, 'evento deve ser registrado usando coluna existente');
 
 ob_end_clean();

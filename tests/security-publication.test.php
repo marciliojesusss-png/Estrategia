@@ -48,7 +48,7 @@ check(strpos($uploadConfig, 'fileExtension=".phtml" allowed="false"') !== false,
 check(strpos($config, "getenv('APP_DEBUG') ?: 'false'") !== false, 'Debug nao possui padrao seguro.');
 check(strpos($config, 'Dotenv') === false, 'Carregador .env ainda esta ativo.');
 check(!file_exists($root . '/app/config/Dotenv.php'), 'Arquivo Dotenv.php nao deve existir.');
-check(strpos($config, "APP_ENV === 'production' ? 'sqlsrv' : 'sqlite'") !== false, 'SQL Server nativo nao e o driver padrao de producao.');
+check(strpos($config, "define('DB_DRIVER', 'sqlsrv');") !== false, 'SQL Server nao e o driver exclusivo da aplicacao.');
 check(strpos($config, "config_normalize_db_driver") !== false, 'DB_CONNECTION nao normaliza drivers legados para SQL Server nativo.');
 check(strpos($config, "pdo_sqlsrv") !== false, 'Compatibilidade de leitura para configuracao legada pdo_sqlsrv ausente.');
 check(strpos($config, "define('SQLSERVER_ENCRYPT', 'no');") !== false, 'Criptografia SQL Server deve permanecer desabilitada.');
@@ -65,6 +65,7 @@ check(strpos($routerScript, 'pathinfo($file, PATHINFO_EXTENSION)) === \'php\'') 
 check(strpos($databaseSource, 'connect' . 'Pdo' . 'Sqlsrv') === false, 'Conexao SQL Server nao deve manter caminho PDO.');
 check(strpos($databaseSource, "sqlsrv:Server=") === false, 'Conexao SQL Server nao deve montar DSN PDO.');
 check(strpos($databaseSource, 'sqlsrv_connect') !== false, 'Conexao SQL Server nativa deve usar sqlsrv_connect.');
+check(substr_count($databaseSource, 'connectSqlsrvNative') >= 1, 'Conexao SQL Server nativa nao localizada no runtime.');
 check(strpos($authSource, "app_url('login')") !== false, 'Rotas locais nao autenticadas devem ir para route=login.');
 check(strpos($indexSource, "\$_GET['route']") !== false, 'Front controller deve ler a rota por $_GET[route].');
 check(strpos($indexSource, "REQUEST_URI") === false, 'Front controller nao deve identificar rota por REQUEST_URI.');

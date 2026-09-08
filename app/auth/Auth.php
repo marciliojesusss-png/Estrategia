@@ -21,26 +21,6 @@ final class Auth
         'homologador' => 'Diretoria Homologadora',
         'administrador' => 'Administrador',
     );
-    private static $localUsers = array(
-        'C000001' => array('matricula' => 'C000001', 'nome' => 'Administrador Local', 'funcao' => 'Desenvolvimento', 'unidade' => 'LOCAL', 'sg_unidade' => 'GERAL', 'no_unidade' => 'Ambiente Local'),
-        'C000002' => array('matricula' => 'C000002', 'nome' => 'Unidade Apuradora Local', 'funcao' => 'Desenvolvimento', 'unidade' => 'SUCOL', 'sg_unidade' => 'SUCOL', 'no_unidade' => 'Unidade SUCOL'),
-        'C000003' => array('matricula' => 'C000003', 'nome' => 'Homologador Local', 'funcao' => 'Desenvolvimento', 'unidade' => 'DIFIR', 'sg_unidade' => 'DIFIR', 'no_unidade' => 'Diretoria DIFIR'),
-        'C000004' => array('matricula' => 'C000004', 'nome' => 'Usuario Companhia Local', 'funcao' => 'Desenvolvimento', 'unidade' => 'CAIXA', 'sg_unidade' => 'CAIXA', 'no_unidade' => 'CAIXA Loterias'),
-        'ADMIN' => array('matricula' => 'ADMIN', 'nome' => 'Administrador Simulado', 'perfil' => 'administrador', 'sg_unidade' => 'GERAL', 'no_unidade' => 'Escopo geral'),
-        'CONSULTA' => array('matricula' => 'CONSULTA', 'nome' => 'Consulta Gestão', 'perfil' => 'usuario_companhia', 'sg_unidade' => 'GERAL', 'no_unidade' => 'Escopo geral'),
-        'USUARIO-COMPANHIA' => array('matricula' => 'USUARIO-COMPANHIA', 'nome' => 'Usuário da Companhia', 'perfil' => 'usuario_companhia', 'sg_unidade' => 'GERAL', 'no_unidade' => 'CAIXA Loterias'),
-        'UNIDADE-GENOL' => array('matricula' => 'UNIDADE-GENOL', 'nome' => 'Unidade GENOL', 'perfil' => 'unidade_apuradora', 'sg_unidade' => 'GENOL', 'no_unidade' => 'GENOL'),
-        'UNIDADE-GERIN' => array('matricula' => 'UNIDADE-GERIN', 'nome' => 'Unidade GERIN', 'perfil' => 'unidade_apuradora', 'sg_unidade' => 'GERIN', 'no_unidade' => 'GERIN'),
-        'UNIDADE-SUCOL' => array('matricula' => 'UNIDADE-SUCOL', 'nome' => 'Unidade SUCOL', 'perfil' => 'unidade_apuradora', 'sg_unidade' => 'SUCOL', 'no_unidade' => 'SUCOL'),
-        'UNIDADE-SUCTF' => array('matricula' => 'UNIDADE-SUCTF', 'nome' => 'Unidade SUCTF', 'perfil' => 'unidade_apuradora', 'sg_unidade' => 'SUCTF', 'no_unidade' => 'SUCTF'),
-        'UNIDADE-SULOT' => array('matricula' => 'UNIDADE-SULOT', 'nome' => 'Unidade SULOT', 'perfil' => 'unidade_apuradora', 'sg_unidade' => 'SULOT', 'no_unidade' => 'SULOT'),
-        'UNIDADE-SURCI' => array('matricula' => 'UNIDADE-SURCI', 'nome' => 'Unidade SURCI', 'perfil' => 'unidade_apuradora', 'sg_unidade' => 'SURCI', 'no_unidade' => 'SURCI'),
-        'DIRETORIA-DICOT' => array('matricula' => 'DIRETORIA-DICOT', 'nome' => 'Diretoria DICOT', 'perfil' => 'homologador', 'sg_unidade' => 'DICOT', 'no_unidade' => 'DICOT'),
-        'DIRETORIA-DICRI' => array('matricula' => 'DIRETORIA-DICRI', 'nome' => 'Diretoria DICRI', 'perfil' => 'homologador', 'sg_unidade' => 'DICRI', 'no_unidade' => 'DICRI'),
-        'DIRETORIA-DIFIR' => array('matricula' => 'DIRETORIA-DIFIR', 'nome' => 'Diretoria DIFIR', 'perfil' => 'homologador', 'sg_unidade' => 'DIFIR', 'no_unidade' => 'DIFIR'),
-        'DIRETORIA-DILOT' => array('matricula' => 'DIRETORIA-DILOT', 'nome' => 'Diretoria DILOT', 'perfil' => 'homologador', 'sg_unidade' => 'DILOT', 'no_unidade' => 'DILOT'),
-    );
-
     public static function authenticate()
     {
         Session::start();
@@ -65,7 +45,7 @@ final class Auth
         $access = self::findAccess($matricula);
         if ($access === null) {
             if (self::isLocalEnvironment()) {
-                $access = self::localAccess($matricula);
+                self::deny('Usuario local sem acesso ativo no SQL Server.');
             } else {
                 // Todo usuário corporativo sem cadastro de perfil especial é
                 // tratado como usuário da companhia, conforme a regra de
@@ -113,8 +93,8 @@ final class Auth
             self::deny('Login local indisponivel neste ambiente.');
         }
         $matricula = strtoupper(trim((string) $matricula));
-        if (!isset(self::$localUsers[$matricula])) {
-            self::deny('Usuario local invalido.');
+        if (self::findAccess($matricula) === null) {
+            self::deny('Usuario local sem acesso ativo no SQL Server.');
         }
         Session::start();
         unset($_SESSION['matricula'], $_SESSION['perfil'], $_SESSION['_access_logged']);
@@ -126,6 +106,30 @@ final class Auth
     public static function isLocal()
     {
         return self::isLocalEnvironment();
+    }
+
+    public static function localLoginUsers()
+    {
+        if (!self::isLocalEnvironment()) {
+            return array();
+        }
+
+        $stmt = Database::getConnection()->query(
+            'SELECT matricula, nome, perfil, sg_unidade, no_unidade, unidade_apuradora, diretoria_responsavel '
+            . 'FROM usuarios_acesso WHERE ativo = 1 ORDER BY nome, matricula'
+        );
+        $users = array();
+        foreach ($stmt->fetchAll() as $row) {
+            $profile = self::normalizeProfile(isset($row['perfil']) ? $row['perfil'] : self::DEFAULT_PROFILE);
+            $users[] = array(
+                'matricula' => (string) $row['matricula'],
+                'nome' => !empty($row['nome']) ? (string) $row['nome'] : (string) $row['matricula'],
+                'perfil' => self::profileLabel($profile),
+                'unidade' => $profile === 'unidade_apuradora' ? self::accessScope($row, 'unidade_apuradora') : 'Todas',
+                'diretoria' => $profile === 'homologador' ? self::accessScope($row, 'diretoria_responsavel') : 'Todas',
+            );
+        }
+        return $users;
     }
 
     public static function requireProfiles(array $profiles)
@@ -291,20 +295,24 @@ final class Auth
             if ($identity === null) self::deny('Identidade corporativa indisponivel ou invalida.');
             return $identity;
         }
-        $selected = isset($_GET['dev_user']) ? $_GET['dev_user'] : (getenv('AUTH_LOCAL_USER') ?: (isset($_SESSION['dev_user']) ? $_SESSION['dev_user'] : 'C000004'));
-        $selected = strtoupper((string) $selected);
+        $selected = isset($_GET['dev_user']) ? $_GET['dev_user'] : (getenv('AUTH_LOCAL_USER') ?: (isset($_SESSION['dev_user']) ? $_SESSION['dev_user'] : ''));
+        $selected = CorporateIdentity::normalizeMatricula($selected);
+        if ($selected === null) {
+            self::deny('Usuario local nao selecionado.');
+        }
+        $access = self::findAccess($selected);
+        if ($access === null) {
+            self::deny('Usuario local sem acesso ativo no SQL Server.');
+        }
         $_SESSION['dev_user'] = $selected;
-        return isset(self::$localUsers[$selected]) ? self::$localUsers[$selected] : array('matricula' => $selected, 'nome' => $selected);
-    }
-
-    private static function localAccess($matricula)
-    {
-        $profiles = array('C000001' => 'administrador', 'C000002' => 'unidade_apuradora', 'C000003' => 'homologador', 'C000004' => 'usuario_companhia');
-        $user = isset(self::$localUsers[$matricula]) ? self::$localUsers[$matricula] : array('matricula' => $matricula, 'nome' => $matricula);
-        $user['perfil'] = isset($user['perfil']) ? $user['perfil'] : (isset($profiles[$matricula]) ? $profiles[$matricula] : self::DEFAULT_PROFILE);
-        $user['unidade_apuradora'] = $user['perfil'] === 'unidade_apuradora' ? (isset($user['sg_unidade']) ? $user['sg_unidade'] : '') : '';
-        $user['diretoria_responsavel'] = $user['perfil'] === 'homologador' ? (isset($user['sg_unidade']) ? $user['sg_unidade'] : '') : '';
-        return $user;
+        return array(
+            'matricula' => $selected,
+            'nome' => !empty($access['nome']) ? (string) $access['nome'] : $selected,
+            'funcao' => 'Desenvolvimento',
+            'unidade' => !empty($access['no_unidade']) ? (string) $access['no_unidade'] : (string) $access['sg_unidade'],
+            'sg_unidade' => (string) $access['sg_unidade'],
+            'no_unidade' => (string) $access['no_unidade'],
+        );
     }
 
     private static function isLocalEnvironment()

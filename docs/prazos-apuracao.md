@@ -58,7 +58,7 @@ No filtro mensal, o alerta usa o lançamento da competência selecionada, mesmo 
 
 ## Fonte única do Resumo Executivo
 
-O Resumo Executivo consulta `GET /api/dashboard/dados`. Indicadores, lançamentos, regras, frequências operacionais e prazos são obtidos na mesma resposta e pela mesma conexão central. A tela exige o driver `sqlsrv` e não usa `localStorage`, IndexedDB ou SQLite como fallback.
+O Resumo Executivo consulta `GET /api/dashboard/dados`. Indicadores, lançamentos, regras, frequências operacionais e prazos são obtidos na mesma resposta e pela mesma conexão central. A tela exige o driver `sqlsrv` e não usa armazenamento alternativo como fallback.
 
 ## Frequência de cobrança operacional
 

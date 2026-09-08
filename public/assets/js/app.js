@@ -25,35 +25,13 @@
 
   function storageMessages(storageInfo) {
     if (!storageInfo) return [];
-    const messages = [];
-    if (storageInfo.mode === "validacao_local" || storageInfo.mode === "browser") {
-      messages.push(`
-        <details class="notice info storage-notice">
-          <summary>
-            <strong>Modo validação local ativo.</strong>
-            <span>Dados salvos neste perfil do navegador.</span>
-          </summary>
-          <p>Contas/perfis diferentes do Google Chrome possuem armazenamentos locais separados. A base SQL local fica no arquivo <code>/database/indicadores.sqlite</code> e é ignorada pelo Git.</p>
-        </details>
-      `);
-    }
-    if (storageInfo.mode === "browser") {
-      messages.push(`
-        <div class="notice info compact-notice">
-          <strong>Armazenamento local do navegador ativo.</strong>
-          As informacoes ficam salvas neste navegador automaticamente, sem iniciar servidor ou arquivo .bat.
-        </div>
-      `);
-    }
-    if (window.CAIXA_LOTERIAS_DB_DRIVER === "sqlite") {
-      messages.push(`
-        <div class="notice muted compact-notice sql-local-notice">
-          <strong>Modo SQL local ativo.</strong>
-          A base local fica em <code>/database/indicadores.sqlite</code>, é ignorada pelo Git e nao substitui o banco corporativo multiusuario.
-        </div>
-      `);
-    }
-    return messages;
+    if (storageInfo.centralAvailable) return [];
+    return [`
+      <div class="notice danger compact-notice">
+        <strong>SQL Server indisponível.</strong>
+        A aplicação não utiliza fonte alternativa de dados.
+      </div>
+    `];
   }
 
   function renderLoginStorageNotice(storageInfo) {
@@ -178,14 +156,7 @@
   async function initPage() {
     const page = document.body.dataset.page;
     const centralExecutive = page === "resumoExecutivo";
-    const storageInfo = centralExecutive
-      ? {
-          mode: "php_sqlserver",
-          centralAvailable: true,
-          localDatabase: "SQL Server",
-          message: "Fonte central SQL Server ativa."
-        }
-      : await DataStore.getStorageInfo();
+    const storageInfo = await DataStore.getStorageInfo();
 
     if (page === "login") {
       await initLogin();

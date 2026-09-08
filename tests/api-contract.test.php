@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-putenv('APP_ENV=local');putenv('DB_CONNECTION=sqlite');require_once __DIR__.'/../app/bootstrap.php';require_once __DIR__.'/../app/core/Router.php';
+putenv('APP_ENV=local');putenv('DB_CONNECTION=sqlsrv');require_once __DIR__.'/../app/bootstrap.php';require_once __DIR__.'/../app/core/Router.php';
 function ok_api($c,$m){if(!$c){fwrite(STDERR,'FALHA: '.$m.PHP_EOL);exit(1);}}
 ob_start();Response::success(array('id'=>1),'Criado.',201);$success=json_decode(ob_get_clean(),true);ok_api($success['sucesso']===true&&$success['mensagem']==='Criado.'&&$success['dados']['id']===1,'envelope de sucesso deve ser padrao');
 ob_start();Response::error('Invalido.',422,array('nome'=>'Obrigatorio.'));$error=json_decode(ob_get_clean(),true);ok_api($error['sucesso']===false&&$error['erros']['nome']==='Obrigatorio.','envelope de erro deve ser padrao');

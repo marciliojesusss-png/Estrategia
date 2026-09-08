@@ -1977,12 +1977,6 @@
       document.getElementById("indicatorTracking")?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
 
-    document.getElementById("resetIndicatorData").addEventListener("click", () => {
-      const confirmed = window.confirm("Restaurar os indicadores originais da planilha? Alterações locais de cadastro serão descartadas.");
-      if (!confirmed) return;
-      localStorage.removeItem("caixaLoterias:indicadores");
-      window.location.reload();
-    });
   }
 
   async function init({ data, user }) {

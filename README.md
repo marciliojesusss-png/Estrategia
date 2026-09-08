@@ -30,9 +30,6 @@ pasta-raiz/
     +-- LDAP.php
 ```
 
-Python, `pyodbc` e Microsoft ODBC Driver sao necessarios apenas para migracao
-SQLite -> SQL Server.
-
 ## Rotas
 
 A aplicacao nao usa rotas amigaveis. Use sempre:
@@ -148,7 +145,8 @@ Nunca versionar:
 
 ## SQL Server
 
-A aplicacao usa somente `sqlsrv_connect()`.
+A aplicacao usa exclusivamente SQL Server por meio de `sqlsrv_connect()`.
+Nao existe fallback de banco em arquivo ou armazenamento operacional no navegador.
 
 Configuracao esperada:
 
@@ -166,6 +164,10 @@ Tabelas essenciais:
 - `lancamentos`
 - `usuarios_acesso`
 - `acessos_log`
+
+O perfil de autorizacao e consultado em `dbo.usuarios_acesso`. A autenticacao
+corporativa continua sendo realizada pelo LDAP; nenhuma senha de usuario da
+aplicacao e armazenada no banco.
 
 ## LDAP
 
@@ -263,18 +265,11 @@ Desabilite apos o teste:
 'diagnostico_web_habilitado' => false,
 ```
 
-## Migracao Para SQL Server
+## Banco e migrations
 
-O SQLite local `database/indicadores.sqlite` e usado como origem de migracao e
-permanece ignorado pelo Git. O schema de destino fica em
-`database/sqlserver/schema.sql`. Os wrappers executam
-`scripts/migrar-para-sqlserver.py`.
-
-```powershell
-.\scripts\cmd\migrar-para-sqlserver.ps1 -Ambiente homologacao -Servidor "SERVIDOR_SQL" -Banco "NOME_DO_BANCO"
-.\scripts\cmd\migrar-para-sqlserver.ps1 -Ambiente homologacao -Servidor "SERVIDOR_SQL" -Banco "NOME_DO_BANCO" -VerifyOnly
-.\scripts\cmd\migrar-para-sqlserver.ps1 -Ambiente producao -Servidor "SERVIDOR_SQL" -Banco "NOME_DO_BANCO"
-```
+O schema versionado fica em `database/sqlserver/schema.sql`. Migrations
+idempotentes ficam em `database/sqlserver/migrations/` e devem ser executadas
+no banco corporativo antes da publicacao da versao correspondente.
 
 ## Testes
 
@@ -301,9 +296,9 @@ Antes de publicar, valide:
 app/                 nucleo, autenticacao, controllers, services e repositories
 api/                 endpoints chamados pelo front controller
 assets/              CSS, JavaScript e imagens-fonte
-database/            SQLite local e schemas SQL
+database/            schema e migrations do SQL Server
 public/              raiz publica e front controller
-scripts/             servidor local, diagnosticos e migracao
+scripts/             servidor local e diagnosticos
 scripts/cmd/         wrappers .ps1/.bat
 storage/             logs, temporarios e backups
 templates/           shell frontend

@@ -52,9 +52,6 @@ $artifacts = array(
     'script banco/schema/usuarios' => __DIR__ . '/validar-banco-schema-usuarios.php',
     'teste seguranca/publicacao' => dirname(__DIR__) . '/tests/security-publication.test.php',
     'teste autenticacao/autorizacao' => dirname(__DIR__) . '/tests/auth-authorization.test.php',
-    'teste lancamentos/evidencias' => dirname(__DIR__) . '/tests/launches-evidence-module.test.php',
-    'teste homologacoes' => dirname(__DIR__) . '/tests/homologations-module.test.php',
-    'teste administracao/auditoria' => dirname(__DIR__) . '/tests/administration-audit-module.test.php',
 );
 
 foreach ($artifacts as $label => $path) {

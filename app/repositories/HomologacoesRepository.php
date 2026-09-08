@@ -3,8 +3,8 @@ declare(strict_types=1);
 
 final class HomologacoesRepository
 {
-    private $db; private $driver;
-    public function __construct($db){$this->db=$db;$this->driver=(string)$db->getAttribute(PDO::ATTR_DRIVER_NAME);}
+    private $db;
+    public function __construct($db){$this->db=$db;}
 
     public function queue(array $filters,$page,$perPage)
     {
@@ -12,7 +12,7 @@ final class HomologacoesRepository
         $from=' FROM lancamentos l INNER JOIN indicadores i ON i.id=l.indicador_id';
         $c=$this->db->prepare('SELECT COUNT(*)'.$from.$where);$c->execute($params);$total=(int)$c->fetchColumn();
         $sql='SELECT l.*,i.nome AS indicador_nome'.$from.$where.' ORDER BY l.ano DESC,l.mes DESC,l.id ASC';
-        $sql.=$this->driver==='sqlsrv'?' OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY':' LIMIT :limit OFFSET :offset';
+        $sql.=' OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY';
         $s=$this->db->prepare($sql);foreach($params as$k=>$v)$s->bindValue($k,$v);$s->bindValue(':offset',($page-1)*$perPage,PDO::PARAM_INT);$s->bindValue(':limit',$perPage,PDO::PARAM_INT);$s->execute();
         return array('items'=>$s->fetchAll(),'pagination'=>array('page'=>$page,'perPage'=>$perPage,'total'=>$total,'pages'=>$total?(int)ceil($total/$perPage):0));
     }
@@ -23,7 +23,7 @@ final class HomologacoesRepository
         $from=' FROM homologacoes h INNER JOIN lancamentos l ON l.id=h.lancamento_id INNER JOIN indicadores i ON i.id=l.indicador_id';
         $c=$this->db->prepare('SELECT COUNT(*)'.$from.$where);$c->execute($params);$total=(int)$c->fetchColumn();
         $sql='SELECT h.*,l.indicador_id,l.competencia,l.unidade_apuradora,l.diretoria_responsavel,i.nome AS indicador_nome'.$from.$where.' ORDER BY h.data_acao DESC,h.id DESC';
-        $sql.=$this->driver==='sqlsrv'?' OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY':' LIMIT :limit OFFSET :offset';$s=$this->db->prepare($sql);foreach($params as$k=>$v)$s->bindValue($k,$v);$s->bindValue(':offset',($page-1)*$perPage,PDO::PARAM_INT);$s->bindValue(':limit',$perPage,PDO::PARAM_INT);$s->execute();return array('items'=>$s->fetchAll(),'pagination'=>array('page'=>$page,'perPage'=>$perPage,'total'=>$total,'pages'=>$total?(int)ceil($total/$perPage):0));
+        $sql.=' OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY';$s=$this->db->prepare($sql);foreach($params as$k=>$v)$s->bindValue($k,$v);$s->bindValue(':offset',($page-1)*$perPage,PDO::PARAM_INT);$s->bindValue(':limit',$perPage,PDO::PARAM_INT);$s->execute();return array('items'=>$s->fetchAll(),'pagination'=>array('page'=>$page,'perPage'=>$perPage,'total'=>$total,'pages'=>$total?(int)ceil($total/$perPage):0));
     }
 
     public function recordDecision($launchId,$action,$before,$after,$reason,array$user)

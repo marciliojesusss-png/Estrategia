@@ -14,7 +14,8 @@ const pages = fs.readdirSync(frontendViews).filter((name) => (
 assert.match(app, /class="header-nav"/);
 assert.match(app, /aria-label="Navegação principal"/);
 assert.match(app, /nav\.hidden = true/);
-assert.match(app, /storage-notice/);
+assert.match(app, /SQL Server/);
+assert.match(app, /fonte alternativa de dados/);
 assert.doesNotMatch(app, /Exportar base/);
 assert.doesNotMatch(app, /Importar base/);
 

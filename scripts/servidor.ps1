@@ -247,7 +247,7 @@ function Start-ApplicationServer {
     $oldAppBasePath = $env:APP_BASE_PATH
     try {
       $env:APP_ENV = 'development'
-      # Nao sobrescreve DB_CONNECTION: a configuracao local decide entre sqlsrv e sqlite.
+      # A configuracao local informa o SQL Server; nao existe banco alternativo.
       $env:APP_BASE_PATH = $environmentBasePath
       $process = Start-Process -FilePath $phpPath `
         -ArgumentList @('-S', $address, '-t', $publicArgument, $routerArgument) `
@@ -339,8 +339,7 @@ Write-Host "Acao: $Acao | Host: $BindHost | Porta: $Port | APP_BASE_PATH: '$Base
 switch ($Acao) {
   'executar' {
     $env:APP_ENV = 'development'
-    # O driver do banco nao e forcado aqui. app/config/servidor.local.php pode
-    # selecionar sqlsrv; sem configuracao explicita, config.php usa SQLite no desenvolvimento.
+    # O SQL Server e obrigatorio tambem no desenvolvimento.
     $env:APP_BASE_PATH = $BasePath
     $applicationUrl = Get-ApplicationUrl 'login'
     Write-Host "URL local: $applicationUrl" -ForegroundColor Green

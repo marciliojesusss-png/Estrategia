@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 ob_start();
 putenv('APP_ENV=local');
-putenv('DB_CONNECTION=sqlite');
+putenv('DB_CONNECTION=sqlsrv');
 require_once __DIR__ . '/../app/bootstrap.php';
 require_once __DIR__ . '/../app/core/Router.php';
 require_once __DIR__ . '/../app/core/Session.php';
@@ -31,8 +31,8 @@ $router->get('/teste', function () use (&$called) { $called = true; });
 $router->dispatch('GET', '/teste/');
 assert_foundation($called, 'roteador deve normalizar barra final');
 
-$pdo = Database::getConnection();
-assert_foundation((int) $pdo->query('SELECT 1')->fetchColumn() === 1, 'conexao PDO local deve executar SELECT 1');
+$db = Database::getConnection();
+assert_foundation((int) $db->query('SELECT 1')->fetchColumn() === 1, 'conexao SQL Server deve executar SELECT 1');
 
 foreach (array(403, 404, 500) as $status) {
     assert_foundation(is_file(APP_ROOT . '/views/erros/' . $status . '.php'), 'pagina de erro ' . $status . ' deve existir');
