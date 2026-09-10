@@ -57,12 +57,7 @@ final class DiagnosticoSqlServer
         $this->add($ini ? 'OK' : 'AVISO', 'PHP', 'php.ini', $ini ? $ini : 'nao carregado', false);
         $this->add(extension_loaded('sqlsrv') ? 'OK' : 'FALHA', 'PHP', 'extensao sqlsrv', extension_loaded('sqlsrv') ? 'carregada' : 'ausente', true);
         $this->add(function_exists('sqlsrv_connect') ? 'OK' : 'FALHA', 'PHP', 'funcao sqlsrv_connect', function_exists('sqlsrv_connect') ? 'disponivel' : 'indisponivel', true);
-        if (function_exists('sqlsrv_client_info')) {
-            $info = @sqlsrv_client_info();
-            $this->add(is_array($info) ? 'OK' : 'AVISO', 'PHP', 'sqlsrv_client_info', is_array($info) ? $this->formatArray($info) : 'nao retornou dados', false);
-        } else {
-            $this->add('AVISO', 'PHP', 'sqlsrv_client_info', 'funcao indisponivel', false);
-        }
+        $this->add(function_exists('sqlsrv_client_info') ? 'OK' : 'AVISO', 'PHP', 'funcao sqlsrv_client_info', function_exists('sqlsrv_client_info') ? 'disponivel' : 'indisponivel', false);
     }
 
     private function checkConfiguration()
@@ -99,10 +94,18 @@ final class DiagnosticoSqlServer
             $options['PWD'] = SQLSERVER_PASSWORD;
         }
         if (SQLSERVER_ENCRYPT !== '') {
-            $options['Encrypt'] = SQLSERVER_ENCRYPT;
+            $options['Encrypt'] = filter_var(
+                SQLSERVER_ENCRYPT,
+                FILTER_VALIDATE_BOOLEAN,
+                FILTER_NULL_ON_FAILURE
+            ) ?? false;
         }
         if (SQLSERVER_TRUST_SERVER_CERTIFICATE !== '') {
-            $options['TrustServerCertificate'] = SQLSERVER_TRUST_SERVER_CERTIFICATE;
+            $options['TrustServerCertificate'] = filter_var(
+                SQLSERVER_TRUST_SERVER_CERTIFICATE,
+                FILTER_VALIDATE_BOOLEAN,
+                FILTER_NULL_ON_FAILURE
+            ) ?? false;
         }
 
         $this->add('OK', 'CONEXAO', 'servidor usado', $this->mask($server), false);
@@ -122,6 +125,10 @@ final class DiagnosticoSqlServer
         if (function_exists('sqlsrv_server_info')) {
             $serverInfo = @sqlsrv_server_info($connection);
             $this->add(is_array($serverInfo) ? 'OK' : 'AVISO', 'CONEXAO', 'sqlsrv_server_info', is_array($serverInfo) ? $this->formatArray($serverInfo) : 'nao retornou dados', false);
+        }
+        if (function_exists('sqlsrv_client_info')) {
+            $clientInfo = @sqlsrv_client_info($connection);
+            $this->add(is_array($clientInfo) ? 'OK' : 'AVISO', 'CONEXAO', 'sqlsrv_client_info', is_array($clientInfo) ? $this->formatArray($clientInfo) : 'nao retornou dados', false);
         }
 
         $this->queryScalar($connection, 'SELECT 1', 'CONSULTA', 'SELECT 1', true);

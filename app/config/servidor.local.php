@@ -5,7 +5,7 @@ return array(
     'app_base_path' => '/estrategia',
 
     'db_driver' => 'sqlsrv',
-    'db_host' => 'localhost',
+    'db_host' => 'localhost\\SQLEXPRESS01',
     'db_database' => 'Estrategia',
 
     'db_auth_mode' => 'integrated',
