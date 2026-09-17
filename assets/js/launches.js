@@ -1659,7 +1659,6 @@
 
   async function saveLaunchData(action, lancamento, indicador) {
     const calculation = updateCalculatedPreview();
-    const original = { ...lancamento };
     const now = new Date().toISOString();
     const updated = {
       ...lancamento,
@@ -1685,31 +1684,35 @@
       status: action === "send" ? "Enviado para homologação" : "Em preenchimento",
       observacaoArea: document.getElementById("launchObservacaoArea").value.trim(),
       referenciaEvidencia: document.getElementById("launchEvidenceReference").value.trim(),
-      preenchidoPor: state.user.email || state.user.nome,
+      preenchidoPor: state.user.matricula,
+      usuarioResponsavel: state.user.matricula,
       dataPreenchimento: now.slice(0, 10),
       statusCalculo: calculation.resultado.statusCalculo,
       mensagemCalculo: calculation.resultado.mensagem,
       revisaoMoedaPendente: false
     };
 
-    state.lancamentos = state.lancamentos.map((item) => item.id === updated.id ? updated : item);
+    const previousLaunches = state.lancamentos;
+    state.lancamentos = state.lancamentos.map((item) => item.id === updated.id ? updated : { ...item });
     recomputeAccumulatedForIndicator(indicador.id, updated.ano);
-    const mergedLaunches = mergeScopedLaunches();
-    state.data.lancamentos = mergedLaunches;
-    await DataStore.salvarLancamentos(mergedLaunches);
-    await DataStore.appendHistory({
-      usuario: state.user.email || state.user.nome,
-      acao: action === "send" ? "envio_para_homologacao" : "salvar_rascunho_lancamento",
-      entidade: "lancamentos",
-      registroId: updated.id,
-      valorAnterior: original,
-      valorNovo: state.lancamentos.find((item) => item.id === updated.id)
-    });
+    const previousById = new Map(previousLaunches.map((item) => [item.id, item]));
+    const changedLaunches = state.lancamentos.filter((item) => (
+      item.id === updated.id || JSON.stringify(item) !== JSON.stringify(previousById.get(item.id))
+    ));
+    let saved;
+    try {
+      saved = await CentralPersistence.persistLaunchAction(action, changedLaunches, updated.id);
+    } catch (error) {
+      state.lancamentos = previousLaunches;
+      throw error;
+    }
+    state.lancamentos = state.lancamentos.map((item) => item.id === updated.id ? { ...item, ...saved } : item);
+    state.data.lancamentos = mergeScopedLaunches();
 
     refresh();
     state.selectedId = updated.id;
     renderEditor();
-    return updated;
+    return saved;
   }
 
   function recomputeAccumulatedForIndicator(indicadorId, ano) {

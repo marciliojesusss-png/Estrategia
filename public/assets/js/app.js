@@ -20,7 +20,8 @@
     [pageUrl("lancamentos"), "Lançamentos", "lancamentos"],
     [pageUrl("homologacao"), "Homologação", "homologacao"],
     [pageUrl("relatorios"), "Relatórios", "relatorios"],
-    [pageUrl("administracao"), "Configurações", "administracao"]
+    [pageUrl("administracao"), "Configurações", "administracao"],
+    [pageUrl("auditoria"), "Auditoria", "auditoria"]
   ];
 
   function storageMessages(storageInfo) {
@@ -107,6 +108,17 @@
     const logoUrl = window.assetUrl
       ? window.assetUrl("assets/img/caixa-loterias-logo-negativa.png?v=2")
       : `${window.APP_BASE_PATH || ""}/assets/img/caixa-loterias-logo-negativa.png?v=2`;
+    const administratorOptions = Array.isArray(user.visoesAdministrador)
+      ? user.visoesAdministrador.map((view) => `<option value="${escapeHtml(view.valor)}" ${view.valor === user.visaoAdministrador ? "selected" : ""}>${escapeHtml(view.rotulo)}</option>`).join("")
+      : "";
+    const administratorView = user.podeAlternarVisao ? `
+      <form class="administrator-view-form" method="post" action="${escapeHtml(window.appUrl ? window.appUrl("alternar-visao") : pageUrl("alternar-visao"))}">
+        <input type="hidden" name="_csrf_token" value="${escapeHtml(user.csrfToken || "")}">
+        <label for="administratorViewSelect">Visualizar como</label>
+        <select id="administratorViewSelect" name="visao" onchange="this.form.submit()">
+          ${administratorOptions}
+        </select>
+      </form>` : "";
 
     header.innerHTML = `
       <div class="header-top">
@@ -119,6 +131,7 @@
           <span class="header-chip">${escapeHtml(user.nome)}</span>
           <span class="header-chip">${escapeHtml(user.perfil)}</span>
           <span class="header-chip">${escapeHtml(user.unidadeApuradora || user.diretoriaResponsavel || "Escopo geral")}</span>
+          ${administratorView}
           <button class="secondary-action logout-button btn-sair" type="button">Sair</button>
         </div>
       </div>
@@ -144,7 +157,14 @@
     if (content) {
       const flash = Auth.consumeFlashMessage();
       const showTechnicalNotices = Auth.isAdministrador(user.perfil);
+      const selectedView = Array.isArray(user.visoesAdministrador)
+        ? user.visoesAdministrador.find((view) => view.valor === user.visaoAdministrador)
+        : null;
+      const simulatedView = user.podeAlternarVisao && user.visaoAdministrador !== "administrador" && selectedView
+        ? `<div class="notice info">Visualizando como ${escapeHtml(selectedView.rotulo)}. Sua identidade de administrador permanece registrada nas ações e na auditoria.</div>`
+        : "";
       const messages = [
+        simulatedView,
         flash ? `<div class="notice ${escapeHtml(flash.type || "info")}">${escapeHtml(flash.message)}</div>` : "",
         ...(showTechnicalNotices ? storageMessages(storageInfo) : []),
         showTechnicalNotices && scope ? `<div class="notice muted">${scope}</div>` : ""

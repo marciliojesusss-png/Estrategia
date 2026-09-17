@@ -14,6 +14,9 @@ final class AccessLogger
         foreach (array('funcao', 'unidade', 'sg_unidade', 'no_unidade') as $field) {
             if (!empty($user[$field])) $agent .= ' [' . $field . '=' . self::auditValue($user[$field], 150) . ']';
         }
+        if (!empty($user['perfil_original']) && $user['perfil_original'] !== (isset($user['perfil']) ? $user['perfil'] : '')) {
+            $agent .= ' [perfil_original=' . self::auditValue($user['perfil_original'], 50) . ']';
+        }
         if (!empty($context['recurso'])) $agent .= ' [recurso=' . self::auditValue($context['recurso'], 300) . ']';
         try {
             $stmt = Database::getConnection()->prepare(

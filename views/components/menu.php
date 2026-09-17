@@ -8,6 +8,7 @@ $menuItems = array(
     array('homologacoes', 'Homologacoes', 'homologacoes', 'visualizar'),
     array('relatorios', 'Relatorios', 'relatorios', 'visualizar'),
     array('administracao', 'Administracao', 'administracao', 'gerenciar'),
+    array('auditoria', 'Auditoria', 'auditoria', 'visualizar'),
 );
 ?>
 <nav class="header-nav" aria-label="Navegacao principal">

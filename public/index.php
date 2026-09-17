@@ -57,6 +57,22 @@ $submitLogin = function () {
 
 $router->get('/login', $renderLogin);
 $router->post('/login', $submitLogin);
+$router->post('/alternar-visao', function () {
+    Auth::requireAnyAuthenticated();
+    Auth::requireCsrf();
+    try {
+        $user = Auth::setAdministratorView(isset($_POST['visao']) ? $_POST['visao'] : '');
+    } catch (DomainException $error) {
+        http_response_code(403);
+        require APP_ROOT . '/views/erros/403.php';
+        return;
+    } catch (InvalidArgumentException $error) {
+        http_response_code(400);
+        echo 'Visao solicitada invalida.';
+        return;
+    }
+    Response::redirect(Auth::homeForProfile($user['perfil']));
+});
 $router->get('/diagnostico-servidor', function () { require __DIR__ . '/diagnostico-iis.php'; });
 $router->get('/dashboard',$frontendPage('resumo-executivo.php'));
 $router->get('/resumo-executivo',$frontendPage('resumo-executivo.php'));

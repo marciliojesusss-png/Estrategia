@@ -42,6 +42,13 @@ for (const module of [
 ]) {
   const internals = loadInternals(module.file, module.global);
   assert.deepEqual(plain(internals.indicatorFilterOptions(lancamentos, indicadores)), expectedOptions);
+  if (module.file === "approvals.js") {
+    assert.equal(
+      internals.allIndicatorFilterLabel({ perfil: "Diretoria Homologadora", diretoriaResponsavel: "DICOT" }, 15),
+      "Todos os indicadores da DICOT (15)"
+    );
+    assert.equal(internals.allIndicatorFilterLabel({ perfil: "Administrador" }, 23), "Todos os indicadores (23)");
+  }
 
   assert.deepEqual(
     plain(internals.filterLaunches(lancamentos, { mes: "Todos", status: "Todos", indicador: "" })).map((item) => item.id),

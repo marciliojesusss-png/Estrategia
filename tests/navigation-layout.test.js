@@ -4,6 +4,8 @@ const path = require("node:path");
 
 const root = path.resolve(__dirname, "..");
 const app = fs.readFileSync(path.join(root, "assets", "js", "app.js"), "utf8");
+const auth = fs.readFileSync(path.join(root, "assets", "js", "auth.js"), "utf8");
+const menu = fs.readFileSync(path.join(root, "views", "components", "menu.php"), "utf8");
 const styles = fs.readFileSync(path.join(root, "assets", "css", "styles.css"), "utf8");
 const frontendViews = path.join(root, "views", "frontend");
 const pages = fs.readdirSync(frontendViews).filter((name) => (
@@ -15,6 +17,9 @@ assert.match(app, /class="header-nav"/);
 assert.match(app, /aria-label="Navegação principal"/);
 assert.match(app, /nav\.hidden = true/);
 assert.match(app, /SQL Server/);
+assert.match(app, /\[pageUrl\("auditoria"\), "Auditoria", "auditoria"\]/);
+assert.match(auth, /auditoria: \["Administrador"\]/);
+assert.match(menu, /array\('auditoria', 'Auditoria', 'auditoria', 'visualizar'\)/);
 assert.match(app, /fonte alternativa de dados/);
 assert.doesNotMatch(app, /Exportar base/);
 assert.doesNotMatch(app, /Importar base/);

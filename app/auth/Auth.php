@@ -21,6 +21,7 @@ final class Auth
         'homologador' => 'Diretoria Homologadora',
         'administrador' => 'Administrador',
     );
+    private static $administratorViews = null;
     public static function authenticate()
     {
         Session::start();
@@ -64,12 +65,16 @@ final class Auth
             $_SESSION['_auth_initialized'] = true;
         }
         $profile = self::normalizeProfile(isset($access['perfil']) ? $access['perfil'] : self::DEFAULT_PROFILE);
+        $identityChanged = !isset($_SESSION['matricula'], $_SESSION['perfil'])
+            || $_SESSION['matricula'] !== $matricula
+            || self::normalizeProfile($_SESSION['perfil']) !== $profile;
         $_SESSION['matricula'] = $matricula;
         $_SESSION['nome'] = isset($corporate['nome']) ? (string) $corporate['nome'] : $matricula;
         $_SESSION['funcao'] = isset($corporate['funcao']) ? (string) $corporate['funcao'] : '';
         $_SESSION['unidade'] = isset($corporate['unidade']) ? (string) $corporate['unidade'] : '';
         $_SESSION['sg_unidade'] = isset($corporate['sg_unidade']) ? (string) $corporate['sg_unidade'] : '';
         $_SESSION['no_unidade'] = isset($corporate['no_unidade']) ? (string) $corporate['no_unidade'] : '';
+        if ($identityChanged) unset($_SESSION['_admin_view_mode']);
         $_SESSION['perfil'] = $profile;
         $_SESSION['unidade_apuradora'] = $profile === 'unidade_apuradora' ? self::accessScope($access, 'unidade_apuradora') : '';
         $_SESSION['diretoria_responsavel'] = $profile === 'homologador' ? self::accessScope($access, 'diretoria_responsavel') : '';
@@ -97,7 +102,7 @@ final class Auth
             self::deny('Usuario local sem acesso ativo no SQL Server.');
         }
         Session::start();
-        unset($_SESSION['matricula'], $_SESSION['perfil'], $_SESSION['_access_logged']);
+        unset($_SESSION['matricula'], $_SESSION['perfil'], $_SESSION['_access_logged'], $_SESSION['_admin_view_mode']);
         $_SESSION['dev_user'] = $matricula;
         self::$authenticated = false;
         return self::authenticate();
@@ -219,8 +224,41 @@ final class Auth
             'perfilCodigo' => $user['perfil'], 'funcao' => $user['funcao'], 'unidade' => $user['unidade'],
             'sgUnidade' => $user['sg_unidade'], 'noUnidade' => $user['no_unidade'],
             'unidadeApuradora' => $user['unidade_apuradora'], 'diretoriaResponsavel' => $user['diretoria_responsavel'],
+            'perfilOriginalCodigo' => $user['perfil_original'],
+            'podeAlternarVisao' => $user['perfil_original'] === 'administrador',
+            'visaoAdministrador' => self::administratorView(),
+            'visoesAdministrador' => $user['perfil_original'] === 'administrador' ? self::administratorViewOptions() : array(),
             'csrfToken' => self::csrfToken(),
         );
+    }
+
+    public static function administratorViewOptions()
+    {
+        $user = self::authenticate();
+        if ($user['perfil_original'] !== 'administrador') return array();
+        $views = self::administratorViews();
+        $options = array();
+        foreach ($views as $mode => $view) {
+            $options[] = array('valor' => $mode, 'rotulo' => $view['rotulo'], 'grupo' => $view['grupo']);
+        }
+        return $options;
+    }
+
+    public static function setAdministratorView($mode)
+    {
+        self::authenticate();
+        if (self::normalizeProfile(isset($_SESSION['perfil']) ? $_SESSION['perfil'] : '') !== 'administrador') {
+            throw new DomainException('Apenas administradores podem alternar a visao.');
+        }
+        if (!is_string($mode) || !array_key_exists($mode, self::administratorViews())) {
+            throw new InvalidArgumentException('Visao solicitada invalida.');
+        }
+        Session::regenerate();
+        if ($mode === 'administrador') unset($_SESSION['_admin_view_mode']);
+        else $_SESSION['_admin_view_mode'] = $mode;
+        $user = self::sessionUser();
+        AccessLogger::record('troca_visao', $user, array('recurso' => 'visao/' . $mode));
+        return $user;
     }
 
     public static function csrfToken()
@@ -275,17 +313,75 @@ final class Auth
 
     private static function sessionUser()
     {
-        return array(
+        $originalProfile = self::normalizeProfile(isset($_SESSION['perfil']) ? $_SESSION['perfil'] : self::DEFAULT_PROFILE);
+        $user = array(
             'matricula' => isset($_SESSION['matricula']) ? (string) $_SESSION['matricula'] : '',
             'nome' => isset($_SESSION['nome']) ? (string) $_SESSION['nome'] : '',
             'funcao' => isset($_SESSION['funcao']) ? (string) $_SESSION['funcao'] : '',
             'unidade' => isset($_SESSION['unidade']) ? (string) $_SESSION['unidade'] : '',
             'sg_unidade' => isset($_SESSION['sg_unidade']) ? (string) $_SESSION['sg_unidade'] : '',
             'no_unidade' => isset($_SESSION['no_unidade']) ? (string) $_SESSION['no_unidade'] : '',
-            'perfil' => self::normalizeProfile(isset($_SESSION['perfil']) ? $_SESSION['perfil'] : self::DEFAULT_PROFILE),
+            'perfil' => $originalProfile,
+            'perfil_original' => $originalProfile,
             'unidade_apuradora' => isset($_SESSION['unidade_apuradora']) ? (string) $_SESSION['unidade_apuradora'] : '',
             'diretoria_responsavel' => isset($_SESSION['diretoria_responsavel']) ? (string) $_SESSION['diretoria_responsavel'] : '',
         );
+        $mode = self::administratorView();
+        if ($originalProfile === 'administrador' && $mode !== 'administrador') {
+            $views = self::administratorViews();
+            $view = $views[$mode];
+            $user['perfil'] = $view['perfil'];
+            $user['unidade_apuradora'] = $view['unidade_apuradora'];
+            $user['diretoria_responsavel'] = $view['diretoria_responsavel'];
+        }
+        return $user;
+    }
+
+    private static function administratorView()
+    {
+        if (self::normalizeProfile(isset($_SESSION['perfil']) ? $_SESSION['perfil'] : '') !== 'administrador') return 'administrador';
+        $mode = isset($_SESSION['_admin_view_mode']) ? (string) $_SESSION['_admin_view_mode'] : 'administrador';
+        if ($mode === 'sucol') $mode = 'unidade:SUCOL';
+        if ($mode === 'dicot') $mode = 'diretoria:DICOT';
+        $views = self::administratorViews();
+        return array_key_exists($mode, $views) ? $mode : 'administrador';
+    }
+
+    private static function administratorViews()
+    {
+        if (self::$administratorViews !== null) return self::$administratorViews;
+        $views = array(
+            'administrador' => array('perfil' => 'administrador', 'unidade_apuradora' => '', 'diretoria_responsavel' => '', 'rotulo' => 'Administrador', 'grupo' => 'geral'),
+        );
+        $stmt = Database::getConnection()->query(
+            "SELECT tipo, escopo FROM ("
+            . "SELECT 'unidade' AS tipo, LTRIM(RTRIM(unidade_apuradora)) AS escopo FROM dbo.indicadores "
+            . "WHERE NULLIF(LTRIM(RTRIM(unidade_apuradora)), '') IS NOT NULL "
+            . "UNION SELECT 'diretoria', LTRIM(RTRIM(diretoria_responsavel)) FROM dbo.indicadores "
+            . "WHERE NULLIF(LTRIM(RTRIM(diretoria_responsavel)), '') IS NOT NULL"
+            . ") AS escopos ORDER BY CASE WHEN tipo = 'unidade' THEN 0 ELSE 1 END, escopo"
+        );
+        foreach ($stmt->fetchAll() as $row) {
+            $scope = trim((string) $row['escopo']);
+            if ($scope === '') continue;
+            if ($row['tipo'] === 'unidade') {
+                $views['unidade:' . $scope] = array(
+                    'perfil' => 'unidade_apuradora', 'unidade_apuradora' => $scope, 'diretoria_responsavel' => '',
+                    'rotulo' => 'Preenchimento - ' . $scope, 'grupo' => 'unidade',
+                );
+            } elseif ($row['tipo'] === 'diretoria') {
+                $views['diretoria:' . $scope] = array(
+                    'perfil' => 'homologador', 'unidade_apuradora' => '', 'diretoria_responsavel' => $scope,
+                    'rotulo' => 'Homologacao - ' . $scope, 'grupo' => 'diretoria',
+                );
+            }
+        }
+        $views['usuario_companhia'] = array(
+            'perfil' => 'usuario_companhia', 'unidade_apuradora' => '', 'diretoria_responsavel' => '',
+            'rotulo' => 'Usuario da Companhia', 'grupo' => 'geral',
+        );
+        self::$administratorViews = $views;
+        return $views;
     }
 
     private static function loadCorporateData()

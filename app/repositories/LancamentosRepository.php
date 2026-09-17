@@ -36,6 +36,14 @@ final class LancamentosRepository
         return $row ? $this->map($row) : null;
     }
 
+    public function findForUpdate($id)
+    {
+        $stmt = $this->db->prepare('SELECT * FROM lancamentos WITH (UPDLOCK, HOLDLOCK) WHERE id=:id');
+        $stmt->execute(array(':id' => (string) $id));
+        $row = $stmt->fetch();
+        return $row ? $this->map($row) : null;
+    }
+
     public function existsForPeriod($indicatorId, $competence, $ignoreId = null)
     {
         $sql = 'SELECT COUNT(*) FROM lancamentos WHERE indicador_id=:indicador AND competencia=:competencia';
@@ -98,7 +106,8 @@ final class LancamentosRepository
     {
         $update = $this->db->prepare('UPDATE lancamentos SET indicador_id=:indicador_id,competencia=:competencia,ano=:ano,mes=:mes,trimestre=:trimestre,plano=:plano,pilar=:pilar,unidade_apuradora=:unidade_apuradora,diretoria_responsavel=:diretoria_responsavel,dados_entrada_json=:dados,resultado_calculado=:resultado_calculado,resultado_oficial=:resultado_oficial,meta_referencia=:meta,percentual_atingido=:percentual,situacao=:situacao,status=:status,observacao_unidade=:observacao,referencia_evidencia=:referencia_evidencia,usuario_responsavel=:usuario,created_at=:created,updated_at=:updated WHERE id=:id');
         $insert = $this->db->prepare('INSERT INTO lancamentos (id,indicador_id,competencia,ano,mes,trimestre,plano,pilar,unidade_apuradora,diretoria_responsavel,dados_entrada_json,resultado_calculado,resultado_oficial,meta_referencia,percentual_atingido,situacao,status,observacao_unidade,referencia_evidencia,evidencia_id,usuario_responsavel,created_at,updated_at) VALUES (:id,:indicador_id,:competencia,:ano,:mes,:trimestre,:plano,:pilar,:unidade_apuradora,:diretoria_responsavel,:dados,:resultado_calculado,:resultado_oficial,:meta,:percentual,:situacao,:status,:observacao,:referencia_evidencia,:evidencia,:usuario,:created,:updated)');
-        $this->db->beginTransaction();
+        $ownsTransaction = !$this->db->inTransaction();
+        if ($ownsTransaction) $this->db->beginTransaction();
         try {
             foreach ($items as $item) {
                 $params = $this->snapshotParams($item);
@@ -111,9 +120,9 @@ final class LancamentosRepository
                     if ((int)$exists->fetchColumn() === 0) $insert->execute($params);
                 }
             }
-            $this->db->commit();
+            if ($ownsTransaction) $this->db->commit();
         } catch (Throwable $error) {
-            if ($this->db->inTransaction()) $this->db->rollBack();
+            if ($ownsTransaction && $this->db->inTransaction()) $this->db->rollBack();
             throw $error;
         }
     }

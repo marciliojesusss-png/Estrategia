@@ -119,6 +119,22 @@
     };
   }
 
+  async function persistLaunchAction(action, launches, launchId) {
+    if (!Array.isArray(launches) || !["draft", "send"].includes(action) || !launchId) {
+      throw new Error("AÃ§Ã£o de lanÃ§amento invÃ¡lida.");
+    }
+    const backend = await getBackendInfo();
+    if (!backend.available) throw new Error("SQL Server indisponÃ­vel.");
+    const value = launches.map((launch) => String(launch.id) === String(launchId)
+      ? prepareLaunchForCentral(launch)
+      : launch);
+    const response = await requestJson("api/database", {
+      method: "POST",
+      body: JSON.stringify({ key: "lancamento_acao", value, action, lancamentoId: launchId })
+    });
+    return response.lancamento;
+  }
+
   function showPersistenceError(error) {
     const message = `Falha ao gravar no banco central: ${error.message}`;
     const actionTarget = root.document && (
@@ -173,6 +189,7 @@
     getBackendInfo,
     prepareLaunchForCentral,
     persistCollection,
+    persistLaunchAction,
     install
   };
 

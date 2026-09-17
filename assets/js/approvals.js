@@ -39,6 +39,16 @@
       });
   }
 
+  function allIndicatorFilterLabel(user, count) {
+    if (user?.perfil === "Diretoria Homologadora" && user.diretoriaResponsavel) {
+      return `Todos os indicadores da ${user.diretoriaResponsavel} (${count})`;
+    }
+    if (user?.perfil === "Unidade Apuradora" && user.unidadeApuradora) {
+      return `Todos os indicadores da unidade ${user.unidadeApuradora} (${count})`;
+    }
+    return `Todos os indicadores (${count})`;
+  }
+
   function officialOperationalLaunches(launches, indicators) {
     const byId = Object.fromEntries((indicators || []).map((indicator) => [String(indicator.id), indicator]));
     return (launches || []).filter((launch) => {
@@ -230,12 +240,13 @@
   }
 
   function fillFilters(lancamentos) {
+    const indicatorOptions = indicatorFilterOptions(lancamentos);
     const options = {
       mes: ["Todos", ...unique(lancamentos.map((item) => item.nomeMes))].map((value) => ({ value, label: value })),
       status: ["Todos", ...unique(lancamentos.map((item) => item.status))].map((value) => ({ value, label: value })),
       indicador: [
-        { value: "", label: "Todos os indicadores" },
-        ...indicatorFilterOptions(lancamentos)
+        { value: "", label: allIndicatorFilterLabel(state.user, indicatorOptions.length) },
+        ...indicatorOptions
       ]
     };
 
@@ -769,5 +780,5 @@
 
   window.PageModules = window.PageModules || {};
   window.PageModules.homologacao = { init };
-  window.__APPROVALS_FILTER_TEST_INTERNALS__ = { indicatorFilterOptions, filterLaunches, officialOperationalLaunches };
+  window.__APPROVALS_FILTER_TEST_INTERNALS__ = { indicatorFilterOptions, allIndicatorFilterLabel, filterLaunches, officialOperationalLaunches };
 })();

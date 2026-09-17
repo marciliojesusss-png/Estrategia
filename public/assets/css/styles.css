@@ -4790,3 +4790,29 @@ select:disabled {
   .logout-modal-card { padding: 32px 20px 22px; }
   .logout-modal-actions { flex-direction: column-reverse; }
 }
+/* Troca de visao disponivel somente para administradores autenticados. */
+.administrator-view-form {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  white-space: nowrap;
+}
+.administrator-view-form label {
+  color: #cfe2ff;
+  font-size: 12px;
+  font-weight: 700;
+}
+.administrator-view-form select {
+  height: 36px;
+  border: 1px solid rgba(59, 151, 255, 0.5);
+  border-radius: 7px;
+  background: #0c2a4e;
+  color: #fff;
+  font: inherit;
+}
+.administrator-view-form select { padding: 0 7px; cursor: pointer; }
+@media (max-width: 900px) {
+  .app-header .header-top { flex-wrap: wrap; }
+  .app-header .header-actions { flex-wrap: wrap; min-width: 0; }
+}

@@ -11,7 +11,8 @@
     lancamentos: ["Administrador", "Unidade Apuradora"],
     homologacao: ["Administrador", "Diretoria Homologadora"],
     relatorios: ["Administrador"],
-    administracao: ["Administrador"]
+    administracao: ["Administrador"],
+    auditoria: ["Administrador"]
   };
   const USER_COMPANY_ALLOWED_PAGES = ["resumoExecutivo"];
 

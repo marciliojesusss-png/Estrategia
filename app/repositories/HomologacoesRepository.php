@@ -31,6 +31,18 @@ final class HomologacoesRepository
         $now=date('c');$s=$this->db->prepare('INSERT INTO homologacoes (id,lancamento_id,acao,status_anterior,status_novo,justificativa,usuario,perfil_usuario,data_acao,created_at) VALUES (:id,:lancamento,:acao,:anterior,:novo,:justificativa,:usuario,:perfil,:data,:created)');$s->execute(array(':id'=>uniqid('homologacao-',true),':lancamento'=>(string)$launchId,':acao'=>$action,':anterior'=>$before,':novo'=>$after,':justificativa'=>$reason,':usuario'=>$user['matricula'],':perfil'=>$user['perfil'],':data'=>$now,':created'=>$now));
     }
 
+    public function recordSubmission($launchId, $before, $after, array $user)
+    {
+        $now = date('c');
+        $stmt = $this->db->prepare('INSERT INTO homologacoes (id,lancamento_id,acao,status_anterior,status_novo,justificativa,usuario,perfil_usuario,data_acao,created_at) VALUES (:id,:lancamento,:acao,:anterior,:novo,:justificativa,:usuario,:perfil,:data,:created)');
+        $stmt->execute(array(
+            ':id' => uniqid('homologacao-', true), ':lancamento' => (string) $launchId,
+            ':acao' => 'submissao_lancamento', ':anterior' => $before, ':novo' => $after,
+            ':justificativa' => null, ':usuario' => $user['matricula'], ':perfil' => $user['perfil'],
+            ':data' => $now, ':created' => $now,
+        ));
+    }
+
     public function all(array $filters=array()){return $this->history($filters,1,100)['items'];}
 
     public function replaceAll(array $items)

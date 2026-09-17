@@ -214,6 +214,70 @@ final class BaseDadosService
         return in_array((string) ($user['perfil'] ?? ''), ['administrador', 'homologador'], true);
     }
 
+    public function saveLaunchAction(array $items, $launchId, $action, array $user): array
+    {
+        if (!in_array($action, array('draft', 'send'), true)) {
+            throw new InvalidArgumentException('Acao de lancamento invalida.');
+        }
+        $launchId = trim((string) $launchId);
+        $matricula = trim((string) ($user['matricula'] ?? ''));
+        if ($launchId === '' || $matricula === '') {
+            throw new InvalidArgumentException('Lancamento ou matricula nao identificado.');
+        }
+
+        $this->db->beginTransaction();
+        try {
+            $before = $this->lancamentos->findForUpdate($launchId);
+            if (!$before || !LancamentoStateMachine::editable($before['status'])) {
+                throw new LogicException('Lancamento inexistente ou indisponivel para edicao.');
+            }
+            if (!AccessPolicy::scopeAllows($user, $before)) {
+                throw new InvalidArgumentException('Lancamento fora do escopo do usuario autenticado.');
+            }
+
+            $targetIndex = null;
+            foreach ($items as $index => $item) {
+                if (is_array($item) && (string) ($item['id'] ?? '') === $launchId) {
+                    if ($targetIndex !== null) throw new InvalidArgumentException('Lancamento duplicado na requisicao.');
+                    $targetIndex = $index;
+                }
+            }
+            if ($targetIndex === null) throw new InvalidArgumentException('Lancamento alterado nao enviado.');
+
+            $target = $items[$targetIndex];
+            if ((string) ($target['indicadorId'] ?? $target['indicador_id'] ?? '') !== (string) $before['indicadorId']
+                || (string) ($target['competencia'] ?? '') !== (string) $before['competencia']) {
+                throw new InvalidArgumentException('Indicador ou competencia nao corresponde ao lancamento.');
+            }
+
+            $status = $action === 'send' ? 'Enviado para homologação' : 'Em preenchimento';
+            $target['status'] = $status;
+            $target['usuarioResponsavel'] = $matricula;
+            $target['createdAt'] = $before['createdAt'];
+            unset($target['updatedAt']);
+            $items[$targetIndex] = $target;
+            $items = $this->sanitizeLancamentosForUser($items, $user);
+
+            $this->lancamentos->replaceAll($items);
+            $after = $this->lancamentos->find($launchId);
+            if ($action === 'send') {
+                $this->homologacoes->recordSubmission($launchId, $before['status'], $status, $user);
+            }
+            $this->auditoria->append(array(
+                'entidade' => 'lancamentos', 'registroId' => $launchId,
+                'acao' => $action === 'send' ? 'envio_para_homologacao' : 'salvar_rascunho_lancamento',
+                'descricao' => $action === 'send' ? 'Lancamento enviado para homologacao.' : 'Preenchimento salvo.',
+                'valorAnterior' => $before, 'valorNovo' => $after,
+                'usuario' => $matricula, 'perfilUsuario' => $user['perfil'],
+            ));
+            $this->db->commit();
+            return $after;
+        } catch (Throwable $error) {
+            if ($this->db->inTransaction()) $this->db->rollBack();
+            throw $error;
+        }
+    }
+
     private function evidenceReferenceChanges(array $items): array
     {
         $changes = array();

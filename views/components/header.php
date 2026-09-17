@@ -12,6 +12,17 @@ $headerUser = Auth::currentUserForFrontend();
       <span class="header-chip"><?= e($headerUser['nome']) ?></span>
       <span class="header-chip"><?= e($headerUser['perfil']) ?></span>
       <span class="header-chip"><?= e($headerUser['unidadeApuradora'] ?: ($headerUser['diretoriaResponsavel'] ?: 'Escopo geral')) ?></span>
+      <?php if ($headerUser['podeAlternarVisao']): ?>
+      <form class="administrator-view-form" method="post" action="<?= e(app_url('alternar-visao')) ?>">
+        <input type="hidden" name="_csrf_token" value="<?= e($headerUser['csrfToken']) ?>">
+        <label for="administratorViewSelect">Visualizar como</label>
+        <select id="administratorViewSelect" name="visao" onchange="this.form.submit()">
+          <?php foreach ($headerUser['visoesAdministrador'] as $view): ?>
+          <option value="<?= e($view['valor']) ?>" <?= $headerUser['visaoAdministrador'] === $view['valor'] ? 'selected' : '' ?>><?= e($view['rotulo']) ?></option>
+          <?php endforeach; ?>
+        </select>
+      </form>
+      <?php endif; ?>
       <button class="secondary-action btn-sair" type="button" data-open-logout> Sair </button>
     </div>
   </div>

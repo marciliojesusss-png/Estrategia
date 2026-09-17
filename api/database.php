@@ -52,6 +52,24 @@ if ($method === 'POST') {
     $key = (string) ($payload['key'] ?? '');
     $value = $payload['value'] ?? null;
 
+    if ($key === 'lancamento_acao') {
+        Auth::requirePermission('lancamentos', 'gerenciar', true);
+        Auth::requireCsrf();
+        if (!is_array($value) || array_values($value) !== $value) {
+            Response::error('Lista de lancamentos invalida.', 400);
+            return;
+        }
+        try {
+            $saved = $service->saveLaunchAction($value, $payload['lancamentoId'] ?? '', $payload['action'] ?? '', $user);
+            Response::json(['ok' => true, 'persisted' => true, 'lancamento' => $saved]);
+        } catch (InvalidArgumentException $error) {
+            Response::error($error->getMessage(), 400);
+        } catch (LogicException $error) {
+            Response::error($error->getMessage(), 409);
+        }
+        return;
+    }
+
     if ($key === '' || !is_array($value)) {
         Response::error('Payload inválido. Envie key e value.', 400);
         return;
