@@ -169,6 +169,44 @@ O perfil de autorizacao e consultado em `dbo.usuarios_acesso`. A autenticacao
 corporativa continua sendo realizada pelo LDAP; nenhuma senha de usuario da
 aplicacao e armazenada no banco.
 
+### Restauracao no ambiente corporativo
+
+Os backups do ambiente local nao contem o login tecnico da instancia
+corporativa. Depois de cada restauracao, o DBA deve criar ou remapear o usuario
+do banco para o login corporativo e reaplicar os papeis da aplicacao.
+
+Gere sempre um arquivo novo, com um unico conjunto de backup:
+
+```sql
+BACKUP DATABASE [Estrategia]
+TO DISK = N'C:\Backup\Estrategia-Producao.bak'
+WITH INIT, COPY_ONLY, CHECKSUM, STATS = 10;
+
+RESTORE VERIFYONLY
+FROM DISK = N'C:\Backup\Estrategia-Producao.bak'
+WITH CHECKSUM;
+```
+
+Depois da restauracao, execute o script no modo SQLCMD. O login deve existir
+previamente na instancia e ser administrado pelo DBA:
+
+```powershell
+sqlcmd -S "SERVIDOR\INSTANCIA" -E -b `
+  -i ".\database\sqlserver\pos-restauracao-acesso-aplicacao.sql" `
+  -v DatabaseName="DB5319_IndicadoresEstrategicos" ApplicationLogin="s531902"
+```
+
+O script e idempotente: cria ou remapeia o usuario do banco e garante a
+associacao aos papeis `db_datareader` e `db_datawriter`. Ele nao cria login na
+instancia e nao concede `db_owner`.
+
+Por fim, valide a conexao a partir do servidor IIS, usando o mesmo PHP da
+aplicacao:
+
+```powershell
+php .\scripts\diagnostico-sqlserver.php
+```
+
 ## LDAP
 
 O provedor esperado e:
