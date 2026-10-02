@@ -113,7 +113,7 @@
     try {
       const payload = await adminApi("api/administracao/usuarios");
       state.accessStorage = null;
-      state.accessUsers = (payload.items || payload.usuarios || []).map(normalizeAccessUser);
+      state.accessUsers = payload.items || payload.usuarios || [];
     } catch (error) {
       state.accessUsers = [];
       showMessage(error.message || "Nao foi possivel carregar os acessos.", "warning");
@@ -125,12 +125,11 @@
   async function saveAccessUser(payload) {
     const id = payload.id ? String(payload.id) : "";
     const response = await adminApi(id ? `api/administracao/usuarios/${encodeURIComponent(id)}` : "api/administracao/usuarios", {
-      // O IIS 8.5 corporativo bloqueia PUT; o id na rota diferencia atualizacao de criacao.
-      method: "POST",
+      method: payload.id ? "PUT" : "POST",
       body: JSON.stringify(payload)
     });
     state.accessStorage = null;
-    const saved = normalizeAccessUser(response.item || response);
+    const saved = response.item || response;
     if (saved && saved.id !== undefined) {
       state.accessUsers = state.accessUsers || [];
       state.accessUsers = state.accessUsers.some((item) => String(item.id) === String(saved.id))
@@ -255,16 +254,6 @@
 
   function accessProfileLabel(profile) {
     return ACCESS_PROFILE_OPTIONS.find(([value]) => value === profile)?.[1] || profile || "-";
-  }
-
-  function normalizeAccessUser(item = {}) {
-    return {
-      ...item,
-      sgUnidade: item.sgUnidade ?? item.sg_unidade ?? "",
-      noUnidade: item.noUnidade ?? item.no_unidade ?? "",
-      unidadeApuradora: item.unidadeApuradora ?? item.unidade_apuradora ?? "",
-      diretoriaResponsavel: item.diretoriaResponsavel ?? item.diretoria_responsavel ?? ""
-    };
   }
 
   function accessStorageLabel() {
