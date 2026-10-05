@@ -87,15 +87,15 @@
     if (!meta || Number(meta.indicadorId) !== INDICADOR_LUCRO_RECORRENTE_ID || Number(meta.ano) !== 2026) return meta;
     const key = competencia(meta);
     return Object.assign({}, meta, {
-      metaMensal: METAS_MENSAIS_2026[key] ?? meta.metaMensal,
-      fonte: "curva_mensal_lucro_liquido_recorrente_2026"
+      metaMensal: meta.metaMensal ?? METAS_MENSAIS_2026[key],
+      fonte: meta.fonte || "curva_mensal_lucro_liquido_recorrente_2026"
     });
   }
 
   function normalizarLancamento(lancamento) {
     if (!lancamento || Number(lancamento.indicadorId) !== INDICADOR_LUCRO_RECORRENTE_ID || Number(lancamento.ano) !== 2026) return lancamento;
     const key = competencia(lancamento);
-    const metaMensal = METAS_MENSAIS_2026[key];
+    const metaMensal = lancamento.metaReferencia ?? lancamento.metaMensal ?? METAS_MENSAIS_2026[key];
     if (metaMensal === undefined) return lancamento;
     return Object.assign({}, lancamento, {
       metaMensal,

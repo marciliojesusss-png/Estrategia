@@ -7,16 +7,16 @@
   <link rel="stylesheet" href="/assets/css/styles.css?v=CLIMA-EXECUTIVO-001">
   <script src="<?= APP_BASE_PATH ?>/assets/vendor/chart.umd.min.js?v=4.4.7" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/currency.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/ieo-recorrente.js?v=IEO-UX-AUTOMATICO-004" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/lucro-recorrente.js?v=LUCRO-RECORRENTE-MENSAL-003" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/ieo-recorrente.js?v=METAS-OFICIAIS-001" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/lucro-recorrente.js?v=METAS-OFICIAIS-001" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/situations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/auth.js?v=RELATORIOS-ADMIN-001" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/calculations.js?v=PLATAFORMA-JOGOS-001" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/formulas.js?v=APOIO-SOCIOAMBIENTAL-001" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/formulas.js?v=METAS-OFICIAIS-001" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/indicator-periodicity.js?v=PERIODICIDADE-TRIMESTRAL-001" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/quarterly.js?v=PLATAFORMA-JOGOS-001" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/prazo-apuracao.js?v=PRAZOS-APURACAO-001" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/dataStore.js?v=SQLSERVER-EXCLUSIVO-001" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/dataStore.js?v=METAS-OFICIAIS-001" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/dashboard.js?v=PLATAFORMA-JOGOS-001" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/executiveSummary.js?v=PLATAFORMA-JOGOS-001" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/app.js?v=PERSISTENCIA-CENTRAL-009" defer></script>

@@ -230,9 +230,9 @@ const npsComConfiguracaoCentralAntiga = formulas.calcularIndicador(
   { ano: 2026, mes: 9, competencia: "2026-09", metaMensal: 58, camposEntrada: { tipoPosicaoNPS: "Pesquisa oficial", percentualPromotores: 0.72, percentualDetratores: 0.12 } },
   []
 );
-assert.equal(npsComConfiguracaoCentralAntiga.metaReferenciaPeriodo, 60);
+assert.equal(npsComConfiguracaoCentralAntiga.metaReferenciaPeriodo, 58, "a meta persistida da competência deve prevalecer");
 assert.equal(npsComConfiguracaoCentralAntiga.metaAnualCorretaNPS, 60);
-closeTo(npsComConfiguracaoCentralAntiga.percentualAtingidoMensal, 1);
+closeTo(npsComConfiguracaoCentralAntiga.percentualAtingidoMensal, 60 / 58);
 
 const npsSetembroVigente = formulas.calcularIndicador(
   indicador(2, "Índice de Satisfação de Clientes - NPS"),

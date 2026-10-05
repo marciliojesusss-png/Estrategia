@@ -95,7 +95,7 @@ const metasMensaisEsperadas = {
     lancamentos: [{ indicadorId: 7, ano: 2026, mes: 4, metaReferencia: 1 }]
   });
   assert.equal(institutional.regrasIndicadores[0].tipoCalculo, "lucro_recorrente_mensal");
-  assert.equal(institutional.lancamentos[0].metaReferencia, 96068372.33);
+  assert.equal(institutional.lancamentos[0].metaReferencia, 1, "a normalização não deve sobrescrever a meta persistida");
 
   const migration = fs.readFileSync(
     path.join(root, "database", "sqlserver", "migrations", "20260902_001_indicador07_lucro_recorrente_mensal.sql"),

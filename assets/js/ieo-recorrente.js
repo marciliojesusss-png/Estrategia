@@ -97,6 +97,11 @@
   }
 
   function getMetaCompetencia(value) {
+    const configured = value && (value.metaReferencia ?? value.metaMensal);
+    if (configured !== null && configured !== undefined && configured !== "") {
+      const parsed = Number(configured);
+      if (Number.isFinite(parsed)) return parsed;
+    }
     const key = competenciaKey(value);
     return Object.prototype.hasOwnProperty.call(IEO_META_MENSAL_2026, key)
       ? IEO_META_MENSAL_2026[key]
@@ -263,7 +268,7 @@
 
     const resultado = parcial.resultado;
     if (resultado < 0) return falha(regraAjustada, "IEO realizado não pode ser negativo.", true);
-    const metaCompetencia = getMetaCompetencia(lancamento) ?? normalizarPercentual(lancamento && (lancamento.metaMensal ?? lancamento.metaReferencia));
+    const metaCompetencia = getMetaCompetencia(lancamento);
     if (metaCompetencia === null || metaCompetencia <= 0) {
       const retorno = falha(regraAjustada, "IEO calculado. Meta de referência não cadastrada para a competência.", false);
       retorno.resultadoMensal = resultado;

@@ -75,7 +75,7 @@
     delete prepared.updatedAt;
 
     if (Number(prepared.indicadorId ?? prepared.indicador_id) === 6) {
-      const meta = root.IeoRecorrente?.getMetaCompetencia?.(prepared) ?? prepared.metaMensal;
+      const meta = prepared.metaReferencia ?? prepared.metaMensal ?? root.IeoRecorrente?.getMetaCompetencia?.(prepared);
       if (meta !== null && meta !== undefined) {
         prepared.metaMensal = meta;
         prepared.metaReferencia = meta;

@@ -6,12 +6,12 @@
   <title>CAIXA Loterias | Relatórios</title>
   <link rel="stylesheet" href="/assets/css/styles.css?v=PERSISTENCIA-CENTRAL-008">
   <script src="<?= APP_BASE_PATH ?>/assets/js/currency.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/ieo-recorrente.js?v=IEO-UX-AUTOMATICO-004" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/lucro-recorrente.js?v=LUCRO-RECORRENTE-MENSAL-003" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/ieo-recorrente.js?v=METAS-OFICIAIS-001" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/lucro-recorrente.js?v=METAS-OFICIAIS-001" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/situations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/bootstrap-data.js?v=PLATAFORMA-JOGOS-001" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/indicator-periodicity.js?v=PERIODICIDADE-TRIMESTRAL-001" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/dataStore.js?v=APOIO-SOCIOAMBIENTAL-001" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/dataStore.js?v=METAS-OFICIAIS-001" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/databaseService.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/dataService.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/auth.js?v=RELATORIOS-ADMIN-001" defer></script>

@@ -169,7 +169,7 @@ const julhoNormalizado = ieo.normalizarLancamentoParaExibicao({
   metaReferencia: 999,
   camposEntrada: { ieoApuradoInformado: 0.14 }
 }, regraBase);
-assert.equal(julhoNormalizado.metaReferencia, 0.1423833333333333);
+assert.equal(julhoNormalizado.metaReferencia, 999, "a normalização não deve substituir a meta persistida");
 assert.equal(julhoNormalizado.metodologiaIeo, "original");
 
 const agostoNormalizado = ieo.normalizarLancamentoParaExibicao({
@@ -178,7 +178,7 @@ const agostoNormalizado = ieo.normalizarLancamentoParaExibicao({
   metaReferencia: 0.1419666666666667,
   camposEntrada: {}
 }, regraBase);
-assert.equal(agostoNormalizado.metaReferencia, 0.2664);
+assert.equal(agostoNormalizado.metaReferencia, 0.1419666666666667, "a meta persistida deve prevalecer na nova vigência");
 assert.equal(agostoNormalizado.metodologiaIeo, "ca_agosto_2026");
 
 console.log("IEO Recorrente: vigência Jul/Ago, fórmulas, metas, validações e histórico validados.");

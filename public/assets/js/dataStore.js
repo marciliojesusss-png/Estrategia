@@ -1060,6 +1060,97 @@
     }
   }
 
+  function getFallbackMeta(indicadorId, ano, mes) {
+    const id = Number(indicadorId);
+    if (id === 1) return 0.10;
+    if (id === 2) return getNpsMetaReferencia(ano, mes);
+    if (id === 4) return getAprimoramentoMetaTrimestral(ano, mes);
+    if (id === 5) return getGgrMetaAcumulada(ano, mes);
+    if (id === 6) return getIeoMetaAcumulada(ano, mes);
+    if (id === 7) return getLucroRecorrenteMetaMensal(ano, mes);
+    if (id === 8) return 0.2805;
+    if (id === 9) return PIX_QUARTER_TARGETS[Math.ceil(Number(mes) / 3) - 1] ?? null;
+    if (id === 10) return getPlataformaJogosMetaTrimestral(ano, mes);
+    if (id === 11) return getCapacidadeTicMetaTrimestral(ano, mes);
+    if (id === 12) return 60;
+    if (id === 15) return getCapacitacaoEmpregadosMetaTrimestral(ano, mes);
+    if (id === 16) return getApoioSocioambientalMetaTrimestral(ano, mes);
+    if (id === 17) return getRepasseSocialMetaAcumulada(ano, mes);
+    if (id === 18) return getPrincipiosJogoResponsavelMetaTrimestral(ano, mes);
+    if (id === 19) return getIncentivoSocioambientalMetaTrimestral(ano, mes);
+    if (id === 20) return getVisibilidadeRepassesMetaTrimestral(ano, mes);
+    if (id === 21) return getJogoResponsavelCapacitacaoMetaTrimestral(ano, mes);
+    if (id === 22) return getEcossistemaMetaTrimestral(ano, mes);
+    if (id === 23) return getRedeLotericaMetaIncrementoTrimestral(ano, mes);
+    return null;
+  }
+
+  function configuredMeta(indicadorId, ano, mes, metas) {
+    const record = (metas || []).find((meta) => (
+      String(meta?.indicadorId) === String(indicadorId) &&
+      Number(meta?.ano) === Number(ano) &&
+      Number(meta?.mes) === Number(mes)
+    ));
+    return record && record.metaMensal !== null && record.metaMensal !== undefined && record.metaMensal !== ""
+      ? Number(record.metaMensal)
+      : null;
+  }
+
+  function resolveMeta(indicadorId, ano, mes, metas = cache.metas || [], persistedValue = null) {
+    const official = configuredMeta(indicadorId, ano, mes, metas);
+    if (official !== null && Number.isFinite(official)) return official;
+    if (persistedValue !== null && persistedValue !== undefined && persistedValue !== "") {
+      const persisted = Number(persistedValue);
+      if (Number.isFinite(persisted)) return persisted;
+    }
+    return getFallbackMeta(indicadorId, ano, mes);
+  }
+
+  function metasForRule(rule, metas = cache.metas || []) {
+    if (!rule) return rule;
+    const indicatorId = Number(rule.indicadorId);
+    const official = (metas || []).filter((meta) => (
+      Number(meta?.indicadorId) === indicatorId && meta.metaMensal !== null &&
+      meta.metaMensal !== undefined && meta.metaMensal !== ""
+    ));
+    if (!official.length) return rule;
+    const perCompetence = Object.fromEntries(official.map((meta) => [
+      `${Number(meta.ano)}-${String(Number(meta.mes)).padStart(2, "0")}`,
+      Number(meta.metaMensal)
+    ]));
+    const monthly = { ...(rule.parametrosCalculo?.metasMensaisPorCompetencia || {}), ...perCompetence };
+    const accumulated = indicatorId === 7
+      ? Object.keys(monthly).sort().reduce((curve, key) => {
+          const year = String(key).slice(0, 4);
+          const previousKey = Object.keys(curve).filter((item) => String(item).startsWith(`${year}-`)).at(-1);
+          const previous = previousKey ? curve[previousKey] : 0;
+          curve[key] = previous + Number(monthly[key]);
+          return curve;
+        }, {})
+      : perCompetence;
+    return {
+      ...rule,
+      parametrosCalculo: {
+        ...(rule.parametrosCalculo || {}),
+        metasMensaisPorCompetencia: monthly,
+        metasAcumuladasPorCompetencia: { ...(rule.parametrosCalculo?.metasAcumuladasPorCompetencia || {}), ...accumulated },
+        referenciasPorCompetencia: { ...(rule.parametrosCalculo?.referenciasPorCompetencia || {}), ...perCompetence }
+      }
+    };
+  }
+
+  function getLucroRecorrenteMetaAcumuladaOficial(ano, mes, metas = cache.metas || []) {
+    let total = 0;
+    let found = false;
+    for (let current = 1; current <= Number(mes); current += 1) {
+      const value = resolveMeta(7, ano, current, metas, null);
+      if (value === null || value === undefined) continue;
+      total += Number(value);
+      found = true;
+    }
+    return found ? total : null;
+  }
+
   async function loadFromJsonDb(key) {
     if (!(await checkJsonDb())) return null;
     if (isReadRestrictedCollectionForProfile(key)) return null;
@@ -2059,86 +2150,10 @@
     }
 
     if (key === "metas" && Array.isArray(value)) {
-      return value.map((meta) => Number(meta.indicadorId) === 8 ? {
+      return value.map((meta) => ({
         ...meta,
-        metaMensal: 0.2805,
-        fonte: "meta_fixa_canais_digitais_2026"
-      } : Number(meta.indicadorId) === 1 ? {
-        ...meta,
-        metaMensal: 0.10,
-        fonte: "meta_fixa_ofertas_personalizadas_2026"
-      } : Number(meta.indicadorId) === 2 ? {
-        ...meta,
-        metaMensal: getNpsMetaReferencia(meta.ano, meta.mes),
-        fonte: "baseline_meta_anual_nps_2026"
-      } : Number(meta.indicadorId) === 4 ? {
-        ...meta,
-        metaMensal: getAprimoramentoMetaTrimestral(meta.ano, meta.mes),
-        fonte: "curva_trimestral_aprimoramento_experiencia_2026"
-      } : Number(meta.indicadorId) === 10 ? {
-        ...meta,
-        metaMensal: getPlataformaJogosMetaTrimestral(meta.ano, meta.mes),
-        fonte: "meta_oficial_trimestral_plataforma_jogos_2026"
-      } : Number(meta.indicadorId) === 11 ? {
-        ...meta,
-        metaMensal: getCapacidadeTicMetaTrimestral(meta.ano, meta.mes),
-        fonte: "curva_trimestral_capacidade_tic_2026"
-      } : Number(meta.indicadorId) === 12 ? {
-        ...meta,
-        metaMensal: 60,
-        fonte: "meta_fixa_clima_organizacional_2026"
-      } : Number(meta.indicadorId) === 18 ? {
-        ...meta,
-        metaMensal: getPrincipiosJogoResponsavelMetaTrimestral(meta.ano, meta.mes),
-        fonte: "curva_trimestral_principios_jogo_responsavel_2026"
-      } : Number(meta.indicadorId) === 16 ? {
-        ...meta,
-        metaMensal: getApoioSocioambientalMetaTrimestral(meta.ano, meta.mes),
-        fonte: "curva_trimestral_apoio_socioambiental_2026"
-      } : Number(meta.indicadorId) === 15 ? {
-        ...meta,
-        metaMensal: getCapacitacaoEmpregadosMetaTrimestral(meta.ano, meta.mes),
-        fonte: "curva_trimestral_capacitacao_empregados_2026"
-      } : Number(meta.indicadorId) === 21 ? {
-        ...meta,
-        metaMensal: getJogoResponsavelCapacitacaoMetaTrimestral(meta.ano, meta.mes),
-        fonte: "curva_trimestral_jogo_responsavel_capacitacao_2026"
-      } : Number(meta.indicadorId) === 22 ? {
-        ...meta,
-        metaMensal: getEcossistemaMetaTrimestral(meta.ano, meta.mes),
-        fonte: "curva_trimestral_ecossistema_lotex_marketplace_2026"
-      } : Number(meta.indicadorId) === 23 ? {
-        ...meta,
-        metaMensal: getRedeLotericaMetaIncrementoTrimestral(meta.ano, meta.mes),
-        fonte: "curva_trimestral_incremento_rede_loterica_2026"
-      } : Number(meta.indicadorId) === 5 ? {
-        ...meta,
-        metaMensal: getGgrMetaAcumulada(meta.ano, meta.mes),
-        fonte: "curva_acumulada_ggr_2026"
-      } : Number(meta.indicadorId) === 6 ? {
-        ...meta,
-        metaMensal: getIeoMetaAcumulada(meta.ano, meta.mes),
-        fonte: "curva_acumulada_ieo_2026"
-      } : Number(meta.indicadorId) === 17 ? {
-        ...meta,
-        metaMensal: getRepasseSocialMetaAcumulada(meta.ano, meta.mes),
-        fonte: "curva_acumulada_repasse_social_2026"
-      } : Number(meta.indicadorId) === 19 ? {
-        ...meta,
-        metaMensal: getIncentivoSocioambientalMetaTrimestral(meta.ano, meta.mes),
-        fonte: "curva_trimestral_incentivo_socioambiental_2026"
-      } : Number(meta.indicadorId) === 20 ? {
-        ...meta,
-        metaMensal: getVisibilidadeRepassesMetaTrimestral(meta.ano, meta.mes),
-        fonte: "curva_trimestral_visibilidade_repasses_2026"
-      } : Number(meta.indicadorId) === 9 ? {
-        ...meta,
-        metaMensal: PIX_QUARTER_TARGETS[Math.ceil(Number(meta.mes) / 3) - 1]
-      } : Number(meta.indicadorId) === 7 ? {
-        ...meta,
-        metaMensal: getLucroRecorrenteMetaMensal(meta.ano, meta.mes),
-        fonte: "curva_mensal_lucro_liquido_recorrente_2026"
-      } : meta);
+        metaMensal: resolveMeta(meta.indicadorId, meta.ano, meta.mes, value, meta.metaMensal)
+      }));
     }
 
     if (key === "pilares" && Array.isArray(value)) {
@@ -2149,7 +2164,9 @@
     }
 
     if (key === "lancamentos" && Array.isArray(value)) {
-      return value.map((launch) => normalizarSituacaoLancamento(normalizarCamposMoeda(migrarCampoJogoResponsavelCapacitacaoLegado(migrarCampoVisibilidadeRepassesLegado(migrarCampoIncentivoSocioambientalLegado(migrarCampoApoioSocioambientalLegado(migrarCampoPrincipiosJogoResponsavelLegado(migrarCampoCapacidadeTicLegado(migrarCampoPlataformaJogosLegado(migrarCampoAprimoramentoLegado(migrarCampoCapacitacaoLegado(migrarCampoClimaLegado(migrarCampoNpsLegado(migrarCampoOfertasLegado(migrarCampoRedeLotericaLegado(migrarCampoEcossistemaLegado(migrarCampoRepasseSocialLegado(migrarCampoGgrLegado({
+      return value.map((launch) => {
+        const persistedMeta = launch.metaReferencia ?? launch.metaMensal ?? null;
+        const normalized = normalizarSituacaoLancamento(normalizarCamposMoeda(migrarCampoJogoResponsavelCapacitacaoLegado(migrarCampoVisibilidadeRepassesLegado(migrarCampoIncentivoSocioambientalLegado(migrarCampoApoioSocioambientalLegado(migrarCampoPrincipiosJogoResponsavelLegado(migrarCampoCapacidadeTicLegado(migrarCampoPlataformaJogosLegado(migrarCampoAprimoramentoLegado(migrarCampoCapacitacaoLegado(migrarCampoClimaLegado(migrarCampoNpsLegado(migrarCampoOfertasLegado(migrarCampoRedeLotericaLegado(migrarCampoEcossistemaLegado(migrarCampoRepasseSocialLegado(migrarCampoGgrLegado({
         ...launch,
         id: /^\d+$/.test(String(launch.id ?? "")) ? Number(launch.id) : launch.id,
         indicadorId: /^\d+$/.test(String(launch.indicadorId ?? launch.indicador_id ?? ""))
@@ -2251,7 +2268,17 @@
           metaMensal: 0.2805,
           metaAnualDescricao: "Aumentar em 05 p.p. as vendas provenientes de canais digitais."
         } : {})
-      })))))))))))))))))));
+      }))))))))))))))))));
+        const officialMeta = resolveMeta(launch.indicadorId ?? launch.indicador_id, launch.ano, launch.mes, cache.metas || [], persistedMeta);
+        return {
+          ...normalized,
+          metaMensal: officialMeta,
+          metaReferencia: officialMeta,
+          ...(Number(launch.indicadorId ?? launch.indicador_id) === 7 ? {
+            metaAcumulada: getLucroRecorrenteMetaAcumuladaOficial(launch.ano, launch.mes)
+          } : {})
+        };
+      });
     }
 
     if ((key === "homologacoes" || key === "historico") && Array.isArray(value)) {
@@ -2298,10 +2325,16 @@
   }
 
   async function loadAll() {
+    const metas = await loadJson("metas");
     const entries = await Promise.all(
-      Object.keys(DATA_FILES).map(async (key) => [key, await loadJson(key)])
+      Object.keys(DATA_FILES).filter((key) => key !== "metas").map(async (key) => [key, await loadJson(key)])
     );
-    return Object.fromEntries(entries);
+    const data = { ...Object.fromEntries(entries), metas };
+    if (Array.isArray(data.regrasIndicadores)) {
+      data.regrasIndicadores = data.regrasIndicadores.map((rule) => metasForRule(rule, metas));
+      cache.regrasIndicadores = data.regrasIndicadores;
+    }
+    return data;
   }
 
   async function carregarBaseValidacaoCompleta() {
@@ -2384,9 +2417,13 @@
     getLancamentos,
     getStorageInfo,
     publicarDadosLocaisNaBaseCentral,
+    normalizeData,
     gerarLancamentosLimpos,
     completarLancamentosAusentes,
     resetarBaseOperacionalGlobal,
+    resolveMeta,
+    metasForRule,
+    getLucroRecorrenteMetaAcumuladaOficial,
     resetarDadosOperacionais,
     resetarLancamentosIniciais
   };

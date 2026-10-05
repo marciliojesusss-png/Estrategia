@@ -44,6 +44,36 @@ final class LancamentosRepository
         return $row ? $this->map($row) : null;
     }
 
+    public function findByMetaScopeForUpdate($indicatorId, $year, $month)
+    {
+        $stmt = $this->db->prepare(
+            'SELECT * FROM lancamentos WITH (UPDLOCK, HOLDLOCK) '
+            . 'WHERE indicador_id=:indicador AND ano=:ano AND mes=:mes ORDER BY id'
+        );
+        $stmt->execute(array(
+            ':indicador' => (string) $indicatorId,
+            ':ano' => (int) $year,
+            ':mes' => (int) $month,
+        ));
+        return array_map(array($this, 'map'), $stmt->fetchAll());
+    }
+
+    public function updateMetaDerivatives($id, $metaReference, $percentage, $situation)
+    {
+        $stmt = $this->db->prepare(
+            'UPDATE lancamentos SET meta_referencia=:meta, percentual_atingido=:percentual, '
+            . 'situacao=:situacao, updated_at=:updated WHERE id=:id'
+        );
+        $stmt->execute(array(
+            ':meta' => $metaReference,
+            ':percentual' => $percentage,
+            ':situacao' => $situation,
+            ':updated' => date('c'),
+            ':id' => (string) $id,
+        ));
+        return $this->find($id);
+    }
+
     public function existsForPeriod($indicatorId, $competence, $ignoreId = null)
     {
         $sql = 'SELECT COUNT(*) FROM lancamentos WHERE indicador_id=:indicador AND competencia=:competencia';

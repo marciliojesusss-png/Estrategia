@@ -7,6 +7,10 @@
     return Number.isFinite(parsed) ? parsed : null;
   }
 
+  function metaLancamento(lancamento) {
+    return toNumber(lancamento?.metaReferencia ?? lancamento?.metaMensal);
+  }
+
   function normalizarPercentual(value) {
     if (value === null || value === undefined || value === "") return null;
     if (typeof value === "number") {
@@ -109,6 +113,8 @@
   }
 
   function getMetaAcumuladaCompetencia(regra, lancamento) {
+    const configured = toNumber(lancamento?.metaReferencia ?? lancamento?.metaMensal);
+    if (configured !== null) return configured;
     const params = regra?.parametrosCalculo || {};
     const curva = params.metasAcumuladasPorCompetencia || params.curvaMetaAcumulada || {};
     const key = competenciaKey(lancamento);
@@ -298,7 +304,7 @@
     const denominadorCampo = regra.parametrosCalculo?.denominadorCampo ||
       (temCampo("baseClientesAtivosCompetencia") ? "baseClientesAtivosCompetencia" : null) ||
       (temCampo("baseClientesAtivos") ? "baseClientesAtivos" : null);
-    const meta = requireMeta(regra.parametrosCalculo?.metaReferencia ?? regra.metaAnualValor ?? lancamentoAtual.metaMensal, regra.unidadeMedida);
+    const meta = requireMeta(lancamentoAtual.metaReferencia ?? lancamentoAtual.metaMensal ?? regra.parametrosCalculo?.metaReferencia ?? regra.metaAnualValor, regra.unidadeMedida);
     if (meta.erro) return meta;
 
     let resultadoMensal;
@@ -362,7 +368,7 @@
     const trimestre = lancamentoAtual.trimestre || `${Math.ceil(Number(lancamentoAtual.mes) / 3)}TRI/${lancamentoAtual.ano || 2026}`;
     const curva = params.curvaTrimestralCursos || params.curvaJogoResponsavel2026 || {};
     const criterioTrimestre = curva[trimestre] || {};
-    const metaCobertura = toNumber(criterioTrimestre.metaCobertura ?? params.metaCobertura ?? params.metaReferencia ?? regra.metaAnualValor);
+    const metaCobertura = metaLancamento(lancamentoAtual) ?? toNumber(criterioTrimestre.metaCobertura ?? params.metaCobertura ?? params.metaReferencia ?? regra.metaAnualValor);
     const quantidadeCursosCurva = toNumber(criterioTrimestre.quantidadeCursosMinima ?? criterioTrimestre.quantidadeMinimaIniciativas);
     const quantidadeCursosMinima = permiteAcompanhamento
       ? quantidadeCursosCurva
@@ -396,7 +402,7 @@
     if (required) return erro(required, regra.unidadeMedida);
     const valor = campo(lancamentoAtual, regra.parametrosCalculo?.campoResultado || "npsRealizado");
     const base = toNumber(regra.parametrosCalculo?.notaBase);
-    const metaFinal = toNumber(regra.parametrosCalculo?.metaFinalCalculada) || toNumber(regra.metaAnualValor);
+    const metaFinal = metaLancamento(lancamentoAtual) ?? toNumber(regra.parametrosCalculo?.metaFinalCalculada) ?? toNumber(regra.metaAnualValor);
     if (base === null || metaFinal === null || metaFinal === base) {
       return erro("Parâmetros de base e meta final são obrigatórios para redução de gap.", regra.unidadeMedida);
     }
@@ -411,7 +417,7 @@
       ((regra.camposEntrada || []).some((item) => item.nome === "qmaatu") ? "qmaatu" : null);
     const qmaantCampo = regra.parametrosCalculo?.qmaantCampo ||
       ((regra.camposEntrada || []).some((item) => item.nome === "qmaant") ? "qmaant" : null);
-    const meta = requireMeta(regra.parametrosCalculo?.metaCrescimento ?? regra.metaAnualValor, regra.unidadeMedida, "Meta de crescimento não configurada.");
+    const meta = requireMeta(metaLancamento(lancamentoAtual) ?? regra.parametrosCalculo?.metaCrescimento ?? regra.metaAnualValor, regra.unidadeMedida, "Meta de crescimento não configurada.");
     if (meta.erro) return meta;
 
     if (qmaatuCampo && qmaantCampo) {
@@ -437,7 +443,7 @@
     if (required) return erro(required, regra.unidadeMedida);
     const campoValor = regra.parametrosCalculo?.campoValor || "melhoriasImplementadasMes";
     const baseline = toNumber(regra.parametrosCalculo?.baseline || regra.parametrosCalculo?.totalMelhoriasIdentificadasBaseline);
-    const meta = requireMeta(regra.parametrosCalculo?.metaExecucao ?? regra.metaAnualValor, regra.unidadeMedida, "Meta de execução não configurada.");
+    const meta = requireMeta(metaLancamento(lancamentoAtual) ?? regra.parametrosCalculo?.metaExecucao ?? regra.metaAnualValor, regra.unidadeMedida, "Meta de execução não configurada.");
     if (meta.erro) return meta;
     if (!baseline) return erro("Baseline deve ser informado e maior que zero.", regra.unidadeMedida);
     const ateMes = lancamentosAteMes(lancamentoAtual, lancamentosDoAno);
@@ -451,7 +457,7 @@
     const required = validarObrigatorios(regra, lancamentoAtual);
     if (required) return erro(required, regra.unidadeMedida);
     const ateMes = lancamentosAteMes(lancamentoAtual, lancamentosDoAno);
-    const meta = requireMeta(regra.metaAnualValor, regra.unidadeMedida, "Meta financeira anual não configurada.");
+    const meta = requireMeta(metaLancamento(lancamentoAtual) ?? regra.metaAnualValor, regra.unidadeMedida, "Meta financeira anual não configurada.");
     if (meta.erro) return meta;
 
     let resultadoMensal;
@@ -609,7 +615,7 @@
   function calcularIndiceInversoAjustado(indicador, regra, lancamentoAtual, lancamentosDoAno) {
     const required = validarObrigatorios(regra, lancamentoAtual);
     if (required) return erro(required, regra.unidadeMedida);
-    const meta = requireMeta(regra.parametrosCalculo?.metaReferencia ?? regra.metaAnualValor, regra.unidadeMedida);
+    const meta = requireMeta(lancamentoAtual.metaReferencia ?? lancamentoAtual.metaMensal ?? regra.parametrosCalculo?.metaReferencia ?? regra.metaAnualValor, regra.unidadeMedida);
     if (meta.erro) return meta;
 
     if (regra.parametrosCalculo?.campoValor) {
@@ -649,6 +655,8 @@
   }
 
   function getLucroRecorrenteMetaMensal(regra, lancamento) {
+    const configured = toNumber(lancamento?.metaReferencia ?? lancamento?.metaMensal);
+    if (configured !== null) return configured;
     const curve = regra?.parametrosCalculo?.metasMensaisPorCompetencia || {};
     const key = competenciaKey(lancamento);
     if (Object.prototype.hasOwnProperty.call(curve, key)) return toNumber(curve[key]);
@@ -694,13 +702,8 @@
       .map((item) => getLucroRecorrenteMensal(regra, item, lancamentosDoAno))
       .filter((value) => value !== null && value >= 0);
     const resultadoAcumulado = resultadosMensais.reduce((sum, value) => sum + value, 0);
-    const monthlyCurve = regra?.parametrosCalculo?.metasMensaisPorCompetencia || {};
-    const currentYear = Number(lancamentoAtual?.ano);
-    const currentMonth = Number(lancamentoAtual?.mes);
-    const metaAcumulada = Object.entries(monthlyCurve).reduce((sum, [key, value]) => {
-      const match = key.match(/^(\d{4})-(\d{2})$/);
-      if (!match || Number(match[1]) !== currentYear || Number(match[2]) > currentMonth) return sum;
-      const parsed = toNumber(value);
+    const metaAcumulada = ateMes.reduce((sum, item) => {
+      const parsed = getLucroRecorrenteMetaMensal(regra, item);
       return parsed === null ? sum : sum + parsed;
     }, 0);
     const percentualMensal = resultadoMensal / metaMensal;
@@ -803,7 +806,7 @@
     const required = validarObrigatorios(regra, lancamentoAtual);
     if (required) return erro(required, regra.unidadeMedida);
     const base = toNumber(regra.parametrosCalculo?.participacaoBase);
-    const metaIncremento = requireMeta(regra.parametrosCalculo?.metaIncremento ?? regra.metaAnualValor, regra.unidadeMedida, "Meta de incremento em p.p. não configurada.");
+    const metaIncremento = requireMeta(metaLancamento(lancamentoAtual) ?? regra.parametrosCalculo?.metaIncremento ?? regra.metaAnualValor, regra.unidadeMedida, "Meta de incremento em p.p. não configurada.");
     if (metaIncremento.erro) return metaIncremento;
     if (base === null) return erro("Participação-base não cadastrada. Não é possível calcular o incremento em pontos percentuais.", regra.unidadeMedida);
     const ateMes = lancamentosAteMes(lancamentoAtual, lancamentosDoAno);
@@ -820,7 +823,7 @@
     const denominatorField = regra.parametrosCalculo?.campoDenominador || "arrecadacaoTotalProdutosLoteriasMes";
     const monthlyNumerator = currency.parseMoedaBR(raw(lancamentoAtual, numeratorField));
     const monthlyDenominator = currency.parseMoedaBR(raw(lancamentoAtual, denominatorField));
-    const target = toNumber(regra.parametrosCalculo?.metaReferencia ?? regra.metaAnualValor) || 0.2805;
+    const target = toNumber(lancamentoAtual.metaReferencia ?? lancamentoAtual.metaMensal ?? regra.parametrosCalculo?.metaReferencia ?? regra.metaAnualValor) || 0.2805;
 
     if (monthlyNumerator === null || monthlyNumerator < 0) {
       return erro("Arrecadação total nos canais eletrônicos deve ser informada e não pode ser negativa.", regra.unidadeMedida);
@@ -905,7 +908,7 @@
     }
     const monthlyResult = pixMonthly / totalMonthly;
     const accumulatedResult = pixAccumulated / totalAccumulated;
-    const annualTarget = toNumber(regra.metaAnualValor) || 0.65;
+    const annualTarget = toNumber(lancamentoAtual.metaReferencia ?? lancamentoAtual.metaMensal ?? regra.metaAnualValor) || 0.65;
     return ok(
       monthlyResult,
       accumulatedResult,
@@ -934,9 +937,12 @@
       const marcoAtual = texto(lancamentoAtual, campoMarco);
       const trimestre = lancamentoAtual.trimestre || `${Math.ceil(Number(lancamentoAtual.mes) / 3)}TRI/${lancamentoAtual.ano || 2026}`;
       const metas = params.metasTrimestraisOficiais || {};
-      const metaTrimestral = Object.prototype.hasOwnProperty.call(metas, trimestre)
-        ? toNumber(metas[trimestre])
-        : null;
+      const metaConfigurada = toNumber(lancamentoAtual.metaReferencia ?? lancamentoAtual.metaMensal);
+      const metaTrimestral = metaConfigurada !== null
+        ? metaConfigurada
+        : Object.prototype.hasOwnProperty.call(metas, trimestre)
+          ? toNumber(metas[trimestre])
+          : null;
       const valorInformado = raw(lancamentoAtual, campoPercentualOficial);
       const possuiPercentualOficial = valorInformado !== null && valorInformado !== undefined && valorInformado !== "";
       const detalhes = {
@@ -1030,9 +1036,12 @@
     if (percentual === null) return erro("Percentual de execução deve ser informado.", regra.unidadeMedida);
     const trimestre = lancamentoAtual.trimestre || `${Math.ceil(Number(lancamentoAtual.mes) / 3)}TRI/${lancamentoAtual.ano || 2026}`;
     const curva = regra.parametrosCalculo?.curvaTrimestralPercentual || {};
-    const metaTrimestral = regra.parametrosCalculo?.metaTipo === "curva_trimestral_percentual"
-      ? toNumber(curva[trimestre]?.metaPercentual)
-      : null;
+    const metaConfigurada = toNumber(lancamentoAtual.metaReferencia ?? lancamentoAtual.metaMensal);
+    const metaTrimestral = metaConfigurada !== null
+      ? metaConfigurada
+      : regra.parametrosCalculo?.metaTipo === "curva_trimestral_percentual"
+        ? toNumber(curva[trimestre]?.metaPercentual)
+        : null;
     const percentualAtingido = metaTrimestral ? percentual / metaTrimestral : percentual;
     const situacao = metaTrimestral
       ? percentual >= metaTrimestral
@@ -1055,8 +1064,8 @@
     if (required) return erro(required, regra.unidadeMedida);
     const valor = campo(lancamentoAtual, regra.parametrosCalculo?.campoValor || "mediaGeralGPTW");
     const meta = requireMeta(
-      toNumber(regra.parametrosCalculo?.metaReferencia) ||
-        toNumber(lancamentoAtual.metaMensal) ||
+      toNumber(lancamentoAtual.metaReferencia ?? lancamentoAtual.metaMensal) ||
+        toNumber(regra.parametrosCalculo?.metaReferencia) ||
         regra.metaAnualValor,
       regra.unidadeMedida
     );
@@ -1076,7 +1085,10 @@
       ? mes <= 3 ? 55 : mes <= 6 ? 58 : 60
       : null;
     const metaReferenciaInformada = campo(lancamentoAtual, params.campoMetaReferencia || "metaReferenciaCompetenciaNPS");
-    const metaReferenciaPeriodo = referenciaVigente2026 !== null
+    const metaConfigurada = toNumber(lancamentoAtual.metaReferencia ?? lancamentoAtual.metaMensal);
+    const metaReferenciaPeriodo = metaConfigurada !== null
+      ? metaConfigurada
+      : referenciaVigente2026 !== null
       ? referenciaVigente2026
       : Object.prototype.hasOwnProperty.call(referencias, key)
       ? toNumber(referencias[key])
@@ -1184,9 +1196,12 @@
     }
 
     const metaReferenciaInformada = campo(lancamentoAtual, campoMetaReferencia);
-    const metaReferenciaPeriodo = metaReferenciaInformada !== null
-      ? metaReferenciaInformada
-      : toNumber(params.metaReferencia ?? regra.metaAnualValor);
+    const metaConfigurada = toNumber(lancamentoAtual.metaReferencia ?? lancamentoAtual.metaMensal);
+    const metaReferenciaPeriodo = metaConfigurada !== null
+      ? metaConfigurada
+      : metaReferenciaInformada !== null
+        ? metaReferenciaInformada
+        : toNumber(params.metaReferencia ?? regra.metaAnualValor);
     if (metaReferenciaPeriodo === null || metaReferenciaPeriodo === 0) {
       return erro("Meta de referência da pesquisa anual não configurada.", regra.unidadeMedida);
     }
@@ -1298,7 +1313,7 @@
       const percentualMetaAnualAtingida = acumulado / metaMinimaMelhorias;
       const trimestre = `${Math.ceil(Number(lancamentoAtual.mes) / 3)}TRI/${lancamentoAtual.ano || 2026}`;
       const curva = regra.parametrosCalculo?.curvaTrimestralAcumulada || {};
-      const metaTrimestral = toNumber(curva[trimestre]?.metaPercentual);
+      const metaTrimestral = metaLancamento(lancamentoAtual) ?? toNumber(curva[trimestre]?.metaPercentual);
       const metaQuantidadeTrimestral = toNumber(curva[trimestre]?.metaQuantidadeAcumulada);
       if (metaTrimestral && metaQuantidadeTrimestral !== null && acumulado === metaQuantidadeTrimestral) {
         percentualPlanoExecutado = metaTrimestral;
@@ -1353,7 +1368,7 @@
         }
       );
     }
-    const meta = requireMeta(regra.metaAnualValor, regra.unidadeMedida);
+    const meta = requireMeta(metaLancamento(lancamentoAtual) ?? regra.metaAnualValor, regra.unidadeMedida);
     if (meta.erro) return meta;
     const ateMes = lancamentosAteMes(lancamentoAtual, lancamentosDoAno);
     const mensal = campo(lancamentoAtual, campoValor);
@@ -1377,7 +1392,7 @@
       const acumulado = elementosAtendidos.length;
       const trimestre = lancamentoAtual.trimestre || `${Math.ceil(Number(lancamentoAtual.mes) / 3)}TRI/${lancamentoAtual.ano || 2026}`;
       const curva = regra.parametrosCalculo?.curvaTrimestralAcumulada || {};
-      const metaTrimestral = toNumber(curva[trimestre]?.metaElementosAcumulados);
+      const metaTrimestral = metaLancamento(lancamentoAtual) ?? toNumber(curva[trimestre]?.metaElementosAcumulados);
       const metaReferencia = metaTrimestral || toNumber(regra.metaAnualValor);
       const percentual = metaReferencia ? acumulado / metaReferencia : null;
       const metaAnual = toNumber(regra.metaAnualValor);
@@ -1400,7 +1415,7 @@
       });
     }
     const campoValor = regra.parametrosCalculo?.campoValor || "elementosExecutadosAcumulado";
-    const meta = requireMeta(regra.metaAnualValor, regra.unidadeMedida);
+    const meta = requireMeta(metaLancamento(lancamentoAtual) ?? regra.metaAnualValor, regra.unidadeMedida);
     if (meta.erro) return meta;
     const acumulado = Math.min(ultimoCampo(lancamentosAteMes(lancamentoAtual, lancamentosDoAno), campoValor) || 0, meta);
     return ok(acumulado, acumulado, acumulado / meta, acumulado / meta, regra.unidadeMedida);
@@ -1432,7 +1447,7 @@
     const acumulado = iniciativasApoiadas.length;
     const trimestre = lancamentoAtual.trimestre || `${Math.ceil(Number(lancamentoAtual.mes) / 3)}TRI/${lancamentoAtual.ano || 2026}`;
     const curva = regra.parametrosCalculo?.curvaTrimestralAcumulada || {};
-    const metaTrimestral = toNumber(curva[trimestre]?.metaQuantidadeAcumulada);
+    const metaTrimestral = metaLancamento(lancamentoAtual) ?? toNumber(curva[trimestre]?.metaQuantidadeAcumulada);
     const possuiAndamento = ateMes.some((item) => {
       const status = texto(item, campoStatus);
       return ["Em prospecção", "Em estruturação", "Em rito de governança"].includes(status);
@@ -1499,7 +1514,7 @@
     const trimestre = lancamentoAtual.trimestre || `${Math.ceil(Number(lancamentoAtual.mes) / 3)}TRI/${lancamentoAtual.ano || 2026}`;
     const curva = params.curvaTrimestralAcumulada || {};
     const alvoTrimestre = curva[trimestre] || {};
-    const metaAcoesRealizadasAcumuladas = toNumber(alvoTrimestre.metaAcoesRealizadasAcumuladas);
+    const metaAcoesRealizadasAcumuladas = metaLancamento(lancamentoAtual) ?? toNumber(alvoTrimestre.metaAcoesRealizadasAcumuladas);
     const possuiAndamento = ateMes.some((item) => {
       const status = texto(item, campoStatus);
       return ["Em planejamento", "Em elaboração", "Em homologação"].includes(status);
@@ -1574,7 +1589,7 @@
 
     const trimestre = lancamentoAtual.trimestre || `${Math.ceil(Number(lancamentoAtual.mes) / 3)}TRI/${lancamentoAtual.ano || 2026}`;
     const curva = params.curvaTrimestralAcumulada || {};
-    const metaTrimestral = toNumber(curva[trimestre]?.metaValorAcumulado);
+    const metaTrimestral = metaLancamento(lancamentoAtual) ?? toNumber(curva[trimestre]?.metaValorAcumulado);
     const possuiAndamento = ateMes.some((item) => ["Em prospecção", "Em estruturação", "Em rito de governança", "Aprovado"].includes(texto(item, campoStatus)));
 
     if (metaTrimestral === 0) {
@@ -1617,7 +1632,7 @@
     const lucro = campo(lancamentoAtual, regra.parametrosCalculo?.campoLucro || "lucroLiquidoBase");
     const percentualLucro = toNumber(regra.parametrosCalculo?.percentualLucro) || 0.0033;
     if (lucro === null || lucro <= 0) return erro("Lucro líquido base deve ser maior que zero para calcular a meta financeira.", regra.unidadeMedida);
-    const metaFinanceira = lucro * percentualLucro;
+    const metaFinanceira = metaLancamento(lancamentoAtual) ?? lucro * percentualLucro;
     return ok(investido, investido, investido / metaFinanceira, investido / metaFinanceira, regra.unidadeMedida, "Investimento percentual sobre lucro calculado.", { metaFinanceira });
   }
 
@@ -1629,7 +1644,8 @@
     if (!propostas) return erro("Não foi possível calcular o indicador, pois o denominador informado é zero.", regra.unidadeMedida);
     if (realizadas < 0 || realizadas > propostas) return erro("Ações realizadas devem estar entre zero e o total de ações propostas.", regra.unidadeMedida);
     const resultado = realizadas / propostas;
-    return ok(resultado, resultado, resultado, resultado, regra.unidadeMedida);
+    const meta = metaLancamento(lancamentoAtual) ?? 1;
+    return ok(resultado, resultado, resultado / meta, resultado / meta, regra.unidadeMedida);
   }
 
   function calcularCrescimentoRelativoParticipacao(indicador, regra, lancamentoAtual, lancamentosDoAno) {
@@ -1643,7 +1659,7 @@
     const campoBase2025Acumulada = params.campoBase2025Acumulada || "arrecadacaoEcossistema2025Acumulada";
     const campoLegado2026 = params.campoNumeradorLegado || "arrecadacaoEcossistemaMes";
     const campoLegadoBase2025 = params.campoNumerador2025Legado || "arrecadacaoEcossistema2025";
-    const crescimentoMeta = toNumber(params.metaCrescimento ?? 0.1) ?? 0.1;
+    const crescimentoMeta = metaLancamento(lancamentoAtual) ?? toNumber(params.metaCrescimento ?? 0.1) ?? 0.1;
     const metaIndice = 1 + crescimentoMeta;
     const mensagemBaseInsuficiente = params.mensagemBaseInsuficiente || "Dados insuficientes: informe a base de referência de 2025 para o período equivalente.";
     const mensagemRealizadoInsuficiente = params.mensagemRealizadoInsuficiente || "Arrecadação 2026 deve ser informada e não pode ser negativa.";
@@ -1767,7 +1783,7 @@
     }
 
     const referencia2025Trimestre = pontosPercentuaisParaFracao(curva.referencia2025);
-    const metaTrimestral2026 = pontosPercentuaisParaFracao(curva.meta2026);
+    const metaTrimestral2026 = metaLancamento(lancamentoAtual) ?? pontosPercentuaisParaFracao(curva.meta2026);
     if (!metaTrimestral2026) return erro("Meta trimestral do cenário de ecossistema não configurada.", regra.unidadeMedida);
 
     const resultadoCalculado = arrecadacaoViaEcossistema / arrecadacaoTotal;
@@ -1822,7 +1838,7 @@
     const mensagemRealizadoInsuficiente = params.mensagemRealizadoInsuficiente || "Arrecadação da Rede Lotérica 2026 deve ser informada e não pode ser negativa.";
     const trimestre = trimestreKey(lancamentoAtual);
     const curva = trimestre ? params.curvaIncrementoTrimestral?.[trimestre] : null;
-    const metaTrimestral = pontosPercentuaisParaFracao(curva?.metaIncremento ?? lancamentoAtual?.metaMensal ?? regra?.metaAnualValor);
+    const metaTrimestral = metaLancamento(lancamentoAtual) ?? pontosPercentuaisParaFracao(curva?.metaIncremento ?? regra?.metaAnualValor);
     if (!metaTrimestral) return erro("Meta trimestral de incremento da Rede Lotérica não configurada.", regra.unidadeMedida);
 
     const valorCampoComFallback = (item, principal, legado) => {
@@ -1884,7 +1900,7 @@
   function calcularCrescimentoRelativoValor(indicador, regra, lancamentoAtual, lancamentosDoAno) {
     const required = validarObrigatorios(regra, lancamentoAtual);
     if (required) return erro(required, regra.unidadeMedida);
-    const meta = requireMeta(regra.parametrosCalculo?.metaCrescimento ?? regra.metaAnualValor, regra.unidadeMedida);
+    const meta = requireMeta(metaLancamento(lancamentoAtual) ?? regra.parametrosCalculo?.metaCrescimento ?? regra.metaAnualValor, regra.unidadeMedida);
     if (meta.erro) return meta;
     const ateMes = lancamentosAteMes(lancamentoAtual, lancamentosDoAno);
     const atual = somaCampo(ateMes, regra.parametrosCalculo?.campoAtual);

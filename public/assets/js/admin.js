@@ -42,7 +42,7 @@
     unidades: "Unidades apuradoras",
     diretorias: "Diretorias responsáveis",
     indicadores: "Indicadores",
-    metas: "Metas mensais",
+    metas: "Metas por competência",
     prazosApuracao: "Prazos de Apuração",
     tiposCalculo: "Tipos de cálculo",
     reabertura: "Reabertura de lançamento",
@@ -550,24 +550,30 @@
         </tr>
       `;
     });
-    table(["Indicador", "Ano", "Mês", "Meta mensal", "Ações"], rows);
+    table(["Indicador", "Ano", "Competência", "Meta da competência", "Ações"], rows);
   }
 
   function openMetaForm(meta = null) {
     const form = document.getElementById("adminForm");
     const source = meta || { id: nextNumericId(state.data.metas), indicadorId: state.data.indicadores[0]?.id || "", ano: 2026, mes: 1, nomeMes: "Janeiro", metaMensal: "" };
+    const indicator = state.data.indicadores.find((item) => String(item.id) === String(source.indicadorId));
+    const monthName = source.nomeMes || MESES.find(([month]) => month === Number(source.mes))?.[1] || source.mes;
+    const context = `${indicator ? `${indicator.numero}. ${indicator.indicador}` : source.indicadorId} — ${monthName}/${source.ano}`;
+    const locked = meta ? "disabled aria-disabled=\"true\"" : "";
     form.innerHTML = `
+      <div class="notice info full-span" data-meta-edit-context><strong>Editando:</strong> ${escapeHtml(context)}</div>
       <input type="hidden" name="id" value="${escapeHtml(source.id)}">
+      ${meta ? `<input type="hidden" name="indicadorId" value="${escapeHtml(source.indicadorId)}"><input type="hidden" name="ano" value="${escapeHtml(source.ano)}"><input type="hidden" name="mes" value="${escapeHtml(source.mes)}">` : ""}
       <label>Indicador
-        <select name="indicadorId" required>
+        <select name="indicadorId" required ${locked}>
           ${options(state.data.indicadores.map((item) => [item.id, `${item.numero}. ${item.indicador}`]), source.indicadorId)}
         </select>
       </label>
-      <label>Ano <input name="ano" type="number" value="${escapeHtml(source.ano)}" required></label>
+      <label>Ano <input name="ano" type="number" value="${escapeHtml(source.ano)}" required ${locked}></label>
       <label>Mês
-        <select name="mes" required>${options(MESES, source.mes)}</select>
+        <select name="mes" required ${locked}>${options(MESES, source.mes)}</select>
       </label>
-      <label>Meta mensal <input name="metaMensal" type="number" step="any" value="${escapeHtml(source.metaMensal ?? "")}"></label>
+      <label>Meta da competência <input name="metaMensal" type="number" step="any" value="${escapeHtml(source.metaMensal ?? "")}" required></label>
       <div class="form-actions full-span">
         <button class="primary-action" type="submit">Salvar meta</button>
         <button id="adminCancelForm" class="secondary-action" type="button">Cancelar</button>
@@ -575,10 +581,53 @@
     `;
     form.hidden = false;
     state.editingId = meta ? meta.id : null;
+    window.requestAnimationFrame(() => {
+      form.scrollIntoView({ behavior: "smooth", block: "start" });
+      const target = form.querySelector('[name="metaMensal"]');
+      target?.focus({ preventScroll: true });
+      target?.select();
+    });
+  }
+
+  function recalculateLaunchesForMeta(record, nextMetas) {
+    if (!window.IndicatorFormulas) throw new Error("Mecanismo de fórmulas indisponível para recalcular os lançamentos.");
+    const affected = state.data.lancamentos.filter((launch) => (
+      String(launch.indicadorId) === String(record.indicadorId) &&
+      Number(launch.ano) === Number(record.ano) &&
+      Number(launch.mes) === Number(record.mes)
+    ));
+    if (!affected.length) return [];
+    const indicator = state.data.indicadores.find((item) => String(item.id) === String(record.indicadorId));
+    if (!indicator) throw new Error("Indicador da meta não encontrado.");
+    const baseRule = IndicatorFormulas.obterRegra(indicator, state.data.regrasIndicadores);
+    const rule = DataStore.metasForRule(baseRule, nextMetas);
+    const yearlyScope = state.data.lancamentos
+      .filter((launch) => String(launch.indicadorId) === String(record.indicadorId) && Number(launch.ano) === Number(record.ano))
+      .map((launch) => {
+        const officialMeta = DataStore.resolveMeta(
+          launch.indicadorId,
+          launch.ano,
+          launch.mes,
+          nextMetas,
+          launch.metaReferencia ?? launch.metaMensal
+        );
+        return { ...launch, metaMensal: officialMeta, metaReferencia: officialMeta };
+      });
+
+    return affected.map((launch) => {
+      const prepared = yearlyScope.find((item) => String(item.id) === String(launch.id));
+      const calculation = IndicatorFormulas.calcularIndicador(indicator, rule, prepared, yearlyScope);
+      const percentage = calculation.percentualAtingidoMensal ?? calculation.percentualAtingido ?? calculation.percentualAtingidoAnual ?? null;
+      const situation = calculation.situacao || Situations.classificarPercentual(percentage);
+      return { id: launch.id, metaReferencia: record.metaMensal, percentualAtingido: percentage, situacao: situation };
+    });
   }
 
   async function saveMetaForm(event) {
     event.preventDefault();
+    const form = event.currentTarget;
+    const submitButton = form.querySelector('[type="submit"]');
+    submitButton.disabled = true;
     const values = Object.fromEntries(new FormData(event.currentTarget).entries());
     const mes = Number(values.mes);
     const record = {
@@ -588,29 +637,29 @@
       mes,
       nomeMes: MESES.find(([value]) => value === mes)?.[1] || "",
       metaMensal: values.metaMensal === "" ? null : Number(values.metaMensal),
-      fonte: "admin_local"
+      fonte: "admin_sqlserver"
     };
-    const original = state.editingId === null ? null : state.data.metas.find((item) => item.id === state.editingId);
-    state.data.metas = state.editingId === null
+    const nextMetas = state.editingId === null
       ? [...state.data.metas, record]
-      : state.data.metas.map((item) => item.id === state.editingId ? record : item);
-    const persisted = await DataStore.saveLocal("metas", state.data.metas);
-    await DataStore.appendHistory({
-      usuario: state.user.email || state.user.nome,
-      acao: state.editingId === null ? "criacao_meta" : "alteracao_meta",
-      entidade: "metas",
-      registroId: record.id,
-      valorAnterior: original,
-      valorNovo: record
-    });
-    state.data.historico = await DataStore.loadJson("historico");
-    showMessage(
-      persisted ? "Meta salva na base central." : "Meta salva localmente. A base central nao foi alterada por esta tela.",
-      persisted ? "info" : "warning"
-    );
-    document.getElementById("adminForm").hidden = true;
-    renderCards();
-    renderModule();
+      : state.data.metas.map((item) => String(item.id) === String(state.editingId) ? record : item);
+    try {
+      const launches = recalculateLaunchesForMeta(record, nextMetas);
+      const result = await adminApi("api/administracao/metas", {
+        method: "POST",
+        body: JSON.stringify({ meta: record, lancamentos: launches })
+      });
+      DataStore.clearLocalData();
+      state.data = await DataStore.loadAll();
+      showMessage(`Meta salva no SQL Server e propagada para ${Number(result.afetados) || 0} lançamento(s).`);
+      form.hidden = true;
+      state.editingId = null;
+      renderCards();
+      renderModule();
+    } catch (error) {
+      showMessage(error.message || "Não foi possível salvar e propagar a meta.", "warning");
+    } finally {
+      submitButton.disabled = false;
+    }
   }
 
   function renderTiposCalculo() {
@@ -968,7 +1017,7 @@
 
       const metaButton = event.target.closest("[data-edit-meta]");
       if (metaButton) {
-        const meta = state.data.metas.find((item) => item.id === Number(metaButton.dataset.editMeta));
+        const meta = state.data.metas.find((item) => String(item.id) === String(metaButton.dataset.editMeta));
         openMetaForm(meta);
         return;
       }
