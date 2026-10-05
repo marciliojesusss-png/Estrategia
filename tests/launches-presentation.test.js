@@ -54,8 +54,8 @@ assert.match(view, /id="launchPercentualCalculadoLabel">% da meta atingida</);
 assert.match(view, /id="launchPercentualAcumuladoLabel">% da meta atingida anual</);
 assert.match(view, /id="resultadoAnualWrapper"/);
 assert.match(view, /documentation-fields\.js\?v=DOCUMENTACAO-CENTRAL-001/);
-assert.match(view, /styles\.css\?v=SOCIOAMBIENTAL-UX-001/);
-assert.match(view, /launches\.js\?v=AUDITORIA-LANCAMENTOS-001/);
+assert.match(view, /styles\.css\?v=APP-VERSION-001/);
+assert.match(view, /launches\.js\?v=METAS-OFICIAIS-002/);
 assert.match(view, /id="launchValidationFeedback"[^>]+role="alert"[^>]+aria-live="assertive"/);
 
 const dataStoreSource = fs.readFileSync(path.join(root, "assets", "js", "dataStore.js"), "utf8");

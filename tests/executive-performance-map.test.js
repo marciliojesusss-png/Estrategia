@@ -187,8 +187,8 @@ assert.match(executiveSource, /Pesquisa: \$\{measurement\}/);
 assert.match(executiveSource, /Medição: \$\{escapeHtml\(measurement\)\}/);
 assert.match(executiveSource, /performanceToneForResult/);
 assert.match(executiveView, /executiveSummary\.js\?v=PLATAFORMA-JOGOS-001/);
-assert.match(executiveView, /dashboard\.js\?v=PLATAFORMA-JOGOS-001/);
-assert.match(executiveView, /styles\.css\?v=CLIMA-EXECUTIVO-001/);
+assert.match(executiveView, /dashboard\.js\?v=METAS-OFICIAIS-002/);
+assert.match(executiveView, /styles\.css\?v=APP-VERSION-001/);
 assert.equal(executiveSource, fs.readFileSync(path.join(root, "public", "assets", "js", "executiveSummary.js"), "utf8"));
 assert.equal(
   fs.readFileSync(path.join(root, "assets", "css", "styles.css"), "utf8"),

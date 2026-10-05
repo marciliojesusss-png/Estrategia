@@ -153,6 +153,8 @@
   }
 
   function getOfficialMeta(regra, lancamento, resultado) {
+    const metaCompetencia = toFiniteNumber(lancamento?.metaReferencia ?? lancamento?.metaMensal);
+    if (metaCompetencia !== null) return metaCompetencia;
     if (regra?.tipoCalculo === "lucro_recorrente_mensal") {
       const metaCalculada = toFiniteNumber(resultado?.metaReferenciaMensal);
       if (metaCalculada !== null) return metaCalculada;

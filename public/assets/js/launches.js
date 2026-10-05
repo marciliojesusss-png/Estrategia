@@ -320,7 +320,18 @@
     return IndicatorFormulas.obterRegra(indicador, state.regras);
   }
 
-  function getDisplayMeta(regra, lancamento) {
+  function getDisplayMeta(regra, lancamento, metas = state.data?.metas || []) {
+    const persistedMeta = lancamento?.metaReferencia ?? lancamento?.metaMensal ?? null;
+    const resolvedMeta = window.DataStore?.resolveMeta?.(
+      lancamento?.indicadorId ?? lancamento?.indicador_id ?? regra?.indicadorId,
+      lancamento?.ano,
+      lancamento?.mes,
+      metas,
+      persistedMeta
+    );
+    if (resolvedMeta !== null && resolvedMeta !== undefined && resolvedMeta !== "" && Number.isFinite(Number(resolvedMeta))) {
+      return Number(resolvedMeta);
+    }
     if (regra?.parametrosCalculo?.metaTipo === "meta_oficial_trimestral_projeto") {
       const trimestre = lancamento?.trimestre || `${Math.ceil(Number(lancamento?.mes) / 3)}TRI/${lancamento?.ano || 2026}`;
       const metas = regra.parametrosCalculo.metasTrimestraisOficiais || {};
@@ -364,8 +375,8 @@
       regra?.metaAnualValor;
   }
 
-  function formatDisplayMeta(regra, lancamento) {
-    const meta = getDisplayMeta(regra, lancamento);
+  function formatDisplayMeta(regra, lancamento, metas = state.data?.metas || []) {
+    const meta = getDisplayMeta(regra, lancamento, metas);
     return typeof meta === "string" ? meta : Calculations.formatarValor(meta, regra && regra.unidadeMedida);
   }
 
@@ -1911,6 +1922,7 @@
     quarterLabel,
     quarterlyMetaDetail,
     getDisplayMeta,
+    formatDisplayMeta,
     renderEntryInput,
     socioambientalRequiredFieldState
   };

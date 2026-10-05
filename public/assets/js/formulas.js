@@ -733,7 +733,7 @@
 
   function getMetaReferenciaInversa(regra, lancamentoAtual) {
     const metaOficialIeo = Number(regra?.indicadorId) === 6
-      ? root.IeoRecorrente?.getMetaCompetencia(lancamentoAtual)
+      ? root.IeoRecorrente?.getMetaCompetencia(lancamentoAtual, regra)
       : null;
     if (metaOficialIeo !== null && metaOficialIeo !== undefined) return metaOficialIeo;
     const params = regra?.parametrosCalculo || {};

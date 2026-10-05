@@ -4,20 +4,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CAIXA Loterias | Relatórios</title>
-  <link rel="stylesheet" href="/assets/css/styles.css?v=PERSISTENCIA-CENTRAL-008">
+  <link rel="stylesheet" href="/assets/css/styles.css?v=APP-VERSION-001">
   <script src="<?= APP_BASE_PATH ?>/assets/js/currency.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/ieo-recorrente.js?v=METAS-OFICIAIS-001" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/lucro-recorrente.js?v=METAS-OFICIAIS-001" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/ieo-recorrente.js?v=METAS-OFICIAIS-002" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/lucro-recorrente.js?v=METAS-OFICIAIS-003" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/situations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/bootstrap-data.js?v=PLATAFORMA-JOGOS-001" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/bootstrap-data.js?v=METAS-OFICIAIS-003" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/indicator-periodicity.js?v=PERIODICIDADE-TRIMESTRAL-001" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/dataStore.js?v=METAS-OFICIAIS-001" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/dataStore.js?v=METAS-OFICIAIS-003" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/databaseService.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/dataService.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/auth.js?v=RELATORIOS-ADMIN-001" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/calculations.js?v=PLATAFORMA-JOGOS-001" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/reports.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/app.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/app.js?v=APP-VERSION-001" defer></script>
 </head>
 <body data-page="relatorios">
   <div class="app-shell">

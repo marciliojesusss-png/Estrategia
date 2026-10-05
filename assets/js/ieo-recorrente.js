@@ -96,13 +96,18 @@
     return campos;
   }
 
-  function getMetaCompetencia(value) {
+  function getMetaCompetencia(value, regra = null) {
+    const key = competenciaKey(value);
+    const metasOficiais = regra?.parametrosCalculo?.metasOficiaisPorCompetencia || {};
+    if (Object.prototype.hasOwnProperty.call(metasOficiais, key)) {
+      const official = Number(metasOficiais[key]);
+      if (Number.isFinite(official)) return official;
+    }
     const configured = value && (value.metaReferencia ?? value.metaMensal);
     if (configured !== null && configured !== undefined && configured !== "") {
       const parsed = Number(configured);
       if (Number.isFinite(parsed)) return parsed;
     }
-    const key = competenciaKey(value);
     return Object.prototype.hasOwnProperty.call(IEO_META_MENSAL_2026, key)
       ? IEO_META_MENSAL_2026[key]
       : null;
@@ -118,17 +123,23 @@
   function ajustarRegraIeo(regra, competencia) {
     if (!isIeoRule(regra)) return regra;
     const metodologia = getMetodologiaIeoPorCompetencia(competencia);
+    const metasExistentes = regra?.parametrosCalculo?.metasAcumuladasPorCompetencia || {};
+    const metasPorCompetencia = Object.assign({}, IEO_META_MENSAL_2026, metasExistentes);
+    const key = competenciaKey(competencia);
+    const metaCompetencia = competencia && typeof competencia === "object"
+      ? getMetaCompetencia(competencia, regra)
+      : Object.prototype.hasOwnProperty.call(metasPorCompetencia, key)
+        ? Number(metasPorCompetencia[key])
+      : getMetaCompetencia(competencia, regra);
 
     regra.tipoCalculo = "indice_inverso";
     regra.tipoConsolidacao = "ultima_posicao_acumulada";
     regra.unidadeMedida = "percentual";
-    regra.metaAnualValor = metodologia.codigo === "ca_agosto_2026"
-      ? META_REFERENCIA_CA_2026
-      : META_REFERENCIA_ORIGINAL_2026;
+    regra.metaAnualValor = Number.isFinite(metaCompetencia) ? metaCompetencia : regra.metaAnualValor;
     regra.parametrosCalculo = Object.assign({}, regra.parametrosCalculo || {}, {
       campoIeoInformado: "ieoApuradoInformado",
       metaTipo: "curva_acumulada_por_competencia",
-      metasAcumuladasPorCompetencia: Object.assign({}, IEO_META_MENSAL_2026),
+      metasAcumuladasPorCompetencia: metasPorCompetencia,
       sentidoMeta: "quanto_menor_melhor",
       metodologiaVigente: metodologia.codigo
     });
@@ -263,12 +274,12 @@
       metodologiaIeo: metodologia.codigo,
       descricaoMetodologiaIeo: metodologia.descricao,
       formulaVigenteIeo: metodologia.formula,
-      metaReferenciaMensal: getMetaCompetencia(lancamento)
+      metaReferenciaMensal: getMetaCompetencia(lancamento, regraAjustada)
     });
 
     const resultado = parcial.resultado;
     if (resultado < 0) return falha(regraAjustada, "IEO realizado não pode ser negativo.", true);
-    const metaCompetencia = getMetaCompetencia(lancamento);
+    const metaCompetencia = getMetaCompetencia(lancamento, regraAjustada);
     if (metaCompetencia === null || metaCompetencia <= 0) {
       const retorno = falha(regraAjustada, "IEO calculado. Meta de referência não cadastrada para a competência.", false);
       retorno.resultadoMensal = resultado;
@@ -299,7 +310,7 @@
       metaReferencia: metaCompetencia,
       metaReferenciaMensal: metaCompetencia,
       metaAcumulada: metaCompetencia,
-      metaAnualIeo: metodologia.codigo === "ca_agosto_2026" ? META_REFERENCIA_CA_2026 : META_REFERENCIA_ORIGINAL_2026,
+      metaAnualIeo: metaCompetencia,
       competenciaReferencia: competenciaKey(lancamento),
       percentualMetaMensal: percentual,
       percentualMetaAcumulada: percentual,
@@ -316,7 +327,7 @@
   function normalizarLancamentoParaExibicao(lancamento, regra) {
     if (!lancamento || Number(lancamento.indicadorId ?? lancamento.indicador_id) !== INDICADOR_IEO_ID) return lancamento;
     const regraIeo = ajustarRegraIeo(cloneRule(regra || { indicadorId: INDICADOR_IEO_ID }), lancamento);
-    const metaCompetencia = getMetaCompetencia(lancamento);
+    const metaCompetencia = getMetaCompetencia(lancamento, regraIeo);
     const calculo = calcularIeo(regraIeo, lancamento);
     const normalizado = Object.assign({}, lancamento, {
       metaMensal: metaCompetencia ?? lancamento.metaMensal,

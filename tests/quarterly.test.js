@@ -957,7 +957,7 @@ const lucroQuarter = consolidarTrimestre(
     tipoCalculo: "lucro_recorrente_mensal",
     tipoConsolidacao: "ultima_posicao_mensal_homologada",
     unidadeMedida: "moeda",
-    metaAnualValor: 1305318247.20,
+    metaAnualValor: 1209000000.00,
     parametrosCalculo: {
       campoValorMensal: "lucroLiquidoRecorrenteCompetencia",
       campoValorAcumuladoLegado: "lucroLiquidoRecorrenteAcumulado",

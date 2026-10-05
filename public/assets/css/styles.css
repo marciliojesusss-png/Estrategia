@@ -4816,3 +4816,41 @@ select:disabled {
   .app-header .header-top { flex-wrap: wrap; }
   .app-header .header-actions { flex-wrap: wrap; min-width: 0; }
 }
+
+/* Versao do sistema exibida de forma discreta junto ao nome no cabecalho. */
+#appHeader.app-header .brand-system,
+.app-header .brand-system {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+#appHeader.app-header .brand-system-name,
+.app-header .brand-system-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#appHeader.app-header .system-version,
+.app-header .system-version {
+  flex: 0 0 auto;
+  margin: 0;
+  color: inherit;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1;
+  opacity: 0.62;
+  white-space: nowrap;
+}
+@media (max-width: 620px) {
+  #appHeader.app-header .brand-system,
+  .app-header .brand-system { gap: 6px; }
+  #appHeader.app-header .system-version,
+  .app-header .system-version { font-size: 11px; }
+}
+@media (max-width: 480px) {
+  #appHeader.app-header .system-version,
+  .app-header .system-version { display: none; }
+}

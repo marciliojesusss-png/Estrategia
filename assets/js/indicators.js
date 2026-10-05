@@ -353,7 +353,7 @@
       ]] : []),
       ...(Number(indicador.id) === 6 ? [[
         "Observacao de acompanhamento",
-        "Este indicador possui regra inversa: quanto menor o indice, melhor. De janeiro a julho/2026 aplica a metodologia original e, a partir de agosto/2026, aplica a metodologia aprovada pelo Conselho de Administracao, com meta de referencia de 26,64%.",
+        "Este indicador possui regra inversa: quanto menor o índice, melhor. De janeiro a julho/2026 aplica-se a metodologia original. A partir de agosto/2026 aplica-se a metodologia aprovada pelo Conselho de Administração. A meta vigente de cada competência é a cadastrada em Configurações > Metas.",
         true
       ]] : []),      ...(Number(indicador.id) === 8 ? [[
         "Observação de acompanhamento",
@@ -1062,6 +1062,14 @@
     }
 
     function getCurveMeta(launch) {
+      const resolved = window.DataStore?.resolveMeta?.(
+        launch?.indicadorId ?? indicador.id,
+        launch?.ano,
+        launch?.mes,
+        state.data?.metas || [],
+        launch?.metaReferencia ?? launch?.metaMensal ?? null
+      );
+      if (resolved !== null && resolved !== undefined && Number.isFinite(Number(resolved))) return Number(resolved);
       const key = launch?.competencia || `${launch?.ano}-${String(launch?.mes).padStart(2, "0")}`;
       const curve = regra?.parametrosCalculo?.metasAcumuladasPorCompetencia || {};
       return Object.prototype.hasOwnProperty.call(curve, key) && curve[key] !== null ? curve[key] : null;

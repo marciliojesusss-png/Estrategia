@@ -5,8 +5,8 @@ const vm = require("node:vm");
 
 const root = path.resolve(__dirname, "..");
 const metas = [
-  { id: 601, indicadorId: 6, ano: 2026, mes: 8, nomeMes: "Agosto", metaMensal: 0.25 },
-  { id: 602, indicadorId: 6, ano: 2026, mes: 9, nomeMes: "Setembro", metaMensal: 0.24 },
+  { id: 601, indicadorId: 6, ano: 2026, mes: 8, nomeMes: "Agosto", metaMensal: 0.2988 },
+  { id: 602, indicadorId: 6, ano: 2026, mes: 9, nomeMes: "Setembro", metaMensal: 0.2711 },
   { id: 701, indicadorId: 7, ano: 2026, mes: 1, nomeMes: "Janeiro", metaMensal: 110 },
   { id: 702, indicadorId: 7, ano: 2026, mes: 2, nomeMes: "Fevereiro", metaMensal: 120 },
   { id: 501, indicadorId: 5, ano: 2026, mes: 1, nomeMes: "Janeiro", metaMensal: 1000 }
@@ -39,6 +39,7 @@ context.window.window = context.window;
 vm.createContext(context);
 vm.runInContext(fs.readFileSync(path.join(root, "assets/js/currency.js"), "utf8"), context);
 context.CurrencyBR = context.window.CurrencyBR;
+vm.runInContext(fs.readFileSync(path.join(root, "assets/js/ieo-recorrente.js"), "utf8"), context);
 vm.runInContext(fs.readFileSync(path.join(root, "assets/js/dataStore.js"), "utf8"), context);
 
 (async () => {
@@ -46,14 +47,16 @@ vm.runInContext(fs.readFileSync(path.join(root, "assets/js/dataStore.js"), "utf8
   const loadedMetas = await store.loadJson("metas");
   const loadedLaunches = await store.loadJson("lancamentos");
 
-  assert.equal(loadedMetas.find((item) => item.id === 601).metaMensal, 0.25, "a normalização deve preservar a meta do SQL");
-  assert.equal(loadedLaunches.find((item) => item.id === "ieo-ago").metaReferencia, 0.25, "o lançamento deve usar a meta oficial");
-  assert.equal(store.resolveMeta(6, 2026, 9, metas, 0.2664), 0.24);
+  assert.equal(loadedMetas.find((item) => item.id === 601).metaMensal, 0.2988, "a normalização deve preservar a meta do SQL");
+  assert.equal(loadedLaunches.find((item) => item.id === "ieo-ago").metaReferencia, 0.2988, "o lançamento deve usar a meta oficial");
+  assert.equal(store.resolveMeta(6, 2026, 8, metas, 0.2664), 0.2988, "a meta oficial deve vencer o fallback de 26,64%");
+  assert.equal(store.resolveMeta(6, 2026, 9, metas, 0.2664), 0.2711, "setembro deve preservar sua própria meta");
+  assert.equal(store.resolveMeta(6, 2026, 8, [], null), 0.2664, "26,64% continua válido apenas como fallback sem configuração");
   assert.equal(store.resolveMeta(6, 2026, 10, metas, 0.23), 0.23, "sem configuração, o valor persistido no lançamento precede o fallback");
   assert.equal(store.resolveMeta(7, 2026, 1, metas, 999), 110);
   assert.equal(store.resolveMeta(5, 2026, 1, metas, 999), 1000, "o mecanismo deve funcionar para um terceiro indicador");
   assert.equal(store.resolveMeta(7, 2026, 2, metas, 999), 120, "uma competência não pode contaminar outra");
-  assert.equal(store.resolveMeta(6, 2026, 8, metas, 999), 0.25, "um indicador não pode contaminar outro");
+  assert.equal(store.resolveMeta(6, 2026, 8, metas, 999), 0.2988, "um indicador não pode contaminar outro");
 
   require(path.join(root, "assets/js/currency.js"));
   const formulas = require(path.join(root, "assets/js/formulas.js"));
@@ -64,7 +67,7 @@ vm.runInContext(fs.readFileSync(path.join(root, "assets/js/dataStore.js"), "utf8
     competencia: "2026-08",
     ano: 2026,
     mes: 8,
-    metaReferencia: 0.25,
+    metaReferencia: 0.2664,
     status: "Homologado",
     camposEntrada: {
       despesasGeraisAdministrativasMes: 180,
@@ -74,11 +77,44 @@ vm.runInContext(fs.readFileSync(path.join(root, "assets/js/dataStore.js"), "utf8
       despesasTributosMes: 100
     }
   };
-  const ieoResult = ieo.calcularIeo({ indicadorId: 6, parametrosCalculo: {}, camposEntrada: [] }, ieoLaunch);
+  const regraIeoOficial = store.metasForRule({ indicadorId: 6, parametrosCalculo: {}, camposEntrada: [] }, metas);
+  const regraIeoFinal = ieo.ajustarRegraIeo(structuredClone(regraIeoOficial), ieoLaunch);
+  assert.equal(regraIeoFinal.parametrosCalculo.metasAcumuladasPorCompetencia["2026-08"], 0.2988);
+  assert.equal(regraIeoFinal.parametrosCalculo.metasAcumuladasPorCompetencia["2026-09"], 0.2711);
+
+  const ieoResult = ieo.calcularIeo(regraIeoOficial, ieoLaunch);
   assert.equal(ieo.getMetodologiaIeoPorCompetencia(ieoLaunch).codigo, "ca_agosto_2026");
-  assert.equal(ieo.getMetaCompetencia(ieoLaunch), 0.25);
+  assert.equal(ieo.getMetaCompetencia(ieoLaunch, regraIeoOficial), 0.2988);
+  assert.equal(ieoResult.metaReferenciaMensal, 0.2988);
+  assert.equal(ieoResult.metaAnualIeo, 0.2988);
+  assert.match(ieoResult.formulaVigenteIeo, /Despesas Gerais e Administrativas/);
   assert.equal(ieoResult.situacao, "Abaixo da meta");
-  assert.ok(Math.abs(ieoResult.percentualAtingidoMensal - (0.25 / 0.3)) < 1e-9, "IEO deve manter a fórmula inversa");
+  assert.ok(Math.abs(ieoResult.percentualAtingidoMensal - (0.2988 / 0.3)) < 1e-9, "IEO deve manter a fórmula inversa");
+
+  const normalizedIeo = ieo.normalizarLancamentoParaExibicao(ieoLaunch, regraIeoOficial);
+  assert.equal(normalizedIeo.metaMensal, 0.2988);
+  assert.equal(normalizedIeo.metaReferencia, 0.2988);
+
+  const launchContext = {
+    window: {
+      PageModules: {},
+      DataStore: store,
+      Calculations: {
+        formatarValor(value, unidade) {
+          if (unidade === "percentual") {
+            return `${(Number(value) * 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
+          }
+          return String(value);
+        }
+      }
+    }
+  };
+  launchContext.Calculations = launchContext.window.Calculations;
+  vm.createContext(launchContext);
+  vm.runInContext(fs.readFileSync(path.join(root, "assets/js/launches.js"), "utf8"), launchContext);
+  const launchInternals = launchContext.window.__LAUNCHES_FILTER_TEST_INTERNALS__;
+  assert.equal(launchInternals.getDisplayMeta(regraIeoFinal, ieoLaunch, metas), 0.2988);
+  assert.equal(launchInternals.formatDisplayMeta(regraIeoFinal, ieoLaunch, metas), "29,88%");
 
   const lucroLaunch = {
     id: "lucro",

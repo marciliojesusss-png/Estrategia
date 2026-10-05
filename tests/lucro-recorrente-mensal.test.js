@@ -59,7 +59,7 @@ const metasMensaisEsperadas = {
 
   assert.equal(rule.tipoCalculo, "lucro_recorrente_mensal");
   assert.equal(rule.tipoConsolidacao, "ultima_posicao_mensal_homologada");
-  assert.equal(rule.metaAnualValor, 1305318247.20);
+  assert.equal(rule.metaAnualValor, 1209000000.00);
   assert.deepEqual({ ...monthlyTargets }, metasMensaisEsperadas);
   assert.deepEqual(Array.from(rule.camposEntrada, (field) => field.nome), ["lucroLiquidoRecorrenteCompetencia"]);
   assert.equal(rule.camposEntrada[0].rotulo, "Lucro líquido recorrente da competência");
@@ -72,7 +72,12 @@ const metasMensaisEsperadas = {
   assert.equal(accumulatedTargets["2026-06"], 554969793.69);
   assert.equal(accumulatedTargets["2026-12"], 1305318247.20);
   assert.equal(indicator.periodicidade, "Mensal");
-  assert.equal(indicator.metaAnualDescricao, "R$ 1.305.318.247,20");
+  assert.equal(indicator.metaAnualDescricao, "R$ 1.209.000.000,00");
+  assert.notEqual(
+    Object.values(monthlyTargets).reduce((sum, value) => sum + Math.round(value * 100), 0) / 100,
+    rule.metaAnualValor,
+    "temporariamente, a curva mensal histórica não deve ser recalculada para fechar com a meta anual oficial"
+  );
 
   for (let mes = 1; mes <= 12; mes += 1) {
     const key = `2026-${String(mes).padStart(2, "0")}`;

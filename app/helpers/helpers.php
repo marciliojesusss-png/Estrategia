@@ -88,6 +88,10 @@ function app_url_from_path($path)
 function prefix_app_base_path_urls($content)
 {
     $content = (string) $content;
+    if (defined('APP_VERSION') && stripos($content, '<html') !== false && stripos($content, 'data-app-version=') === false) {
+        $version = htmlspecialchars((string) APP_VERSION, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $content = (string) preg_replace('/<html\b([^>]*)>/i', '<html$1 data-app-version="' . $version . '">', $content, 1);
+    }
     if (strpos($content, '="') === false) {
         return $content;
     }

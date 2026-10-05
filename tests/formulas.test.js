@@ -695,7 +695,7 @@ const regraLucroLiquido = {
   tipoCalculo: "lucro_recorrente_mensal",
   tipoConsolidacao: "ultima_posicao_mensal_homologada",
   unidadeMedida: "moeda",
-  metaAnualValor: 1305318247.20,
+  metaAnualValor: 1209000000.00,
   parametrosCalculo: {
     campoValorMensal: "lucroLiquidoRecorrenteCompetencia",
     campoValorAcumuladoLegado: "lucroLiquidoRecorrenteAcumulado",
@@ -815,7 +815,9 @@ assert.equal(lucroJunho.situacao, "Atingido");
 
 const somaMetaAnualLucro = Object.values(regraLucroLiquido.parametrosCalculo.metasMensaisPorCompetencia)
   .reduce((sum, value) => sum + Math.round(value * 100), 0) / 100;
-assert.equal(somaMetaAnualLucro, regraLucroLiquido.metaAnualValor);
+assert.equal(somaMetaAnualLucro, 1305318247.20, "a curva mensal histórica deve permanecer inalterada");
+assert.equal(regraLucroLiquido.metaAnualValor, 1209000000.00, "a meta anual oficial deve ser independente da curva mensal");
+assert.notEqual(somaMetaAnualLucro, regraLucroLiquido.metaAnualValor);
 
 const lucroComLacunaLegada = formulas.calcularIndicador(
   indicador(7, "Lucro Liquido Recorrente"),

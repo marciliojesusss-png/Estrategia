@@ -4,22 +4,22 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CAIXA Loterias | Resumo Executivo</title>
-  <link rel="stylesheet" href="/assets/css/styles.css?v=CLIMA-EXECUTIVO-001">
+  <link rel="stylesheet" href="/assets/css/styles.css?v=APP-VERSION-001">
   <script src="<?= APP_BASE_PATH ?>/assets/vendor/chart.umd.min.js?v=4.4.7" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/currency.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/ieo-recorrente.js?v=METAS-OFICIAIS-001" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/lucro-recorrente.js?v=METAS-OFICIAIS-001" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/ieo-recorrente.js?v=METAS-OFICIAIS-002" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/lucro-recorrente.js?v=METAS-OFICIAIS-003" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/situations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/auth.js?v=RELATORIOS-ADMIN-001" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/calculations.js?v=PLATAFORMA-JOGOS-001" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/formulas.js?v=METAS-OFICIAIS-001" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/formulas.js?v=METAS-OFICIAIS-002" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/indicator-periodicity.js?v=PERIODICIDADE-TRIMESTRAL-001" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/quarterly.js?v=PLATAFORMA-JOGOS-001" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/quarterly.js?v=METAS-OFICIAIS-002" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/prazo-apuracao.js?v=PRAZOS-APURACAO-001" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/dataStore.js?v=METAS-OFICIAIS-001" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/dashboard.js?v=PLATAFORMA-JOGOS-001" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/dataStore.js?v=METAS-OFICIAIS-003" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/dashboard.js?v=METAS-OFICIAIS-002" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/executiveSummary.js?v=PLATAFORMA-JOGOS-001" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/app.js?v=PERSISTENCIA-CENTRAL-009" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/app.js?v=APP-VERSION-001" defer></script>
 </head>
 <body data-page="resumoExecutivo">
   <div class="app-shell">

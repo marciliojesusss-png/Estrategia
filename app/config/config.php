@@ -49,6 +49,7 @@ function config_apply_server_file($path)
 
     $mapping = array(
         'app_env' => array('APP_ENV'),
+        'app_version' => array('APP_VERSION'),
         'app_base_path' => array('APP_BASE_PATH'),
         'db_host' => array('SQLSERVER_HOST', 'DB_HOST'),
         'db_database' => array('SQLSERVER_DATABASE', 'DB_DATABASE'),
@@ -83,6 +84,7 @@ function config_apply_server_file($path)
 }
 
 config_apply_server_file(APP_ROOT . '/app/config/servidor.local.php');
+define('APP_VERSION', getenv('APP_VERSION') ?: '1.0.0');
 define('APP_ENV', getenv('APP_ENV') ?: 'production');
 define('APP_DEBUG', filter_var(getenv('APP_DEBUG') ?: 'false', FILTER_VALIDATE_BOOLEAN));
 define('APP_KEY', getenv('APP_KEY') ?: '');

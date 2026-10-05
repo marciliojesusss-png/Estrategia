@@ -6,7 +6,10 @@ $headerUser = Auth::currentUserForFrontend();
     <a class="brand-block header-brand" href="<?= e(app_url('dashboard')) ?>" aria-label="Pagina inicial">
       <img class="brand-logo-caixa-loterias" src="<?= e(asset_url('assets/img/caixa-loterias-logo-negativa.png')) ?>" alt="CAIXA Loterias">
       <span class="brand-divider" aria-hidden="true"></span>
-      <span class="brand-system-name">Indicadores Estrategicos</span>
+      <span class="brand-system">
+        <span class="brand-system-name">Indicadores Estratégicos</span>
+        <span class="system-version" aria-label="Versão <?= e(APP_VERSION) ?>">v<?= e(APP_VERSION) ?></span>
+      </span>
     </a>
     <div class="header-actions">
       <span class="header-chip"><?= e($headerUser['nome']) ?></span>

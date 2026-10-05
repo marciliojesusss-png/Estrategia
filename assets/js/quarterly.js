@@ -104,6 +104,8 @@
   }
 
   function getMetaAcumuladaCompetencia(rule, lancamento) {
+    const metaCompetencia = toNumber(lancamento?.metaReferencia ?? lancamento?.metaMensal);
+    if (metaCompetencia !== null) return metaCompetencia;
     const params = rule?.parametrosCalculo || {};
     const curva = params.metasAcumuladasPorCompetencia || params.curvaMetaAcumulada || {};
     const key = competenciaKey(lancamento);
@@ -124,9 +126,11 @@
 
   function getReferenceMeta(rule, quarterLaunches, quarterNumberValue, quarterLabel) {
     const params = rule?.parametrosCalculo || {};
+    const referenceLaunch = lastByMonth((quarterLaunches || []).filter((item) => item.status === STATUS_LANCAMENTO.HOMOLOGADO)) || lastByMonth(quarterLaunches || []);
+    const metaCompetencia = toNumber(referenceLaunch?.metaReferencia ?? referenceLaunch?.metaMensal);
+    if (metaCompetencia !== null) return metaCompetencia;
     if (rule?.tipoCalculo === "lucro_recorrente_mensal") {
-      const referenceLaunch = lastByMonth((quarterLaunches || []).filter((item) => item.status === STATUS_LANCAMENTO.HOMOLOGADO));
-      if (!referenceLaunch) return null;
+      if (!referenceLaunch || referenceLaunch.status !== STATUS_LANCAMENTO.HOMOLOGADO) return null;
       const key = competenciaKey(referenceLaunch);
       const monthlyCurve = params.metasMensaisPorCompetencia || {};
       return Object.prototype.hasOwnProperty.call(monthlyCurve, key)

@@ -376,7 +376,16 @@
       ["Data-base da pesquisa", lancamento.camposEntrada?.dataBasePesquisaNPS || "-"],
       ["Fórmula do NPS", "Percentual de promotores − percentual de detratores", true]
     ] : [];
-    const metaReferencia = isPlataformaJogos
+    const metaOficialCompetencia = window.DataStore?.resolveMeta?.(
+      lancamento?.indicadorId,
+      lancamento?.ano,
+      lancamento?.mes,
+      state.data?.metas || [],
+      lancamento?.metaReferencia ?? lancamento?.metaMensal ?? null
+    );
+    const metaReferencia = metaOficialCompetencia !== null && metaOficialCompetencia !== undefined && Number.isFinite(Number(metaOficialCompetencia))
+      ? Calculations.formatarValor(Number(metaOficialCompetencia), regra && regra.unidadeMedida)
+      : isPlataformaJogos
       ? Calculations.formatarPercentual(indicatorCalculation?.metaTrimestral, 2)
       : regra?.tipoCalculo === "melhorias_acumuladas"
       ? Calculations.formatarValor(indicatorCalculation?.metaTrimestral, "percentual")

@@ -29,6 +29,7 @@ async function openIeoLaunch(page, month) {
   target.searchParams.set("lancamentoId", launch.id);
   await page.goto(target.toString());
   await expect(page.locator("#launchEditorPanel")).toBeVisible();
+  return launch;
 }
 
 async function visibleFields(page) {
@@ -37,7 +38,23 @@ async function visibleFields(page) {
   ));
 }
 
-test("Indicador 6 troca metodologia e campos exatamente na fronteira Jul/Ago 2026", async ({ page }) => {
+test("Indicador 6 usa em Lançamentos a meta administrativa da competência", async ({ page }) => {
+  await page.route((url) => {
+    const decoded = decodeURIComponent(url.href);
+    return decoded.includes("api/database") && decoded.includes("collection=metas");
+  }, async (route) => {
+    const response = await route.fetch();
+    const metas = await response.json();
+    const fixture = Array.isArray(metas) ? metas.map((meta) => (
+      Number(meta.indicadorId) === 6 && Number(meta.ano) === 2026 && Number(meta.mes) === 8
+        ? { ...meta, metaMensal: 0.2988 }
+        : meta
+    )) : [];
+    if (!fixture.some((meta) => Number(meta.indicadorId) === 6 && Number(meta.ano) === 2026 && Number(meta.mes) === 8)) {
+      fixture.push({ id: "fixture-ieo-2026-08", indicadorId: 6, ano: 2026, mes: 8, nomeMes: "Agosto", metaMensal: 0.2988 });
+    }
+    await route.fulfill({ response, contentType: "application/json", body: JSON.stringify(fixture) });
+  });
   await login(page);
   await page.waitForFunction(() => Boolean(window.DataStore?.loadJson && window.IeoRecorrente));
 
@@ -51,8 +68,10 @@ test("Indicador 6 troca metodologia e campos exatamente na fronteira Jul/Ago 202
   ]);
   await expect(page.getByText("Metodologia vigente a partir de agosto/2026", { exact: false })).toHaveCount(0);
 
-  await openIeoLaunch(page, 8);
-  await expect(page.locator("#launchMeta")).toHaveValue("26,64%");
+  const augustLaunch = await openIeoLaunch(page, 8);
+  const augustRow = page.locator(`#lancamentosTable button[data-id="${augustLaunch.id}"]`).locator("xpath=ancestor::tr");
+  await expect(augustRow).toContainText("29,88%");
+  await expect(page.locator("#launchMeta")).toHaveValue("29,88%");
   expect(await visibleFields(page)).toEqual([
     "despesasGeraisAdministrativasMes",
     "despesasServicosPagamentosMes",
@@ -69,6 +88,10 @@ test("Indicador 6 troca metodologia e campos exatamente na fronteira Jul/Ago 202
     { indicadorId: 6, parametrosCalculo: {}, camposEntrada: [] },
     {
       competencia: "2026-08",
+      indicadorId: 6,
+      ano: 2026,
+      mes: 8,
+      metaReferencia: 0.2988,
       camposEntrada: {
         despesasGeraisAdministrativasMes: 100,
         despesasServicosPagamentosMes: 50,
@@ -79,7 +102,7 @@ test("Indicador 6 troca metodologia e campos exatamente na fronteira Jul/Ago 202
     }
   ));
   expect(calculation.resultadoMensal).toBeCloseTo(0.20, 10);
-  expect(calculation.percentualAtingidoMensal).toBeCloseTo(1.332, 10);
-  expect(calculation.percentualAtingidoMensalFormatado).toBe("133,20%");
+  expect(calculation.percentualAtingidoMensal).toBeCloseTo(1.494, 10);
+  expect(calculation.percentualAtingidoMensalFormatado).toBe("149,40%");
   expect(calculation.situacao).toBe("Atingido");
 });

@@ -1132,6 +1132,7 @@
       ...rule,
       parametrosCalculo: {
         ...(rule.parametrosCalculo || {}),
+        metasOficiaisPorCompetencia: perCompetence,
         metasMensaisPorCompetencia: monthly,
         metasAcumuladasPorCompetencia: { ...(rule.parametrosCalculo?.metasAcumuladasPorCompetencia || {}), ...accumulated },
         referenciasPorCompetencia: { ...(rule.parametrosCalculo?.referenciasPorCompetencia || {}), ...perCompetence }
@@ -1349,7 +1350,7 @@
             ...normalized,
             tipoCalculo: "indice_inverso",
             unidadeMedida: "percentual",
-            metaAnualDescricao: "Jan-Jul/2026: ≤ 14,03%; Ago-Dez/2026: ≤ 26,64%",
+            metaAnualDescricao: "A meta vigente de cada competência é a cadastrada em Configurações > Metas.",
             metrica: "Jan-Jul/2026: ((Despesa de pessoal + Despesas Administrativas) / Receitas Líquidas) × 100. Ago-Dez/2026: ((Despesas Gerais e Administrativas + Despesas com Serviços de Pagamentos + Outras Despesas Operacionais) / (Receitas Operacionais - Despesas de Tributos)) × 100."
           };
         }
@@ -1368,7 +1369,7 @@
             periodicidade: "Mensal",
             tipoCalculo: "lucro_recorrente_mensal",
             unidadeMedida: "moeda",
-            metaAnualDescricao: "R$ 1.305.318.247,20",
+            metaAnualDescricao: "R$ 1.209.000.000,00",
             metrica: "Lucro líquido recorrente da competência / Meta da competência"
           };
         }
@@ -1758,7 +1759,7 @@
             tipoCalculo: "lucro_recorrente_mensal",
             tipoConsolidacao: "ultima_posicao_mensal_homologada",
             unidadeMedida: "moeda",
-            metaAnualValor: 1305318247.20,
+            metaAnualValor: 1209000000.00,
             parametrosCalculo: {
               ...(rule.parametrosCalculo || {}),
               campoValorMensal: "lucroLiquidoRecorrenteCompetencia",
@@ -2230,13 +2231,13 @@
         } : {}),
         ...(Number(launch.indicadorId) === 6 ? {
           metaMensal: getIeoMetaAcumulada(launch.ano, launch.mes),
-          metaAnualDescricao: "Jan-Jul/2026: ≤ 14,03%; Ago-Dez/2026: ≤ 26,64%"
+          metaAnualDescricao: "A meta vigente de cada competência é a cadastrada em Configurações > Metas."
         } : {}),
         ...(Number(launch.indicadorId) === 7 ? {
           metaMensal: getLucroRecorrenteMetaMensal(launch.ano, launch.mes),
           metaAcumulada: getLucroRecorrenteMetaAcumulada(launch.ano, launch.mes),
           metaReferencia: getLucroRecorrenteMetaMensal(launch.ano, launch.mes),
-          metaAnualDescricao: "R$ 1.305.318.247,20"
+          metaAnualDescricao: "R$ 1.209.000.000,00"
         } : {}),
         ...(Number(launch.indicadorId) === 17 ? {
           metaMensal: getRepasseSocialMetaAcumulada(launch.ano, launch.mes),

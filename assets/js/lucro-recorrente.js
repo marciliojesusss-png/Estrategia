@@ -2,7 +2,7 @@
   "use strict";
 
   const INDICADOR_LUCRO_RECORRENTE_ID = 7;
-  const META_ANUAL_LUCRO_RECORRENTE_2026 = 1305318247.20;
+  const META_ANUAL_LUCRO_RECORRENTE_2026 = 1209000000.00;
   const CAMPO_MENSAL = "lucroLiquidoRecorrenteCompetencia";
   const CAMPO_ACUMULADO_LEGADO = "lucroLiquidoRecorrenteAcumulado";
 
@@ -43,7 +43,7 @@
       tipoCalculo: "lucro_recorrente_mensal",
       tipoConsolidacao: "ultima_posicao_mensal_homologada",
       unidadeMedida: "moeda",
-      metaAnualDescricao: "R$ 1.305.318.247,20",
+      metaAnualDescricao: "R$ 1.209.000.000,00",
       metrica: "Lucro líquido recorrente da competência / meta da competência"
     });
   }
@@ -101,7 +101,7 @@
       metaMensal,
       metaReferencia: metaMensal,
       metaAcumulada: METAS_ACUMULADAS_2026[key],
-      metaAnualDescricao: "R$ 1.305.318.247,20"
+      metaAnualDescricao: "R$ 1.209.000.000,00"
     });
   }
 

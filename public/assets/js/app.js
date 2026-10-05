@@ -1,4 +1,7 @@
 ﻿(function () {
+  const appVersion = String(document.documentElement?.dataset?.appVersion || "").trim();
+  window.APP_VERSION = appVersion;
+
   function pageUrl(page, params) {
     const cleanPage = String(page).replace(/\.(html|php)$/i, "");
     const route = cleanPage === "index"
@@ -65,6 +68,21 @@
       .replaceAll("'", "&#039;");
   }
 
+  function renderBrand(logoUrl) {
+    const version = appVersion
+      ? `<span class="system-version" aria-label="Versão ${escapeHtml(appVersion)}">v${escapeHtml(appVersion)}</span>`
+      : "";
+    return `
+      <div class="brand-block header-brand">
+        <img class="brand-logo-caixa-loterias" src="${logoUrl}" alt="CAIXA Loterias">
+        <span class="brand-divider" aria-hidden="true"></span>
+        <span class="brand-system">
+          <span class="brand-system-name">Indicadores Estratégicos</span>
+          ${version}
+        </span>
+      </div>`;
+  }
+
   async function initLogin() {
     const usuarios = await DataStore.loadJson("usuarios");
     const select = document.getElementById("usuarioSelect");
@@ -122,11 +140,7 @@
 
     header.innerHTML = `
       <div class="header-top">
-        <div class="brand-block header-brand">
-          <img class="brand-logo-caixa-loterias" src="${logoUrl}" alt="CAIXA Loterias">
-          <span class="brand-divider" aria-hidden="true"></span>
-          <span class="brand-system-name">Indicadores Estratégicos</span>
-        </div>
+        ${renderBrand(logoUrl)}
         <div class="header-actions">
           <span class="header-chip">${escapeHtml(user.nome)}</span>
           <span class="header-chip">${escapeHtml(user.perfil)}</span>
@@ -217,5 +231,7 @@
       document.body.insertAdjacentHTML("afterbegin", `<div class="notice">Erro ao iniciar a página: ${escapeHtml(error.message)}</div>`);
     });
   });
+
+  window.__APP_HEADER_TEST_INTERNALS__ = { renderBrand, appVersion };
 })();
 

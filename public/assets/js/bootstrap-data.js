@@ -313,7 +313,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "plano": "PEI",
       "unidadeApuradora": "SUCTF",
       "diretoriaResponsavel": "DIFIR",
-      "metaAnualDescricao": "R$ 1.305.318.247,20",
+      "metaAnualDescricao": "R$ 1.209.000.000,00",
       "metrica": "Lucro líquido recorrente da competência / Meta da competência",
       "tipoCalculo": "lucro_recorrente_mensal",
       "tipoConsolidacao": "ultima_posicao_mensal_homologada",
@@ -2221,7 +2221,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "tipoConsolidacao": "ultima_posicao_mensal_homologada",
       "metaRecorrente": false,
       "unidadeMedida": "moeda",
-      "metaAnualValor": 1305318247.20,
+      "metaAnualValor": 1209000000.00,
       "parametrosCalculo": {
         "campoValorMensal": "lucroLiquidoRecorrenteCompetencia",
         "campoValorAcumuladoLegado": "lucroLiquidoRecorrenteAcumulado",
@@ -6962,7 +6962,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "unidadeApuradora": "SUCTF",
       "diretoriaResponsavel": "DIFIR",
       "metaMensal": 90811101.33,
-      "metaAnualDescricao": "R$ 1.305.318.247,20",
+      "metaAnualDescricao": "R$ 1.209.000.000,00",
       "status": "Homologado",
       "camposEntrada": {
         "lucroLiquidoRecorrenteAcumulado": 119377680.03
@@ -7012,7 +7012,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "unidadeApuradora": "SUCTF",
       "diretoriaResponsavel": "DIFIR",
       "metaMensal": 77462728.16,
-      "metaAnualDescricao": "R$ 1.305.318.247,20",
+      "metaAnualDescricao": "R$ 1.209.000.000,00",
       "status": "Homologado",
       "camposEntrada": {
         "lucroLiquidoRecorrenteAcumulado": 222011430.58
@@ -7062,7 +7062,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "unidadeApuradora": "SUCTF",
       "diretoriaResponsavel": "DIFIR",
       "metaMensal": 90084434.66,
-      "metaAnualDescricao": "R$ 1.305.318.247,20",
+      "metaAnualDescricao": "R$ 1.209.000.000,00",
       "status": "Homologado",
       "camposEntrada": {
         "lucroLiquidoRecorrenteAcumulado": 336321887.69
@@ -7112,7 +7112,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "unidadeApuradora": "SUCTF",
       "diretoriaResponsavel": "DIFIR",
       "metaMensal": 96068372.33,
-      "metaAnualDescricao": "R$ 1.305.318.247,20",
+      "metaAnualDescricao": "R$ 1.209.000.000,00",
       "status": "Não iniciado",
       "camposEntrada": {},
       "realizado": null,
@@ -7156,7 +7156,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "unidadeApuradora": "SUCTF",
       "diretoriaResponsavel": "DIFIR",
       "metaMensal": 94438480.16,
-      "metaAnualDescricao": "R$ 1.305.318.247,20",
+      "metaAnualDescricao": "R$ 1.209.000.000,00",
       "status": "Não iniciado",
       "camposEntrada": {},
       "realizado": null,
@@ -7200,7 +7200,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "unidadeApuradora": "SUCTF",
       "diretoriaResponsavel": "DIFIR",
       "metaMensal": 106104677.05,
-      "metaAnualDescricao": "R$ 1.305.318.247,20",
+      "metaAnualDescricao": "R$ 1.209.000.000,00",
       "status": "Não iniciado",
       "camposEntrada": {},
       "realizado": null,
@@ -7244,7 +7244,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "unidadeApuradora": "SUCTF",
       "diretoriaResponsavel": "DIFIR",
       "metaMensal": 98144245.44,
-      "metaAnualDescricao": "R$ 1.305.318.247,20",
+      "metaAnualDescricao": "R$ 1.209.000.000,00",
       "status": "Não iniciado",
       "camposEntrada": {},
       "realizado": null,
@@ -7288,7 +7288,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "unidadeApuradora": "SUCTF",
       "diretoriaResponsavel": "DIFIR",
       "metaMensal": 94094264.37,
-      "metaAnualDescricao": "R$ 1.305.318.247,20",
+      "metaAnualDescricao": "R$ 1.209.000.000,00",
       "status": "Não iniciado",
       "camposEntrada": {},
       "realizado": null,
@@ -7332,7 +7332,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "unidadeApuradora": "SUCTF",
       "diretoriaResponsavel": "DIFIR",
       "metaMensal": 128614993.92,
-      "metaAnualDescricao": "R$ 1.305.318.247,20",
+      "metaAnualDescricao": "R$ 1.209.000.000,00",
       "status": "Não iniciado",
       "camposEntrada": {},
       "realizado": null,
@@ -7376,7 +7376,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "unidadeApuradora": "SUCTF",
       "diretoriaResponsavel": "DIFIR",
       "metaMensal": 101071987.08,
-      "metaAnualDescricao": "R$ 1.305.318.247,20",
+      "metaAnualDescricao": "R$ 1.209.000.000,00",
       "status": "Não iniciado",
       "camposEntrada": {},
       "realizado": null,
@@ -7420,7 +7420,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "unidadeApuradora": "SUCTF",
       "diretoriaResponsavel": "DIFIR",
       "metaMensal": 91522592.68,
-      "metaAnualDescricao": "R$ 1.305.318.247,20",
+      "metaAnualDescricao": "R$ 1.209.000.000,00",
       "status": "Não iniciado",
       "camposEntrada": {},
       "realizado": null,
@@ -7464,7 +7464,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "unidadeApuradora": "SUCTF",
       "diretoriaResponsavel": "DIFIR",
       "metaMensal": 236900370.02,
-      "metaAnualDescricao": "R$ 1.305.318.247,20",
+      "metaAnualDescricao": "R$ 1.209.000.000,00",
       "status": "Não iniciado",
       "camposEntrada": {},
       "realizado": null,
@@ -17559,7 +17559,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "unidadeApuradora": "SUCTF",
         "diretoriaResponsavel": "DIFIR",
         "metaMensal": 90811101.33,
-        "metaAnualDescricao": "R$ 1.305.318.247,20",
+        "metaAnualDescricao": "R$ 1.209.000.000,00",
         "status": "Não iniciado",
         "camposEntrada": {},
         "realizado": null,
@@ -17603,7 +17603,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "unidadeApuradora": "SUCTF",
         "diretoriaResponsavel": "DIFIR",
         "metaMensal": 90811101.33,
-        "metaAnualDescricao": "R$ 1.305.318.247,20",
+        "metaAnualDescricao": "R$ 1.209.000.000,00",
         "status": "Em preenchimento",
         "camposEntrada": {
           "lucroLiquidoRecorrenteAcumulado": 119377680.03
@@ -17661,7 +17661,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "unidadeApuradora": "SUCTF",
         "diretoriaResponsavel": "DIFIR",
         "metaMensal": 77462728.16,
-        "metaAnualDescricao": "R$ 1.305.318.247,20",
+        "metaAnualDescricao": "R$ 1.209.000.000,00",
         "status": "Não iniciado",
         "camposEntrada": {},
         "realizado": null,
@@ -17705,7 +17705,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "unidadeApuradora": "SUCTF",
         "diretoriaResponsavel": "DIFIR",
         "metaMensal": 77462728.16,
-        "metaAnualDescricao": "R$ 1.305.318.247,20",
+        "metaAnualDescricao": "R$ 1.209.000.000,00",
         "status": "Em preenchimento",
         "camposEntrada": {
           "lucroLiquidoRecorrenteAcumulado": 222011430.58
@@ -17763,7 +17763,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "unidadeApuradora": "SUCTF",
         "diretoriaResponsavel": "DIFIR",
         "metaMensal": 90084434.66,
-        "metaAnualDescricao": "R$ 1.305.318.247,20",
+        "metaAnualDescricao": "R$ 1.209.000.000,00",
         "status": "Não iniciado",
         "camposEntrada": {},
         "realizado": null,
@@ -17807,7 +17807,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "unidadeApuradora": "SUCTF",
         "diretoriaResponsavel": "DIFIR",
         "metaMensal": 90084434.66,
-        "metaAnualDescricao": "R$ 1.305.318.247,20",
+        "metaAnualDescricao": "R$ 1.209.000.000,00",
         "status": "Em preenchimento",
         "camposEntrada": {
           "lucroLiquidoRecorrenteAcumulado": 336321887.69
@@ -17865,7 +17865,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "unidadeApuradora": "SUCTF",
         "diretoriaResponsavel": "DIFIR",
         "metaMensal": 90084434.66,
-        "metaAnualDescricao": "R$ 1.305.318.247,20",
+        "metaAnualDescricao": "R$ 1.209.000.000,00",
         "status": "Em preenchimento",
         "camposEntrada": {
           "lucroLiquidoRecorrenteAcumulado": 336321887.69
@@ -17915,7 +17915,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "unidadeApuradora": "SUCTF",
         "diretoriaResponsavel": "DIFIR",
         "metaMensal": 90084434.66,
-        "metaAnualDescricao": "R$ 1.305.318.247,20",
+        "metaAnualDescricao": "R$ 1.209.000.000,00",
         "status": "Enviado para homologação",
         "camposEntrada": {
           "lucroLiquidoRecorrenteAcumulado": 336321887.69
@@ -17973,7 +17973,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "unidadeApuradora": "SUCTF",
         "diretoriaResponsavel": "DIFIR",
         "metaMensal": 90811101.33,
-        "metaAnualDescricao": "R$ 1.305.318.247,20",
+        "metaAnualDescricao": "R$ 1.209.000.000,00",
         "status": "Em preenchimento",
         "camposEntrada": {
           "lucroLiquidoRecorrenteAcumulado": 119377680.03
@@ -18023,7 +18023,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "unidadeApuradora": "SUCTF",
         "diretoriaResponsavel": "DIFIR",
         "metaMensal": 90811101.33,
-        "metaAnualDescricao": "R$ 1.305.318.247,20",
+        "metaAnualDescricao": "R$ 1.209.000.000,00",
         "status": "Enviado para homologação",
         "camposEntrada": {
           "lucroLiquidoRecorrenteAcumulado": 119377680.03
@@ -18081,7 +18081,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "unidadeApuradora": "SUCTF",
         "diretoriaResponsavel": "DIFIR",
         "metaMensal": 77462728.16,
-        "metaAnualDescricao": "R$ 1.305.318.247,20",
+        "metaAnualDescricao": "R$ 1.209.000.000,00",
         "status": "Em preenchimento",
         "camposEntrada": {
           "lucroLiquidoRecorrenteAcumulado": 222011430.58
@@ -18131,7 +18131,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "unidadeApuradora": "SUCTF",
         "diretoriaResponsavel": "DIFIR",
         "metaMensal": 77462728.16,
-        "metaAnualDescricao": "R$ 1.305.318.247,20",
+        "metaAnualDescricao": "R$ 1.209.000.000,00",
         "status": "Enviado para homologação",
         "camposEntrada": {
           "lucroLiquidoRecorrenteAcumulado": 222011430.58
@@ -18189,7 +18189,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "unidadeApuradora": "SUCTF",
         "diretoriaResponsavel": "DIFIR",
         "metaMensal": 90811101.33,
-        "metaAnualDescricao": "R$ 1.305.318.247,20",
+        "metaAnualDescricao": "R$ 1.209.000.000,00",
         "status": "Enviado para homologação",
         "camposEntrada": {
           "lucroLiquidoRecorrenteAcumulado": 119377680.03
@@ -18239,7 +18239,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "unidadeApuradora": "SUCTF",
         "diretoriaResponsavel": "DIFIR",
         "metaMensal": 90811101.33,
-        "metaAnualDescricao": "R$ 1.305.318.247,20",
+        "metaAnualDescricao": "R$ 1.209.000.000,00",
         "status": "Homologado",
         "camposEntrada": {
           "lucroLiquidoRecorrenteAcumulado": 119377680.03
@@ -18297,7 +18297,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "unidadeApuradora": "SUCTF",
         "diretoriaResponsavel": "DIFIR",
         "metaMensal": 77462728.16,
-        "metaAnualDescricao": "R$ 1.305.318.247,20",
+        "metaAnualDescricao": "R$ 1.209.000.000,00",
         "status": "Enviado para homologação",
         "camposEntrada": {
           "lucroLiquidoRecorrenteAcumulado": 222011430.58
@@ -18347,7 +18347,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "unidadeApuradora": "SUCTF",
         "diretoriaResponsavel": "DIFIR",
         "metaMensal": 77462728.16,
-        "metaAnualDescricao": "R$ 1.305.318.247,20",
+        "metaAnualDescricao": "R$ 1.209.000.000,00",
         "status": "Homologado",
         "camposEntrada": {
           "lucroLiquidoRecorrenteAcumulado": 222011430.58
@@ -18405,7 +18405,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "unidadeApuradora": "SUCTF",
         "diretoriaResponsavel": "DIFIR",
         "metaMensal": 90084434.66,
-        "metaAnualDescricao": "R$ 1.305.318.247,20",
+        "metaAnualDescricao": "R$ 1.209.000.000,00",
         "status": "Enviado para homologação",
         "camposEntrada": {
           "lucroLiquidoRecorrenteAcumulado": 336321887.69
@@ -18455,7 +18455,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "unidadeApuradora": "SUCTF",
         "diretoriaResponsavel": "DIFIR",
         "metaMensal": 90084434.66,
-        "metaAnualDescricao": "R$ 1.305.318.247,20",
+        "metaAnualDescricao": "R$ 1.209.000.000,00",
         "status": "Homologado",
         "camposEntrada": {
           "lucroLiquidoRecorrenteAcumulado": 336321887.69
