@@ -6,6 +6,9 @@ require_once __DIR__ . '/LancamentoStateMachine.php';
 require_once __DIR__ . '/../repositories/EvidenciasRepository.php';
 require_once __DIR__ . '/../repositories/LancamentosRepository.php';
 require_once __DIR__ . '/../repositories/AuditoriaRepository.php';
+require_once __DIR__ . '/../repositories/ConfiguracoesRepository.php';
+require_once __DIR__ . '/../repositories/HomologacoesRepository.php';
+require_once __DIR__ . '/GovernancaHomologacao.php';
 
 final class EvidenciaService
 {
@@ -14,6 +17,8 @@ final class EvidenciaService
     private $repo;
     private $launches;
     private $audit;
+    private $config;
+    private $homologacoes;
 
     public function __construct($db, EvidenciaStorage $files = null)
     {
@@ -22,6 +27,8 @@ final class EvidenciaService
         $this->repo = new EvidenciasRepository($db);
         $this->launches = new LancamentosRepository($db);
         $this->audit = new AuditoriaRepository($db);
+        $this->config = new ConfiguracoesRepository($db);
+        $this->homologacoes = new HomologacoesRepository($db);
     }
 
     public function listForLaunch($launchId, array $user)
@@ -122,6 +129,13 @@ final class EvidenciaService
         }
         if ($requireEditable && !LancamentoStateMachine::editable($launch['status'])) {
             throw new LogicException('Evidências só podem ser alteradas em lançamento editável.');
+        }
+        if ($requireEditable) {
+            GovernancaHomologacao::assertLaunchMutable(
+                $launch,
+                $this->config->get(GovernancaHomologacao::CLOSURES_KEY, array()),
+                $this->homologacoes->exceptionalReopenCycleActive($launch['id'])
+            );
         }
         return $launch;
     }

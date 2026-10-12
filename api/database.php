@@ -62,6 +62,8 @@ if ($method === 'POST') {
         try {
             $saved = $service->saveLaunchAction($value, $payload['lancamentoId'] ?? '', $payload['action'] ?? '', $user);
             Response::json(['ok' => true, 'persisted' => true, 'lancamento' => $saved]);
+        } catch (DomainException $error) {
+            Response::error($error->getMessage(), 422);
         } catch (InvalidArgumentException $error) {
             Response::error($error->getMessage(), 400);
         } catch (LogicException $error) {

@@ -50,6 +50,8 @@ final class EvidenciaController
             Auth::requireCsrf();
             $this->service->remove($id, $user);
             Response::success(array('id'=>$id), 'Evidência removida com sucesso.');
+        } catch (DomainException $error) {
+            Response::error($error->getMessage(), 422);
         } catch (LogicException $error) {
             Response::error($error->getMessage(), 409);
         } catch (OutOfBoundsException $error) {
@@ -96,6 +98,9 @@ final class EvidenciaController
             $evidence = $repository->find($id);
             $this->service->remove($id, $user);
             $_SESSION['_flash'] = 'Evidência removida com sucesso.';
+            Response::redirect('/lancamentos/' . $evidence['lancamento_id']);
+        } catch (DomainException $error) {
+            $_SESSION['_flash'] = $error->getMessage();
             Response::redirect('/lancamentos/' . $evidence['lancamento_id']);
         } catch (Exception $error) {
             ErrorHandler::renderError($error instanceof UnexpectedValueException ? 403 : 404);
