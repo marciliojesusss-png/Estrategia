@@ -32,7 +32,7 @@ check_admin_access($normalized['matricula'] === 'C129446', 'matricula deve ser n
 check_admin_access($normalized['email'] === 'gustavo@example.test', 'email deve ser preservado');
 check_admin_access($normalized['sg_unidade'] === 'SURCI', 'sg_unidade deve ser normalizada');
 check_admin_access($normalized['unidade_apuradora'] === 'SURCI', 'unidade_apuradora deve ser persistida');
-check_admin_access($normalized['diretoria_responsavel'] === 'DICRI', 'diretoria_responsavel deve ser persistida');
+check_admin_access($normalized['diretoria_responsavel'] === null, 'unidade apuradora nao deve manter diretoria incompatível');
 check_admin_access($normalized['ativo'] === true, 'status ativo deve ser preservado');
 
 $invalidEmailRejected = false;
@@ -47,6 +47,18 @@ try {
     $invalidEmailRejected = true;
 }
 check_admin_access($invalidEmailRejected, 'email invalido deve ser rejeitado');
+
+$consultant = $validateUser->invoke($service, array(
+    'matricula' => 'C200002',
+    'nome' => 'Consultor DIFIR',
+    'perfil' => 'consultor_diretoria',
+    'unidadeApuradora' => 'SUCOL',
+    'diretoriaResponsavel' => 'DIFIR',
+    'ativo' => true,
+));
+check_admin_access($consultant['perfil'] === 'consultor_diretoria', 'consultor deve ser aceito como perfil distinto');
+check_admin_access($consultant['diretoria_responsavel'] === 'DIFIR', 'consultor deve exigir e manter diretoria');
+check_admin_access($consultant['unidade_apuradora'] === null, 'consultor nao deve manter unidade apuradora incompatível');
 
 $repository = file_get_contents(__DIR__ . '/../app/repositories/AdministracaoRepository.php');
 foreach (array('email', 'unidade_apuradora', 'diretoria_responsavel') as $column) {

@@ -12,6 +12,7 @@ require_once __DIR__ . '/../repositories/UsuariosRepository.php';
 require_once __DIR__ . '/../repositories/SolicitacoesReaberturaRepository.php';
 require_once __DIR__ . '/LancamentoStateMachine.php';
 require_once __DIR__ . '/CompetenciaPeriodicidade.php';
+require_once __DIR__ . '/GovernancaHomologacao.php';
 
 final class BaseDadosService
 {
@@ -41,7 +42,7 @@ final class BaseDadosService
     public function collection($key, array $filters = array())
     {
         if ($key === 'usuarios') return $this->usuarios->all();
-        if (in_array($key, array('planos', 'pilares', 'unidades', 'diretorias', 'metas', 'regrasIndicadores'), true)) return $this->configuracoes->get($key, array());
+        if (in_array($key, array('planos', 'pilares', 'unidades', 'diretorias', 'metas', 'regrasIndicadores', GovernancaHomologacao::CLOSURES_KEY), true)) return $this->configuracoes->get($key, array());
         if ($key === 'indicadores') return $this->indicadores->all($filters);
         if ($key === 'lancamentos') return $this->lancamentos->all($filters);
         if ($key === 'homologacoes') return $this->homologacoes->all($filters);
@@ -61,6 +62,7 @@ final class BaseDadosService
             'indicadores' => $this->collection('indicadores', $filters),
             'metas' => $this->collection('metas'),
             'regrasIndicadores' => $this->collection('regrasIndicadores'),
+            'fechamentosConselhoAdministracao' => $this->collection(GovernancaHomologacao::CLOSURES_KEY),
             'lancamentos' => $this->collection('lancamentos', $filters),
             'homologacoes' => $this->collection('homologacoes', $filters),
             'solicitacoesReabertura' => $this->collection('solicitacoesReabertura', $filters),
@@ -200,7 +202,7 @@ final class BaseDadosService
         if ($profile === 'unidade_apuradora' && (string) ($user['unidade_apuradora'] ?? '') !== '') {
             return ['unidade_apuradora' => (string) $user['unidade_apuradora']];
         }
-        if ($profile === 'homologador' && (string) ($user['diretoria_responsavel'] ?? '') !== '') {
+        if (in_array($profile, array('homologador', 'consultor_diretoria'), true) && (string) ($user['diretoria_responsavel'] ?? '') !== '') {
             return ['diretoria_responsavel' => (string) $user['diretoria_responsavel']];
         }
         if ($profile === 'administrador') {
@@ -211,7 +213,7 @@ final class BaseDadosService
 
     private function canWriteWorkflow(array $user): bool
     {
-        return in_array((string) ($user['perfil'] ?? ''), ['administrador', 'homologador'], true);
+        return in_array((string) ($user['perfil'] ?? ''), ['administrador', 'homologador', 'consultor_diretoria'], true);
     }
 
     public function saveLaunchAction(array $items, $launchId, $action, array $user): array

@@ -169,11 +169,12 @@
     const profile = normalizeText(user?.perfil).replace(/[\s-]+/g, "_");
     if (profile === "unidade_apuradora") return "unidade_apuradora";
     if (profile === "diretoria_homologadora" || profile === "homologador") return "homologador";
+    if (profile === "consultor_da_diretoria" || profile === "consultor_diretoria") return "consultor_diretoria";
     return profile;
   }
 
   function canChooseViewScope(user = state.user) {
-    return ["unidade_apuradora", "homologador"].includes(viewScopeProfileCode(user));
+    return ["unidade_apuradora", "homologador", "consultor_diretoria"].includes(viewScopeProfileCode(user));
   }
 
   function defaultViewScope(user) {

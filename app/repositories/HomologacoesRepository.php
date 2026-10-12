@@ -43,6 +43,18 @@ final class HomologacoesRepository
         ));
     }
 
+    public function latestSubmissionUser($launchId)
+    {
+        $stmt = $this->db->prepare(
+            "SELECT TOP 1 usuario FROM homologacoes "
+            . "WHERE lancamento_id=:lancamento AND acao='submissao_lancamento' "
+            . 'ORDER BY data_acao DESC, created_at DESC, id DESC'
+        );
+        $stmt->execute(array(':lancamento' => (string) $launchId));
+        $value = $stmt->fetchColumn();
+        return $value === false || $value === null ? '' : (string) $value;
+    }
+
     public function all(array $filters=array()){return $this->history($filters,1,100)['items'];}
 
     public function replaceAll(array $items)

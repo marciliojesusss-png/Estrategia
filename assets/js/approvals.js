@@ -9,6 +9,7 @@
     homologacoes: [],
     solicitacoesReabertura: [],
     evidenciasPorLancamento: {},
+    reopenPolicies: {},
     selectedId: null
   };
 
@@ -40,7 +41,7 @@
   }
 
   function allIndicatorFilterLabel(user, count) {
-    if (user?.perfil === "Diretoria Homologadora" && user.diretoriaResponsavel) {
+    if (["Diretoria Homologadora", "Consultor da Diretoria"].includes(user?.perfil) && user.diretoriaResponsavel) {
       return `Todos os indicadores da ${user.diretoriaResponsavel} (${count})`;
     }
     if (user?.perfil === "Unidade Apuradora" && user.unidadeApuradora) {
@@ -201,10 +202,24 @@
     return state.user?.perfil === "Administrador";
   }
 
+  function isDirectoryReviewer() {
+    return ["Diretoria Homologadora", "Consultor da Diretoria"].includes(state.user?.perfil);
+  }
+
+  function normalizeIdentity(value) {
+    return String(value || "").trim().toUpperCase().split(/[\\/]/).pop();
+  }
+
+  function isOwnLaunch(lancamento) {
+    const current = normalizeIdentity(state.user?.matricula || state.user?.id);
+    return Boolean(current) && current === normalizeIdentity(lancamento?.usuarioResponsavel || lancamento?.preenchidoPor);
+  }
+
   function canApproveOrReturn(lancamento) {
     return lancamento
       && lancamento.status === ACTIONABLE_STATUS
-      && ["Administrador", "Diretoria Homologadora"].includes(state.user?.perfil);
+      && ["Administrador", "Diretoria Homologadora", "Consultor da Diretoria"].includes(state.user?.perfil)
+      && !isOwnLaunch(lancamento);
   }
 
   function canAct(lancamento) {
@@ -212,11 +227,11 @@
   }
 
   function canReopen(lancamento) {
-    return isAdmin() && lancamento && lancamento.status === "Homologado";
+    return Boolean(lancamento && lancamento.status === "Homologado" && state.reopenPolicies?.[String(lancamento.id)]?.permitida);
   }
 
   function isHomologador() {
-    return state.user?.perfil === "Diretoria Homologadora";
+    return isDirectoryReviewer();
   }
 
   function pendingReopenRequest(lancamento) {
@@ -236,7 +251,20 @@
   }
 
   function canRequestReopen(lancamento) {
-    return isHomologador() && lancamento && lancamento.status === "Homologado" && !pendingReopenRequest(lancamento);
+    return false;
+  }
+
+  async function loadReopenPolicy(lancamento) {
+    if (!lancamento || lancamento.status !== "Homologado") return;
+    const id = String(lancamento.id);
+    state.reopenPolicies[id] = { permitida: false, carregando: true, mensagem: "Verificando a janela de reabertura..." };
+    if (String(state.selectedId) === id) renderPanel({ suppressGeneralNotice: true });
+    try {
+      state.reopenPolicies[id] = await apiJson(`api/lancamentos/${encodeURIComponent(id)}/reabertura`, { method: "GET" });
+    } catch (error) {
+      state.reopenPolicies[id] = { permitida: false, excepcional: false, mensagem: error.message || "Não foi possível verificar a janela de reabertura." };
+    }
+    if (String(state.selectedId) === id) renderPanel();
   }
 
   function fillFilters(lancamentos) {
@@ -433,15 +461,15 @@
   function setActionState(lancamento) {
     const actionable = canAct(lancamento);
     const reopenable = canReopen(lancamento);
-    const requestable = canRequestReopen(lancamento);
-    const pendingRequest = pendingReopenRequest(lancamento);
+    const policy = state.reopenPolicies?.[String(lancamento.id)];
     const reopenButton = document.getElementById("reopenButton");
     document.getElementById("approvalObservacaoDiretoria").disabled = !(actionable || reopenable);
     document.getElementById("approveButton").disabled = !actionable;
     document.getElementById("returnButton").disabled = !actionable;
     reopenButton.hidden = !(isAdmin() || isHomologador());
-    reopenButton.textContent = isAdmin() ? "Reabrir para edição" : pendingRequest ? "Solicitação pendente" : "Solicitar reabertura";
-    reopenButton.disabled = isAdmin() ? !reopenable : !requestable;
+    reopenButton.textContent = policy?.carregando ? "Verificando reabertura..." : "Reabrir para edição";
+    reopenButton.disabled = !reopenable;
+    reopenButton.title = reopenable ? "" : (policy?.mensagem || "Reabertura indisponível.");
   }
 
   function renderPanel(options = {}) {
@@ -475,17 +503,13 @@
     setActionState(lancamento);
 
     if (!options.suppressGeneralNotice && lancamento.status === "Homologado") {
-      const pendingRequest = pendingReopenRequest(lancamento);
+      const policy = state.reopenPolicies?.[String(lancamento.id)];
       showMessage(
-        canReopen(lancamento) && lancamento.solicitacaoReabertura?.status === "Pendente"
-          ? `A unidade solicitou a reabertura em ${new Date(lancamento.solicitacaoReabertura.dataSolicitacao).toLocaleString("pt-BR")}.`
-          : canReopen(lancamento)
-            ? "Lançamento homologado. Use Reabrir para edição caso a unidade precise ajustar os dados."
-            : pendingRequest
-              ? "Solicitação de reabertura pendente de análise pelo Administrador."
-              : "Lançamentos homologados só podem ser reabertos pelo Administrador. Caso seja necessário corrigir alguma informação, envie uma solicitação de reabertura com justificativa.",
-        (canReopen(lancamento) && lancamento.solicitacaoReabertura?.status === "Pendente") || pendingRequest ? "warning" : "info"
+        policy?.mensagem || "Verificando a janela de reabertura no servidor...",
+        policy?.permitida && !policy?.excepcional ? "info" : "warning"
       );
+    } else if (!options.suppressGeneralNotice && isOwnLaunch(lancamento) && lancamento.status === ACTIONABLE_STATUS) {
+      showMessage("Homologação não permitida. Este lançamento foi preenchido ou enviado por você e deve ser homologado por outro usuário autorizado.", "warning");
     } else if (!options.suppressGeneralNotice && !canAct(lancamento)) {
       showMessage(`Lançamento com status "${lancamento.status}" está disponível apenas para consulta.`, "warning");
     }
@@ -697,9 +721,13 @@
   async function reopenLaunch() {
     const lancamento = getSelectedLaunch();
     if (!lancamento || !canReopen(lancamento)) {
-      showMessage("Somente Administrador pode reabrir um lançamento homologado.", "warning");
+      const policy = lancamento && state.reopenPolicies?.[String(lancamento.id)];
+      showMessage(policy?.mensagem || "Reabertura indisponível.", "warning");
       return;
     }
+
+    const policy = state.reopenPolicies?.[String(lancamento.id)];
+    if (policy?.excepcional && !window.confirm(policy.mensagem)) return;
 
     const observacaoDiretoria = document.getElementById("approvalObservacaoDiretoria").value.trim();
     if (!observacaoDiretoria) {
@@ -715,6 +743,7 @@
         body: JSON.stringify({ justificativa: observacaoDiretoria })
       });
       applyOfficialLaunch({ ...updated, observacaoDiretoria });
+      delete state.reopenPolicies[String(lancamento.id)];
       refresh();
       state.selectedId = updated.id;
       renderPanel({ suppressGeneralNotice: true });
@@ -742,17 +771,14 @@
       state.selectedId = button.dataset.id;
       clearActionFeedback();
       renderPanel();
+      loadReopenPolicy(getSelectedLaunch());
       document.getElementById("approvalPanel").scrollIntoView({ behavior: "smooth", block: "start" });
     });
 
     document.getElementById("approveButton").addEventListener("click", () => persistDecision("approve"));
     document.getElementById("returnButton").addEventListener("click", () => persistDecision("return"));
     document.getElementById("reopenButton").addEventListener("click", () => {
-      if (isAdmin()) {
-        reopenLaunch();
-        return;
-      }
-      openReopenRequestDialog();
+      reopenLaunch();
     });
     document.getElementById("closeApprovalButton").addEventListener("click", () => {
       state.selectedId = null;
@@ -773,6 +799,7 @@
       homologacoes: data.homologacoes,
       solicitacoesReabertura: data.solicitacoesReabertura || [],
       evidenciasPorLancamento: {},
+      reopenPolicies: {},
       selectedId: null
     };
 
@@ -783,6 +810,7 @@
     if (requestedId && state.lancamentos.some((item) => String(item.id) === String(requestedId))) {
       state.selectedId = requestedId;
       renderPanel();
+      loadReopenPolicy(getSelectedLaunch());
       document.getElementById("approvalPanel").scrollIntoView({ block: "start" });
     }
   }

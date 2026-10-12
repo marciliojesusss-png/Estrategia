@@ -5,11 +5,11 @@
   const FLASH_KEY = "caixaLoterias:mensagemSistema";
 
   const PAGE_ACCESS = {
-    resumoExecutivo: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consulta/Gestao", "Consulta/Gest\u00e3o", "Usuario Companhia", "Usu\u00e1rio Companhia"],
-    visaoTrimestral: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consulta/Gestao", "Consulta/Gest\u00e3o"],
-    indicadores: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consulta/Gestao", "Consulta/Gest\u00e3o"],
+    resumoExecutivo: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consultor da Diretoria", "Consulta/Gestao", "Consulta/Gest\u00e3o", "Usuario Companhia", "Usu\u00e1rio Companhia"],
+    visaoTrimestral: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consultor da Diretoria", "Consulta/Gestao", "Consulta/Gest\u00e3o"],
+    indicadores: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consultor da Diretoria", "Consulta/Gestao", "Consulta/Gest\u00e3o"],
     lancamentos: ["Administrador", "Unidade Apuradora"],
-    homologacao: ["Administrador", "Diretoria Homologadora"],
+    homologacao: ["Administrador", "Diretoria Homologadora", "Consultor da Diretoria"],
     relatorios: ["Administrador"],
     administracao: ["Administrador"],
     auditoria: ["Administrador"]
@@ -144,7 +144,7 @@
       return indicadores.filter((item) => normalizeScopeValue(indicatorUnit(item)) === unidade);
     }
 
-    if (user.perfil === "Diretoria Homologadora" || user.perfilCodigo === "homologador") {
+    if (["Diretoria Homologadora", "Consultor da Diretoria"].includes(user.perfil) || ["homologador", "consultor_diretoria"].includes(user.perfilCodigo)) {
       const diretoria = normalizeScopeValue(userDirectory(user));
       return indicadores.filter((item) => normalizeScopeValue(indicatorDirectory(item)) === diretoria);
     }
@@ -174,6 +174,9 @@
     }
     if (user.perfil === "Diretoria Homologadora") {
       return `Perfil diretoria homologadora: dados restritos \u00e0 diretoria ${normalizeScopeValue(userDirectory(user)) || "n\u00e3o informada"}.`;
+    }
+    if (user.perfil === "Consultor da Diretoria") {
+      return `Perfil consultor da diretoria: dados restritos \u00e0 diretoria ${normalizeScopeValue(userDirectory(user)) || "n\u00e3o informada"}.`;
     }
     return "Perfil sem escopo definido.";
   }

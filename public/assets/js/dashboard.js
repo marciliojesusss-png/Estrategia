@@ -717,7 +717,7 @@
     if (["Administrador", "Unidade Apuradora"].includes(perfil) && ["Não iniciado", "Em preenchimento", "Devolvido para ajuste", "Reaberto"].includes(status)) {
       actions.unshift(actionLink("Preencher", "lancamentos", lancamento, item.indicador));
     }
-    if (["Administrador", "Diretoria Homologadora"].includes(perfil) && status === "Enviado para homologação") {
+    if (["Administrador", "Diretoria Homologadora", "Consultor da Diretoria"].includes(perfil) && status === "Enviado para homologação") {
       actions.unshift(actionLink("Homologar", "homologacao", lancamento, item.indicador, "homologar"));
       actions.push(actionLink("Devolver", "homologacao", lancamento, item.indicador, "devolver"));
     }

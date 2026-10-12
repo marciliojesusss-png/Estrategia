@@ -219,7 +219,7 @@
         select.value = state.user.unidadeApuradora || "Todos";
         select.disabled = true;
       }
-      if (state.user.perfil === "Diretoria Homologadora" && select.dataset.filter === "diretoria") {
+      if (["Diretoria Homologadora", "Consultor da Diretoria"].includes(state.user.perfil) && select.dataset.filter === "diretoria") {
         select.value = state.user.diretoriaResponsavel || "Todos";
         select.disabled = true;
       }

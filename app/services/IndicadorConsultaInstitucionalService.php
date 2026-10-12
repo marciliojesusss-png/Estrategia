@@ -32,7 +32,7 @@ final class IndicadorConsultaInstitucionalService
         $profile = Auth::normalizeProfile(isset($user['perfil']) ? $user['perfil'] : '');
         $scopeAllows = AccessPolicy::scopeAllows($user, $indicador);
         $operationalScope = $profile === 'administrador' || (
-            in_array($profile, array('homologador', 'unidade_apuradora'), true) && $scopeAllows
+            in_array($profile, array('homologador', 'consultor_diretoria', 'unidade_apuradora'), true) && $scopeAllows
         );
         $institutionalReadOnly = !$operationalScope;
 

@@ -7,6 +7,7 @@ final class LancamentoStateMachine
     const IN_PROGRESS = 'Em preenchimento';
     const DRAFT = 'Rascunho';
     const SUBMITTED = 'Enviado para homologacao';
+    const HOMOLOGATED = 'Homologado';
     const REOPENED = 'Reaberto';
     const RETURNED = 'Devolvido para ajuste';
     const RECTIFIED = 'Retificado';

@@ -4,27 +4,28 @@ declare(strict_types=1);
 final class AccessPolicy
 {
     private static $matrix = array(
-        'dashboard' => array('visualizar' => array('administrador', 'homologador', 'unidade_apuradora', 'usuario_companhia')),
-        'visao_trimestral' => array('visualizar' => array('administrador', 'homologador', 'unidade_apuradora', 'usuario_companhia')),
+        'dashboard' => array('visualizar' => array('administrador', 'homologador', 'consultor_diretoria', 'unidade_apuradora', 'usuario_companhia')),
+        'visao_trimestral' => array('visualizar' => array('administrador', 'homologador', 'consultor_diretoria', 'unidade_apuradora', 'usuario_companhia')),
         'indicadores' => array(
-            'visualizar' => array('administrador', 'homologador', 'unidade_apuradora', 'usuario_companhia'),
+            'visualizar' => array('administrador', 'homologador', 'consultor_diretoria', 'unidade_apuradora', 'usuario_companhia'),
             'gerenciar' => array('administrador'),
         ),
         'lancamentos' => array(
-            'visualizar' => array('administrador', 'homologador', 'unidade_apuradora', 'usuario_companhia'),
+            'visualizar' => array('administrador', 'homologador', 'consultor_diretoria', 'unidade_apuradora', 'usuario_companhia'),
             'gerenciar' => array('administrador', 'unidade_apuradora'),
         ),
         'homologacoes' => array(
-            'visualizar' => array('administrador', 'homologador', 'unidade_apuradora', 'usuario_companhia'),
-            'decidir' => array('administrador', 'homologador'),
+            'visualizar' => array('administrador', 'homologador', 'consultor_diretoria', 'unidade_apuradora', 'usuario_companhia'),
+            'decidir' => array('administrador', 'homologador', 'consultor_diretoria'),
         ),
         'relatorios' => array('visualizar' => array('administrador')),
         'administracao' => array('gerenciar' => array('administrador')),
         'auditoria' => array('visualizar' => array('administrador')),
         'configuracoes' => array('gerenciar' => array('administrador')),
         'reaberturas' => array(
-            'solicitar' => array('administrador', 'homologador', 'unidade_apuradora'),
+            'solicitar' => array('administrador', 'homologador', 'consultor_diretoria', 'unidade_apuradora'),
             'decidir' => array('administrador'),
+            'reabrir' => array('administrador', 'homologador', 'consultor_diretoria'),
         ),
     );
 
@@ -52,7 +53,7 @@ final class AccessPolicy
             $unit = isset($record['unidade_apuradora']) ? $record['unidade_apuradora'] : (isset($record['unidadeApuradora']) ? $record['unidadeApuradora'] : '');
             return $unit !== '' && self::sameScope($unit, isset($user['unidade_apuradora']) ? $user['unidade_apuradora'] : '');
         }
-        if ($profile === 'homologador') {
+        if (in_array($profile, array('homologador', 'consultor_diretoria'), true)) {
             $board = isset($record['diretoria_responsavel']) ? $record['diretoria_responsavel'] : (isset($record['diretoriaResponsavel']) ? $record['diretoriaResponsavel'] : '');
             return $board !== '' && self::sameScope($board, isset($user['diretoria_responsavel']) ? $user['diretoria_responsavel'] : '');
         }

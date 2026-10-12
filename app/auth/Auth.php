@@ -19,6 +19,7 @@ final class Auth
         'usuario_companhia' => 'Usuario Companhia',
         'unidade_apuradora' => 'Unidade Apuradora',
         'homologador' => 'Diretoria Homologadora',
+        'consultor_diretoria' => 'Consultor da Diretoria',
         'administrador' => 'Administrador',
     );
     private static $administratorViews = null;
@@ -77,7 +78,7 @@ final class Auth
         if ($identityChanged) unset($_SESSION['_admin_view_mode']);
         $_SESSION['perfil'] = $profile;
         $_SESSION['unidade_apuradora'] = $profile === 'unidade_apuradora' ? self::accessScope($access, 'unidade_apuradora') : '';
-        $_SESSION['diretoria_responsavel'] = $profile === 'homologador' ? self::accessScope($access, 'diretoria_responsavel') : '';
+        $_SESSION['diretoria_responsavel'] = in_array($profile, array('homologador', 'consultor_diretoria'), true) ? self::accessScope($access, 'diretoria_responsavel') : '';
         if (empty($_SESSION['_access_logged'])) {
             self::logAccess();
             $_SESSION['_access_logged'] = true;
@@ -131,7 +132,7 @@ final class Auth
                 'nome' => !empty($row['nome']) ? (string) $row['nome'] : (string) $row['matricula'],
                 'perfil' => self::profileLabel($profile),
                 'unidade' => $profile === 'unidade_apuradora' ? self::accessScope($row, 'unidade_apuradora') : 'Todas',
-                'diretoria' => $profile === 'homologador' ? self::accessScope($row, 'diretoria_responsavel') : 'Todas',
+                'diretoria' => in_array($profile, array('homologador', 'consultor_diretoria'), true) ? self::accessScope($row, 'diretoria_responsavel') : 'Todas',
             );
         }
         return $users;
@@ -282,7 +283,7 @@ final class Auth
         if ($normalized === 'unidade_apuradora') {
             return app_url('lancamentos');
         }
-        if ($normalized === 'homologador') {
+        if (in_array($normalized, array('homologador', 'consultor_diretoria'), true)) {
             return app_url('homologacoes');
         }
         return app_url('dashboard');
@@ -295,7 +296,7 @@ final class Auth
             $filters['unidade_apuradora'] = $user['unidade_apuradora'];
             $filters['unidadeApuradora'] = $user['unidade_apuradora'];
         }
-        if ($user['perfil'] === 'homologador' && $user['diretoria_responsavel'] !== '') {
+        if (in_array($user['perfil'], array('homologador', 'consultor_diretoria'), true) && $user['diretoria_responsavel'] !== '') {
             $filters['diretoria_responsavel'] = $user['diretoria_responsavel'];
             $filters['diretoriaResponsavel'] = $user['diretoria_responsavel'];
         }
@@ -308,6 +309,7 @@ final class Auth
         if (in_array($value, array('administrador', 'admin', 'administrador_sistema'), true)) return 'administrador';
         if ($value === 'unidade_apuradora') return 'unidade_apuradora';
         if (in_array($value, array('homologador', 'diretoria_homologadora'), true)) return 'homologador';
+        if (in_array($value, array('consultor_diretoria', 'consultor_da_diretoria'), true)) return 'consultor_diretoria';
         return self::DEFAULT_PROFILE;
     }
 

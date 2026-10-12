@@ -44,6 +44,7 @@
     indicadores: "Indicadores",
     metas: "Metas por competência",
     prazosApuracao: "Prazos de Apuração",
+    fechamentoCa: "Fechamento para o Conselho de Administração",
     tiposCalculo: "Tipos de cálculo",
     reabertura: "Reabertura de lançamento",
     solicitacoesReabertura: "Solicitações de Reabertura",
@@ -63,10 +64,11 @@
   };
 
   const ACCESS_PROFILE_OPTIONS = [
-    ["usuario_companhia", "Usuário Companhia"],
+    ["administrador", "Administrador"],
     ["unidade_apuradora", "Unidade Apuradora"],
     ["homologador", "Diretoria Homologadora"],
-    ["administrador", "Administrador"]
+    ["consultor_diretoria", "Consultor da Diretoria"],
+    ["usuario_companhia", "Usuário Companhia"]
   ];
 
   function escapeHtml(value) {
@@ -166,6 +168,7 @@
       ["Indicadores", state.data.indicadores.length],
       ["Metas mensais", state.data.metas.length],
       ["Prazos de apuração", state.prazos.length],
+      ["Fechamentos para o CA", (state.data.fechamentosConselhoAdministracao || []).length],
       ["Lançamentos", state.data.lancamentos.length],
       ["Solicitações pendentes", (state.data.solicitacoesReabertura || []).filter((item) => item.statusSolicitacao === "Pendente").length],
       ["Solicitações aprovadas", (state.data.solicitacoesReabertura || []).filter((item) => item.statusSolicitacao === "Aprovada").length],
@@ -217,7 +220,7 @@
       button.classList.toggle("active", button.dataset.adminModule === module);
     });
     document.getElementById("adminForm").hidden = true;
-    document.getElementById("adminNewButton").hidden = !["acessos", "usuarios", "planos", "pilares", "unidades", "diretorias", "metas", "prazosApuracao"].includes(module);
+    document.getElementById("adminNewButton").hidden = !["acessos", "usuarios", "planos", "pilares", "unidades", "diretorias", "metas", "prazosApuracao", "fechamentoCa"].includes(module);
     renderModule();
   }
 
@@ -325,7 +328,7 @@
         <input name="email" type="email" value="${escapeHtml(source.email || "")}">
       </label>
       <label>Perfil
-        <select name="perfil" required>
+        <select id="accessProfile" name="perfil" required>
           ${options(ACCESS_PROFILE_OPTIONS, source.perfil || "usuario_companhia")}
         </select>
       </label>
@@ -336,10 +339,10 @@
         <input name="noUnidade" value="${escapeHtml(source.noUnidade || "")}">
       </label>
       <label>Unidade apuradora
-        <input name="unidadeApuradora" value="${escapeHtml(source.unidadeApuradora || "")}">
+        <input id="accessUnitScope" name="unidadeApuradora" value="${escapeHtml(source.unidadeApuradora || "")}">
       </label>
       <label>Diretoria responsável
-        <input name="diretoriaResponsavel" value="${escapeHtml(source.diretoriaResponsavel || "")}">
+        <input id="accessDirectoryScope" name="diretoriaResponsavel" value="${escapeHtml(source.diretoriaResponsavel || "")}">
       </label>
       <label>Status
         <select name="ativo" required>
@@ -351,6 +354,21 @@
         <button id="adminCancelForm" class="secondary-action" type="button">Cancelar</button>
       </div>
     `;
+    const applyScopeRules = () => {
+      const profile = form.querySelector("#accessProfile").value;
+      const unit = form.querySelector("#accessUnitScope");
+      const directory = form.querySelector("#accessDirectoryScope");
+      const needsUnit = profile === "unidade_apuradora";
+      const needsDirectory = ["homologador", "consultor_diretoria"].includes(profile);
+      unit.required = needsUnit;
+      unit.disabled = !needsUnit;
+      directory.required = needsDirectory;
+      directory.disabled = !needsDirectory;
+      if (!needsUnit) unit.value = "";
+      if (!needsDirectory) directory.value = "";
+    };
+    form.querySelector("#accessProfile").addEventListener("change", applyScopeRules);
+    applyScopeRules();
     form.hidden = false;
     state.editingId = item ? item.id : null;
   }
@@ -385,7 +403,7 @@
           { key: "id", label: "ID", required: true },
           { key: "nome", label: "Nome", required: true },
           { key: "email", label: "E-mail", type: "email", required: true },
-          { key: "perfil", label: "Perfil", type: "select", required: true, options: () => [["Administrador", "Administrador"], ["Unidade Apuradora", "Unidade Apuradora"], ["Diretoria Homologadora", "Diretoria Homologadora"], ["Consulta/Gestão", "Consulta/Gestão"], ["Usuário Companhia", "Usuário Companhia"]] },
+          { key: "perfil", label: "Perfil", type: "select", required: true, options: () => [["Administrador", "Administrador"], ["Unidade Apuradora", "Unidade Apuradora"], ["Diretoria Homologadora", "Diretoria Homologadora"], ["Consultor da Diretoria", "Consultor da Diretoria"], ["Consulta/Gestão", "Consulta/Gestão"], ["Usuário Companhia", "Usuário Companhia"]] },
           { key: "unidadeApuradora", label: "Unidade apuradora", type: "select", options: () => state.data.unidades.map((item) => [item.sigla, item.sigla]), emptyLabel: "Todas" },
           { key: "diretoriaResponsavel", label: "Diretoria responsável", type: "select", options: () => state.data.diretorias.map((item) => [item.sigla, item.sigla]), emptyLabel: "Todas" }
         ],
@@ -672,6 +690,92 @@
     table(["Tipo", "Descrição"], rows);
   }
 
+  function renderFechamentoCa() {
+    const rows = (state.data.fechamentosConselhoAdministracao || []).map((item) => `
+      <tr>
+        <td>${escapeHtml(item.periodo)}</td>
+        <td>${escapeHtml((item.competencias || []).join(", "))}</td>
+        <td>${escapeHtml(formatDate(item.dataReuniao))}</td>
+        <td>${escapeHtml(formatDate(item.dataFechamento))}</td>
+        <td><span class="badge ${item.ativo ? "ok" : "warning"}">${item.ativo ? "Sim" : "Não"}</span></td>
+        <td><button class="secondary-action table-action" type="button" data-edit-fechamento-ca="${escapeHtml(item.id)}">Editar</button></td>
+      </tr>
+    `);
+    table(["Período", "Competências protegidas", "Reunião do CA", "Data de fechamento", "Ativo", "Ações"], rows);
+  }
+
+  function formatDate(value) {
+    const parts = String(value || "").split("-");
+    return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : value || "-";
+  }
+
+  function openFechamentoCaForm(item = null) {
+    const form = document.getElementById("adminForm");
+    const source = item || { id: "", periodo: "", competencias: [], dataReuniao: "", dataFechamento: "", ativo: true };
+    form.innerHTML = `
+      <input type="hidden" name="id" value="${escapeHtml(source.id || "")}">
+      <label>Período
+        <input name="periodo" value="${escapeHtml(source.periodo || "")}" placeholder="3TRI/2026" required>
+      </label>
+      <label class="full-span">Competências protegidas
+        <textarea name="competencias" rows="3" placeholder="2026-07, 2026-08, 2026-09" required>${escapeHtml((source.competencias || []).join(", "))}</textarea>
+      </label>
+      <label>Data da reunião do CA
+        <input name="dataReuniao" type="date" value="${escapeHtml(source.dataReuniao || "")}" required>
+      </label>
+      <label>Data de fechamento/bloqueio
+        <input name="dataFechamento" type="date" value="${escapeHtml(source.dataFechamento || "")}" required>
+      </label>
+      <label>Ativo
+        <select name="ativo" required>${options([["true", "Sim"], ["false", "Não"]], String(source.ativo !== false))}</select>
+      </label>
+      <div class="notice info full-span">Na data de fechamento e depois dela, Diretoria Homologadora e Consultor da Diretoria não podem reabrir. A data deve ser informada explicitamente.</div>
+      <div class="form-actions full-span">
+        <button class="primary-action" type="submit">Salvar fechamento</button>
+        <button id="adminCancelForm" class="secondary-action" type="button">Cancelar</button>
+      </div>
+    `;
+    form.hidden = false;
+    state.editingId = item ? item.id : null;
+  }
+
+  async function saveFechamentoCaForm(event) {
+    event.preventDefault();
+    const values = Object.fromEntries(new FormData(event.currentTarget).entries());
+    const competencias = String(values.competencias || "").split(/[,;\n]+/).map((value) => value.trim()).filter(Boolean);
+    if (values.dataFechamento >= values.dataReuniao) {
+      showMessage("A data de fechamento deve ser anterior à data da reunião do Conselho de Administração.", "warning");
+      return;
+    }
+    const record = {
+      id: values.id || "",
+      periodo: String(values.periodo || "").trim(),
+      competencias,
+      dataReuniao: values.dataReuniao,
+      dataFechamento: values.dataFechamento,
+      ativo: values.ativo === "true"
+    };
+    const current = state.data.fechamentosConselhoAdministracao || [];
+    const next = state.editingId === null
+      ? [...current, record]
+      : current.map((item) => String(item.id) === String(state.editingId) ? record : item);
+    try {
+      const saved = await adminApi("api/administracao/configuracoes/fechamentosConselhoAdministracao", {
+        method: "POST",
+        body: JSON.stringify({ valor: next })
+      });
+      state.data.fechamentosConselhoAdministracao = saved;
+      DataStore.clearLocalData();
+      showMessage("Fechamento para o Conselho de Administração salvo e auditado.");
+      event.currentTarget.hidden = true;
+      state.editingId = null;
+      renderCards();
+      renderFechamentoCa();
+    } catch (error) {
+      showMessage(error.message || "Não foi possível salvar o fechamento para o CA.", "warning");
+    }
+  }
+
   function renderReabertura() {
     const porId = Object.fromEntries(state.data.indicadores.map((item) => [item.id, item]));
     const homologados = state.data.lancamentos.filter((item) => item.status === "Homologado");
@@ -694,6 +798,14 @@
   async function reopenLaunch(id) {
     const launch = state.data.lancamentos.find((item) => String(item.id) === String(id));
     if (!launch || launch.status !== "Homologado") return;
+    let policy;
+    try {
+      policy = await adminApi(`api/lancamentos/${encodeURIComponent(id)}/reabertura`, { method: "GET" });
+    } catch (error) {
+      showMessage(error.message || "Não foi possível verificar a janela de reabertura.", "warning");
+      return;
+    }
+    if (policy.excepcional && !window.confirm(policy.mensagem)) return;
     const justificativa = window.prompt("Informe a justificativa da reabertura:");
     if (!justificativa || !justificativa.trim()) {
       showMessage("A justificativa da reabertura é obrigatória.", "warning");
@@ -938,6 +1050,7 @@
     if (state.module === "metas") renderMetas();
     if (state.module === "tiposCalculo") renderTiposCalculo();
     if (state.module === "prazosApuracao") renderPrazosApuracao();
+    if (state.module === "fechamentoCa") renderFechamentoCa();
     if (state.module === "reabertura") renderReabertura();
     if (state.module === "solicitacoesReabertura") renderSolicitacoesReabertura();
     if (state.module === "historico") renderHistorico();
@@ -951,6 +1064,10 @@
     document.getElementById("adminNewButton").addEventListener("click", () => {
       if (state.module === "prazosApuracao") {
         openPrazoApuracaoForm();
+        return;
+      }
+      if (state.module === "fechamentoCa") {
+        openFechamentoCaForm();
         return;
       }
       if (state.module === "acessos") {
@@ -974,6 +1091,10 @@
         savePrazoApuracaoForm(event);
         return;
       }
+      if (state.module === "fechamentoCa") {
+        saveFechamentoCaForm(event);
+        return;
+      }
       if (state.module === "acessos") {
         saveAccessForm(event);
         return;
@@ -992,6 +1113,12 @@
     });
 
     document.getElementById("adminTableBody").addEventListener("click", (event) => {
+      const fechamentoButton = event.target.closest("[data-edit-fechamento-ca]");
+      if (fechamentoButton) {
+        const item = (state.data.fechamentosConselhoAdministracao || []).find((record) => String(record.id) === String(fechamentoButton.dataset.editFechamentoCa));
+        if (item) openFechamentoCaForm(item);
+        return;
+      }
       const prazoButton = event.target.closest("[data-edit-prazo]");
       if (prazoButton) {
         const item = state.prazos.find((record) => String(record.id) === String(prazoButton.dataset.editPrazo));

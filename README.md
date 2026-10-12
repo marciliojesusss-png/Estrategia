@@ -347,3 +347,21 @@ views/               layouts, componentes e paginas
 
 Requisicoes da aplicacao devem entrar por `public/index.php` ou pelo
 `index.php` alternativo da raiz, sempre usando o parametro `route`.
+
+## Governança de homologação e fechamento para o CA
+
+- Unidade Apuradora: preenche e envia lançamentos da própria unidade.
+- Diretoria Homologadora: homologa, devolve e reabre lançamentos da própria diretoria antes do fechamento para o CA.
+- Consultor da Diretoria: perfil distinto, com o mesmo escopo de diretoria para homologar, devolver e reabrir antes do fechamento; não pode preencher lançamentos.
+- Administrador: administra usuários e configurações e pode realizar reabertura excepcional depois do fechamento.
+
+Quem preencheu ou realizou o envio não pode homologar nem devolver o próprio
+lançamento, mesmo que seu perfil seja alterado posteriormente. A verificação é
+feita no backend pela matrícula do usuário autenticado.
+
+A configuração `fechamentosConselhoAdministracao` é armazenada como JSON na
+tabela existente `configuracoes`. A data de fechamento é cadastrada
+explicitamente pelo Administrador e deve anteceder a reunião. Na própria data
+de fechamento e depois dela, Diretoria e Consultor ficam bloqueados. A
+reabertura administrativa pós-fechamento exige justificativa e gera o evento de
+auditoria `reabertura_excepcional_pos_fechamento_ca`.

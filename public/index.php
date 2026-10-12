@@ -134,6 +134,7 @@ $indicatorApi = new IndicadorApiController();
 $router->any('/api/indicadores/{id}', array($indicatorApi, 'handle'));
 $launchApi = new LancamentoApiController();
 $router->any('/api/lancamentos/{id}', array($launchApi, 'handle'));
+$router->get('/api/lancamentos/{id}/{action}', array($launchApi, 'handle'));
 $router->post('/api/lancamentos/{id}/{action}', array($launchApi, 'handle'));
 $homologacaoApi=new HomologacaoApiController();
 $router->any('/api/homologacoes/{id}',array($homologacaoApi,'handle'));

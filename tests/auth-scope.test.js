@@ -58,6 +58,17 @@ for (const perfil of ["Unidade Apuradora", "Diretoria Homologadora", "Consulta/G
   assert.equal(context.window.Auth.canAccess("relatorios", { perfil }), false, perfil);
 }
 
+const consultant = { perfil: "Consultor da Diretoria", perfilCodigo: "consultor_diretoria", diretoriaResponsavel: "DIFIR" };
+assert.equal(context.window.Auth.canAccess("homologacao", consultant), true);
+assert.equal(context.window.Auth.canAccess("lancamentos", consultant), false);
+assert.deepEqual(
+  context.window.Auth.filterIndicatorsByUser([
+    { id: 1, diretoriaResponsavel: "DIFIR" },
+    { id: 2, diretoriaResponsavel: "DICOT" }
+  ], consultant).map((item) => item.id),
+  [1]
+);
+
 const companyUser = { perfil: "Usuario Companhia" };
 assert.equal(context.window.Auth.canAccess("resumoExecutivo", companyUser), true);
 for (const page of ["visaoTrimestral", "indicadores", "lancamentos", "homologacao", "relatorios", "administracao"]) {

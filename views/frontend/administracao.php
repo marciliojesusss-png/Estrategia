@@ -12,12 +12,12 @@
   <script src="/assets/js/formulas.js?v=METAS-OFICIAIS-002" defer></script>
   <script src="/assets/js/bootstrap-data.js?v=METAS-OFICIAIS-003" defer></script>
   <script src="/assets/js/indicator-periodicity.js?v=PERIODICIDADE-TRIMESTRAL-001" defer></script>
-  <script src="/assets/js/dataStore.js?v=METAS-OFICIAIS-003" defer></script>
+  <script src="/assets/js/dataStore.js?v=GOVERNANCA-CA-001" defer></script>
   <script src="/assets/js/databaseService.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/dataService.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="/assets/js/auth.js?v=RELATORIOS-ADMIN-001" defer></script>
+  <script src="/assets/js/auth.js?v=GOVERNANCA-CA-001" defer></script>
   <script src="/assets/js/prazo-apuracao.js?v=PRAZOS-APURACAO-001" defer></script>
-  <script src="/assets/js/admin.js?v=METAS-OFICIAIS-002" defer></script>
+  <script src="/assets/js/admin.js?v=GOVERNANCA-CA-001" defer></script>
   <script src="/assets/js/app.js?v=APP-VERSION-001" defer></script>
 </head>
 <body data-page="administracao">
@@ -61,6 +61,7 @@
           <button class="secondary-action" type="button" data-admin-module="metas">Metas</button>
           <button class="secondary-action" type="button" data-admin-module="tiposCalculo">Tipos de cálculo</button>
           <button class="secondary-action" type="button" data-admin-module="prazosApuracao">Prazos de Apuração</button>
+          <button class="secondary-action" type="button" data-admin-module="fechamentoCa">Fechamento para o CA</button>
           <button class="secondary-action" type="button" data-admin-module="reabertura">Reabertura</button>
           <button class="secondary-action" type="button" data-admin-module="solicitacoesReabertura">Solicitações de Reabertura</button>
           <button class="secondary-action" type="button" data-admin-module="historico">Histórico</button>

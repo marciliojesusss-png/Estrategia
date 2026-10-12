@@ -8,6 +8,7 @@
     indicadores: "indicadores",
     metas: "metas",
     regrasIndicadores: "regrasIndicadores",
+    fechamentosConselhoAdministracao: "fechamentosConselhoAdministracao",
     lancamentos: "lancamentos",
     homologacoes: "homologacoes",
     solicitacoesReabertura: "solicitacoesReabertura",

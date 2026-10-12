@@ -1,8 +1,69 @@
 <?php
 declare(strict_types=1);
-require_once __DIR__.'/../services/LancamentoService.php';require_once __DIR__.'/../services/EvidenciaService.php';
+
+require_once __DIR__ . '/../services/LancamentoService.php';
+require_once __DIR__ . '/../services/EvidenciaService.php';
+
 final class LancamentoApiController
 {
- private $service;public function __construct(){$this->service=new LancamentoService(Database::getConnection());}
- public function handle($id=null,$action=null){$m=Request::method();try{if($m==='GET'){ $u=Auth::requirePermission('lancamentos','visualizar',true);if($id!==null)return Response::success($this->service->find($id,$u));return Response::success($this->service->all(Auth::scopeFilters($_GET)));}$u=Auth::requirePermission('lancamentos','gerenciar',true);Auth::requireCsrf();if($m==='POST'&&$id===null)return Response::success($this->service->create(Request::json(),$u),'Rascunho criado.',201);if(in_array($m,array('PUT','PATCH'),true)&&$id!==null)return Response::success($this->service->update($id,Request::json(),$u,isset(Request::json()['justificativaRetificacao'])?Request::json()['justificativaRetificacao']:''),'Lancamento atualizado.');if($m==='DELETE'&&$id!==null)return Response::success($this->service->deleteDraft($id,$u),'Rascunho excluido.');if($m==='POST'&&$action==='submeter')return Response::success($this->service->submit($id,$u),'Lançamento enviado para homologação com sucesso.');if($m==='POST'&&$action==='reabrir'){$p=Request::json();return Response::success($this->service->reopen($id,isset($p['justificativa'])?$p['justificativa']:'',$u),'Lançamento reaberto para edição com sucesso.');}Response::error('Metodo ou acao nao permitida.',405);}catch(DomainException$e){$x=json_decode($e->getMessage(),true);Response::error('Dados invalidos.',422,is_array($x)?$x:array($e->getMessage()));}catch(LogicException$e){Response::error($e->getMessage(),409);}catch(OutOfBoundsException$e){Response::error($e->getMessage(),404);}catch(UnexpectedValueException$e){Response::error($e->getMessage(),403);}}
+    private $service;
+
+    public function __construct()
+    {
+        $this->service = new LancamentoService(Database::getConnection());
+    }
+
+    public function handle($id = null, $action = null)
+    {
+        $method = Request::method();
+        try {
+            if ($method === 'GET') {
+                $user = Auth::requirePermission('lancamentos', 'visualizar', true);
+                if ($id !== null && $action === 'reabertura') {
+                    return Response::success($this->service->reopenPolicy($id, $user));
+                }
+                if ($id !== null) return Response::success($this->service->find($id, $user));
+                return Response::success($this->service->all(Auth::scopeFilters($_GET)));
+            }
+
+            if ($method === 'POST' && $action === 'reabrir') {
+                $user = Auth::requirePermission('reaberturas', 'reabrir', true);
+                Auth::requireCsrf();
+                $payload = Request::json();
+                return Response::success(
+                    $this->service->reopen($id, isset($payload['justificativa']) ? $payload['justificativa'] : '', $user),
+                    'Lançamento reaberto para edição com sucesso.'
+                );
+            }
+
+            $user = Auth::requirePermission('lancamentos', 'gerenciar', true);
+            Auth::requireCsrf();
+            if ($method === 'POST' && $id === null) {
+                return Response::success($this->service->create(Request::json(), $user), 'Rascunho criado.', 201);
+            }
+            if (in_array($method, array('PUT', 'PATCH'), true) && $id !== null) {
+                $payload = Request::json();
+                return Response::success(
+                    $this->service->update($id, $payload, $user, isset($payload['justificativaRetificacao']) ? $payload['justificativaRetificacao'] : ''),
+                    'Lancamento atualizado.'
+                );
+            }
+            if ($method === 'DELETE' && $id !== null) {
+                return Response::success($this->service->deleteDraft($id, $user), 'Rascunho excluido.');
+            }
+            if ($method === 'POST' && $action === 'submeter') {
+                return Response::success($this->service->submit($id, $user), 'Lançamento enviado para homologação com sucesso.');
+            }
+            Response::error('Metodo ou acao nao permitida.', 405);
+        } catch (DomainException $error) {
+            $details = json_decode($error->getMessage(), true);
+            Response::error(is_array($details) ? 'Dados invalidos.' : $error->getMessage(), 422, is_array($details) ? $details : array());
+        } catch (LogicException $error) {
+            Response::error($error->getMessage(), 409);
+        } catch (OutOfBoundsException $error) {
+            Response::error($error->getMessage(), 404);
+        } catch (UnexpectedValueException $error) {
+            Response::error($error->getMessage(), 403);
+        }
+    }
 }

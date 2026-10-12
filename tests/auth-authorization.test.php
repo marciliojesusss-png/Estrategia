@@ -19,7 +19,7 @@ function assert_auth($condition, $message)
     }
 }
 
-$profiles = array('administrador', 'homologador', 'unidade_apuradora', 'usuario_companhia');
+$profiles = array('administrador', 'homologador', 'consultor_diretoria', 'unidade_apuradora', 'usuario_companhia');
 foreach ($profiles as $profile) {
     assert_auth(AccessPolicy::allows($profile, 'dashboard', 'visualizar'), $profile . ' deve visualizar dashboard');
 }
@@ -28,6 +28,8 @@ assert_auth(!AccessPolicy::allows('homologador', 'administracao', 'gerenciar'), 
 assert_auth(AccessPolicy::allows('unidade_apuradora', 'lancamentos', 'gerenciar'), 'unidade deve gerenciar lancamentos');
 assert_auth(!AccessPolicy::allows('homologador', 'lancamentos', 'gerenciar'), 'homologador nao deve editar lancamentos');
 assert_auth(AccessPolicy::allows('homologador', 'homologacoes', 'decidir'), 'homologador deve decidir homologacao');
+assert_auth(AccessPolicy::allows('consultor_diretoria', 'homologacoes', 'decidir'), 'consultor deve decidir homologacao');
+assert_auth(!AccessPolicy::allows('consultor_diretoria', 'lancamentos', 'gerenciar'), 'consultor nao deve preencher lancamentos');
 assert_auth(!AccessPolicy::allows('usuario_companhia', 'homologacoes', 'decidir'), 'usuario companhia nao deve homologar');
 assert_auth(AccessPolicy::allows('usuario_companhia', 'indicadores', 'visualizar'), 'usuario companhia deve consultar detalhe de indicador');
 assert_auth(AccessPolicy::allows('administrador', 'relatorios', 'visualizar'), 'administrador deve visualizar relatorios');
@@ -47,6 +49,9 @@ assert_auth(!AccessPolicy::scopeAllows($unitUser, array('unidadeApuradora' => 'G
 $approver = array('perfil' => 'homologador', 'diretoria_responsavel' => 'DIFIR');
 assert_auth(AccessPolicy::scopeAllows($approver, array('diretoriaResponsavel' => 'DIFIR')), 'homologador deve acessar sua diretoria');
 assert_auth(!AccessPolicy::scopeAllows($approver, array('diretoriaResponsavel' => 'DICOT')), 'homologador nao deve acessar outra diretoria');
+$consultant = array('perfil' => 'consultor_diretoria', 'diretoria_responsavel' => 'DIFIR');
+assert_auth(AccessPolicy::scopeAllows($consultant, array('diretoriaResponsavel' => 'DIFIR')), 'consultor deve acessar sua diretoria');
+assert_auth(!AccessPolicy::scopeAllows($consultant, array('diretoriaResponsavel' => 'DICOT')), 'consultor nao deve acessar outra diretoria');
 
 $identity = CorporateIdentity::mapEntry(array(
     'samaccountname' => array(0 => 'c123456'),

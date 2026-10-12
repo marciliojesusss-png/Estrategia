@@ -8,6 +8,7 @@ require_once __DIR__.'/../repositories/EvidenciasRepository.php';
 require_once __DIR__.'/../repositories/AuditoriaRepository.php';
 require_once __DIR__.'/LancamentoStateMachine.php';
 require_once __DIR__.'/CompetenciaPeriodicidade.php';
+require_once __DIR__.'/GovernancaHomologacao.php';
 
 final class HomologacaoService
 {
@@ -81,22 +82,24 @@ final class HomologacaoService
 
     private function decide($id,$after,$action,$reason,array $user)
     {
-        if(!in_array($user['perfil'],array('administrador','homologador'),true)) throw new UnexpectedValueException('Perfil sem permissao para decidir.');
-        $before=$this->launches->find($id);
-        if(!$before) throw new OutOfBoundsException('Lancamento nao encontrado.');
-        if($user['perfil']!=='administrador'&&!AccessPolicy::scopeAllows($user,$before)) throw new UnexpectedValueException('Registro fora do escopo.');
-        $indicator=$this->indicators->find($before['indicadorId'] ?? '');
-        if(!$indicator) throw new OutOfBoundsException('Indicador nao encontrado.');
-        CompetenciaPeriodicidade::assertExpected($indicator,$before);
-        $expected=LancamentoStateMachine::SUBMITTED;
-        if(LancamentoStateMachine::normalize($before['status'])!==$expected) throw new LogicException('Homologacao ja processada ou indisponivel.');
-
+        if(!in_array($user['perfil'],array('administrador','homologador','consultor_diretoria'),true)) throw new UnexpectedValueException('Perfil sem permissao para decidir.');
         $this->db->beginTransaction();
         try {
+            $before=$this->launches->findForUpdate($id);
+            if(!$before) throw new OutOfBoundsException('Lancamento nao encontrado.');
+            if($user['perfil']!=='administrador'&&!AccessPolicy::scopeAllows($user,$before)) throw new UnexpectedValueException('Registro fora do escopo.');
+            $indicator=$this->indicators->find(isset($before['indicadorId'])?$before['indicadorId']:'');
+            if(!$indicator) throw new OutOfBoundsException('Indicador nao encontrado.');
+            CompetenciaPeriodicidade::assertExpected($indicator,$before);
+            $expected=LancamentoStateMachine::SUBMITTED;
+            if(LancamentoStateMachine::normalize($before['status'])!==$expected) throw new LogicException('Homologacao ja processada ou indisponivel.');
+            GovernancaHomologacao::assertIndependentReviewer($before,$this->repo->latestSubmissionUser($id),$user);
             // A condição otimista usa o texto exatamente lido do banco. O valor
             // normalizado serve apenas para validar a transição de estado.
             if(!$this->launches->updateStatus($id,$before['status'],$after)) throw new LogicException('Homologacao processada por outra requisicao.');
-            $this->repo->recordDecision($id,$action,$expected,$after,$reason,$user);
+            $decisionUser=$user;
+            $decisionUser['perfil']=GovernancaHomologacao::profileLabel($user['perfil']);
+            $this->repo->recordDecision($id,$action,$expected,$after,$reason,$decisionUser);
             $updated=$this->launches->find($id);
             $updated['observacaoDiretoria']=$reason;
             $this->audit->append(array(
@@ -107,7 +110,7 @@ final class HomologacaoService
                 'valorAnterior'=>$before,
                 'valorNovo'=>array('lancamento'=>$updated,'observacaoDiretoria'=>$reason),
                 'usuario'=>$user['matricula'],
-                'perfilUsuario'=>$user['perfil'],
+                'perfilUsuario'=>GovernancaHomologacao::profileLabel($user['perfil']),
             ));
             $this->db->commit();
             return $updated;
