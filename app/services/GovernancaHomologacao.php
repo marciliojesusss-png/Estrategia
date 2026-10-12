@@ -37,17 +37,81 @@ final class GovernancaHomologacao
         return in_array(self::normalizeProfile($profile), array('homologador', 'consultor_diretoria'), true);
     }
 
-    public static function assertIndependentReviewer(array $launch, $submissionUser, array $user)
+    public static function productionActions()
+    {
+        return array(
+            'lancamento_criado',
+            'lancamento_alterado',
+            'salvar_rascunho_lancamento',
+            'lancamento_submetido',
+            'envio_para_homologacao',
+        );
+    }
+
+    public static function assertIndependentReviewer(array $launch, $submissionUser, array $user, array $participantUsers = array())
     {
         $reviewer = isset($user['matricula']) ? $user['matricula'] : '';
         $responsible = isset($launch['usuarioResponsavel'])
             ? $launch['usuarioResponsavel']
             : (isset($launch['usuario_responsavel']) ? $launch['usuario_responsavel'] : '');
-        if (self::sameIdentity($reviewer, $responsible) || self::sameIdentity($reviewer, $submissionUser)) {
+        $participated = self::sameIdentity($reviewer, $responsible) || self::sameIdentity($reviewer, $submissionUser);
+        foreach ($participantUsers as $participantUser) {
+            if (self::sameIdentity($reviewer, $participantUser)) {
+                $participated = true;
+                break;
+            }
+        }
+        if ($participated) {
             throw new UnexpectedValueException(
-                'Homologação não permitida. Este lançamento foi preenchido ou enviado por você e deve ser homologado por outro usuário autorizado.'
+                'Homologação não permitida. Você participou do preenchimento ou envio deste lançamento e ele deve ser analisado por outro usuário autorizado.'
             );
         }
+    }
+
+    public static function exceptionalCycleActiveFromActions(array $actions)
+    {
+        foreach ($actions as $action) {
+            $action = trim((string) $action);
+            if (!in_array($action, array(
+                'reabertura_excepcional_pos_fechamento_ca',
+                'lancamento_reaberto',
+                'homologacao_lancamento',
+            ), true)) continue;
+            return $action === 'reabertura_excepcional_pos_fechamento_ca';
+        }
+        return false;
+    }
+
+    public static function launchMutationPolicy(array $launch, array $closures, $exceptionalCycleActive, $today = null)
+    {
+        $today = $today === null ? date('Y-m-d') : (string) $today;
+        $competence = self::launchCompetence($launch);
+        $closure = self::closureForCompetence($closures, $competence);
+        $policy = array(
+            'permitida' => true,
+            'excepcional' => false,
+            'competencia' => $competence,
+            'periodo' => $closure ? $closure['periodo'] : '',
+            'dataFechamento' => $closure ? $closure['dataFechamento'] : '',
+            'mensagem' => '',
+        );
+        if (!$closure || strcmp($today, $closure['dataFechamento']) < 0) return $policy;
+        if ($exceptionalCycleActive) {
+            $policy['excepcional'] = true;
+            $policy['mensagem'] = 'Ciclo excepcional de correção autorizado pelo Administrador.';
+            return $policy;
+        }
+        $policy['permitida'] = false;
+        $policy['mensagem'] = 'Alteração indisponível. Esta competência foi fechada para envio ao Conselho de Administração em '
+            . self::formatDate($closure['dataFechamento']) . '.';
+        return $policy;
+    }
+
+    public static function assertLaunchMutable(array $launch, array $closures, $exceptionalCycleActive, $today = null)
+    {
+        $policy = self::launchMutationPolicy($launch, $closures, $exceptionalCycleActive, $today);
+        if (empty($policy['permitida'])) throw new DomainException($policy['mensagem']);
+        return $policy;
     }
 
     public static function validateClosures(array $items)

@@ -22,6 +22,9 @@ final class LancamentoApiController
                 if ($id !== null && $action === 'reabertura') {
                     return Response::success($this->service->reopenPolicy($id, $user));
                 }
+                if ($id !== null && $action === 'edicao') {
+                    return Response::success($this->service->mutationPolicy($id, $user));
+                }
                 if ($id !== null) return Response::success($this->service->find($id, $user));
                 return Response::success($this->service->all(Auth::scopeFilters($_GET)));
             }

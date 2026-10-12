@@ -73,12 +73,23 @@
   }
 
   async function reabrirLancamento(id, justificativa, usuario) {
-    return atualizarLancamento(id, {
-      status: "Reaberto",
-      solicitacaoReabertura: justificativa,
-      reabertoPor: usuario?.email || usuario?.nome || usuario || "sistema",
-      dataReabertura: new Date().toISOString().slice(0, 10)
+    const reason = String(justificativa || "").trim();
+    if (!reason) throw new Error("A justificativa da reabertura é obrigatória.");
+    const token = window.Auth?.getCurrentUser?.()?.csrfToken || window.CAIXA_LOTERIAS_CSRF_TOKEN || "";
+    const response = await fetch(applicationPath(`api/lancamentos/${encodeURIComponent(id)}/reabrir`), {
+      method: "POST",
+      cache: "no-store",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { "X-CSRF-Token": token } : {})
+      },
+      body: JSON.stringify({ justificativa: reason })
     });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || payload.sucesso === false || payload.ok === false) {
+      throw new Error(payload.mensagem || payload.error || "Não foi possível reabrir o lançamento.");
+    }
+    return Object.prototype.hasOwnProperty.call(payload, "dados") ? payload.dados : payload;
   }
 
   async function registrarRetificacao(id, dados, justificativa, usuario) {

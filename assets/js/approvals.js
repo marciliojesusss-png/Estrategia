@@ -463,7 +463,7 @@
     const reopenable = canReopen(lancamento);
     const policy = state.reopenPolicies?.[String(lancamento.id)];
     const reopenButton = document.getElementById("reopenButton");
-    document.getElementById("approvalObservacaoDiretoria").disabled = !(actionable || reopenable);
+    document.getElementById("approvalObservacaoDiretoria").disabled = !actionable;
     document.getElementById("approveButton").disabled = !actionable;
     document.getElementById("returnButton").disabled = !actionable;
     reopenButton.hidden = !(isAdmin() || isHomologador());
@@ -509,7 +509,7 @@
         policy?.permitida && !policy?.excepcional ? "info" : "warning"
       );
     } else if (!options.suppressGeneralNotice && isOwnLaunch(lancamento) && lancamento.status === ACTIONABLE_STATUS) {
-      showMessage("Homologação não permitida. Este lançamento foi preenchido ou enviado por você e deve ser homologado por outro usuário autorizado.", "warning");
+      showMessage("Homologação não permitida. Você participou do preenchimento ou envio deste lançamento e ele deve ser analisado por outro usuário autorizado.", "warning");
     } else if (!options.suppressGeneralNotice && !canAct(lancamento)) {
       showMessage(`Lançamento com status "${lancamento.status}" está disponível apenas para consulta.`, "warning");
     }
@@ -718,20 +718,68 @@
     }
   }
 
-  async function reopenLaunch() {
+  function ensureReopenLaunchDialog() {
+    let dialog = document.getElementById("reopenLaunchDialog");
+    if (dialog) return dialog;
+    document.body.insertAdjacentHTML("beforeend", `
+      <dialog id="reopenLaunchDialog" class="app-modal">
+        <form id="reopenLaunchForm" class="editor-form" method="dialog">
+          <div class="detail-header full-span">
+            <div>
+              <p class="eyebrow">Governança</p>
+              <h2>Reabrir lançamento para edição</h2>
+            </div>
+          </div>
+          <p class="full-span">Informe o motivo da reabertura.</p>
+          <div id="reopenLaunchExceptionalWarning" class="notice warning full-span" hidden>
+            Este período já foi fechado para apresentação ao Conselho de Administração. A reabertura poderá gerar divergência em relação aos dados oficialmente encaminhados.
+          </div>
+          <label class="full-span">Justificativa da reabertura
+            <textarea id="reopenLaunchJustification" rows="4" required></textarea>
+          </label>
+          <div class="form-actions full-span">
+            <button class="secondary-action" type="button" data-close-reopen-launch>Cancelar</button>
+            <button id="confirmReopenLaunchButton" class="primary-action" type="submit">Confirmar reabertura</button>
+          </div>
+        </form>
+      </dialog>
+    `);
+    dialog = document.getElementById("reopenLaunchDialog");
+    const clear = () => { document.getElementById("reopenLaunchJustification").value = ""; };
+    dialog.querySelector("[data-close-reopen-launch]").addEventListener("click", () => dialog.close());
+    dialog.addEventListener("close", clear);
+    dialog.querySelector("#reopenLaunchForm").addEventListener("submit", (event) => {
+      event.preventDefault();
+      const justification = document.getElementById("reopenLaunchJustification").value.trim();
+      if (!justification) {
+        showMessage("A justificativa da reabertura é obrigatória.", "warning");
+        return;
+      }
+      reopenLaunch(justification);
+    });
+    return dialog;
+  }
+
+  function openReopenLaunchDialog() {
     const lancamento = getSelectedLaunch();
     if (!lancamento || !canReopen(lancamento)) {
       const policy = lancamento && state.reopenPolicies?.[String(lancamento.id)];
       showMessage(policy?.mensagem || "Reabertura indisponível.", "warning");
       return;
     }
-
     const policy = state.reopenPolicies?.[String(lancamento.id)];
-    if (policy?.excepcional && !window.confirm(policy.mensagem)) return;
+    const dialog = ensureReopenLaunchDialog();
+    document.getElementById("reopenLaunchJustification").value = "";
+    document.getElementById("reopenLaunchExceptionalWarning").hidden = !policy?.excepcional;
+    dialog.showModal();
+  }
 
-    const observacaoDiretoria = document.getElementById("approvalObservacaoDiretoria").value.trim();
-    if (!observacaoDiretoria) {
-      showMessage("A reabertura exige observação da diretoria.", "warning");
+  async function reopenLaunch(justification) {
+    const lancamento = getSelectedLaunch();
+    if (!lancamento || !canReopen(lancamento)) return;
+    justification = String(justification || "").trim();
+    if (!justification) {
+      showMessage("A justificativa da reabertura é obrigatória.", "warning");
       return;
     }
 
@@ -740,9 +788,10 @@
     try {
       const updated = await apiJson(`api/lancamentos/${encodeURIComponent(lancamento.id)}/reabrir`, {
         method: "POST",
-        body: JSON.stringify({ justificativa: observacaoDiretoria })
+        body: JSON.stringify({ justificativa: justification })
       });
-      applyOfficialLaunch({ ...updated, observacaoDiretoria });
+      applyOfficialLaunch(updated);
+      document.getElementById("reopenLaunchDialog")?.close();
       delete state.reopenPolicies[String(lancamento.id)];
       refresh();
       state.selectedId = updated.id;
@@ -778,7 +827,7 @@
     document.getElementById("approveButton").addEventListener("click", () => persistDecision("approve"));
     document.getElementById("returnButton").addEventListener("click", () => persistDecision("return"));
     document.getElementById("reopenButton").addEventListener("click", () => {
-      reopenLaunch();
+      openReopenLaunchDialog();
     });
     document.getElementById("closeApprovalButton").addEventListener("click", () => {
       state.selectedId = null;

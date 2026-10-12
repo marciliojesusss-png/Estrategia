@@ -75,8 +75,16 @@ if ($method === 'POST') {
         return;
     }
 
-    if ($key === 'lancamentos') Auth::requirePermission('lancamentos', 'gerenciar', true);
-    elseif ($key === 'homologacoes') Auth::requirePermission('homologacoes', 'decidir', true);
+    if ($key === 'lancamentos') {
+        Auth::requirePermission('lancamentos', 'gerenciar', true);
+        Response::error('Lancamentos devem ser gravados exclusivamente pelas acoes oficiais de preenchimento e envio.', 403);
+        return;
+    }
+    elseif ($key === 'homologacoes') {
+        Auth::requirePermission('homologacoes', 'decidir', true);
+        Response::error('Homologacoes devem ser gravadas exclusivamente pelo fluxo oficial de decisao.', 403);
+        return;
+    }
     else {
         AccessLogger::record('acao_negada', $user, array('recurso' => 'database/' . $key));
         Response::error('Colecao sem gravacao direta autorizada.', 403);

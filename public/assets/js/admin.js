@@ -795,7 +795,52 @@
     table(["Indicador", "Mês/Ano", "Unidade", "Diretoria", "Homologado em", "Ações"], rows);
   }
 
-  async function reopenLaunch(id) {
+  function ensureAdminReopenDialog() {
+    let dialog = document.getElementById("adminReopenLaunchDialog");
+    if (dialog) return dialog;
+    document.body.insertAdjacentHTML("beforeend", `
+      <dialog id="adminReopenLaunchDialog" class="app-modal">
+        <form id="adminReopenLaunchForm" class="editor-form" method="dialog">
+          <div class="detail-header full-span">
+            <div>
+              <p class="eyebrow">Governança</p>
+              <h2>Reabrir lançamento para edição</h2>
+            </div>
+          </div>
+          <p class="full-span">Informe o motivo da reabertura.</p>
+          <div id="adminReopenExceptionalWarning" class="notice warning full-span" hidden>
+            Este período já foi fechado para apresentação ao Conselho de Administração. A reabertura poderá gerar divergência em relação aos dados oficialmente encaminhados.
+          </div>
+          <label class="full-span">Justificativa da reabertura
+            <textarea id="adminReopenJustification" rows="4" required></textarea>
+          </label>
+          <div class="form-actions full-span">
+            <button class="secondary-action" type="button" data-close-admin-reopen>Cancelar</button>
+            <button id="confirmAdminReopenButton" class="primary-action" type="submit">Confirmar reabertura</button>
+          </div>
+        </form>
+      </dialog>
+    `);
+    dialog = document.getElementById("adminReopenLaunchDialog");
+    const clear = () => {
+      document.getElementById("adminReopenJustification").value = "";
+      dialog.dataset.launchId = "";
+    };
+    dialog.querySelector("[data-close-admin-reopen]").addEventListener("click", () => dialog.close());
+    dialog.addEventListener("close", clear);
+    dialog.querySelector("#adminReopenLaunchForm").addEventListener("submit", (event) => {
+      event.preventDefault();
+      const justification = document.getElementById("adminReopenJustification").value.trim();
+      if (!justification) {
+        showMessage("A justificativa da reabertura é obrigatória.", "warning");
+        return;
+      }
+      reopenLaunch(dialog.dataset.launchId, justification);
+    });
+    return dialog;
+  }
+
+  async function openAdminReopenDialog(id) {
     const launch = state.data.lancamentos.find((item) => String(item.id) === String(id));
     if (!launch || launch.status !== "Homologado") return;
     let policy;
@@ -805,17 +850,29 @@
       showMessage(error.message || "Não foi possível verificar a janela de reabertura.", "warning");
       return;
     }
-    if (policy.excepcional && !window.confirm(policy.mensagem)) return;
-    const justificativa = window.prompt("Informe a justificativa da reabertura:");
-    if (!justificativa || !justificativa.trim()) {
+    if (!policy.permitida) {
+      showMessage(policy.mensagem || "Reabertura indisponível.", "warning");
+      return;
+    }
+    const dialog = ensureAdminReopenDialog();
+    dialog.dataset.launchId = String(id);
+    document.getElementById("adminReopenJustification").value = "";
+    document.getElementById("adminReopenExceptionalWarning").hidden = !policy.excepcional;
+    dialog.showModal();
+  }
+
+  async function reopenLaunch(id, justification) {
+    justification = String(justification || "").trim();
+    if (!justification) {
       showMessage("A justificativa da reabertura é obrigatória.", "warning");
       return;
     }
     try {
       const updated = await adminApi(`api/lancamentos/${encodeURIComponent(id)}/reabrir`, {
         method: "POST",
-        body: JSON.stringify({ justificativa: justificativa.trim() })
+        body: JSON.stringify({ justificativa: justification })
       });
+      document.getElementById("adminReopenLaunchDialog")?.close();
       state.data.lancamentos = state.data.lancamentos.map((item) => (
         String(item.id) === String(id) ? { ...item, ...updated } : item
       ));
@@ -1151,8 +1208,7 @@
 
       const reopenButton = event.target.closest("[data-reopen]");
       if (reopenButton) {
-        const confirmed = window.confirm("Reabrir este lançamento homologado para ajuste?");
-        if (confirmed) reopenLaunch(Number(reopenButton.dataset.reopen));
+        openAdminReopenDialog(reopenButton.dataset.reopen);
         return;
       }
 

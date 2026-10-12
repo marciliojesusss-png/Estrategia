@@ -93,7 +93,12 @@ final class HomologacaoService
             CompetenciaPeriodicidade::assertExpected($indicator,$before);
             $expected=LancamentoStateMachine::SUBMITTED;
             if(LancamentoStateMachine::normalize($before['status'])!==$expected) throw new LogicException('Homologacao ja processada ou indisponivel.');
-            GovernancaHomologacao::assertIndependentReviewer($before,$this->repo->latestSubmissionUser($id),$user);
+            GovernancaHomologacao::assertIndependentReviewer(
+                $before,
+                $this->repo->latestSubmissionUser($id),
+                $user,
+                $this->repo->productionParticipantUsers($id, GovernancaHomologacao::productionActions())
+            );
             // A condição otimista usa o texto exatamente lido do banco. O valor
             // normalizado serve apenas para validar a transição de estado.
             if(!$this->launches->updateStatus($id,$before['status'],$after)) throw new LogicException('Homologacao processada por outra requisicao.');

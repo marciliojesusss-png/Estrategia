@@ -74,6 +74,7 @@ final class BaseDadosService
     {
         if ($key === 'lancamentos') {
             $sanitized = $this->sanitizeLancamentosForUser($value, $user);
+            $this->assertBulkLaunchGovernance($sanitized, $user);
             $referenceChanges = $this->evidenceReferenceChanges($sanitized);
             $this->validateRequiredEvidenceTransitions($sanitized);
             $this->lancamentos->replaceAll($sanitized);
@@ -92,11 +93,7 @@ final class BaseDadosService
             return;
         }
         if ($key === 'homologacoes') {
-            if (!$this->canWriteWorkflow($user)) {
-                throw new InvalidArgumentException('Perfil nao autorizado para gravar homologacoes.');
-            }
-            $this->homologacoes->replaceAll($this->filterWorkflowItemsForUser($value, $user));
-            return;
+            throw new InvalidArgumentException('Homologacoes devem ser gravadas exclusivamente pelo fluxo oficial de decisao.');
         }
         if ($key === 'historico') {
             $this->auditoria->replaceAll($value);
@@ -236,6 +233,7 @@ final class BaseDadosService
             if (!AccessPolicy::scopeAllows($user, $before)) {
                 throw new InvalidArgumentException('Lancamento fora do escopo do usuario autenticado.');
             }
+            $this->assertLaunchMutable($before);
 
             $targetIndex = null;
             foreach ($items as $index => $item) {
@@ -293,6 +291,49 @@ final class BaseDadosService
             if ($before !== $after) $changes[] = array('id'=>$id,'before'=>$before,'after'=>$after);
         }
         return $changes;
+    }
+
+    private function assertLaunchMutable(array $launch)
+    {
+        return GovernancaHomologacao::assertLaunchMutable(
+            $launch,
+            $this->configuracoes->get(GovernancaHomologacao::CLOSURES_KEY, array()),
+            $this->homologacoes->exceptionalReopenCycleActive($launch['id'])
+        );
+    }
+
+    private function assertBulkLaunchGovernance(array $items, array $user)
+    {
+        foreach ($items as $item) {
+            if (!is_array($item) || empty($item['id'])) continue;
+            $existing = $this->lancamentos->find($item['id']);
+            if (!$existing) continue;
+            if (LancamentoStateMachine::normalize($existing['status']) === LancamentoStateMachine::HOMOLOGATED
+                && $this->launchProductionChanged($existing, $item)) {
+                throw new InvalidArgumentException('Lancamento homologado somente pode ser alterado pelo fluxo central de reabertura.');
+            }
+            if ($this->launchProductionChanged($existing, $item)) {
+                $this->assertLaunchMutable($existing);
+            }
+        }
+    }
+
+    private function launchProductionChanged(array $existing, array $candidate)
+    {
+        $fields = array(
+            'camposEntrada', 'resultadoMensal', 'resultadoOficialAnual', 'metaReferencia',
+            'percentualAtingido', 'situacaoCalculada', 'status', 'observacaoArea',
+            'referenciaEvidencia', 'usuarioResponsavel',
+        );
+        $before = array();
+        $after = array();
+        foreach ($fields as $field) {
+            $before[$field] = isset($existing[$field]) ? $existing[$field] : null;
+            $after[$field] = isset($candidate[$field]) ? $candidate[$field] : null;
+        }
+        $before['status'] = LancamentoStateMachine::normalize($before['status']);
+        $after['status'] = LancamentoStateMachine::normalize($after['status']);
+        return json_encode($before) !== json_encode($after);
     }
 
     private function validateRequiredEvidenceTransitions(array $items): void

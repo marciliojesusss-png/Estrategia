@@ -355,13 +355,19 @@ Requisicoes da aplicacao devem entrar por `public/index.php` ou pelo
 - Consultor da Diretoria: perfil distinto, com o mesmo escopo de diretoria para homologar, devolver e reabrir antes do fechamento; não pode preencher lançamentos.
 - Administrador: administra usuários e configurações e pode realizar reabertura excepcional depois do fechamento.
 
-Quem preencheu ou realizou o envio não pode homologar nem devolver o próprio
-lançamento, mesmo que seu perfil seja alterado posteriormente. A verificação é
-feita no backend pela matrícula do usuário autenticado.
+Quem criou, salvou, alterou, retificou ou enviou um lançamento não pode
+homologá-lo nem devolvê-lo, mesmo que seu perfil seja alterado posteriormente.
+A verificação é feita no backend pela matrícula autenticada, pelo responsável
+atual e pelos eventos de produção existentes em `auditoria` e `homologacoes`.
 
 A configuração `fechamentosConselhoAdministracao` é armazenada como JSON na
 tabela existente `configuracoes`. A data de fechamento é cadastrada
 explicitamente pelo Administrador e deve anteceder a reunião. Na própria data
 de fechamento e depois dela, Diretoria e Consultor ficam bloqueados. A
 reabertura administrativa pós-fechamento exige justificativa e gera o evento de
-auditoria `reabertura_excepcional_pos_fechamento_ca`.
+auditoria `reabertura_excepcional_pos_fechamento_ca`. A partir do fechamento,
+lançamentos reabertos normalmente também ficam bloqueados para alteração e
+reenvio. Uma reabertura excepcional inicia um ciclo temporário de correção que
+permanece aberto nos estados intermediários e termina na nova homologação.
+Solicitações históricas continuam consultáveis; a aprovação de uma solicitação
+pendente usa o mesmo serviço central de reabertura.

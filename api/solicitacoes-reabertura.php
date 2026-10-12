@@ -2,11 +2,12 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/bootstrap.php';
+require_once __DIR__ . '/../app/services/LancamentoService.php';
 
 $db = Database::getConnection();
 $solicitacoes = new SolicitacoesReaberturaRepository($db);
-$lancamentos = new LancamentosRepository($db);
 $auditoria = new AuditoriaRepository($db);
+$lancamentoService = new LancamentoService($db);
 
 $payload = Request::method() === 'GET' ? $_GET : Request::json();
 $action = (string) ($payload['action'] ?? 'listar');
@@ -29,16 +30,6 @@ function append_audit(AuditoriaRepository $auditoria, array $entry): void
     ]);
 }
 
-function launch_in_user_scope(LancamentosRepository $repository, string $lancamentoId): bool
-{
-    foreach ($repository->all(Auth::scopeFilters()) as $lancamento) {
-        if ((string) ($lancamento['id'] ?? '') === $lancamentoId) {
-            return true;
-        }
-    }
-    return false;
-}
-
 if ($action === 'listar') {
     Auth::requirePermission('reaberturas', 'solicitar', true);
     Response::json($solicitacoes->all(Auth::scopeFilters(api_filters($_GET))));
@@ -47,72 +38,7 @@ if ($action === 'listar') {
 
 if ($action === 'criar') {
     Auth::requirePermission('reaberturas', 'solicitar', true);
-
-    $lancamentoId = (string) ($payload['lancamentoId'] ?? '');
-    $justificativa = trim((string) ($payload['justificativa'] ?? ''));
-    if ($lancamentoId === '' || $justificativa === '') {
-        Response::error('Informe o lancamento e a justificativa da solicitacao.', 400);
-        return;
-    }
-    if (Auth::normalizeProfile($perfil) !== 'administrador' && !launch_in_user_scope($lancamentos, $lancamentoId)) {
-        Response::error('Lancamento fora do escopo do usuario autenticado.', 403);
-        return;
-    }
-
-    if ($solicitacoes->hasPendingForLaunch($lancamentoId)) {
-        Response::error('Ja existe uma solicitacao de reabertura pendente para este lancamento.', 409);
-        return;
-    }
-
-    $now = date('c');
-    $request = [
-        'id' => uniqid('sol-reab-', true),
-        'lancamentoId' => $lancamentoId,
-        'indicadorId' => $payload['indicadorId'] ?? '',
-        'competencia' => $payload['competencia'] ?? '',
-        'solicitanteUsuario' => $usuario,
-        'solicitantePerfil' => $perfilLabel,
-        'solicitanteUnidade' => $user['unidadeApuradora'] ?? $user['diretoriaResponsavel'] ?? '',
-        'tipoAjuste' => $payload['tipoAjuste'] ?? '',
-        'justificativa' => $justificativa,
-        'observacaoComplementar' => $payload['observacaoComplementar'] ?? '',
-        'statusSolicitacao' => 'Pendente',
-        'administradorResponsavel' => '',
-        'decisaoAdministrador' => '',
-        'justificativaDecisao' => '',
-        'dataSolicitacao' => $now,
-        'dataDecisao' => '',
-        'createdAt' => $now,
-        'updatedAt' => $now,
-    ];
-
-    try {
-        $db->beginTransaction();
-        $created = $solicitacoes->create($request);
-        append_audit($auditoria, [
-            'acao' => 'solicitacao_reabertura_criada',
-            'descricao' => 'Solicitacao de reabertura criada pelo homologador.',
-            'registroId' => $created['id'],
-            'valorNovo' => $created,
-            'usuario' => $usuario,
-            'perfilUsuario' => $perfilLabel,
-        ]);
-        $db->commit();
-        Response::json(['ok' => true, 'solicitacao' => $created], 201);
-    } catch (PDOException $error) {
-        if ($db->inTransaction()) $db->rollBack();
-        $sqlState = (string) $error->getCode();
-        $message = $error->getMessage();
-        if ($sqlState === '23000' || stripos($message, 'UNIQUE') !== false || stripos($message, 'duplicate') !== false) {
-            Response::error('Ja existe uma solicitacao de reabertura pendente para este lancamento.', 409);
-            return;
-        }
-        Logger::error('Falha de banco ao criar solicitacao de reabertura.', array('tipo' => get_class($error), 'codigo' => $sqlState));
-        Response::error('Nao foi possivel criar a solicitacao de reabertura.', 500);
-    } catch (Throwable $error) {
-        if ($db->inTransaction()) $db->rollBack();
-        Response::error('Nao foi possivel criar a solicitacao de reabertura.', 500);
-    }
+    Response::error('Novas solicitacoes administrativas de reabertura nao sao aceitas. Utilize o fluxo direto de governanca.', 409);
     return;
 }
 
@@ -177,18 +103,14 @@ try {
 
     $updatedRequest = $solicitacoes->find($id);
     if ($action === 'aprovar') {
-        $launchBefore = $lancamentos->find($current['lancamentoId']);
-        if (!$launchBefore) {
-            $db->rollBack();
-            Response::error('Lancamento da solicitacao nao encontrado.', 404);
-            return;
-        }
-        if (!$lancamentos->updateStatus($current['lancamentoId'], $launchBefore['status'], 'Reaberto')) {
-            $db->rollBack();
-            Response::error('Lancamento ja foi processado por outra requisicao.', 409);
-            return;
-        }
-        $updatedLaunch = $lancamentos->find($current['lancamentoId']);
+        $reopenActor = $user;
+        $reopenActor['perfil'] = 'administrador';
+        $reopenActor['matricula'] = $usuario;
+        $updatedLaunch = $lancamentoService->reopen(
+            $current['lancamentoId'],
+            $justificativaDecisao,
+            $reopenActor
+        );
     }
 
     append_audit($auditoria, [
@@ -204,6 +126,18 @@ try {
     ]);
     $db->commit();
     Response::json(['ok' => true, 'solicitacao' => $updatedRequest, 'lancamento' => $updatedLaunch]);
+} catch (DomainException $error) {
+    if ($db->inTransaction()) $db->rollBack();
+    Response::error($error->getMessage(), 422);
+} catch (LogicException $error) {
+    if ($db->inTransaction()) $db->rollBack();
+    Response::error($error->getMessage(), 409);
+} catch (OutOfBoundsException $error) {
+    if ($db->inTransaction()) $db->rollBack();
+    Response::error($error->getMessage(), 404);
+} catch (UnexpectedValueException $error) {
+    if ($db->inTransaction()) $db->rollBack();
+    Response::error($error->getMessage(), 403);
 } catch (Throwable $error) {
     if ($db->inTransaction()) $db->rollBack();
     Response::error('Nao foi possivel processar a solicitacao de reabertura.', 500);

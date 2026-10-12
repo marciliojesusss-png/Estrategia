@@ -8,6 +8,7 @@
     indicadores: [],
     regras: [],
     lancamentos: [],
+    mutationPolicies: {},
     evidenciasPorLancamento: {},
     evidenceOperationInProgress: false,
     selectedId: null
@@ -114,8 +115,66 @@
     return state.lancamentos.find((item) => String(item.id) === String(state.selectedId));
   }
 
+  function launchCompetence(lancamento) {
+    if (lancamento?.competencia) return String(lancamento.competencia).slice(0, 7);
+    return `${lancamento?.ano || ""}-${String(lancamento?.mes || "").padStart(2, "0")}`;
+  }
+
+  function activeClosure(lancamento) {
+    const competence = launchCompetence(lancamento);
+    return (state.data?.fechamentosConselhoAdministracao || []).find((closure) => (
+      closure?.ativo === true && (closure.competencias || []).includes(competence)
+    )) || null;
+  }
+
+  function exceptionalCorrectionCycleActive(lancamento) {
+    const relevant = (state.data?.homologacoes || [])
+      .filter((entry) => String(entry.lancamentoId ?? entry.lancamento_id ?? "") === String(lancamento?.id ?? ""))
+      .filter((entry) => [
+        "reabertura_excepcional_pos_fechamento_ca",
+        "lancamento_reaberto",
+        "homologacao_lancamento"
+      ].includes(String(entry.acao || "")))
+      .sort((left, right) => String(right.dataAcao ?? right.data_acao ?? right.createdAt ?? right.created_at ?? "")
+        .localeCompare(String(left.dataAcao ?? left.data_acao ?? left.createdAt ?? left.created_at ?? "")));
+    return relevant[0]?.acao === "reabertura_excepcional_pos_fechamento_ca";
+  }
+
+  function launchMutationPolicy(lancamento) {
+    const official = state.mutationPolicies?.[String(lancamento?.id ?? "")];
+    if (official) return official;
+    const closure = activeClosure(lancamento);
+    if (!closure) return { permitida: true, mensagem: "" };
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    if (today < closure.dataFechamento || exceptionalCorrectionCycleActive(lancamento)) {
+      return { permitida: true, excepcional: today >= closure.dataFechamento, mensagem: "" };
+    }
+    const [year, month, day] = String(closure.dataFechamento).split("-");
+    return {
+      permitida: false,
+      mensagem: `Alteração indisponível. Esta competência foi fechada para envio ao Conselho de Administração em ${day}/${month}/${year}.`
+    };
+  }
+
   function isEditable(lancamento) {
-    return lancamento && (EDITABLE_STATUSES.includes(lancamento.status) || lancamento.revisaoMoedaPendente === true);
+    const statusEditable = lancamento && (EDITABLE_STATUSES.includes(lancamento.status) || lancamento.revisaoMoedaPendente === true);
+    return Boolean(statusEditable && launchMutationPolicy(lancamento).permitida);
+  }
+
+  async function loadMutationPolicy(lancamento) {
+    if (!lancamento?.id) return;
+    try {
+      state.mutationPolicies[String(lancamento.id)] = await evidenceApi(
+        `api/lancamentos/${encodeURIComponent(lancamento.id)}/edicao`,
+        { method: "GET" }
+      );
+    } catch (error) {
+      state.mutationPolicies[String(lancamento.id)] = {
+        permitida: false,
+        mensagem: error.message || "Não foi possível verificar a disponibilidade de edição."
+      };
+    }
   }
 
   function isManual(indicador) {
@@ -1319,12 +1378,12 @@
     document.getElementById("sendApprovalButton").textContent =
       lancamento.status === "Devolvido para ajuste" ? "Reenviar para homologação" : "Enviar para homologação";
     const requestButton = document.getElementById("requestReopenButton");
-    requestButton.hidden = !(lancamento.status === "Homologado" && state.user.perfil === "Unidade Apuradora");
-    requestButton.disabled = Boolean(lancamento.solicitacaoReabertura?.status === "Pendente");
-    requestButton.textContent = requestButton.disabled ? "Reabertura solicitada" : "Solicitar reabertura";
+    requestButton.hidden = true;
+    requestButton.disabled = true;
 
     if (!isEditable(lancamento)) {
-      showMessage(`Lançamento com status "${lancamento.status}" está bloqueado para edição.`, "warning");
+      const mutationPolicy = launchMutationPolicy(lancamento);
+      showMessage(mutationPolicy.mensagem || `Lançamento com status "${lancamento.status}" está bloqueado para edição.`, "warning");
     } else if (lancamento.revisaoMoedaPendente) {
       showMessage("Este lançamento possui valor monetário antigo possivelmente reduzido. Confira e informe novamente os valores completos antes de salvar.", "warning");
     }
@@ -1819,11 +1878,12 @@
       });
     });
 
-    document.getElementById("lancamentosTable").addEventListener("click", (event) => {
+    document.getElementById("lancamentosTable").addEventListener("click", async (event) => {
       const button = event.target.closest("button[data-id]");
       if (!button) return;
       state.selectedId = button.dataset.id;
       clearActionFeedback();
+      await loadMutationPolicy(getSelectedLaunch());
       renderEditor();
       document.getElementById("launchEditorPanel").scrollIntoView({ behavior: "smooth", block: "start" });
     });
@@ -1894,6 +1954,7 @@
         Auth.filterLaunchesByUser(data.lancamentos, data.indicadores, user),
         data.indicadores
       ),
+      mutationPolicies: {},
       evidenciasPorLancamento: {},
       evidenceOperationInProgress: false,
       selectedId: null
@@ -1908,6 +1969,7 @@
     const requestedId = new URLSearchParams(window.location.search).get("lancamentoId");
     if (requestedId && state.lancamentos.some((item) => String(item.id) === requestedId)) {
       state.selectedId = requestedId;
+      await loadMutationPolicy(getSelectedLaunch());
       renderEditor();
       document.getElementById("launchEditorPanel").scrollIntoView({ block: "start" });
     }

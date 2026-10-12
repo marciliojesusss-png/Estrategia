@@ -13,11 +13,11 @@
   <script src="/assets/js/bootstrap-data.js?v=METAS-OFICIAIS-003" defer></script>
   <script src="/assets/js/indicator-periodicity.js?v=PERIODICIDADE-TRIMESTRAL-001" defer></script>
   <script src="/assets/js/dataStore.js?v=GOVERNANCA-CA-001" defer></script>
-  <script src="/assets/js/databaseService.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
+  <script src="/assets/js/databaseService.js?v=GOVERNANCA-CA-002" defer></script>
   <script src="/assets/js/dataService.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/auth.js?v=GOVERNANCA-CA-001" defer></script>
   <script src="/assets/js/prazo-apuracao.js?v=PRAZOS-APURACAO-001" defer></script>
-  <script src="/assets/js/admin.js?v=GOVERNANCA-CA-001" defer></script>
+  <script src="/assets/js/admin.js?v=GOVERNANCA-CA-002" defer></script>
   <script src="/assets/js/app.js?v=APP-VERSION-001" defer></script>
 </head>
 <body data-page="administracao">

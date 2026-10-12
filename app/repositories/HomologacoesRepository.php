@@ -55,6 +55,43 @@ final class HomologacoesRepository
         return $value === false || $value === null ? '' : (string) $value;
     }
 
+    public function productionParticipantUsers($launchId, array $actions)
+    {
+        $params = array(':lancamento' => (string) $launchId);
+        $placeholders = array();
+        foreach (array_values($actions) as $index => $action) {
+            $placeholder = ':acao_' . $index;
+            $placeholders[] = $placeholder;
+            $params[$placeholder] = (string) $action;
+        }
+        if (!$placeholders) return array();
+        $stmt = $this->db->prepare(
+            'SELECT DISTINCT usuario FROM auditoria '
+            . "WHERE entidade='lancamentos' AND entidade_id=:lancamento AND acao IN (" . implode(',', $placeholders) . ')'
+        );
+        $stmt->execute($params);
+        $users = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+        $submission = $this->db->prepare(
+            "SELECT DISTINCT usuario FROM homologacoes WHERE lancamento_id=:lancamento AND acao='submissao_lancamento'"
+        );
+        $submission->execute(array(':lancamento' => (string) $launchId));
+        return array_values(array_unique(array_filter(array_merge($users, $submission->fetchAll(PDO::FETCH_COLUMN)), function ($value) {
+            return trim((string) $value) !== '';
+        })));
+    }
+
+    public function exceptionalReopenCycleActive($launchId)
+    {
+        $stmt = $this->db->prepare(
+            "SELECT TOP 1 acao FROM homologacoes WHERE lancamento_id=:lancamento "
+            . "AND acao IN ('reabertura_excepcional_pos_fechamento_ca','lancamento_reaberto','homologacao_lancamento') "
+            . 'ORDER BY data_acao DESC, created_at DESC, id DESC'
+        );
+        $stmt->execute(array(':lancamento' => (string) $launchId));
+        return $stmt->fetchColumn() === 'reabertura_excepcional_pos_fechamento_ca';
+    }
+
     public function all(array $filters=array()){return $this->history($filters,1,100)['items'];}
 
     public function replaceAll(array $items)

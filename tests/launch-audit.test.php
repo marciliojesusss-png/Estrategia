@@ -34,13 +34,19 @@ final class FakeEvents
     public function recordSubmission($id, $before, $after, array $user) {
         $this->rows[] = compact('id', 'before', 'after', 'user');
     }
+    public function exceptionalReopenCycleActive($id) { return false; }
+}
+
+final class FakeLaunchConfig
+{
+    public function get($key, $default = null) { return $default; }
 }
 
 function launchAuditService($db, $launches, $approvals, $audit)
 {
     $reflection = new ReflectionClass(BaseDadosService::class);
     $service = $reflection->newInstanceWithoutConstructor();
-    foreach (array('db' => $db, 'lancamentos' => $launches, 'homologacoes' => $approvals, 'auditoria' => $audit) as $name => $value) {
+    foreach (array('db' => $db, 'lancamentos' => $launches, 'homologacoes' => $approvals, 'auditoria' => $audit, 'configuracoes' => new FakeLaunchConfig()) as $name => $value) {
         $property = $reflection->getProperty($name);
         $property->setAccessible(true);
         $property->setValue($service, $value);
