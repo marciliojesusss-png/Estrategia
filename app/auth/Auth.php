@@ -361,6 +361,10 @@ final class Auth
             . "WHERE NULLIF(LTRIM(RTRIM(unidade_apuradora)), '') IS NOT NULL "
             . "UNION SELECT 'diretoria', LTRIM(RTRIM(diretoria_responsavel)) FROM dbo.indicadores "
             . "WHERE NULLIF(LTRIM(RTRIM(diretoria_responsavel)), '') IS NOT NULL"
+            . " UNION SELECT 'unidade', LTRIM(RTRIM(unidade_responsavel)) FROM dbo.iniciativas_estrategicas "
+            . "WHERE NULLIF(LTRIM(RTRIM(unidade_responsavel)), '') IS NOT NULL"
+            . " UNION SELECT 'diretoria', LTRIM(RTRIM(diretoria_responsavel)) FROM dbo.iniciativas_estrategicas "
+            . "WHERE NULLIF(LTRIM(RTRIM(diretoria_responsavel)), '') IS NOT NULL"
             . ") AS escopos ORDER BY CASE WHEN tipo = 'unidade' THEN 0 ELSE 1 END, escopo"
         );
         foreach ($stmt->fetchAll() as $row) {

@@ -48,12 +48,33 @@ final class GovernancaHomologacao
         );
     }
 
+    public static function initiativeProductionActions()
+    {
+        return array(
+            'acompanhamento_salvo',
+            'acompanhamento_submetido',
+            'item_iniciativa_alterado',
+            'evidencia_iniciativa_anexada',
+            'evidencia_iniciativa_removida',
+        );
+    }
+
     public static function assertIndependentReviewer(array $launch, $submissionUser, array $user, array $participantUsers = array())
     {
+        return self::assertIndependentParticipant($launch, $submissionUser, $user, $participantUsers, 'lançamento');
+    }
+
+    public static function assertIndependentInitiativeReviewer(array $record, $submissionUser, array $user, array $participantUsers = array())
+    {
+        return self::assertIndependentParticipant($record, $submissionUser, $user, $participantUsers, 'acompanhamento');
+    }
+
+    private static function assertIndependentParticipant(array $record, $submissionUser, array $user, array $participantUsers, $subject)
+    {
         $reviewer = isset($user['matricula']) ? $user['matricula'] : '';
-        $responsible = isset($launch['usuarioResponsavel'])
-            ? $launch['usuarioResponsavel']
-            : (isset($launch['usuario_responsavel']) ? $launch['usuario_responsavel'] : '');
+        $responsible = isset($record['usuarioResponsavel'])
+            ? $record['usuarioResponsavel']
+            : (isset($record['usuario_responsavel']) ? $record['usuario_responsavel'] : '');
         $participated = self::sameIdentity($reviewer, $responsible) || self::sameIdentity($reviewer, $submissionUser);
         foreach ($participantUsers as $participantUser) {
             if (self::sameIdentity($reviewer, $participantUser)) {
@@ -63,9 +84,10 @@ final class GovernancaHomologacao
         }
         if ($participated) {
             throw new UnexpectedValueException(
-                'Homologação não permitida. Você participou do preenchimento ou envio deste lançamento e ele deve ser analisado por outro usuário autorizado.'
+                'Homologação não permitida. Você participou do preenchimento ou envio deste ' . $subject . ' e ele deve ser analisado por outro usuário autorizado.'
             );
         }
+        return true;
     }
 
     public static function exceptionalCycleActiveFromActions(array $actions)
@@ -76,6 +98,8 @@ final class GovernancaHomologacao
                 'reabertura_excepcional_pos_fechamento_ca',
                 'lancamento_reaberto',
                 'homologacao_lancamento',
+                'iniciativa_reaberta',
+                'homologacao_iniciativa',
             ), true)) continue;
             return $action === 'reabertura_excepcional_pos_fechamento_ca';
         }
@@ -84,8 +108,18 @@ final class GovernancaHomologacao
 
     public static function launchMutationPolicy(array $launch, array $closures, $exceptionalCycleActive, $today = null)
     {
+        return self::recordMutationPolicy($launch, $closures, $exceptionalCycleActive, $today);
+    }
+
+    public static function initiativeMutationPolicy(array $record, array $closures, $exceptionalCycleActive, $today = null)
+    {
+        return self::recordMutationPolicy($record, $closures, $exceptionalCycleActive, $today);
+    }
+
+    public static function recordMutationPolicy(array $record, array $closures, $exceptionalCycleActive, $today = null)
+    {
         $today = $today === null ? date('Y-m-d') : (string) $today;
-        $competence = self::launchCompetence($launch);
+        $competence = self::recordCompetence($record);
         $closure = self::closureForCompetence($closures, $competence);
         $policy = array(
             'permitida' => true,
@@ -110,6 +144,13 @@ final class GovernancaHomologacao
     public static function assertLaunchMutable(array $launch, array $closures, $exceptionalCycleActive, $today = null)
     {
         $policy = self::launchMutationPolicy($launch, $closures, $exceptionalCycleActive, $today);
+        if (empty($policy['permitida'])) throw new DomainException($policy['mensagem']);
+        return $policy;
+    }
+
+    public static function assertInitiativeMutable(array $record, array $closures, $exceptionalCycleActive, $today = null)
+    {
+        $policy = self::initiativeMutationPolicy($record, $closures, $exceptionalCycleActive, $today);
         if (empty($policy['permitida'])) throw new DomainException($policy['mensagem']);
         return $policy;
     }
@@ -164,9 +205,19 @@ final class GovernancaHomologacao
 
     public static function reopenPolicy(array $launch, array $user, array $closures, $today = null)
     {
+        return self::recordReopenPolicy($launch, $user, $closures, $today, true);
+    }
+
+    public static function initiativeReopenPolicy(array $record, array $user, array $closures, $today = null)
+    {
+        return self::recordReopenPolicy($record, $user, $closures, $today, false);
+    }
+
+    private static function recordReopenPolicy(array $record, array $user, array $closures, $today, $directoryRequiresClosure)
+    {
         $profile = self::normalizeProfile(isset($user['perfil']) ? $user['perfil'] : '');
         $today = $today === null ? date('Y-m-d') : (string) $today;
-        $competence = self::launchCompetence($launch);
+        $competence = self::recordCompetence($record);
         $closure = self::closureForCompetence($closures, $competence);
         $base = array(
             'permitida' => false,
@@ -195,12 +246,17 @@ final class GovernancaHomologacao
             $base['mensagem'] = 'Seu perfil não possui permissão para reabrir diretamente lançamentos homologados.';
             return $base;
         }
-        if (!self::sameScope(self::launchDirectory($launch), isset($user['diretoria_responsavel']) ? $user['diretoria_responsavel'] : '')) {
+        if (!self::sameScope(self::recordDirectory($record), isset($user['diretoria_responsavel']) ? $user['diretoria_responsavel'] : '')) {
             $base['mensagem'] = 'Lançamento fora da diretoria autorizada para o usuário autenticado.';
             return $base;
         }
-        if (!$closure) {
+        if (!$closure && $directoryRequiresClosure) {
             $base['mensagem'] = 'Não há data de fechamento para o Conselho de Administração configurada para esta competência. A reabertura está bloqueada até a regularização pelo Administrador.';
+            return $base;
+        }
+        if (!$closure) {
+            $base['permitida'] = true;
+            $base['mensagem'] = 'Reabertura disponível. Não há fechamento ativo configurado para esta competência.';
             return $base;
         }
         if (strcmp($today, $closure['dataFechamento']) >= 0) {
@@ -217,10 +273,15 @@ final class GovernancaHomologacao
 
     public static function launchCompetence(array $launch)
     {
-        $competence = isset($launch['competencia']) ? self::normalizeCompetence($launch['competencia']) : '';
+        return self::recordCompetence($launch);
+    }
+
+    public static function recordCompetence(array $record)
+    {
+        $competence = isset($record['competencia']) ? self::normalizeCompetence($record['competencia']) : '';
         if ($competence !== '') return $competence;
-        $year = isset($launch['ano']) ? (int) $launch['ano'] : 0;
-        $month = isset($launch['mes']) ? (int) $launch['mes'] : 0;
+        $year = isset($record['ano']) ? (int) $record['ano'] : 0;
+        $month = isset($record['mes']) ? (int) $record['mes'] : 0;
         return $year > 0 && $month >= 1 && $month <= 12 ? sprintf('%04d-%02d', $year, $month) : '';
     }
 
@@ -236,9 +297,16 @@ final class GovernancaHomologacao
 
     private static function launchDirectory(array $launch)
     {
-        return isset($launch['diretoriaResponsavel'])
-            ? $launch['diretoriaResponsavel']
-            : (isset($launch['diretoria_responsavel']) ? $launch['diretoria_responsavel'] : '');
+        return self::recordDirectory($launch);
+    }
+
+    private static function recordDirectory(array $record)
+    {
+        if (isset($record['diretoriaSnapshot'])) return $record['diretoriaSnapshot'];
+        if (isset($record['diretoria_snapshot'])) return $record['diretoria_snapshot'];
+        return isset($record['diretoriaResponsavel'])
+            ? $record['diretoriaResponsavel']
+            : (isset($record['diretoria_responsavel']) ? $record['diretoria_responsavel'] : '');
     }
 
     private static function normalizeCompetence($value)

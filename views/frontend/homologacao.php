@@ -33,6 +33,11 @@
         <p>Validação dos lançamentos, histórico de ações e rastreabilidade.</p>
       </section>
 
+      <nav class="module-tabs" aria-label="Tipo de homologação">
+        <a class="active" href="/homologacoes">Indicadores</a>
+        <a href="/iniciativas/homologacao">Iniciativas</a>
+      </nav>
+
       <section class="filters" aria-label="Filtros da homologação">
         <label>Mês <select data-filter="mes"></select></label>
         <label>Status <select data-filter="status"></select></label>

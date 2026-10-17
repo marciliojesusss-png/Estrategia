@@ -9,7 +9,10 @@
     visaoTrimestral: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consultor da Diretoria", "Consulta/Gestao", "Consulta/Gest\u00e3o"],
     indicadores: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consultor da Diretoria", "Consulta/Gestao", "Consulta/Gest\u00e3o"],
     lancamentos: ["Administrador", "Unidade Apuradora"],
+    iniciativas: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consultor da Diretoria"],
     homologacao: ["Administrador", "Diretoria Homologadora", "Consultor da Diretoria"],
+    iniciativasHomologacao: ["Administrador", "Diretoria Homologadora", "Consultor da Diretoria"],
+    iniciativasConsolidacao: ["Administrador"],
     relatorios: ["Administrador"],
     administracao: ["Administrador"],
     auditoria: ["Administrador"]
@@ -186,7 +189,10 @@
       lancamentos: "Lancamento Mensal",
       homologacao: "Homologa\u00e7\u00e3o",
       relatorios: "Relat\u00f3rios",
-      administracao: "Configura\u00e7\u00f5es"
+      administracao: "Configura\u00e7\u00f5es",
+      iniciativas: "Iniciativas Estrat\u00e9gicas",
+      iniciativasHomologacao: "Homologa\u00e7\u00e3o de Iniciativas",
+      iniciativasConsolidacao: "Consolida\u00e7\u00e3o CA"
     };
     if (isUsuarioCompanhia(user?.perfil)) {
       return "Seu perfil possui acesso apenas \u00e0s vis\u00f5es consolidadas.";

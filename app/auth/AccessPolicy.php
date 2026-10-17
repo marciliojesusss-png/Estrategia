@@ -27,6 +27,13 @@ final class AccessPolicy
             'decidir' => array('administrador'),
             'reabrir' => array('administrador', 'homologador', 'consultor_diretoria'),
         ),
+        'iniciativas' => array(
+            'visualizar' => array('administrador', 'homologador', 'consultor_diretoria', 'unidade_apuradora'),
+            'gerenciar' => array('administrador', 'unidade_apuradora'),
+            'administrar' => array('administrador'),
+            'decidir' => array('administrador', 'homologador', 'consultor_diretoria'),
+            'consolidar' => array('administrador'),
+        ),
     );
 
     public static function allows($profile, $module, $action)
@@ -58,6 +65,30 @@ final class AccessPolicy
             return $board !== '' && self::sameScope($board, isset($user['diretoria_responsavel']) ? $user['diretoria_responsavel'] : '');
         }
         return false;
+    }
+
+    public static function initiativeScopeAllows(array $user, array $record)
+    {
+        $profile = isset($user['perfil']) ? Auth::normalizeProfile($user['perfil']) : Auth::DEFAULT_PROFILE;
+        if ($profile === 'administrador') return true;
+        if ($profile === 'usuario_companhia') return false;
+        if ($profile === 'unidade_apuradora') {
+            $unit = self::firstScope($record, array('unidade_snapshot', 'unidade_responsavel', 'unidadeSnapshot', 'unidadeResponsavel'));
+            return $unit !== '' && self::sameScope($unit, isset($user['unidade_apuradora']) ? $user['unidade_apuradora'] : '');
+        }
+        if (in_array($profile, array('homologador', 'consultor_diretoria'), true)) {
+            $board = self::firstScope($record, array('diretoria_snapshot', 'diretoria_responsavel', 'diretoriaSnapshot', 'diretoriaResponsavel'));
+            return $board !== '' && self::sameScope($board, isset($user['diretoria_responsavel']) ? $user['diretoria_responsavel'] : '');
+        }
+        return false;
+    }
+
+    private static function firstScope(array $record, array $keys)
+    {
+        foreach ($keys as $key) {
+            if (isset($record[$key]) && trim((string) $record[$key]) !== '') return (string) $record[$key];
+        }
+        return '';
     }
 
     private static function sameScope($left, $right)

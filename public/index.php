@@ -16,6 +16,8 @@ require_once __DIR__ . '/../app/controllers/DashboardApiController.php';
 require_once __DIR__ . '/../app/controllers/AdministracaoController.php';
 require_once __DIR__ . '/../app/controllers/AdministracaoApiController.php';
 require_once __DIR__ . '/../app/controllers/PrazosApuracaoApiController.php';
+require_once __DIR__ . '/../app/controllers/IniciativasApiController.php';
+require_once __DIR__ . '/../app/controllers/IniciativaEvidenciaController.php';
 
 // Mantém links, formulários e assets sob a aplicação virtual configurada no IIS.
 ob_start(function ($content) {
@@ -77,6 +79,9 @@ $router->get('/diagnostico-servidor', function () { require __DIR__ . '/diagnost
 $router->get('/dashboard',$frontendPage('resumo-executivo.php'));
 $router->get('/resumo-executivo',$frontendPage('resumo-executivo.php'));
 $router->get('/visao-trimestral', $frontendPage('visao-trimestral.php'));
+$router->get('/iniciativas', $frontendPage('iniciativas.php'));
+$router->get('/iniciativas/homologacao', $frontendPage('iniciativas-homologacao.php'));
+$router->get('/iniciativas/consolidacao-ca', $frontendPage('iniciativas-consolidacao.php'));
 
 ini_set('display_errors', '1');
 error_reporting(E_ALL||E_STRICT||E_DEPRECATED||E_PARSE||E_WARNING||E_ERROR);
@@ -147,6 +152,25 @@ $router->any('/api/administracao/{resource}/{id}',array($adminApi,'handle'));
 $prazosApuracaoApi = new PrazosApuracaoApiController();
 $router->any('/api/prazos-apuracao', array($prazosApuracaoApi, 'handle'));
 $router->any('/api/prazos-apuracao/{id}', array($prazosApuracaoApi, 'handle'));
+$iniciativasApi = new IniciativasApiController();
+$iniciativasEvidencias = new IniciativaEvidenciaController();
+$router->get('/api/iniciativas', array($iniciativasApi, 'listInitiatives'));
+$router->post('/api/iniciativas/criar', array($iniciativasApi, 'createInitiative'));
+$router->post('/api/iniciativas/gerar-acompanhamentos', array($iniciativasApi, 'generateYear'));
+$router->get('/api/iniciativas/{id}', array($iniciativasApi, 'initiativeDetail'));
+$router->post('/api/iniciativas/{id}/editar', array($iniciativasApi, 'updateInitiative'));
+$router->post('/api/iniciativas/{id}/status', array($iniciativasApi, 'toggleInitiative'));
+$router->get('/api/iniciativas-acompanhamentos/{id}', array($iniciativasApi, 'accompanimentDetail'));
+$router->post('/api/iniciativas-acompanhamentos/{id}/salvar', array($iniciativasApi, 'saveDraft'));
+$router->post('/api/iniciativas-acompanhamentos/{id}/submeter', array($iniciativasApi, 'submit'));
+$router->get('/api/iniciativas-acompanhamentos/{id}/evidencias', array($iniciativasEvidencias, 'listApi'));
+$router->post('/api/iniciativas-acompanhamentos/{id}/evidencias', array($iniciativasEvidencias, 'uploadApi'));
+$router->post('/api/iniciativas-evidencias/{id}/remover', array($iniciativasEvidencias, 'removeApi'));
+$router->get('/iniciativas-evidencias/{id}/download', array($iniciativasEvidencias, 'download'));
+$router->get('/api/iniciativas-homologacoes', array($iniciativasApi, 'queue'));
+$router->get('/api/iniciativas-homologacoes/{id}', array($iniciativasApi, 'homologationDetail'));
+$router->post('/api/iniciativas-homologacoes/{id}/{action}', array($iniciativasApi, 'homologationAction'));
+$router->post('/api/iniciativas-consolidacao/{id}', array($iniciativasApi, 'consolidate'));
 
 $router->get('/saude', function () {
     Response::success(array('aplicacao' => 'disponivel', 'php' => PHP_VERSION), 'Aplicacao disponivel.');

@@ -4854,3 +4854,8 @@ select:disabled {
   #appHeader.app-header .system-version,
   .app-header .system-version { display: none; }
 }
+
+/* Módulo de Iniciativas Estratégicas. */
+.module-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 18px}.module-tabs a{padding:9px 14px;border:1px solid rgba(59,151,255,.35);border-radius:8px;color:#cfe2ff;text-decoration:none;background:rgba(7,31,61,.65)}.module-tabs a.active,.module-tabs a:hover{border-color:#31c4ff;color:#fff;background:rgba(49,196,255,.14)}
+.checkbox-line{display:flex!important;align-items:center;gap:8px}.checkbox-line input{width:auto!important}.initiative-item-group{padding:14px 0;border-top:1px solid rgba(59,151,255,.2)}.initiative-item-list{display:grid;gap:10px;margin:10px 0}.initiative-item-row{display:grid;grid-template-columns:minmax(140px,1fr) minmax(240px,2fr) minmax(120px,1fr) auto;gap:8px;align-items:start}.initiative-item-row textarea{min-height:72px}.item-order-actions{display:flex;flex-wrap:wrap;gap:5px}.history-list{display:grid;gap:8px}.history-entry,.consolidation-item{display:grid;gap:4px;padding:10px;border:1px solid rgba(59,151,255,.2);border-radius:8px;background:rgba(5,25,50,.5)}.history-entry span,.muted{color:#aabdd3}.preserve-lines{white-space:pre-wrap}.consolidation-item{grid-template-columns:auto 1fr;align-items:start;margin:6px 0}.consolidation-item input{margin-top:4px}.table-actions{display:flex;flex-wrap:wrap;gap:6px}
+@media(max-width:760px){.initiative-item-row{grid-template-columns:1fr}.module-tabs{display:grid;grid-template-columns:1fr}.panel-actions{align-items:stretch}}

@@ -280,3 +280,159 @@ BEGIN
         data_acesso DATETIME2 NOT NULL CONSTRAINT df_acessos_log_data_acesso DEFAULT SYSUTCDATETIME()
     );
 END;
+
+IF OBJECT_ID(N'dbo.iniciativas_estrategicas', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.iniciativas_estrategicas (
+        id NVARCHAR(100) NOT NULL CONSTRAINT pk_iniciativas_estrategicas PRIMARY KEY,
+        codigo NVARCHAR(50) NOT NULL,
+        plano NVARCHAR(255) NOT NULL,
+        pilar NVARCHAR(255) NOT NULL,
+        titulo_executivo NVARCHAR(255) NOT NULL,
+        descricao_oficial NVARCHAR(MAX) NOT NULL,
+        objetivo NVARCHAR(MAX) NOT NULL,
+        unidade_responsavel NVARCHAR(255) NOT NULL,
+        diretoria_responsavel NVARCHAR(255) NOT NULL,
+        ano_inicio INT NOT NULL,
+        trimestre_inicio NVARCHAR(10) NOT NULL,
+        previsao_conclusao DATE NULL,
+        exige_evidencia BIT NOT NULL CONSTRAINT df_iniciativas_estrategicas_exige_evidencia DEFAULT (0),
+        ativo BIT NOT NULL CONSTRAINT df_iniciativas_estrategicas_ativo DEFAULT (1),
+        created_by NVARCHAR(255) NULL,
+        created_at DATETIME2 NOT NULL CONSTRAINT df_iniciativas_estrategicas_created_at DEFAULT (SYSUTCDATETIME()),
+        updated_at DATETIME2 NULL,
+        CONSTRAINT uq_iniciativas_estrategicas_codigo UNIQUE (codigo),
+        CONSTRAINT ck_iniciativas_estrategicas_ano_inicio CHECK (ano_inicio BETWEEN 1900 AND 9999),
+        CONSTRAINT ck_iniciativas_estrategicas_trimestre_inicio CHECK (trimestre_inicio IN (N'1TRI', N'2TRI', N'3TRI', N'4TRI'))
+    );
+END;
+
+IF OBJECT_ID(N'dbo.iniciativas_acompanhamentos', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.iniciativas_acompanhamentos (
+        id NVARCHAR(100) NOT NULL CONSTRAINT pk_iniciativas_acompanhamentos PRIMARY KEY,
+        iniciativa_id NVARCHAR(100) NOT NULL,
+        ano INT NOT NULL,
+        trimestre NVARCHAR(10) NOT NULL,
+        competencia CHAR(7) NOT NULL,
+        data_referencia DATE NOT NULL,
+        plano_snapshot NVARCHAR(255) NOT NULL,
+        pilar_snapshot NVARCHAR(255) NOT NULL,
+        titulo_snapshot NVARCHAR(255) NOT NULL,
+        descricao_snapshot NVARCHAR(MAX) NOT NULL,
+        objetivo_snapshot NVARCHAR(MAX) NOT NULL,
+        unidade_snapshot NVARCHAR(255) NOT NULL,
+        diretoria_snapshot NVARCHAR(255) NOT NULL,
+        status_iniciativa NVARCHAR(40) NULL,
+        andamento_unidade NVARCHAR(MAX) NULL,
+        referencia_evidencia NVARCHAR(MAX) NULL,
+        sintese_executiva_ca NVARCHAR(MAX) NULL,
+        status_consolidacao_ca NVARCHAR(40) NOT NULL CONSTRAINT df_iniciativas_acompanhamentos_status_consolidacao_ca DEFAULT (N'PENDENTE'),
+        status_fluxo NVARCHAR(40) NOT NULL CONSTRAINT df_iniciativas_acompanhamentos_status_fluxo DEFAULT (N'NAO_INICIADO'),
+        usuario_responsavel NVARCHAR(255) NULL,
+        created_at DATETIME2 NOT NULL CONSTRAINT df_iniciativas_acompanhamentos_created_at DEFAULT (SYSUTCDATETIME()),
+        updated_at DATETIME2 NULL,
+        CONSTRAINT uq_iniciativas_acompanhamentos_iniciativa_competencia UNIQUE (iniciativa_id, competencia),
+        CONSTRAINT ck_iniciativas_acompanhamentos_ano CHECK (ano BETWEEN 1900 AND 9999),
+        CONSTRAINT ck_iniciativas_acompanhamentos_trimestre CHECK (trimestre IN (N'1TRI', N'2TRI', N'3TRI', N'4TRI')),
+        CONSTRAINT ck_iniciativas_acompanhamentos_competencia CHECK (
+            competencia LIKE '[12][0-9][0-9][0-9]-[01][0-9]'
+            AND SUBSTRING(competencia, 6, 2) IN ('03', '06', '09', '12')
+        ),
+        CONSTRAINT ck_iniciativas_acompanhamentos_periodo_consistente CHECK (
+            LEFT(competencia, 4) = CONVERT(CHAR(4), ano)
+            AND YEAR(data_referencia) = ano
+            AND data_referencia = EOMONTH(data_referencia)
+            AND (
+                (trimestre = N'1TRI' AND SUBSTRING(competencia, 6, 2) = '03' AND MONTH(data_referencia) = 3)
+                OR (trimestre = N'2TRI' AND SUBSTRING(competencia, 6, 2) = '06' AND MONTH(data_referencia) = 6)
+                OR (trimestre = N'3TRI' AND SUBSTRING(competencia, 6, 2) = '09' AND MONTH(data_referencia) = 9)
+                OR (trimestre = N'4TRI' AND SUBSTRING(competencia, 6, 2) = '12' AND MONTH(data_referencia) = 12)
+            )
+        ),
+        CONSTRAINT ck_iniciativas_acompanhamentos_status_iniciativa CHECK (
+            status_iniciativa IS NULL OR status_iniciativa IN (N'NAO_INICIADA', N'EM_ANDAMENTO', N'CONCLUIDA', N'SUSPENSA', N'CANCELADA')
+        ),
+        CONSTRAINT ck_iniciativas_acompanhamentos_status_fluxo CHECK (
+            status_fluxo IN (N'NAO_INICIADO', N'EM_PREENCHIMENTO', N'ENVIADO_HOMOLOGACAO', N'DEVOLVIDO_AJUSTE', N'HOMOLOGADO', N'REABERTO')
+        ),
+        CONSTRAINT ck_iniciativas_acompanhamentos_status_consolidacao_ca CHECK (
+            status_consolidacao_ca IN (N'PENDENTE', N'CONSOLIDADA', N'REVISAO_NECESSARIA')
+        ),
+        CONSTRAINT fk_iniciativas_acompanhamentos_iniciativas FOREIGN KEY (iniciativa_id)
+            REFERENCES dbo.iniciativas_estrategicas(id) ON DELETE NO ACTION ON UPDATE NO ACTION
+    );
+END;
+
+IF OBJECT_ID(N'dbo.iniciativas_acompanhamento_itens', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.iniciativas_acompanhamento_itens (
+        id NVARCHAR(100) NOT NULL CONSTRAINT pk_iniciativas_acompanhamento_itens PRIMARY KEY,
+        acompanhamento_id NVARCHAR(100) NOT NULL,
+        tipo NVARCHAR(40) NOT NULL,
+        titulo NVARCHAR(255) NULL,
+        descricao NVARCHAR(MAX) NOT NULL,
+        status NVARCHAR(100) NULL,
+        ordem INT NOT NULL CONSTRAINT df_iniciativas_acompanhamento_itens_ordem DEFAULT (0),
+        destaque_ca BIT NOT NULL CONSTRAINT df_iniciativas_acompanhamento_itens_destaque_ca DEFAULT (0),
+        created_at DATETIME2 NOT NULL CONSTRAINT df_iniciativas_acompanhamento_itens_created_at DEFAULT (SYSUTCDATETIME()),
+        updated_at DATETIME2 NULL,
+        CONSTRAINT ck_iniciativas_acompanhamento_itens_tipo CHECK (tipo IN (N'MARCO_ENTREGA', N'PROXIMO_PASSO', N'FRENTE_PROJETO')),
+        CONSTRAINT ck_iniciativas_acompanhamento_itens_ordem CHECK (ordem >= 0),
+        CONSTRAINT fk_iniciativas_acompanhamento_itens_acompanhamentos FOREIGN KEY (acompanhamento_id)
+            REFERENCES dbo.iniciativas_acompanhamentos(id) ON DELETE NO ACTION ON UPDATE NO ACTION
+    );
+END;
+
+IF OBJECT_ID(N'dbo.iniciativas_homologacoes', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.iniciativas_homologacoes (
+        id NVARCHAR(100) NOT NULL CONSTRAINT pk_iniciativas_homologacoes PRIMARY KEY,
+        acompanhamento_id NVARCHAR(100) NOT NULL,
+        acao NVARCHAR(100) NOT NULL,
+        status_anterior NVARCHAR(40) NULL,
+        status_novo NVARCHAR(40) NULL,
+        justificativa NVARCHAR(MAX) NULL,
+        usuario NVARCHAR(255) NULL,
+        perfil_usuario NVARCHAR(100) NULL,
+        data_acao DATETIME2 NOT NULL CONSTRAINT df_iniciativas_homologacoes_data_acao DEFAULT (SYSUTCDATETIME()),
+        created_at DATETIME2 NOT NULL CONSTRAINT df_iniciativas_homologacoes_created_at DEFAULT (SYSUTCDATETIME()),
+        CONSTRAINT fk_iniciativas_homologacoes_acompanhamentos FOREIGN KEY (acompanhamento_id)
+            REFERENCES dbo.iniciativas_acompanhamentos(id) ON DELETE NO ACTION ON UPDATE NO ACTION
+    );
+END;
+
+IF OBJECT_ID(N'dbo.iniciativas_evidencias', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.iniciativas_evidencias (
+        id NVARCHAR(100) NOT NULL CONSTRAINT pk_iniciativas_evidencias PRIMARY KEY,
+        acompanhamento_id NVARCHAR(100) NOT NULL,
+        nome_arquivo NVARCHAR(255) NOT NULL,
+        tipo_arquivo NVARCHAR(100) NULL,
+        caminho_arquivo NVARCHAR(MAX) NOT NULL,
+        descricao NVARCHAR(MAX) NULL,
+        data_upload DATETIME2 NOT NULL CONSTRAINT df_iniciativas_evidencias_data_upload DEFAULT (SYSUTCDATETIME()),
+        usuario NVARCHAR(255) NULL,
+        created_at DATETIME2 NOT NULL CONSTRAINT df_iniciativas_evidencias_created_at DEFAULT (SYSUTCDATETIME()),
+        CONSTRAINT fk_iniciativas_evidencias_acompanhamentos FOREIGN KEY (acompanhamento_id)
+            REFERENCES dbo.iniciativas_acompanhamentos(id) ON DELETE NO ACTION ON UPDATE NO ACTION
+    );
+END;
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id = OBJECT_ID(N'dbo.iniciativas_acompanhamentos') AND name = N'idx_iniciativas_acompanhamentos_unidade_competencia_status')
+    CREATE INDEX idx_iniciativas_acompanhamentos_unidade_competencia_status ON dbo.iniciativas_acompanhamentos (unidade_snapshot, competencia, status_fluxo);
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id = OBJECT_ID(N'dbo.iniciativas_acompanhamentos') AND name = N'idx_iniciativas_acompanhamentos_diretoria_competencia_status')
+    CREATE INDEX idx_iniciativas_acompanhamentos_diretoria_competencia_status ON dbo.iniciativas_acompanhamentos (diretoria_snapshot, competencia, status_fluxo);
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id = OBJECT_ID(N'dbo.iniciativas_acompanhamentos') AND name = N'idx_iniciativas_acompanhamentos_iniciativa_ano_trimestre')
+    CREATE INDEX idx_iniciativas_acompanhamentos_iniciativa_ano_trimestre ON dbo.iniciativas_acompanhamentos (iniciativa_id, ano, trimestre);
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id = OBJECT_ID(N'dbo.iniciativas_acompanhamento_itens') AND name = N'idx_iniciativas_acompanhamento_itens_acompanhamento_tipo_ordem')
+    CREATE INDEX idx_iniciativas_acompanhamento_itens_acompanhamento_tipo_ordem ON dbo.iniciativas_acompanhamento_itens (acompanhamento_id, tipo, ordem);
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id = OBJECT_ID(N'dbo.iniciativas_homologacoes') AND name = N'idx_iniciativas_homologacoes_acompanhamento_data')
+    CREATE INDEX idx_iniciativas_homologacoes_acompanhamento_data ON dbo.iniciativas_homologacoes (acompanhamento_id, data_acao);
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id = OBJECT_ID(N'dbo.iniciativas_evidencias') AND name = N'idx_iniciativas_evidencias_acompanhamento_data')
+    CREATE INDEX idx_iniciativas_evidencias_acompanhamento_data ON dbo.iniciativas_evidencias (acompanhamento_id, data_upload);

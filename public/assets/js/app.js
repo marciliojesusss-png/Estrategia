@@ -21,7 +21,10 @@
     [pageUrl("visao-trimestral"), "Visão Trimestral", "visaoTrimestral"],
     [pageUrl("indicadores"), "Indicadores", "indicadores"],
     [pageUrl("lancamentos"), "Lançamentos", "lancamentos"],
+    [pageUrl("iniciativas"), "Iniciativas Estratégicas", "iniciativas"],
     [pageUrl("homologacao"), "Homologação", "homologacao"],
+    [pageUrl("iniciativas/homologacao"), "Homologação de Iniciativas", "iniciativasHomologacao"],
+    [pageUrl("iniciativas/consolidacao-ca"), "Consolidação CA", "iniciativasConsolidacao"],
     [pageUrl("relatorios"), "Relatórios", "relatorios"],
     [pageUrl("administracao"), "Configurações", "administracao"],
     [pageUrl("auditoria"), "Auditoria", "auditoria"]
