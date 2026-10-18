@@ -42,7 +42,7 @@ final class IniciativaAcompanhamentoService
     {
         if($data['status_iniciativa']===null)throw new DomainException('Informe o status da iniciativa.');if($data['andamento_unidade']==='')throw new DomainException('Informe o andamento da Unidade antes do envio.');
         if(!in_array($data['status_iniciativa'],array('CONCLUIDA','CANCELADA'),true)){$next=0;foreach($items as$item)if($item['tipo']==='PROXIMO_PASSO')$next++;if($next===0)throw new DomainException('Informe ao menos um próximo passo.');}
-        if($record['exigeEvidencia']&&$data['referencia_evidencia']===''&&$this->evidence->countByAccompaniment($record['id'])===0)throw new DomainException('Informe uma referência documental ou anexe uma evidência.');
+        if($record['exigeEvidencia']&&$data['status_iniciativa']!=='NAO_INICIADA'&&$data['referencia_evidencia']===''&&$this->evidence->countByAccompaniment($record['id'])===0)throw new DomainException('Informe uma referência documental ou anexe uma evidência.');
     }
 
     private function normalize(array$input,$draft)

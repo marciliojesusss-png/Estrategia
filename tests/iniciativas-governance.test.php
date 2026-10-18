@@ -52,5 +52,7 @@ initiative_throws('UnexpectedValueException',function()use($record,$reviewer){Go
 GovernancaHomologacao::assertIndependentInitiativeReviewer($record,'',$consultant,array('U1'));
 initiative_ok(!in_array('acompanhamento_homologado',GovernancaHomologacao::initiativeProductionActions(),true),'homologação não conta como participação produtiva');
 initiative_ok(in_array('evidencia_iniciativa_anexada',GovernancaHomologacao::initiativeProductionActions(),true),'anexo deve contar como participação produtiva');
+initiative_ok(!in_array('IMPORTACAO_HISTORICA_INICIATIVA',GovernancaHomologacao::initiativeProductionActions(),true),'importação histórica de iniciativa não é participação produtiva');
+initiative_ok(!in_array('IMPORTACAO_HISTORICA_ACOMPANHAMENTO',GovernancaHomologacao::initiativeProductionActions(),true),'importação histórica de acompanhamento não é participação produtiva');
 
 echo 'Máquina de estados, permissões, segregação e governança de iniciativas OK'.PHP_EOL;
