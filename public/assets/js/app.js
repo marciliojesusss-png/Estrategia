@@ -193,7 +193,8 @@
   async function initPage() {
     const page = document.body.dataset.page;
     const centralExecutive = page === "resumoExecutivo";
-    const storageInfo = await DataStore.getStorageInfo();
+    const independentInitiativeApproval = page === "iniciativasHomologacao";
+    const storageInfo = independentInitiativeApproval ? null : await DataStore.getStorageInfo();
 
     if (page === "login") {
       await initLogin();
@@ -214,14 +215,14 @@
 
     const module = window.PageModules && window.PageModules[page];
     if (module) {
-      if (centralExecutive) {
+      if (centralExecutive || independentInitiativeApproval) {
         await module.init({ user });
       } else {
         const data = await DataStore.loadAll();
         await module.init({ data, user });
       }
     }
-    if (!centralExecutive && window.DataService?.initBaseValidacaoLocal) {
+    if (!centralExecutive && !independentInitiativeApproval && window.DataService?.initBaseValidacaoLocal) {
       window.DataService.initBaseValidacaoLocal();
     }
   }
