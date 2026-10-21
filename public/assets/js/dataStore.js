@@ -1950,7 +1950,18 @@
               metaTipo: "cobertura_com_quantidade_minima_de_iniciativas",
               metaCobertura: 0.90,
               quantidadeMinimaIniciativasAnual: 2,
+              mesesFechamentoTrimestral: [3, 6, 9, 12],
               curvaJogoResponsavel2026: JOGO_RESPONSAVEL_CAPACITACAO_CURVA_2026,
+              apresentacoesOficiaisTrimestrais: {
+                "2TRI/2026": {
+                  metaIntermediariaAplicavel: false,
+                  metaOficialReportada: 0,
+                  resultadoOficialReportado: 0.6685,
+                  percentualAtingidoOficialReportado: 0.6685,
+                  situacaoOficial: "No prazo",
+                  observacao: "Sem meta intermediária vinculante no período."
+                }
+              },
               sentidoMeta: "quanto_maior_melhor"
             },
             camposEntrada: [

@@ -430,8 +430,17 @@
     const resultadoPosicaoOficial = lancamentoPosicaoOficial === lancamentoOficial
       ? resultadoCalculado
       : calcularResultadoPorMotor(indicador, regra, lancamentoPosicaoOficial, lancamentosHistoricosValidos);
-    const percentualAtingido = getOfficialPercent(lancamentoOficial, resultadoCalculado, regra);
-    const resultado = getOfficialResult(lancamentoOficial, resultadoCalculado);
+    const percentualAtingidoTecnico = getOfficialPercent(lancamentoOficial, resultadoCalculado, regra);
+    const resultadoTecnico = getOfficialResult(lancamentoOficial, resultadoCalculado);
+    const metaTecnica = getOfficialMeta(regra, lancamentoOficial, resultadoCalculado);
+    const trimestreOficial = lancamentoOficial.trimestre || `${Math.ceil(Number(lancamentoOficial.mes) / 3)}TRI/${lancamentoOficial.ano}`;
+    const apresentacaoOficial = window.IndicatorFormulas?.obterApresentacaoOficialTrimestre?.(regra, trimestreOficial) || null;
+    const resultadoReportado = toFiniteNumber(apresentacaoOficial?.resultadoOficialReportado);
+    const atingimentoReportado = toFiniteNumber(apresentacaoOficial?.percentualAtingidoOficialReportado);
+    const metaReportada = toFiniteNumber(apresentacaoOficial?.metaOficialReportada);
+    const resultado = resultadoReportado ?? resultadoTecnico;
+    const percentualAtingido = atingimentoReportado ?? percentualAtingidoTecnico;
+    const meta = metaReportada ?? metaTecnica;
     const pesquisaAnual = regra?.tipoCalculo === "nota_pesquisa_anual";
     const medicaoOficialPesquisa2026 = pesquisaAnual
       ? isOfficialAnnualResearchMeasurement(regra, lancamentoOficial)
@@ -441,16 +450,22 @@
       ? (medicaoOficialPesquisa2026 ? lancamentoOficial : null)
       : (researchBased ? lancamentoOficial : null);
     const situacaoAtual = executiveCurrentSituation(regra, lancamentoAcao, resultadoOperacional);
-    const situacaoOficial = executiveCurrentSituation(regra, lancamentoPosicaoOficial, resultadoPosicaoOficial)
+    const situacaoTecnica = executiveCurrentSituation(regra, lancamentoPosicaoOficial, resultadoPosicaoOficial)
       || (resultadoCalculado && resultadoCalculado.situacao)
       || lancamentoOficial.situacaoCalculada
       || null;
+    const situacaoOficial = apresentacaoOficial?.situacaoOficial || situacaoTecnica;
 
     return {
       indicador,
       regra,
       resultado,
       percentualAtingido,
+      resultadoTecnico,
+      percentualAtingidoTecnico,
+      metaTecnica,
+      apresentacaoOficialDocumental: Boolean(apresentacaoOficial),
+      notaApresentacaoOficial: apresentacaoOficial?.observacao || null,
       competencia: competencia(lancamentoOficial),
       status: lancamentoOficial.status,
       lancamento: lancamentoOficial,
@@ -467,9 +482,10 @@
       resultadoOficialReportado,
       contextoResultadoOficial: resultadoOficialReportado ? reportedResultContext(lancamentoOficial) : null,
       statusAtual: positionBased ? lancamentoAcao.status : null,
-      meta: getOfficialMeta(regra, lancamentoOficial, resultadoCalculado),
+      meta,
       situacaoAtual,
       situacaoOficial,
+      situacaoTecnica,
       situacaoCalculada: situacaoOficial,
       resultadosMensais
     };

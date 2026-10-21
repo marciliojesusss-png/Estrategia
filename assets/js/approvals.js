@@ -449,6 +449,26 @@
       ["Data-base da pesquisa", lancamento.camposEntrada?.dataBasePesquisaNPS || "-"],
       ["Fórmula do NPS", "Percentual de promotores − percentual de detratores", true]
     ] : [];
+    const elementosRgf = regra?.tipoCalculo === "plano_acao_por_elementos"
+      ? (Array.isArray(lancamento.camposEntrada?.elementosRGFAtendidos) && lancamento.camposEntrada.elementosRGFAtendidos.length
+        ? lancamento.camposEntrada.elementosRGFAtendidos
+        : lancamento.camposEntrada?.elementoRGF
+          ? [{
+            elemento: lancamento.camposEntrada.elementoRGF,
+            status: lancamento.camposEntrada.statusAcao,
+            acao: lancamento.camposEntrada.acaoExecutada,
+            data: lancamento.camposEntrada.dataConclusao,
+            evidencia: lancamento.camposEntrada.evidenciaAcao
+          }]
+          : [])
+      : [];
+    const detalhesRgf = elementosRgf.flatMap((item, index) => [
+      [`Elemento RGF/WLA ${index + 1}`, item?.elemento || "-"],
+      [`Status do elemento ${index + 1}`, item?.status || "-"],
+      ...(item?.acao ? [[`Ação/descrição ${index + 1}`, item.acao, true]] : []),
+      ...(item?.data ? [[`Data ${index + 1}`, item.data]] : []),
+      ...(item?.evidencia ? [[`Referência textual ${index + 1}`, item.evidencia, true]] : [])
+    ]);
     const metaOficialCompetencia = window.DataStore?.resolveMeta?.(
       lancamento?.indicadorId,
       lancamento?.ano,
@@ -491,6 +511,7 @@
       ...(metodologiaIeo ? [["Metodologia vigente", metodologiaIeo.descricao, true]] : []),
       ...componentesIeo,
       ...componentesNps,
+      ...detalhesRgf,
       ...componentesInteiros,
       ...detalhesAprimoramento,
       ...detalhesPlataformaJogos,

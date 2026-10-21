@@ -150,6 +150,7 @@
           : ["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(row.rule.tipoCalculo) && quarter.baseReferencia2025Trimestre != null
             ? `<small>Base 2025: ${Calculations.formatarMoedaBR(quarter.baseReferencia2025Trimestre)}<br>Indice: ${Calculations.formatarPercentual(quarter.indiceTrimestral)}<br>Crescimento: ${Calculations.formatarPercentual(quarter.crescimentoTrimestral)}</small>`
           : ""}
+        ${quarter.notaApresentacaoOficial ? `<small>${escapeHtml(quarter.notaApresentacaoOficial)}</small>` : ""}
       </td>
       <td>
         ${row.rule.tipoCalculo === "razao_canais_digitais" && quarter.desempenhoTrimestral != null

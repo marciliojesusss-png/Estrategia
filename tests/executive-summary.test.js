@@ -215,6 +215,26 @@ assert.equal(jogoResponsavelCapacitacaoDashboardOficial.meta, 0.90);
 assert.ok(Math.abs(jogoResponsavelCapacitacaoDashboardOficial.resultado - (137 / 151)) < 0.000001);
 assert.equal(jogoResponsavelCapacitacaoDashboardOficial.percentualAtingido, 1);
 
+const jogoResponsavelComSetembroPendente = context.window.StrategicResults.calcularDashboard({
+  indicadores: [indicators.find((item) => item.id === 21)],
+  regras: [rules.find((item) => item.indicadorId === 21)],
+  lancamentos: [
+    { id: "JR-ABR", indicadorId: 21, ano: 2026, mes: 4, nomeMes: "Abril", competencia: "2026-04", trimestre: "2TRI/2026", status: "Homologado", metaReferencia: 0.90, camposEntrada: { publicoAlvoElegivelJR: 184, empregadosCapacitadosJR: 151, quantidadeMinimaIniciativasJR: 2 } },
+    { id: "JR-MAI", indicadorId: 21, ano: 2026, mes: 5, nomeMes: "Maio", competencia: "2026-05", trimestre: "2TRI/2026", status: "Homologado", metaReferencia: 0.90, camposEntrada: { publicoAlvoElegivelJR: 184, empregadosCapacitadosJR: 82, quantidadeMinimaIniciativasJR: 2 } },
+    { id: "JR-JUN", indicadorId: 21, ano: 2026, mes: 6, nomeMes: "Junho", competencia: "2026-06", trimestre: "2TRI/2026", status: "Homologado", metaReferencia: 0.90, camposEntrada: { publicoAlvoElegivelJR: 184, empregadosCapacitadosJR: 123, quantidadeMinimaIniciativasJR: 2 } },
+    { id: "JR-SET", indicadorId: 21, ano: 2026, mes: 9, nomeMes: "Setembro", competencia: "2026-09", trimestre: "3TRI/2026", status: "Em preenchimento", metaReferencia: 0.90, camposEntrada: { publicoAlvoElegivelJR: 171, empregadosCapacitadosJR: 99, quantidadeMinimaIniciativasJR: 2 } }
+  ]
+}).resultadosOficiais[0];
+assert.equal(jogoResponsavelComSetembroPendente.lancamento.id, "JR-JUN");
+assert.equal(jogoResponsavelComSetembroPendente.competencia, "Junho/2026");
+assert.equal(jogoResponsavelComSetembroPendente.status, "Homologado");
+assert.equal(jogoResponsavelComSetembroPendente.meta, 0);
+assert.equal(jogoResponsavelComSetembroPendente.resultado, 0.6685);
+assert.equal(jogoResponsavelComSetembroPendente.percentualAtingido, 0.6685);
+assert.equal(jogoResponsavelComSetembroPendente.situacaoOficial, "No prazo");
+assert.ok(Math.abs(jogoResponsavelComSetembroPendente.resultadoTecnico - (123 / 184)) < 0.000001);
+assert.ok(Math.abs(jogoResponsavelComSetembroPendente.percentualAtingidoTecnico - ((123 / 184) / 0.90)) < 0.000001);
+
 const lucroDashboardOficial = results.find((item) => item.indicador.id === 7);
 assert.equal(context.window.StrategicResults.officialSituation(lucroDashboardOficial), "Atingido");
 assert.equal(lucroDashboardOficial.competencia, "Março/2026");
@@ -341,6 +361,37 @@ assert.equal(principiosJune.competencia, "Junho/2026");
 assert.equal(principiosJune.meta, 2);
 assert.equal(principiosJune.resultado, 2);
 assert.equal(principiosJune.percentualAtingido, 1);
+
+const principiosSeptemberDraft = context.window.StrategicResults.calcularDashboard({
+  indicadores: [principiosIndicator],
+  regras: [principiosRule],
+  lancamentos: [
+    ...principiosBase.map((item) => item.id === "P-JUN" ? {
+      ...item,
+      status: "Homologado",
+      camposEntrada: { elementoRGF: "Orientação ao jogador para tratamento", acaoExecutada: "Revisão", statusAcao: "Concluída" }
+    } : item),
+    {
+      id: "P-SET",
+      indicadorId: 18,
+      ano: 2026,
+      mes: 9,
+      nomeMes: "Setembro",
+      trimestre: "3TRI/2026",
+      status: "Em preenchimento",
+      metaReferencia: 5,
+      camposEntrada: { elementosRGFAtendidos: [
+        "Pesquisa", "Programa para empregados", "Programa para revendedores", "Desenho para jogos",
+        "Canais de jogos remotos", "Orientação ao jogador para tratamento",
+        "Envolvimento das partes interessadas", "Relatório de medições e riscos"
+      ].map((elemento) => ({ elemento, status: "Concluída" })) }
+    }
+  ]
+}).resultadosOficiais[0];
+assert.equal(principiosSeptemberDraft.competencia, "Junho/2026");
+assert.equal(principiosSeptemberDraft.resultado, 2);
+assert.equal(principiosSeptemberDraft.meta, 2);
+assert.equal(principiosSeptemberDraft.percentualAtingido, 1);
 
 const capacitacaoIndicator = { ...indicators.find((item) => item.id === 15), periodicidade: "Mensal" };
 const capacitacaoRule = rules.find((item) => item.indicadorId === 15);

@@ -7,6 +7,11 @@
     return Number.isFinite(parsed) ? parsed : null;
   }
 
+  function obterApresentacaoOficialTrimestre(regra, trimestre) {
+    const apresentacao = regra?.parametrosCalculo?.apresentacoesOficiaisTrimestrais?.[trimestre];
+    return apresentacao && typeof apresentacao === "object" ? apresentacao : null;
+  }
+
   function metaLancamento(lancamento) {
     return toNumber(lancamento?.metaReferencia ?? lancamento?.metaMensal);
   }
@@ -1472,18 +1477,48 @@
   }
 
   function calcularPlanoAcaoPorElementos(indicador, regra, lancamentoAtual, lancamentosDoAno) {
-    const required = validarObrigatorios(regra, lancamentoAtual);
+    const colecaoAtual = Array.isArray(lancamentoAtual?.camposEntrada?.elementosRGFAtendidos)
+      ? lancamentoAtual.camposEntrada.elementosRGFAtendidos
+      : [];
+    const possuiColecaoValida = colecaoAtual.some((item) => (
+      String(item?.elemento || "").trim() && String(item?.status || "").trim()
+    ));
+    const regraValidacao = possuiColecaoValida
+      ? {
+        ...regra,
+        camposEntrada: (regra.camposEntrada || []).filter((item) => (
+          !["elementoRGF", "acaoExecutada", "statusAcao"].includes(item.nome)
+        ))
+      }
+      : regra;
+    const required = validarObrigatorios(regraValidacao, lancamentoAtual);
     if (required) return erro(required, regra.unidadeMedida);
     const campoElemento = regra.parametrosCalculo?.campoElemento || "elementoRGF";
     const campoStatus = regra.parametrosCalculo?.campoStatus || "statusAcao";
     const statusQueContam = regra.parametrosCalculo?.statusQueContam || ["Concluída", "Concluida", "Homologada"];
     if (regra.parametrosCalculo?.metaTipo === "curva_trimestral_acumulada" || regra.parametrosCalculo?.curvaTrimestralAcumulada) {
       const ateMes = lancamentosAteMes(lancamentoAtual, lancamentosDoAno);
-      const statusValidos = new Set(statusQueContam.map((item) => String(item).toLocaleLowerCase("pt-BR")));
-      const elementosAtendidos = [...new Set(ateMes
-        .filter((item) => statusValidos.has(texto(item, campoStatus).toLocaleLowerCase("pt-BR")))
-        .map((item) => texto(item, campoElemento).trim())
-        .filter(Boolean))];
+      const normalizarChave = (value) => String(value || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim()
+        .toLocaleLowerCase("pt-BR");
+      const statusValidos = new Set(statusQueContam.map(normalizarChave));
+      const elementosPorChave = new Map();
+      const registrarElemento = (elemento, status) => {
+        const nome = String(elemento || "").trim();
+        const chave = normalizarChave(nome);
+        if (!chave || !statusValidos.has(normalizarChave(status)) || elementosPorChave.has(chave)) return;
+        elementosPorChave.set(chave, nome);
+      };
+      ateMes.forEach((item) => {
+        registrarElemento(texto(item, campoElemento), texto(item, campoStatus));
+        const colecao = Array.isArray(item?.camposEntrada?.elementosRGFAtendidos)
+          ? item.camposEntrada.elementosRGFAtendidos
+          : [];
+        colecao.forEach((entrada) => registrarElemento(entrada?.elemento, entrada?.status));
+      });
+      const elementosAtendidos = [...elementosPorChave.values()];
       const acumulado = elementosAtendidos.length;
       const trimestre = lancamentoAtual.trimestre || `${Math.ceil(Number(lancamentoAtual.mes) / 3)}TRI/${lancamentoAtual.ano || 2026}`;
       const curva = regra.parametrosCalculo?.curvaTrimestralAcumulada || {};
@@ -1493,8 +1528,10 @@
       const metaAnual = toNumber(regra.metaAnualValor);
       const percentualAnual = metaAnual ? acumulado / metaAnual : null;
       const situacao = metaReferencia
-        ? acumulado >= metaReferencia
-          ? "Atingido"
+        ? acumulado > metaReferencia
+          ? "Superado"
+          : acumulado === metaReferencia
+            ? "Atingido"
           : "Abaixo da meta"
         : "Sem cálculo";
       return ok(acumulado, acumulado, percentual, percentual, regra.unidadeMedida, "Elementos únicos atendidos calculados com sucesso.", {
@@ -2108,6 +2145,7 @@
     obterRegra,
     regraFallback,
     toNumber,
+    obterApresentacaoOficialTrimestre,
     parseMoedaBR: currency.parseMoedaBR,
     formatarMoedaBR: currency.formatarMoedaBR,
     normalizarPercentual,

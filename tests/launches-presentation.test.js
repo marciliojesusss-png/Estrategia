@@ -44,6 +44,21 @@ assert.deepEqual(
   ["Meta trimestral", "R$ 2500.00"]
 );
 assert.equal(internals.quarterLabel({ mes: 12 }), "4TRI");
+assert.equal(internals.normalizeRgfKey("  Orientação AO Jogador  "), "orientacao ao jogador");
+assert.deepEqual(
+  JSON.parse(JSON.stringify(internals.rgfRowsFromLaunch({ camposEntrada: {
+    elementoRGF: "Pesquisa",
+    statusAcao: "Concluída",
+    acaoExecutada: "Ação legada"
+  } }))),
+  [{ elemento: "Pesquisa", status: "Concluída", acao: "Ação legada", data: "", evidencia: "" }]
+);
+assert.deepEqual(
+  JSON.parse(JSON.stringify(internals.rgfRowsFromLaunch({ camposEntrada: {
+    elementosRGFAtendidos: [{ elemento: "Pesquisa", status: "Homologada" }]
+  } }))),
+  [{ elemento: "Pesquisa", status: "Homologada", acao: "", data: "", evidencia: "" }]
+);
 
 const view = fs.readFileSync(path.join(root, "views", "frontend", "lancamentos.php"), "utf8");
 assert.match(view, /Registro dos dados pelas unidades apuradoras\./);

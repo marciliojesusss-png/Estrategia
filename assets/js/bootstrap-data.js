@@ -3432,6 +3432,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "metaTipo": "cobertura_com_quantidade_minima_de_iniciativas",
         "metaCobertura": 0.9,
         "quantidadeMinimaIniciativasAnual": 2,
+        "mesesFechamentoTrimestral": [3, 6, 9, 12],
         "curvaJogoResponsavel2026": {
           "1TRI/2026": {
             "metaCobertura": 0.9,
@@ -3452,6 +3453,16 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
             "metaCobertura": 0.9,
             "quantidadeMinimaIniciativas": 2,
             "descricao": "90% do público-alvo com pelo menos 2 iniciativas de Jogo Responsável concluídas"
+          }
+        },
+        "apresentacoesOficiaisTrimestrais": {
+          "2TRI/2026": {
+            "metaIntermediariaAplicavel": false,
+            "metaOficialReportada": 0,
+            "resultadoOficialReportado": 0.6685,
+            "percentualAtingidoOficialReportado": 0.6685,
+            "situacaoOficial": "No prazo",
+            "observacao": "Sem meta intermediÃ¡ria vinculante no perÃ­odo."
           }
         },
         "sentidoMeta": "quanto_maior_melhor"

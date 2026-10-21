@@ -64,7 +64,8 @@ const quarterlyRule = {
     statusQueContam: ["Concluída", "Homologada"],
     curvaTrimestralAcumulada: {
       "1TRI/2026": { metaElementosAcumulados: 1 },
-      "2TRI/2026": { metaElementosAcumulados: 2 }
+      "2TRI/2026": { metaElementosAcumulados: 2 },
+      "3TRI/2026": { metaElementosAcumulados: 5 }
     }
   },
   camposEntrada: []
@@ -84,6 +85,40 @@ assert.equal(secondQuarter.resultadoTrimestral, 2);
 assert.equal(secondQuarter.metaTrimestral, 2);
 assert.equal(secondQuarter.desempenhoTrimestral, 1);
 assert.equal(secondQuarter.dadosCalculados.percentualAtingidoAnual, 0.2);
+
+const septemberRgf = {
+  id: "set",
+  indicadorId: 18,
+  ano: 2026,
+  mes: 9,
+  nomeMes: "Setembro",
+  trimestre: "3TRI/2026",
+  status: "Em preenchimento",
+  metaReferencia: 5,
+  camposEntrada: {
+    elementosRGFAtendidos: [
+      "Pesquisa", "Programa para empregados", "Programa para revendedores", "Desenho para jogos",
+      "Canais de jogos remotos", "Orientação", "Envolvimento", "Relatório de medições e riscos"
+    ].map((elemento) => ({ elemento, status: "Concluída" }))
+  }
+};
+const thirdQuarterDraft = consolidarTrimestre(quarterlyIndicator, quarterlyRule, [...quarterlyLaunches, septemberRgf], "3TRI/2026");
+assert.equal(thirdQuarterDraft.statusTrimestre, "Sem dados");
+assert.equal(thirdQuarterDraft.resultadoTrimestral, null);
+
+const thirdQuarterClosed = consolidarTrimestre(
+  quarterlyIndicator,
+  quarterlyRule,
+  [...quarterlyLaunches, { ...septemberRgf, status: "Homologado" }],
+  "3TRI/2026"
+);
+assert.equal(thirdQuarterClosed.statusTrimestre, "Fechado");
+assert.equal(thirdQuarterClosed.mesesEsperados, 1);
+assert.equal(thirdQuarterClosed.mesesHomologados, 1);
+assert.equal(thirdQuarterClosed.resultadoTrimestral, 8);
+assert.equal(thirdQuarterClosed.metaTrimestral, 5);
+assert.equal(thirdQuarterClosed.desempenhoTrimestral, 1.6);
+assert.equal(thirdQuarterClosed.situacaoTrimestral, "Superado");
 
 const empty = consolidarTrimestre(indicator, rule, launches, "2TRI/2026");
 assert.equal(empty.statusTrimestre, "Sem dados");
@@ -972,11 +1007,27 @@ const jogoResponsavelCapacitacaoQuarter = consolidarTrimestre(
       campoQuantidadeMinima: "quantidadeMinimaIniciativasJR",
       metaTipo: "cobertura_com_quantidade_minima_de_iniciativas",
       metaCobertura: 0.90,
+      mesesFechamentoTrimestral: [3, 6, 9, 12],
       curvaJogoResponsavel2026: {
         "1TRI/2026": {
           metaCobertura: 0.90,
           quantidadeMinimaIniciativas: 1,
           descricao: "90% do público-alvo com pelo menos 1 ação de disseminação concluída"
+        },
+        "2TRI/2026": {
+          metaCobertura: 0.90,
+          quantidadeMinimaIniciativas: 2,
+          descricao: "90% do público-alvo com pelo menos 2 iniciativas concluídas"
+        }
+      },
+      apresentacoesOficiaisTrimestrais: {
+        "2TRI/2026": {
+          metaIntermediariaAplicavel: false,
+          metaOficialReportada: 0,
+          resultadoOficialReportado: 0.6685,
+          percentualAtingidoOficialReportado: 0.6685,
+          situacaoOficial: "No prazo",
+          observacao: "Sem meta intermediária vinculante no período."
         }
       }
     },
@@ -993,11 +1044,58 @@ const jogoResponsavelCapacitacaoQuarter = consolidarTrimestre(
   "1TRI/2026"
 );
 assert.equal(jogoResponsavelCapacitacaoQuarter.statusTrimestre, "Fechado");
-assert.equal(jogoResponsavelCapacitacaoQuarter.mesesHomologados, 3);
+assert.equal(jogoResponsavelCapacitacaoQuarter.mesesHomologados, 1);
 assert.equal(jogoResponsavelCapacitacaoQuarter.metaTrimestral, 0.90);
 assert.ok(Math.abs(jogoResponsavelCapacitacaoQuarter.resultadoTrimestral - (137 / 151)) < 0.000001);
 assert.equal(jogoResponsavelCapacitacaoQuarter.desempenhoTrimestral, 1);
 assert.equal(jogoResponsavelCapacitacaoQuarter.situacaoTrimestral, "Atingido");
+
+const jogoResponsavelCapacitacao2Tri = consolidarTrimestre(
+  { id: 21, indicador: "Jogo Responsável 2026 (Capacitação e Disseminação)", unidadeMedida: "percentual" },
+  jogoResponsavelCapacitacaoQuarter.regra,
+  [
+    { ano: 2026, mes: 4, status: "Homologado", competencia: "2026-04", trimestre: "2TRI/2026", metaReferencia: 0.90, camposEntrada: { publicoAlvoElegivelJR: 184, empregadosCapacitadosJR: 151, quantidadeMinimaIniciativasJR: 2 } },
+    { ano: 2026, mes: 5, status: "Homologado", competencia: "2026-05", trimestre: "2TRI/2026", metaReferencia: 0.90, camposEntrada: { publicoAlvoElegivelJR: 184, empregadosCapacitadosJR: 82, quantidadeMinimaIniciativasJR: 2 } },
+    { ano: 2026, mes: 6, status: "Homologado", competencia: "2026-06", trimestre: "2TRI/2026", metaReferencia: 0.90, camposEntrada: { publicoAlvoElegivelJR: 184, empregadosCapacitadosJR: 123, quantidadeMinimaIniciativasJR: 2 } }
+  ],
+  "2TRI/2026"
+);
+assert.equal(jogoResponsavelCapacitacao2Tri.statusTrimestre, "Fechado");
+assert.equal(jogoResponsavelCapacitacao2Tri.metaTrimestral, 0);
+assert.equal(jogoResponsavelCapacitacao2Tri.resultadoTrimestral, 0.6685);
+assert.equal(jogoResponsavelCapacitacao2Tri.desempenhoTrimestral, 0.6685);
+assert.equal(jogoResponsavelCapacitacao2Tri.situacaoTrimestral, "No prazo");
+assert.equal(jogoResponsavelCapacitacao2Tri.apresentacaoOficialDocumental, true);
+assert.equal(jogoResponsavelCapacitacao2Tri.metaTecnicaTrimestral, 0.90);
+assert.ok(Math.abs(jogoResponsavelCapacitacao2Tri.resultadoTecnicoTrimestral - (123 / 184)) < 0.000001);
+assert.ok(Math.abs(jogoResponsavelCapacitacao2Tri.desempenhoTecnicoTrimestral - ((123 / 184) / 0.90)) < 0.000001);
+
+const jogoResponsavelCapacitacao3TriPendente = consolidarTrimestre(
+  { id: 21, indicador: "Jogo Responsável 2026 (Capacitação e Disseminação)", unidadeMedida: "percentual" },
+  jogoResponsavelCapacitacaoQuarter.regra,
+  [
+    { ano: 2026, mes: 7, status: "Não iniciado", competencia: "2026-07", trimestre: "3TRI/2026", metaReferencia: 0.90, camposEntrada: {} },
+    { ano: 2026, mes: 8, status: "Não iniciado", competencia: "2026-08", trimestre: "3TRI/2026", metaReferencia: 0.90, camposEntrada: {} },
+    { ano: 2026, mes: 9, status: "Em preenchimento", competencia: "2026-09", trimestre: "3TRI/2026", metaReferencia: 0.90, camposEntrada: { publicoAlvoElegivelJR: 171, empregadosCapacitadosJR: 99, quantidadeMinimaIniciativasJR: 2 } }
+  ],
+  "3TRI/2026"
+);
+assert.equal(jogoResponsavelCapacitacao3TriPendente.statusTrimestre, "Sem dados");
+assert.equal(jogoResponsavelCapacitacao3TriPendente.resultadoTrimestral, null);
+
+const jogoResponsavelCapacitacao3TriHomologado = consolidarTrimestre(
+  { id: 21, indicador: "Jogo Responsável 2026 (Capacitação e Disseminação)", unidadeMedida: "percentual" },
+  jogoResponsavelCapacitacaoQuarter.regra,
+  jogoResponsavelCapacitacao3TriPendente.composicaoMensal.map((item) => ({
+    ...item.lancamento,
+    status: "Homologado"
+  })),
+  "3TRI/2026"
+);
+assert.equal(jogoResponsavelCapacitacao3TriHomologado.statusTrimestre, "Fechado");
+assert.ok(Math.abs(jogoResponsavelCapacitacao3TriHomologado.resultadoTrimestral - (99 / 171)) < 0.000001);
+assert.ok(Math.abs(jogoResponsavelCapacitacao3TriHomologado.desempenhoTrimestral - ((99 / 171) / 0.90)) < 0.000001);
+assert.equal(jogoResponsavelCapacitacao3TriHomologado.situacaoTrimestral, "Abaixo da meta");
 
 const lastPosition = consolidarTrimestre(
   { id: 2, indicador: "NPS", unidadeMedida: "pontos" },

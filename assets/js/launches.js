@@ -635,6 +635,150 @@
     `;
   }
 
+  function isRgfElementsRule(regra) {
+    return regra?.tipoCalculo === "plano_acao_por_elementos";
+  }
+
+  function normalizeRgfKey(value) {
+    return String(value || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim()
+      .toLocaleLowerCase("pt-BR");
+  }
+
+  function rgfRowsFromLaunch(lancamento) {
+    const fields = lancamento?.camposEntrada || {};
+    if (Array.isArray(fields.elementosRGFAtendidos) && fields.elementosRGFAtendidos.length) {
+      return fields.elementosRGFAtendidos.map((item) => ({
+        elemento: item?.elemento || "",
+        status: item?.status || "",
+        acao: item?.acao || "",
+        data: item?.data || "",
+        evidencia: item?.evidencia || ""
+      }));
+    }
+    if (fields.elementoRGF || fields.statusAcao || fields.acaoExecutada) {
+      return [{
+        elemento: fields.elementoRGF || "",
+        status: fields.statusAcao || "",
+        acao: fields.acaoExecutada || "",
+        data: fields.dataConclusao || "",
+        evidencia: fields.evidenciaAcao || ""
+      }];
+    }
+    return [{ elemento: "", status: "", acao: "", data: "", evidencia: "" }];
+  }
+
+  function rgfElementOptions(regra) {
+    return regra?.parametrosCalculo?.elementosJogoResponsavel || [];
+  }
+
+  function rgfStatusOptions(regra) {
+    const configuredField = (regra?.camposEntrada || []).find((field) => field.nome === "statusAcao");
+    return configuredField?.opcoes || ["Não iniciada", "Em andamento", "Concluída", "Homologada"];
+  }
+
+  function renderRgfOption(value, selectedValue, label = value) {
+    const selected = String(value) === String(selectedValue || "") ? "selected" : "";
+    return `<option value="${escapeHtml(value)}" ${selected}>${escapeHtml(label)}</option>`;
+  }
+
+  function renderRgfRow(row, regra) {
+    const elementOptions = rgfElementOptions(regra);
+    const statusOptions = rgfStatusOptions(regra);
+    return `
+      <article class="rgf-element-row" data-rgf-row>
+        <label>Elemento RGF/WLA
+          <select class="rgf-entry-field" data-rgf-field="elemento" required>
+            ${renderRgfOption("", row.elemento, "Selecione")}
+            ${elementOptions.map((option) => renderRgfOption(option, row.elemento)).join("")}
+          </select>
+        </label>
+        <label>Status
+          <select class="rgf-entry-field" data-rgf-field="status" required>
+            ${renderRgfOption("", row.status, "Selecione")}
+            ${statusOptions.map((option) => {
+              const label = typeof option === "string" ? option : option.label ?? option.nome ?? option.value ?? "";
+              const value = typeof option === "string" ? option : option.value ?? option.id ?? label;
+              return renderRgfOption(value, row.status, label);
+            }).join("")}
+          </select>
+        </label>
+        <label class="full-span">Ação/descrição <span class="field-optional">(opcional)</span>
+          <textarea class="rgf-entry-field" data-rgf-field="acao" rows="2">${escapeHtml(row.acao)}</textarea>
+        </label>
+        <label>Data <span class="field-optional">(opcional)</span>
+          <input class="rgf-entry-field" data-rgf-field="data" type="date" value="${escapeHtml(row.data)}">
+        </label>
+        <label>Referência/evidência textual <span class="field-optional">(opcional)</span>
+          <input class="rgf-entry-field" data-rgf-field="evidencia" type="text" value="${escapeHtml(row.evidencia)}">
+        </label>
+        <button class="secondary-action rgf-remove-row" type="button" data-remove-rgf-element>Remover elemento</button>
+      </article>
+    `;
+  }
+
+  function renderRgfElementsFields(lancamento, regra) {
+    return `
+      <section class="rgf-elements-editor full-span">
+        <div class="rgf-elements-heading">
+          <div>
+            <h4>Elementos atendidos</h4>
+            <p>Registre cada elemento uma única vez. Somente Concluída e Homologada entram no cálculo.</p>
+          </div>
+          <button class="secondary-action" type="button" data-add-rgf-element>Adicionar elemento</button>
+        </div>
+        <div class="rgf-elements-list">
+          ${rgfRowsFromLaunch(lancamento).map((row) => renderRgfRow(row, regra)).join("")}
+        </div>
+      </section>
+    `;
+  }
+
+  function collectRgfRows() {
+    return [...document.querySelectorAll("[data-rgf-row]")].map((row) => ({
+      elemento: row.querySelector('[data-rgf-field="elemento"]')?.value.trim() || "",
+      status: row.querySelector('[data-rgf-field="status"]')?.value.trim() || "",
+      acao: row.querySelector('[data-rgf-field="acao"]')?.value.trim() || "",
+      data: row.querySelector('[data-rgf-field="data"]')?.value.trim() || "",
+      evidencia: row.querySelector('[data-rgf-field="evidencia"]')?.value.trim() || ""
+    })).filter((item) => Object.values(item).some(Boolean));
+  }
+
+  function validateRgfRows(regra, options = {}) {
+    if (!isRgfElementsRule(regra)) return true;
+    const rows = [...document.querySelectorAll("[data-rgf-row]")];
+    const seen = new Set();
+    let invalid = null;
+    rows.forEach((row) => {
+      const elementInput = row.querySelector('[data-rgf-field="elemento"]');
+      const statusInput = row.querySelector('[data-rgf-field="status"]');
+      const key = normalizeRgfKey(elementInput?.value);
+      elementInput?.setCustomValidity("");
+      statusInput?.setCustomValidity("");
+      if (!key && !invalid) {
+        elementInput?.setCustomValidity("Selecione o elemento RGF/WLA.");
+        invalid = elementInput;
+      } else if (seen.has(key) && !invalid) {
+        elementInput?.setCustomValidity("Este elemento já foi informado nesta competência.");
+        invalid = elementInput;
+      } else if (key) {
+        seen.add(key);
+      }
+      if (!String(statusInput?.value || "").trim() && !invalid) {
+        statusInput?.setCustomValidity("Selecione o status do elemento.");
+        invalid = statusInput;
+      }
+    });
+    if (!rows.length) return false;
+    if (invalid && options.focus) {
+      invalid.reportValidity();
+      invalid.focus();
+    }
+    return !invalid;
+  }
+
   function isOfertasPersonalizadasRule(regra) {
     return Boolean(regra && (
       ((regra.camposEntrada || []).some((field) => field.nome === "baseClientesAtivos") &&
@@ -793,7 +937,7 @@
     ].forEach((id) => {
       document.getElementById(id).disabled = disabled;
     });
-    document.querySelectorAll(".dynamic-entry-field, .dynamic-entry-toggle").forEach((input) => {
+    document.querySelectorAll(".dynamic-entry-field, .dynamic-entry-toggle, .rgf-entry-field, [data-add-rgf-element], [data-remove-rgf-element]").forEach((input) => {
       input.disabled = disabled;
     });
   }
@@ -954,6 +1098,10 @@
         ` : ""}
       `;
       updateIeoOptionalVisibility();
+      return;
+    }
+    if (isRgfElementsRule(regra)) {
+      document.getElementById("dynamicInputFields").innerHTML = renderRgfElementsFields(lancamento, regra);
       return;
     }
     const visibleFields = window.DocumentationFields
@@ -1474,6 +1622,11 @@
       }
       values[input.dataset.entryField] = input.value.trim();
     });
+    const selectedLaunch = getSelectedLaunch();
+    const selectedIndicator = selectedLaunch && getIndicatorMap()[selectedLaunch.indicadorId];
+    if (selectedIndicator && isRgfElementsRule(getRule(selectedIndicator))) {
+      values.elementosRGFAtendidos = collectRgfRows();
+    }
     return values;
   }
 
@@ -1620,6 +1773,11 @@
       invalidIntegerInput.reportValidity();
       invalidIntegerInput.focus();
       showMessage("Corrija a quantidade informada: use apenas números inteiros não negativos.", "warning");
+      return false;
+    }
+
+    if (!validateRgfRows(regra, { focus: true })) {
+      showMessage("Informe elemento e status sem duplicidades para cada linha RGF/WLA.", "warning");
       return false;
     }
 
@@ -1895,6 +2053,10 @@
     document.querySelectorAll(".dynamic-entry-field").forEach((input) => {
       input.value = "";
     });
+    if (isRgfElementsRule(getRule(getIndicatorMap()[lancamento.indicadorId]))) {
+      const list = document.querySelector(".rgf-elements-list");
+      if (list) list.innerHTML = renderRgfRow({ elemento: "", status: "", acao: "", data: "", evidencia: "" }, getRule(getIndicatorMap()[lancamento.indicadorId]));
+    }
     clearSocioambientalValidation();
     const ieoDirectToggle = document.getElementById("ieoDirectToggle");
     if (ieoDirectToggle) {
@@ -1968,6 +2130,27 @@
       if (socioambientalValidationActive && regra?.tipoCalculo === "iniciativas_apoiadas") {
         validateSocioambientalRequiredFields(regra);
       }
+    });
+    document.getElementById("dynamicInputFields").addEventListener("click", (event) => {
+      const lancamento = getSelectedLaunch();
+      const indicador = lancamento && getIndicatorMap()[lancamento.indicadorId];
+      const regra = indicador && getRule(indicador);
+      if (!isRgfElementsRule(regra) || !isEditable(lancamento)) return;
+      if (event.target.closest("[data-add-rgf-element]")) {
+        document.querySelector(".rgf-elements-list")?.insertAdjacentHTML(
+          "beforeend",
+          renderRgfRow({ elemento: "", status: "", acao: "", data: "", evidencia: "" }, regra)
+        );
+        return;
+      }
+      const removeButton = event.target.closest("[data-remove-rgf-element]");
+      if (!removeButton) return;
+      removeButton.closest("[data-rgf-row]")?.remove();
+      const list = document.querySelector(".rgf-elements-list");
+      if (list && !list.querySelector("[data-rgf-row]")) {
+        list.insertAdjacentHTML("beforeend", renderRgfRow({ elemento: "", status: "", acao: "", data: "", evidencia: "" }, regra));
+      }
+      updateCalculatedPreview();
     });
     document.getElementById("dynamicInputFields").addEventListener("change", (event) => {
       if (event.target.id === "ieoDirectToggle") updateIeoOptionalVisibility();
@@ -2054,6 +2237,8 @@
     getDisplayMeta,
     formatDisplayMeta,
     renderEntryInput,
-    socioambientalRequiredFieldState
+    socioambientalRequiredFieldState,
+    normalizeRgfKey,
+    rgfRowsFromLaunch
   };
 })();

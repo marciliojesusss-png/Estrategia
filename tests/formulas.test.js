@@ -1673,6 +1673,62 @@ closeTo(principios3TriAtingido.percentualAtingidoMensal, 1);
 closeTo(principios3TriAtingido.percentualAtingidoAnual, 0.5);
 assert.equal(principios3TriAtingido.situacao, "Atingido");
 
+const principios3TriColecao = formulas.calcularIndicador(
+  indicador(18, "Princípios de Jogo Responsável"),
+  regraPrincipiosJogoResponsavel,
+  {
+    ano: 2026,
+    mes: 9,
+    trimestre: "3TRI/2026",
+    metaReferencia: 5,
+    camposEntrada: {
+      elementosRGFAtendidos: [
+        { elemento: "Pesquisa", status: "Concluída" },
+        { elemento: "Programa para empregados", status: "Homologada" },
+        { elemento: "Programa para revendedores", status: "Concluída" },
+        { elemento: "Desenho para jogos", status: "Concluída" },
+        { elemento: "Canais de jogos remotos", status: "Concluída" },
+        { elemento: "Orientação ao jogador para tratamento", status: "Concluída" },
+        { elemento: "Envolvimento das partes interessadas", status: "Concluída" },
+        { elemento: "Relatório de medições e riscos", status: "Concluída" },
+        { elemento: " pesquisa ", status: "CONCLUIDA" },
+        { elemento: "Educação do jogador", status: "Em andamento" }
+      ]
+    }
+  },
+  [
+    { ano: 2026, mes: 3, camposEntrada: { elementoRGF: "Envolvimento das partes interessadas", statusAcao: "Concluída", acaoExecutada: "Fórum" } },
+    { ano: 2026, mes: 6, camposEntrada: { elementoRGF: "Orientação ao jogador para tratamento", statusAcao: "Concluída", acaoExecutada: "Revisão" } },
+    {
+      ano: 2026,
+      mes: 9,
+      trimestre: "3TRI/2026",
+      metaReferencia: 5,
+      camposEntrada: {
+        elementosRGFAtendidos: [
+          { elemento: "Pesquisa", status: "Concluída" },
+          { elemento: "Programa para empregados", status: "Homologada" },
+          { elemento: "Programa para revendedores", status: "Concluída" },
+          { elemento: "Desenho para jogos", status: "Concluída" },
+          { elemento: "Canais de jogos remotos", status: "Concluída" },
+          { elemento: "Orientação ao jogador para tratamento", status: "Concluída" },
+          { elemento: "Envolvimento das partes interessadas", status: "Concluída" },
+          { elemento: "Relatório de medições e riscos", status: "Concluída" },
+          { elemento: " pesquisa ", status: "CONCLUIDA" },
+          { elemento: "Educação do jogador", status: "Em andamento" }
+        ]
+      }
+    }
+  ]
+);
+assert.equal(principios3TriColecao.resultadoMensal, 8);
+assert.equal(principios3TriColecao.resultadoAcumulado, 8);
+assert.equal(principios3TriColecao.metaTrimestral, 5);
+assert.equal(principios3TriColecao.elementosAtendidos.length, 8);
+closeTo(principios3TriColecao.percentualAtingidoMensal, 1.6);
+closeTo(principios3TriColecao.percentualAtingidoAcumulado, 1.6);
+assert.equal(principios3TriColecao.situacao, "Superado");
+
 const principios4Tri = calcularPrincipiosNoTrimestre("4TRI/2026", ["Elemento 1", "Elemento 2", "Elemento 3", "Elemento 4", "Elemento 5", "Elemento 6", "Elemento 7", "Elemento 8", "Elemento 9", "Elemento 10"]);
 closeTo(principios4Tri.percentualAtingidoMensal, 1);
 closeTo(principios4Tri.percentualAtingidoAnual, 1);
@@ -2074,6 +2130,7 @@ const regraJogoResponsavelCapacitacao = {
     campoQuantidadeMinima: "quantidadeMinimaIniciativasJR",
     metaTipo: "cobertura_com_quantidade_minima_de_iniciativas",
     metaCobertura: 0.90,
+    mesesFechamentoTrimestral: [3, 6, 9, 12],
     curvaJogoResponsavel2026: {
       "1TRI/2026": {
         metaCobertura: 0.90,
@@ -2084,6 +2141,16 @@ const regraJogoResponsavelCapacitacao = {
         metaCobertura: 0.90,
         quantidadeMinimaIniciativas: 2,
         descricao: "90% do público-alvo com pelo menos 2 iniciativas concluídas"
+      }
+    },
+    apresentacoesOficiaisTrimestrais: {
+      "2TRI/2026": {
+        metaIntermediariaAplicavel: false,
+        metaOficialReportada: 0,
+        resultadoOficialReportado: 0.6685,
+        percentualAtingidoOficialReportado: 0.6685,
+        situacaoOficial: "No prazo",
+        observacao: "Sem meta intermediária vinculante no período."
       }
     }
   },
@@ -2112,6 +2179,31 @@ closeTo(jogoResponsavel1Tri.resultadoMensal, 137 / 151);
 assert.equal(jogoResponsavel1Tri.percentualAtingidoMensal, 1);
 assert.equal(jogoResponsavel1Tri.quantidadeMinimaIniciativasJR, 1);
 assert.equal(jogoResponsavel1Tri.situacao, "Atingido");
+
+const jogoResponsavelJunho = formulas.calcularIndicador(
+  indicador(21, "Jogo Responsável 2026 (Capacitação e Disseminação)"),
+  regraJogoResponsavelCapacitacao,
+  {
+    ano: 2026,
+    mes: 6,
+    trimestre: "2TRI/2026",
+    metaReferencia: 0.90,
+    camposEntrada: {
+      publicoAlvoElegivelJR: 184,
+      empregadosCapacitadosJR: 123,
+      quantidadeMinimaIniciativasJR: 2
+    }
+  },
+  []
+);
+closeTo(jogoResponsavelJunho.resultadoMensal, 123 / 184);
+closeTo(jogoResponsavelJunho.percentualAtingidoMensal, (123 / 184) / 0.90);
+assert.equal(jogoResponsavelJunho.situacao, "Abaixo da meta");
+assert.deepEqual(
+  formulas.obterApresentacaoOficialTrimestre(regraJogoResponsavelCapacitacao, "2TRI/2026"),
+  regraJogoResponsavelCapacitacao.parametrosCalculo.apresentacoesOficiaisTrimestrais["2TRI/2026"]
+);
+assert.equal(formulas.obterApresentacaoOficialTrimestre(regraJogoResponsavelCapacitacao, "1TRI/2026"), null);
 
 const bootstrapData = loadBootstrapData();
 const regras = bootstrapData.regrasIndicadores;

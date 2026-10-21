@@ -295,7 +295,9 @@
   function consolidarTrimestre(indicador, regra, lancamentosDoIndicador, trimestre) {
     const number = quarterNumber(trimestre);
     const months = obterMesesDoTrimestre(trimestre);
+    const configuredClosingMonths = regra?.parametrosCalculo?.mesesFechamentoTrimestral;
     const expectedMonths = months.filter((month) => (
+      (!Array.isArray(configuredClosingMonths) || configuredClosingMonths.includes(month)) &&
       root.IndicatorPeriodicity?.isExpectedMonth(indicador, month) !== false
     ));
     const year = getYear(trimestre);
@@ -419,6 +421,24 @@
       performance = result / meta;
     }
 
+    const technicalMeta = meta;
+    const technicalResult = result;
+    const technicalPerformance = performance;
+    const technicalSituation = getSituation(validCalculation, technicalPerformance);
+    const officialPresentation = root.IndicatorFormulas?.obterApresentacaoOficialTrimestre?.(regra, label) || null;
+    if (officialPresentation) {
+      const reportedMeta = toNumber(officialPresentation.metaOficialReportada);
+      const reportedResult = toNumber(officialPresentation.resultadoOficialReportado);
+      const reportedPerformance = toNumber(officialPresentation.percentualAtingidoOficialReportado);
+      if (reportedMeta !== null) meta = reportedMeta;
+      if (reportedResult !== null) {
+        result = reportedResult;
+        officialPresentedResult = reportedResult;
+      }
+      if (reportedPerformance !== null) performance = reportedPerformance;
+    }
+    const officialSituation = officialPresentation?.situacaoOficial || technicalSituation;
+
     return {
       indicador,
       regra,
@@ -446,7 +466,13 @@
       crescimentoTrimestral: ["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(regra?.tipoCalculo) ? validCalculation?.crescimentoVs2025 ?? null : null,
       desempenhoTrimestral: performance,
       metaTrimestral: meta,
-      situacaoTrimestral: getSituation(validCalculation, performance),
+      situacaoTrimestral: officialSituation,
+      metaTecnicaTrimestral: technicalMeta,
+      resultadoTecnicoTrimestral: technicalResult,
+      desempenhoTecnicoTrimestral: technicalPerformance,
+      situacaoTecnicaTrimestral: technicalSituation,
+      apresentacaoOficialDocumental: Boolean(officialPresentation),
+      notaApresentacaoOficial: officialPresentation?.observacao || null,
       statusTrimestre: quarterStatus,
       mesesHomologados: homologatedCount,
       mesesEsperados: expectedCount,

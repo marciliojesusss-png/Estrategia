@@ -1528,16 +1528,22 @@
       if (isPrincipiosJogoResponsavel) {
         const quarter = launch?.trimestre || `${Math.ceil(month / 3)}TRI/2026`;
         const curve = regra?.parametrosCalculo?.curvaTrimestralAcumulada || {};
-        const status = launch?.camposEntrada?.statusAcao || "";
-        const counts = ["Concluída", "Concluida", "Homologada"].includes(status);
+        const legacyFields = launch?.camposEntrada || {};
+        const collection = Array.isArray(legacyFields.elementosRGFAtendidos) && legacyFields.elementosRGFAtendidos.length
+          ? legacyFields.elementosRGFAtendidos
+          : (legacyFields.elementoRGF || legacyFields.statusAcao || legacyFields.acaoExecutada)
+            ? [{ elemento: legacyFields.elementoRGF, status: legacyFields.statusAcao, acao: legacyFields.acaoExecutada, data: legacyFields.dataConclusao }]
+            : [];
+        const status = collection.map((item) => item?.status).filter(Boolean).join(" • ");
+        const counts = collection.some((item) => ["Concluída", "Concluida", "Homologada"].includes(item?.status));
         return `
           <tr>
             <td>${escapeHtml(window.IndicatorPeriodicity?.competenceLabel(indicador, launch || { ano: 2026, mes: month }, QuarterlyConsolidation.MONTHS) || `${name}/2026`)}</td>
             <td>${Calculations.formatarValor(curve[quarter]?.metaElementosAcumulados, "quantidade")}</td>
-            <td>${escapeHtml(launch?.camposEntrada?.elementoRGF || "-")}</td>
+            <td>${escapeHtml(collection.map((item) => item?.elemento).filter(Boolean).join(" • ") || "-")}</td>
             <td>${escapeHtml(status || "-")}</td>
-            <td>${escapeHtml(launch?.camposEntrada?.acaoExecutada || "-")}</td>
-            <td>${escapeHtml(launch?.camposEntrada?.dataConclusao || "-")}</td>
+            <td>${escapeHtml(collection.map((item) => item?.acao).filter(Boolean).join(" • ") || "-")}</td>
+            <td>${escapeHtml(collection.map((item) => item?.data).filter(Boolean).join(" • ") || "-")}</td>
             <td>${counts ? "Sim" : "Não"}</td>
             <td>${escapeHtml(documentation.reference || "-")}</td>
             <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologação" ? "warn" : "info"}">${escapeHtml(launch?.status || "Não iniciado")}</span></td>
