@@ -280,24 +280,31 @@
     return true;
   }
 
+  function isOfficialAnnualResearchMeasurement(regra, lancamento) {
+    if (regra?.tipoCalculo !== "nota_pesquisa_anual" || !lancamento) return false;
+    if (window.IndicatorFormulas?.isMedicaoOficialPesquisaAnual) {
+      return window.IndicatorFormulas.isMedicaoOficialPesquisaAnual(regra, lancamento);
+    }
+    const campoTipoPosicao = regra.parametrosCalculo?.campoTipoPosicao || "tipoPosicaoClima";
+    const tipoPosicao = String(lancamento.camposEntrada?.[campoTipoPosicao] || "");
+    return ["Pesquisa oficial", "Fechamento anual"].includes(tipoPosicao);
+  }
+
+  function reportedResultContext(lancamento) {
+    if (!lancamento) return null;
+    const quarter = lancamento.trimestre || `${Math.ceil(Number(lancamento.mes) / 3)}TRI/${lancamento.ano}`;
+    return `Resultado oficial reportado no ${quarter}`;
+  }
+
   function resolveLatestQuantitativePosition(indicador, regra, lancamentosDoIndicador) {
-    const homologatedOnlyTypes = new Set([
-      "razao_canais_digitais",
-      "participacao_ecossistema_com_cenarios",
-      "incremento_rede_loterica_base_2025",
-      "crescimento_comparado_base_2025",
-      "crescimento_rede_loterica_base_2025",
-      "lucro_recorrente_mensal",
-      "cobertura_capacitacao",
-      "nota_pesquisa_nps",
-      "nota_pesquisa_anual",
-      "melhorias_acumuladas",
-      "projeto_marco_entrega"
-    ]);
-    const validSource = homologatedOnlyTypes.has(regra?.tipoCalculo)
-      ? (lancamentosDoIndicador || []).filter((item) => item.status === "Homologado")
-      : (lancamentosDoIndicador || []);
-    const historicalLaunches = validSource
+    const source = lancamentosDoIndicador || [];
+    const officialSource = source.filter((item) => item.status === "Homologado");
+    const allHistoricalLaunches = source
+      .filter(hasValidLaunchData)
+      .sort(sortByOfficialCompetence);
+    const allOperationalLaunches = allHistoricalLaunches
+      .filter((launch) => isOfficialCompetence(indicador, launch));
+    const historicalLaunches = officialSource
       .filter(hasValidLaunchData)
       .sort(sortByOfficialCompetence);
     const operationalLaunches = historicalLaunches
@@ -308,7 +315,8 @@
       historicalLaunches,
       operationalLaunches,
       quantitativeLaunches,
-      latestOperationalLaunch: operationalLaunches.at(-1) || null,
+      latestOfficialOperationalLaunch: operationalLaunches.at(-1) || null,
+      latestOperationalLaunch: allOperationalLaunches.at(-1) || null,
       latestQuantitativeLaunch: selectOfficialLaunch(regra, quantitativeLaunches)
     };
   }
@@ -376,39 +384,67 @@
         Number(item.ano) === agora.getFullYear() && Number(item.mes) === agora.getMonth() + 1
       ));
       const lancamentoAcao = lancamentoCompetenciaAtual || lancamentosOperacionaisValidos.at(-1) || lancamentosOrdenados.at(-1) || null;
+      const lancamentoPosicaoOficial = positions.latestOfficialOperationalLaunch;
       const possuiAndamento = lancamentoAcao && lancamentoAcao.status !== "Não iniciado";
       const situacaoAtual = executiveCurrentSituation(regra, lancamentoAcao);
+      const possuiPosicaoOficial = Boolean(
+        lancamentoPosicaoOficial && lancamentoAcao?.status === "Homologado"
+      );
+      const situacaoOficial = possuiPosicaoOficial ? situacaoAtual : null;
       return {
         indicador,
         regra,
         resultado: null,
         percentualAtingido: null,
-        competencia: possuiAndamento ? competencia(lancamentoAcao) : null,
-        status: lancamentoAcao?.status || "Não iniciado",
+        competencia: possuiPosicaoOficial && possuiAndamento ? competencia(lancamentoAcao) : null,
+        status: possuiPosicaoOficial ? lancamentoAcao.status : null,
         lancamento: null,
         lancamentoAcao,
         latestOperationalLaunch: lancamentoAcao,
         latestQuantitativeLaunch: null,
+        possuiPosicaoOficial,
         competenciaAtual: possuiAndamento ? competencia(lancamentoAcao) : null,
         competenciaMedicao: null,
         competenciaMedicaoCurta: null,
+        competenciaResultadoReportado: null,
+        competenciaResultadoReportadoCurta: null,
+        medicaoOficialPesquisa2026: false,
+        resultadoOficialReportado: false,
+        contextoResultadoOficial: null,
         statusAtual: lancamentoAcao?.status || "Não iniciado",
-        meta: getOfficialMeta(regra, lancamentoAcao, null),
+        meta: possuiPosicaoOficial ? getOfficialMeta(regra, lancamentoAcao, null) : null,
         situacaoAtual,
-        situacaoCalculada: situacaoAtual || "Sem dados",
+        situacaoOficial,
+        situacaoCalculada: situacaoOficial || "Sem dados",
         resultadosMensais
       };
     }
 
     const lancamentoOficial = positions.latestQuantitativeLaunch;
     const lancamentoAcao = positions.latestOperationalLaunch || lancamentoOficial;
+    const lancamentoPosicaoOficial = positions.latestOfficialOperationalLaunch || lancamentoOficial;
     const resultadoCalculado = calcularResultadoPorMotor(indicador, regra, lancamentoOficial, lancamentosHistoricosValidos);
     const resultadoOperacional = lancamentoAcao === lancamentoOficial
       ? resultadoCalculado
       : calcularResultadoPorMotor(indicador, regra, lancamentoAcao, lancamentosHistoricosValidos);
+    const resultadoPosicaoOficial = lancamentoPosicaoOficial === lancamentoOficial
+      ? resultadoCalculado
+      : calcularResultadoPorMotor(indicador, regra, lancamentoPosicaoOficial, lancamentosHistoricosValidos);
     const percentualAtingido = getOfficialPercent(lancamentoOficial, resultadoCalculado, regra);
     const resultado = getOfficialResult(lancamentoOficial, resultadoCalculado);
+    const pesquisaAnual = regra?.tipoCalculo === "nota_pesquisa_anual";
+    const medicaoOficialPesquisa2026 = pesquisaAnual
+      ? isOfficialAnnualResearchMeasurement(regra, lancamentoOficial)
+      : null;
+    const resultadoOficialReportado = pesquisaAnual && !medicaoOficialPesquisa2026 && resultado !== null;
+    const lancamentoMedicao = pesquisaAnual
+      ? (medicaoOficialPesquisa2026 ? lancamentoOficial : null)
+      : (researchBased ? lancamentoOficial : null);
     const situacaoAtual = executiveCurrentSituation(regra, lancamentoAcao, resultadoOperacional);
+    const situacaoOficial = executiveCurrentSituation(regra, lancamentoPosicaoOficial, resultadoPosicaoOficial)
+      || (resultadoCalculado && resultadoCalculado.situacao)
+      || lancamentoOficial.situacaoCalculada
+      || null;
 
     return {
       indicador,
@@ -421,13 +457,20 @@
       lancamentoAcao,
       latestOperationalLaunch: lancamentoAcao,
       latestQuantitativeLaunch: lancamentoOficial,
+      possuiPosicaoOficial: true,
       competenciaAtual: researchBased ? competencia(lancamentoAcao) : null,
-      competenciaMedicao: researchBased ? competencia(lancamentoOficial) : null,
-      competenciaMedicaoCurta: researchBased ? competenciaCurta(lancamentoOficial) : null,
+      competenciaMedicao: lancamentoMedicao ? competencia(lancamentoMedicao) : null,
+      competenciaMedicaoCurta: lancamentoMedicao ? competenciaCurta(lancamentoMedicao) : null,
+      competenciaResultadoReportado: resultadoOficialReportado ? competencia(lancamentoOficial) : null,
+      competenciaResultadoReportadoCurta: resultadoOficialReportado ? competenciaCurta(lancamentoOficial) : null,
+      medicaoOficialPesquisa2026,
+      resultadoOficialReportado,
+      contextoResultadoOficial: resultadoOficialReportado ? reportedResultContext(lancamentoOficial) : null,
       statusAtual: positionBased ? lancamentoAcao.status : null,
       meta: getOfficialMeta(regra, lancamentoOficial, resultadoCalculado),
       situacaoAtual,
-      situacaoCalculada: situacaoAtual || (resultadoCalculado && resultadoCalculado.situacao),
+      situacaoOficial,
+      situacaoCalculada: situacaoOficial,
       resultadosMensais
     };
   }
@@ -657,6 +700,10 @@
 
   function officialSituation(resultado) {
     if (!resultado) return "Sem dados";
+    if (resultado.possuiPosicaoOficial === false) return "Sem dados";
+    if (resultado.situacaoOficial) {
+      return window.Situations ? Situations.normalizarSituacao(resultado.situacaoOficial) : resultado.situacaoOficial;
+    }
     if (resultado.situacaoAtual) {
       return window.Situations ? Situations.normalizarSituacao(resultado.situacaoAtual) : resultado.situacaoAtual;
     }
@@ -694,7 +741,7 @@
 
   function badgeClass(status) {
     status = window.Situations ? Situations.normalizarSituacao(status) : status;
-    if (status === "Homologado" || status === "Atingido") return "ok";
+    if (status === "Homologado" || status === "Atingido" || status === "Superado") return "ok";
     if (status === "Devolvido para ajuste") return "danger";
     if (status === "Enviado para homologação" || status === "Abaixo da meta") return "warn";
     return "info";
@@ -731,7 +778,7 @@
   function renderIndicatorRows(items) {
     return items.map((item) => {
       const situacao = officialSituation(item);
-      const status = item.lancamento?.status || item.lancamentoAcao?.status || "Não iniciado";
+      const status = item.status || item.lancamento?.status || "Sem dados";
       return `
         <tr>
           <td class="indicator-name">
@@ -876,7 +923,7 @@
         regras: state.regras
       });
       const statusIds = new Set(preliminary.resultadosOficiais
-        .filter((item) => (item.lancamento?.status || item.lancamentoAcao?.status || "Não iniciado") === values.status)
+        .filter((item) => (item.status || item.lancamento?.status || "Sem dados") === values.status)
         .map((item) => item.indicador.id));
       visibleIndicators = filteredIndicators.filter((item) => statusIds.has(item.id));
     }

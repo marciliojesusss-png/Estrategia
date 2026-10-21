@@ -44,6 +44,7 @@ BEGIN
         observacao_unidade NVARCHAR(MAX) NULL,
         referencia_evidencia NVARCHAR(MAX) NULL,
         evidencia_id NVARCHAR(100) NULL,
+        versao_atual INT NOT NULL CONSTRAINT df_lancamentos_versao_atual DEFAULT (1),
         usuario_responsavel NVARCHAR(255) NULL,
         created_at NVARCHAR(40) NULL,
         updated_at NVARCHAR(40) NULL,
@@ -158,6 +159,8 @@ BEGIN
         lancamento_id NVARCHAR(100) NOT NULL,
         versao_anterior_json NVARCHAR(MAX) NULL,
         versao_nova_json NVARCHAR(MAX) NULL,
+        versao_anterior INT NULL,
+        versao_nova INT NULL,
         justificativa NVARCHAR(MAX) NULL,
         usuario NVARCHAR(255) NULL,
         data_retificacao NVARCHAR(40) NULL,
@@ -182,6 +185,7 @@ BEGIN
     CREATE TABLE dbo.evidencias (
         id NVARCHAR(100) NOT NULL CONSTRAINT pk_evidencias PRIMARY KEY,
         lancamento_id NVARCHAR(100) NULL,
+        versao_lancamento INT NOT NULL CONSTRAINT df_evidencias_versao_lancamento DEFAULT (1),
         nome_arquivo NVARCHAR(255) NULL,
         tipo_arquivo NVARCHAR(100) NULL,
         caminho_arquivo NVARCHAR(MAX) NULL,
@@ -193,6 +197,23 @@ BEGIN
             FOREIGN KEY (lancamento_id) REFERENCES dbo.lancamentos(id)
     );
 END;
+
+IF COL_LENGTH(N'dbo.lancamentos', N'versao_atual') IS NOT NULL
+   AND NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = N'ck_lancamentos_versao_atual')
+    ALTER TABLE dbo.lancamentos WITH CHECK ADD CONSTRAINT ck_lancamentos_versao_atual CHECK (versao_atual >= 1);
+
+IF COL_LENGTH(N'dbo.evidencias', N'versao_lancamento') IS NOT NULL
+   AND NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = N'ck_evidencias_versao_lancamento')
+    ALTER TABLE dbo.evidencias WITH CHECK ADD CONSTRAINT ck_evidencias_versao_lancamento CHECK (versao_lancamento >= 1);
+
+IF COL_LENGTH(N'dbo.evidencias', N'versao_lancamento') IS NOT NULL
+   AND NOT EXISTS (
+    SELECT 1 FROM sys.indexes
+    WHERE name = N'idx_evidencias_lancamento_versao'
+      AND object_id = OBJECT_ID(N'dbo.evidencias')
+)
+    CREATE INDEX idx_evidencias_lancamento_versao
+    ON dbo.evidencias(lancamento_id, versao_lancamento, data_upload, id);
 
 IF OBJECT_ID(N'dbo.auditoria', N'U') IS NULL
 BEGIN

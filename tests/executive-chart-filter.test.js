@@ -86,6 +86,7 @@ assert.doesNotMatch(styles, /\.executive-performance-pillar-heading/);
 assert.match(styles, /\.executive-performance-verde/);
 assert.match(styles, /\.executive-performance-amarelo/);
 assert.match(styles, /\.executive-performance-vermelho/);
+assert.match(styles, /\.executive-performance-azul/);
 assert.match(styles, /\.executive-performance-cinza/);
 assert.doesNotMatch(styles, /\.executive-highlights-panel/);
 assert.doesNotMatch(styles, /@keyframes executiveHighlightsScroll/);

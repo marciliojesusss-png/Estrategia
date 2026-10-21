@@ -145,6 +145,77 @@ const mulheresGestorasInvalidas = formulas.calcularIndicador(
 );
 assert.equal(mulheresGestorasInvalidas.erro, true);
 
+const regraGestoresDiversidade = {
+  indicadorId: 14,
+  tipoCalculo: "percentual_direto",
+  tipoConsolidacao: "ultima_posicao",
+  unidadeMedida: "percentual",
+  metaAnualValor: 0.35,
+  parametrosCalculo: {
+    numeradorCampo: "gestoresEnquadradosMes",
+    denominadorCampo: "totalGestoresMes",
+    metaReferencia: 0.35,
+    arredondarResultadoAntesAtingimento: true,
+    casasDecimaisResultadoPercentual: 2
+  },
+  camposEntrada: [
+    { nome: "gestoresEnquadradosMes", obrigatorio: true },
+    { nome: "totalGestoresMes", obrigatorio: true }
+  ]
+};
+
+function calcularGestoresDiversidade(gestores, total) {
+  const lancamento = { camposEntrada: { gestoresEnquadradosMes: gestores, totalGestoresMes: total } };
+  return formulas.calcularIndicador(
+    indicador(14, "Gestores Negros, Amarelos, Pardos ou Indígenas e/ou PcD"),
+    regraGestoresDiversidade,
+    lancamento,
+    [lancamento]
+  );
+}
+
+const gestoresDiversidadeMaio = calcularGestoresDiversidade(12, 45);
+closeTo(gestoresDiversidadeMaio.resultadoMensal, 0.2667, 1e-12);
+closeTo(gestoresDiversidadeMaio.percentualAtingidoMensal, 0.2667 / 0.35, 1e-12);
+assert.equal(gestoresDiversidadeMaio.resultadoMensalFormatado, "26,67%");
+assert.equal(gestoresDiversidadeMaio.percentualAtingidoMensalFormatado, "76,2%");
+
+const gestoresDiversidadeJunho = calcularGestoresDiversidade(11, 46);
+closeTo(gestoresDiversidadeJunho.resultadoMensal, 0.2391, 1e-12);
+closeTo(gestoresDiversidadeJunho.percentualAtingidoMensal, 0.2391 / 0.35, 1e-12);
+assert.equal(gestoresDiversidadeJunho.resultadoMensalFormatado, "23,91%");
+assert.equal(gestoresDiversidadeJunho.percentualAtingidoMensalFormatado, "68,31%");
+
+const gestoresDiversidadeJulho = calcularGestoresDiversidade(12, 46);
+closeTo(gestoresDiversidadeJulho.resultadoMensal, 0.2609, 1e-12);
+closeTo(gestoresDiversidadeJulho.percentualAtingidoMensal, 0.2609 / 0.35, 1e-12);
+assert.equal(gestoresDiversidadeJulho.resultadoMensalFormatado, "26,09%");
+assert.equal(gestoresDiversidadeJulho.percentualAtingidoMensalFormatado, "74,54%");
+
+[
+  [9, 33, 0.2727, 0.2727 / 0.35],
+  [11, 42, 0.2619, 0.2619 / 0.35],
+  [11, 43, 0.2558, 0.2558 / 0.35],
+  [11, 43, 0.2558, 0.2558 / 0.35],
+  [12, 45, 0.2667, 0.2667 / 0.35],
+  [11, 46, 0.2391, 0.2391 / 0.35],
+  [12, 46, 0.2609, 0.2609 / 0.35]
+].forEach(([gestores, total, resultadoEsperado, atingimentoEsperado]) => {
+  const calculado = calcularGestoresDiversidade(gestores, total);
+  closeTo(calculado.resultadoMensal, resultadoEsperado, 1e-12);
+  closeTo(calculado.percentualAtingidoMensal, atingimentoEsperado, 1e-12);
+});
+
+const mulheresGestorasSemArredondamentoIntermediario = formulas.calcularIndicador(
+  indicador(13, "Mulheres Chefes de Unidade e Gestoras"),
+  regraMulheresGestoras,
+  { camposEntrada: { mulheresGestorasMes: 19, totalGestoresMes: 46, dataBaseApuracao: "2026-06-30" } },
+  []
+);
+closeTo(mulheresGestorasSemArredondamentoIntermediario.resultadoMensal, 19 / 46, 1e-12);
+closeTo(mulheresGestorasSemArredondamentoIntermediario.percentualAtingidoMensal, (19 / 46) / 0.425, 1e-12);
+assert.equal(mulheresGestorasSemArredondamentoIntermediario.percentualAtingidoMensalFormatado, "97,19%");
+
 const regraNps = {
   indicadorId: 2,
   tipoCalculo: "nota_pesquisa_nps",
@@ -310,6 +381,20 @@ const climaAcompanhamento = formulas.calcularIndicador(
 closeTo(climaAcompanhamento.resultadoMensal, 60);
 closeTo(climaAcompanhamento.percentualAtingidoMensal, 1);
 assert.equal(climaAcompanhamento.situacao, "Em acompanhamento");
+assert.equal(climaAcompanhamento.medicaoOficialPesquisa2026, false);
+assert.equal(climaAcompanhamento.resultadoOficialReportado, true);
+
+const climaAcompanhamentoSemNota = formulas.calcularIndicador(
+  indicador(12, "Clima Organizacional"),
+  regraClimaOrganizacional,
+  { ano: 2026, mes: 6, competencia: "2026-06", camposEntrada: { tipoPosicaoClima: "Acompanhamento", metaReferenciaClima: 60 } },
+  []
+);
+assert.equal(climaAcompanhamentoSemNota.resultadoMensal, null);
+assert.equal(climaAcompanhamentoSemNota.percentualAtingidoMensal, null);
+assert.equal(climaAcompanhamentoSemNota.situacao, "Em acompanhamento");
+assert.equal(climaAcompanhamentoSemNota.medicaoOficialPesquisa2026, false);
+assert.equal(climaAcompanhamentoSemNota.resultadoOficialReportado, false);
 
 const climaFechamentoAnual = formulas.calcularIndicador(
   indicador(12, "Clima Organizacional"),
@@ -319,6 +404,8 @@ const climaFechamentoAnual = formulas.calcularIndicador(
 );
 closeTo(climaFechamentoAnual.percentualAtingidoMensal, 61 / 60);
 assert.equal(climaFechamentoAnual.situacao, "Atingido");
+assert.equal(climaFechamentoAnual.medicaoOficialPesquisa2026, true);
+assert.equal(climaFechamentoAnual.resultadoOficialReportado, false);
 
 const regraCapacitacaoEmpregados = {
   indicadorId: 15,
@@ -416,6 +503,61 @@ closeTo(capacitacaoEmpregadosJunho.resultadoMensal, 177 / 183);
 assert.equal(capacitacaoEmpregadosJunho.percentualAtingidoMensal, 1);
 assert.equal(capacitacaoEmpregadosJunho.quantidadeCursosMinimaCapacitacao, 2);
 assert.equal(capacitacaoEmpregadosJunho.situacao, "Atingido");
+
+const componentesCapacitacao3Tri = [
+  { curso: "Customer Experience", empregadosCapacitados: 163, publicoAlvoElegivel: 171 },
+  { curso: "Ecossistema Negocial", empregadosCapacitados: 154, publicoAlvoElegivel: 171 }
+];
+const capacitacaoOficialSetembro = formulas.calcularIndicador(
+  indicador(15, "Capacitação dos Empregados da CAIXA Loterias"),
+  {
+    ...regraCapacitacaoEmpregados,
+    parametrosCalculo: {
+      ...regraCapacitacaoEmpregados.parametrosCalculo,
+      curvaTrimestralCursos: {
+        ...regraCapacitacaoEmpregados.parametrosCalculo.curvaTrimestralCursos,
+        "3TRI/2026": { metaCobertura: 0.90, quantidadeCursosMinima: 4, descricao: "90% do público-alvo com 04 cursos concluídos acumulados" }
+      }
+    }
+  },
+  {
+    ano: 2026,
+    mes: 9,
+    trimestre: "3TRI/2026",
+    metaReferencia: 0.90,
+    camposEntrada: {
+      tipoPosicaoCapacitacao: "apuracao_quantitativa",
+      modoResultadoCapacitacao: "oficial_informado",
+      resultadoOficialInformadoCapacitacao: 0.932,
+      percentualAtingidoOficialCapacitacao: 1.0355,
+      componentesResultadoCapacitacao: componentesCapacitacao3Tri,
+      publicoAlvoElegivelCapacitacao: 999,
+      empregadosCapacitadosCapacitacao: 1
+    }
+  },
+  []
+);
+closeTo(capacitacaoOficialSetembro.resultadoMensal, 0.932);
+closeTo(capacitacaoOficialSetembro.resultadoOficialAnual, 0.932);
+closeTo(capacitacaoOficialSetembro.percentualAtingidoMensal, 1.0355);
+closeTo(capacitacaoOficialSetembro.percentualAtingidoAnual, 1.0355);
+assert.equal(capacitacaoOficialSetembro.resultadoMensalFormatado, "93,2%");
+assert.equal(capacitacaoOficialSetembro.percentualAtingidoMensalFormatado, "103,55%");
+assert.equal(capacitacaoOficialSetembro.situacao, "Superado");
+assert.equal(capacitacaoOficialSetembro.quantidadeCursosMinimaCapacitacao, 4);
+assert.equal(capacitacaoOficialSetembro.percentualAtingidoMatematico, null);
+assert.equal(capacitacaoOficialSetembro.componentesResultadoCapacitacao.length, 2);
+assert.equal(capacitacaoOficialSetembro.componentesResultadoCapacitacao[0].empregadosCapacitados, 163);
+assert.equal(capacitacaoOficialSetembro.componentesResultadoCapacitacao[1].empregadosCapacitados, 154);
+assert.notEqual(capacitacaoOficialSetembro.resultadoMensal, (163 + 154) / (171 + 171));
+assert.notEqual(capacitacaoOficialSetembro.resultadoMensal, ((163 / 171) + (154 / 171)) / 2);
+
+const curvaCapacitacao = capacitacaoOficialSetembro.quantidadeCursosMinimaCapacitacao;
+assert.deepEqual(
+  [1, 2, curvaCapacitacao, 5],
+  [1, 2, 4, 5],
+  "A curva metodológica 1/2/4/5 deve permanecer intacta"
+);
 
 assert.equal(formulas.resolverTipoPosicaoCapacitacao({
   status: "Homologado",
@@ -701,18 +843,18 @@ const regraLucroLiquido = {
     campoValorAcumuladoLegado: "lucroLiquidoRecorrenteAcumulado",
     metaTipo: "curva_mensal_por_competencia",
     metasMensaisPorCompetencia: {
-      "2026-01": 90811101.33,
-      "2026-02": 77462728.16,
-      "2026-03": 90084434.66,
-      "2026-04": 96068372.33,
-      "2026-05": 94438480.16,
-      "2026-06": 106104677.05,
-      "2026-07": 98144245.44,
-      "2026-08": 94094264.37,
-      "2026-09": 128614993.92,
-      "2026-10": 101071987.08,
-      "2026-11": 91522592.68,
-      "2026-12": 236900370.02
+      "2026-01": 89555555.56,
+      "2026-02": 89555555.55,
+      "2026-03": 89555555.56,
+      "2026-04": 89555555.55,
+      "2026-05": 89555555.56,
+      "2026-06": 89555555.55,
+      "2026-07": 89555555.56,
+      "2026-08": 89555555.55,
+      "2026-09": 89555555.56,
+      "2026-10": 89555555.56,
+      "2026-11": 89555555.55,
+      "2026-12": 223888888.89
     }
   },
   camposEntrada: [{ nome: "lucroLiquidoRecorrenteCompetencia", obrigatorio: true }]
@@ -728,7 +870,7 @@ const lucroJaneiro = formulas.calcularIndicador(
   historicoLucro[0],
   historicoLucro
 );
-closeTo(lucroJaneiro.percentualAtingidoMensal, 119377680.03 / 90811101.33);
+closeTo(lucroJaneiro.percentualAtingidoMensal, 119377680.03 / 89555555.56);
 assert.equal(lucroJaneiro.situacao, "Atingido");
 assert.equal(lucroJaneiro.resultadoMensal, 119377680.03);
 const lucroMarco = formulas.calcularIndicador(
@@ -738,18 +880,18 @@ const lucroMarco = formulas.calcularIndicador(
   historicoLucro
 );
 closeTo(lucroMarco.resultadoMensal, 114310457.11);
-closeTo(lucroMarco.percentualAtingidoMensal, 114310457.11 / 90084434.66);
+closeTo(lucroMarco.percentualAtingidoMensal, 114310457.11 / 89555555.56);
 closeTo(lucroMarco.resultadoOficialAnual, 114310457.11);
 closeTo(lucroMarco.resultadoAcumulado, 336321887.69);
-closeTo(lucroMarco.metaAcumulada, 258358264.15);
+closeTo(lucroMarco.metaAcumulada, 268666666.67);
 
 const lucroAbaixoDaMeta = formulas.calcularIndicador(
   indicador(7, "Lucro Liquido Recorrente"),
   regraLucroLiquido,
-  { ano: 2026, mes: 6, competencia: "2026-06", camposEntrada: { lucroLiquidoRecorrenteCompetencia: 90000000 } },
-  [{ ano: 2026, mes: 6, competencia: "2026-06", camposEntrada: { lucroLiquidoRecorrenteCompetencia: 90000000 } }]
+  { ano: 2026, mes: 6, competencia: "2026-06", camposEntrada: { lucroLiquidoRecorrenteCompetencia: 80000000 } },
+  [{ ano: 2026, mes: 6, competencia: "2026-06", camposEntrada: { lucroLiquidoRecorrenteCompetencia: 80000000 } }]
 );
-closeTo(lucroAbaixoDaMeta.percentualAtingidoMensal, 90000000 / 106104677.05);
+closeTo(lucroAbaixoDaMeta.percentualAtingidoMensal, 80000000 / 89555555.55);
 assert.equal(lucroAbaixoDaMeta.situacao, "Abaixo da meta");
 
 const lucroMensalPrioritario = formulas.calcularIndicador(
@@ -760,17 +902,17 @@ const lucroMensalPrioritario = formulas.calcularIndicador(
     mes: 2,
     competencia: "2026-02",
     camposEntrada: {
-      lucroLiquidoRecorrenteCompetencia: 80000000,
+      lucroLiquidoRecorrenteCompetencia: 100000000,
       lucroLiquidoRecorrenteAcumulado: 999999999
     }
   },
   [{ ano: 2026, mes: 1, competencia: "2026-01", camposEntrada: { lucroLiquidoRecorrenteAcumulado: 119377680.03 } }]
 );
-assert.equal(lucroMensalPrioritario.resultadoMensal, 80000000, "O campo mensal explícito deve prevalecer sobre o acumulado legado");
+assert.equal(lucroMensalPrioritario.resultadoMensal, 100000000, "O campo mensal explícito deve prevalecer sobre o acumulado legado");
 assert.equal(lucroMensalPrioritario.situacao, "Atingido");
 
-const janeiroForte = { ano: 2026, mes: 1, competencia: "2026-01", camposEntrada: { lucroLiquidoRecorrenteCompetencia: 181622202.66 } };
-const fevereiroFraco = { ano: 2026, mes: 2, competencia: "2026-02", camposEntrada: { lucroLiquidoRecorrenteCompetencia: 61970182.528 } };
+const janeiroForte = { ano: 2026, mes: 1, competencia: "2026-01", camposEntrada: { lucroLiquidoRecorrenteCompetencia: 179111111.12 } };
+const fevereiroFraco = { ano: 2026, mes: 2, competencia: "2026-02", camposEntrada: { lucroLiquidoRecorrenteCompetencia: 71644444.44 } };
 const lucroFevereiroFraco = formulas.calcularIndicador(
   indicador(7, "Lucro Liquido Recorrente"),
   regraLucroLiquido,
@@ -782,7 +924,7 @@ assert.equal(lucroFevereiroFraco.situacao, "Abaixo da meta");
 assert.ok(lucroFevereiroFraco.percentualAtingidoAcumulado > 1, "O mês forte anterior mantém o acumulado acima da curva");
 
 const janeiroFraco = { ano: 2026, mes: 1, competencia: "2026-01", camposEntrada: { lucroLiquidoRecorrenteCompetencia: 10000000 } };
-const fevereiroForte = { ano: 2026, mes: 2, competencia: "2026-02", camposEntrada: { lucroLiquidoRecorrenteCompetencia: 80000000 } };
+const fevereiroForte = { ano: 2026, mes: 2, competencia: "2026-02", camposEntrada: { lucroLiquidoRecorrenteCompetencia: 100000000 } };
 const lucroFevereiroForte = formulas.calcularIndicador(
   indicador(7, "Lucro Liquido Recorrente"),
   regraLucroLiquido,
@@ -807,17 +949,17 @@ const lucroJunho = formulas.calcularIndicador(
   resultadosJanJun
 );
 closeTo(lucroJunho.resultadoMensal, 108526486.50);
-closeTo(lucroJunho.metaReferenciaMensal, 106104677.05);
-closeTo(lucroJunho.percentualAtingidoMensal, 108526486.50 / 106104677.05);
+closeTo(lucroJunho.metaReferenciaMensal, 89555555.55);
+closeTo(lucroJunho.percentualAtingidoMensal, 108526486.50 / 89555555.55);
 closeTo(lucroJunho.resultadoAcumulado, 671198521.49);
-closeTo(lucroJunho.metaAcumulada, 554969793.69);
+closeTo(lucroJunho.metaAcumulada, 537333333.33);
 assert.equal(lucroJunho.situacao, "Atingido");
 
 const somaMetaAnualLucro = Object.values(regraLucroLiquido.parametrosCalculo.metasMensaisPorCompetencia)
   .reduce((sum, value) => sum + Math.round(value * 100), 0) / 100;
-assert.equal(somaMetaAnualLucro, 1305318247.20, "a curva mensal histórica deve permanecer inalterada");
+assert.equal(somaMetaAnualLucro, 1209000000.00, "a curva mensal oficial deve fechar com a meta anual");
 assert.equal(regraLucroLiquido.metaAnualValor, 1209000000.00, "a meta anual oficial deve ser independente da curva mensal");
-assert.notEqual(somaMetaAnualLucro, regraLucroLiquido.metaAnualValor);
+assert.equal(somaMetaAnualLucro, regraLucroLiquido.metaAnualValor);
 
 const lucroComLacunaLegada = formulas.calcularIndicador(
   indicador(7, "Lucro Liquido Recorrente"),
@@ -955,7 +1097,7 @@ const ieo = formulas.calcularIndicador(
 );
 closeTo(ieo.resultadoMensal, 0.108);
 closeTo(ieo.resultadoOficialAnual, 0.108);
-closeTo(ieo.percentualAtingidoMensal, 0.1441 / 0.108);
+closeTo(ieo.percentualAtingidoMensal, 1 - ((0.108 - 0.1441) / (1 - 0.1441)));
 assert.equal(ieo.resultadoMensalFormatado, "10,8%");
 assert.equal(ieo.resultadoOficialAnualFormatado, "10,8%");
 assert.equal(ieo.situacao, "Atingido");
@@ -967,7 +1109,7 @@ const ieoCalculado = formulas.calcularIndicador(
   [{ ano: 2026, mes: 3, competencia: "2026-03", camposEntrada: { despesaPessoalMes: 60, despesasAdministrativasMes: 48, receitasLiquidasMes: 1000 } }]
 );
 closeTo(ieoCalculado.resultadoMensal, 0.108);
-closeTo(ieoCalculado.percentualAtingidoMensal, 0.1441 / 0.108);
+closeTo(ieoCalculado.percentualAtingidoMensal, 1 - ((0.108 - 0.1441) / (1 - 0.1441)));
 assert.equal(ieoCalculado.situacao, "Atingido");
 
 const ieoJaneiroSemMeta = formulas.calcularIndicador(
@@ -996,7 +1138,7 @@ const ieoJaneiroSemMeta = formulas.calcularIndicador(
 );
 closeTo(ieoJaneiroSemMeta.resultadoMensal, 0.0642);
 assert.equal(ieoJaneiroSemMeta.resultadoMensalFormatado, "6,42%");
-closeTo(ieoJaneiroSemMeta.percentualAtingidoMensal, 0.1449 / 0.0642);
+closeTo(ieoJaneiroSemMeta.percentualAtingidoMensal, 1 - ((0.0642 - 0.1449) / (1 - 0.1449)));
 assert.equal(ieoJaneiroSemMeta.situacao, "Atingido");
 assert.equal(ieoJaneiroSemMeta.metaReferencia, 0.1449);
 
@@ -1971,7 +2113,32 @@ assert.equal(jogoResponsavel1Tri.percentualAtingidoMensal, 1);
 assert.equal(jogoResponsavel1Tri.quantidadeMinimaIniciativasJR, 1);
 assert.equal(jogoResponsavel1Tri.situacao, "Atingido");
 
-const regras = loadBootstrapData().regrasIndicadores;
+const bootstrapData = loadBootstrapData();
+const regras = bootstrapData.regrasIndicadores;
+const regraCapacitacaoBootstrap = regras.find((regra) => regra.indicadorId === 15);
+assert.deepEqual(
+  ["1TRI/2026", "2TRI/2026", "3TRI/2026", "4TRI/2026"].map((trimestre) => (
+    regraCapacitacaoBootstrap.parametrosCalculo.curvaTrimestralCursos[trimestre].quantidadeCursosMinima
+  )),
+  [1, 2, 4, 5]
+);
+assert.equal(regraCapacitacaoBootstrap.parametrosCalculo.campoModoResultado, "modoResultadoCapacitacao");
+const setembroCapacitacaoBootstrap = bootstrapData.lancamentos.find((item) => item.id === 177);
+const marcoCapacitacaoBootstrap = bootstrapData.lancamentos.find((item) => item.id === 171);
+const julhoCapacitacaoBootstrap = bootstrapData.lancamentos.find((item) => item.id === 175);
+const agostoCapacitacaoBootstrap = bootstrapData.lancamentos.find((item) => item.id === 176);
+assert.equal(marcoCapacitacaoBootstrap.status, "Homologado");
+assert.equal(marcoCapacitacaoBootstrap.camposEntrada.empregadosCapacitadosCapacitacao, 137);
+assert.equal(marcoCapacitacaoBootstrap.camposEntrada.publicoAlvoElegivelCapacitacao, 151);
+assert.equal(julhoCapacitacaoBootstrap.status, "Não iniciado");
+assert.deepEqual(julhoCapacitacaoBootstrap.camposEntrada, {});
+assert.equal(agostoCapacitacaoBootstrap.status, "Não iniciado");
+assert.deepEqual(agostoCapacitacaoBootstrap.camposEntrada, {});
+assert.equal(setembroCapacitacaoBootstrap.status, "Em preenchimento");
+assert.equal(setembroCapacitacaoBootstrap.camposEntrada.modoResultadoCapacitacao, "oficial_informado");
+assert.equal(setembroCapacitacaoBootstrap.resultadoMensal, 0.932);
+assert.equal(setembroCapacitacaoBootstrap.percentualAtingido, 1.0355);
+assert.equal(setembroCapacitacaoBootstrap.situacaoCalculada, "Superado");
 const amostras = {
   1: { baseClientesAtivosCompetencia: 1000, clientesUnicosComOfertaPersonalizadaCompetencia: 100 },
   2: { tipoPosicaoNPS: "Fechamento anual", metaReferenciaCompetenciaNPS: 58, npsApurado: 58, dataBasePesquisaNPS: "2026-12-31", fontePesquisaNPS: "Relatorio oficial" },
@@ -1979,7 +2146,7 @@ const amostras = {
   4: { melhoriasImplementadasMes: 6, descricaoMelhoriasMes: "Melhorias executadas", evidenciaMelhoriasMes: "Informe" },
   5: { arrecadacaoTotalMes: 1900000000, premiosAPagarMes: 843406961.43 },
   6: { despesasGeraisAdministrativasMes: 100, despesasServicosPagamentosMes: 50, outrasDespesasOperacionaisMes: 30, receitasOperacionaisMes: 1000, despesasTributosMes: 100 },
-  7: { lucroLiquidoRecorrenteCompetencia: 236900370.02 },
+  7: { lucroLiquidoRecorrenteCompetencia: 223888888.89 },
   8: { arrecadacaoCanaisEletronicosMes: 15, arrecadacaoTotalProdutosLoteriasMes: 100 },
   9: { arrecadacaoPixMes: 411428638.26, arrecadacaoTotalCanaisEletronicosMes: 600000000 },
   10: { marcoAtualPlataformaJogos: "Registro de Aposta finalizado em ambiente de desenvolvimento", statusProjetoPlataformaJogos: "Piloto/MVP em desenvolvimento", percentualEvolucaoPlataformaJogos: 0.10, descricaoAndamentoPlataformaJogos: "Projeto em desenvolvimento", evidenciaPlataformaJogos: "Termo" },

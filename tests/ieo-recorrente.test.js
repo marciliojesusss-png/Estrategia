@@ -61,7 +61,8 @@ const janeiro = ieo.calcularIeo(regraBase, {
   }
 });
 closeTo(janeiro.resultadoMensal, 0.0642);
-closeTo(janeiro.percentualAtingidoMensal, 0.1449 / 0.0642);
+closeTo(janeiro.percentualAtingidoMensal, 1.0943749269091334);
+assert.equal(janeiro.percentualAtingidoMensalFormatado, "109,44%");
 assert.equal(janeiro.situacao, "Atingido");
 
 const fevereiro = ieo.calcularIeo(regraBase, {
@@ -73,6 +74,8 @@ const fevereiro = ieo.calcularIeo(regraBase, {
   }
 });
 closeTo(fevereiro.resultadoMensal, 0.11);
+closeTo(fevereiro.percentualAtingidoMensal, 1.0403272939801285);
+assert.equal(fevereiro.percentualAtingidoMensalFormatado, "104,03%");
 assert.equal(fevereiro.situacao, "Atingido");
 
 const marco = ieo.calcularIeo(regraBase, {
@@ -85,8 +88,32 @@ const marco = ieo.calcularIeo(regraBase, {
   }
 });
 closeTo(marco.resultadoMensal, 0.108);
+closeTo(marco.percentualAtingidoMensal, 1.0421778245122093);
+assert.equal(marco.percentualAtingidoMensalFormatado, "104,22%");
 assert.equal(marco.situacao, "Atingido");
 assert.equal(marco.origemResultado, "calculado");
+
+closeTo(ieo.calcularPercentualAtingido(0.1449, 0.1449), 1, Number.EPSILON);
+assert.ok(ieo.calcularPercentualAtingido(0.1449, 0.20) < 1);
+closeTo(ieo.calcularPercentualAtingido(0.1449, 1), 0, Number.EPSILON);
+assert.throws(
+  () => ieo.calcularPercentualAtingido(1, 0.5),
+  /divisão por zero/
+);
+
+const detalhesPreservados = ieo.acrescentarMetodologiaDetalhes("Texto de negócio preservado.", 0.1449, 0.0642);
+assert.match(detalhesPreservados, /^Texto de negócio preservado\./);
+assert.match(detalhesPreservados, /% Atingido = 1 - \(\(Realizado - Meta\) \/ \(VRM - Meta\)\)/);
+assert.match(detalhesPreservados, /VRM = 100%/);
+assert.match(detalhesPreservados, /Meta: 14,49%/);
+assert.match(detalhesPreservados, /Realizado: 6,42%/);
+assert.match(detalhesPreservados, /= 109,44%/);
+const detalhesRegravados = ieo.acrescentarMetodologiaDetalhes(detalhesPreservados, 0.1449, 0.0642);
+assert.equal((detalhesRegravados.match(/Metodologia do percentual atingido:/g) || []).length, 1);
+assert.doesNotMatch(ieo.gerarDetalhesMetaMensal(0.1449, null), /Cálculo da competência:/);
+
+const outraRegra = { indicadorId: 7, tipoCalculo: "percentual_direto" };
+assert.strictEqual(ieo.ajustarRegraIeo(outraRegra, "2026-01"), outraRegra);
 
 const agostoAtingido = ieo.calcularIeo(regraBase, {
   competencia: "2026-08",
@@ -102,9 +129,9 @@ const agostoAtingido = ieo.calcularIeo(regraBase, {
 closeTo(agostoAtingido.numeradorIeo, 180);
 closeTo(agostoAtingido.denominadorIeo, 900);
 closeTo(agostoAtingido.resultadoMensal, 0.20);
-closeTo(agostoAtingido.percentualAtingidoMensal, 1.332);
+closeTo(agostoAtingido.percentualAtingidoMensal, 1.0905125408942202);
 assert.equal(agostoAtingido.resultadoMensalFormatado, "20,00%");
-assert.equal(agostoAtingido.percentualAtingidoMensalFormatado, "133,20%");
+assert.equal(agostoAtingido.percentualAtingidoMensalFormatado, "109,05%");
 assert.equal(agostoAtingido.situacao, "Atingido");
 assert.equal(agostoAtingido.origemResultado, "calculado_metodologia_ca");
 
@@ -121,11 +148,49 @@ const exemploFormularioAgosto = ieo.calcularIeo(regraBase, {
 });
 closeTo(exemploFormularioAgosto.numeradorIeo, 160000000);
 closeTo(exemploFormularioAgosto.denominadorIeo, 700000000);
-closeTo(exemploFormularioAgosto.resultadoMensal, 160000000 / 700000000);
+closeTo(exemploFormularioAgosto.resultadoBruto, 160000000 / 700000000);
+assert.equal(exemploFormularioAgosto.resultadoMensal, 0.2286);
 assert.equal(exemploFormularioAgosto.resultadoMensalFormatado, "22,86%");
-assert.equal(exemploFormularioAgosto.percentualAtingidoMensalFormatado, "116,55%");
+assert.equal(exemploFormularioAgosto.percentualAtingidoMensalFormatado, "105,15%");
 assert.equal(exemploFormularioAgosto.situacao, "Atingido");
 assert.equal(exemploFormularioAgosto.origemResultado, "calculado_metodologia_ca");
+
+const agostoOficialArredondado = ieo.calcularIeo(regraBase, {
+  competencia: "2026-08",
+  metaReferencia: 0.2988,
+  camposEntrada: {
+    despesasGeraisAdministrativasMes: 176094338.69,
+    despesasServicosPagamentosMes: 52856703.22,
+    outrasDespesasOperacionaisMes: 100306.69,
+    receitasOperacionaisMes: 1598637627.79,
+    despesasTributosMes: 174627188.33
+  }
+});
+closeTo(agostoOficialArredondado.resultadoBruto, 0.16084948695099363, Number.EPSILON);
+assert.equal(agostoOficialArredondado.resultadoMensal, 0.1608);
+assert.equal(agostoOficialArredondado.resultadoMensalFormatado, "16,08%");
+closeTo(agostoOficialArredondado.percentualAtingidoMensal, 1.1968054763262979, Number.EPSILON);
+assert.equal(agostoOficialArredondado.percentualAtingidoMensalFormatado, "119,68%");
+
+const setembroOficialArredondado = ieo.calcularIeo(regraBase, {
+  competencia: "2026-09",
+  metaReferencia: 0.2923,
+  camposEntrada: {
+    despesasGeraisAdministrativasMes: 207600617.97,
+    despesasServicosPagamentosMes: 60460075.58,
+    outrasDespesasOperacionaisMes: 321534.28,
+    receitasOperacionaisMes: 1850907955.34,
+    despesasTributosMes: 201813909.75
+  }
+});
+closeTo(setembroOficialArredondado.resultadoBruto, 0.16274525309681798, Number.EPSILON);
+assert.equal(setembroOficialArredondado.resultadoMensal, 0.1627);
+assert.equal(setembroOficialArredondado.resultadoMensalFormatado, "16,27%");
+closeTo(setembroOficialArredondado.percentualAtingidoMensal, 1.1831284442560408, Number.EPSILON);
+assert.equal(setembroOficialArredondado.percentualAtingidoMensalFormatado, "118,31%");
+
+assert.equal(ieo.arredondarIeoOficial(0.16084948695099363), 0.1608);
+assert.equal(ieo.arredondarIeoOficial(0.16274525309681798), 0.1627);
 
 const agostoAbaixo = ieo.calcularIeo(regraBase, {
   competencia: "2026-08",
@@ -138,8 +203,8 @@ const agostoAbaixo = ieo.calcularIeo(regraBase, {
   }
 });
 closeTo(agostoAbaixo.resultadoMensal, 1 / 3);
-closeTo(agostoAbaixo.percentualAtingidoMensal, 0.7992);
-assert.equal(agostoAbaixo.percentualAtingidoMensalFormatado, "79,92%");
+closeTo(agostoAbaixo.percentualAtingidoMensal, 0.9087604507451836);
+assert.equal(agostoAbaixo.percentualAtingidoMensalFormatado, "90,88%");
 assert.equal(agostoAbaixo.situacao, "Abaixo da meta");
 
 const componentesAusentes = ieo.calcularIeo(regraBase, {

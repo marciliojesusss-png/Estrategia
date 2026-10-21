@@ -4,6 +4,7 @@
     SEM_LANCAMENTO: "sem_lancamento",
     EM_DIA: "em_dia",
     PREENCHIMENTO_ATRASADO: "preenchimento_atrasado",
+    ENVIO_HOMOLOGACAO_PENDENTE: "envio_homologacao_pendente",
     HOMOLOGACAO_ATRASADA: "homologacao_atrasada",
     AJUSTE_ATRASADO: "ajuste_atrasado",
     RETIFICACAO_EM_ANDAMENTO: "retificacao_em_andamento"
@@ -102,9 +103,14 @@
         ? result(STATUS.AJUSTE_ATRASADO, true, "Ajuste em atraso", fillDeadline)
         : result(STATUS.EM_DIA);
     }
-    if (["nao iniciado", "rascunho", "em preenchimento"].includes(status)) {
+    if (["nao iniciado", "rascunho"].includes(status)) {
       return reference > fillDeadline
         ? result(STATUS.PREENCHIMENTO_ATRASADO, true, "Preenchimento em atraso", fillDeadline)
+        : result(STATUS.EM_DIA);
+    }
+    if (status === "em preenchimento") {
+      return reference > fillDeadline
+        ? result(STATUS.ENVIO_HOMOLOGACAO_PENDENTE, true, "Envio para homologação pendente", fillDeadline)
         : result(STATUS.EM_DIA);
     }
     return result(STATUS.EM_DIA);

@@ -360,8 +360,8 @@ final class BaseDadosService
                 throw new InvalidArgumentException('A competência informada não pertence ao ciclo oficial do indicador.');
             }
             if (empty($required[$indicatorId])) continue;
-            if (!$this->evidencias->byLaunch($id)) {
-                throw new InvalidArgumentException('Anexe pelo menos um arquivo antes de enviar para homologacao.');
+            if (!$this->evidencias->hasCurrent($id)) {
+                throw new InvalidArgumentException('Anexe pelo menos um arquivo da versao atual antes de enviar para homologacao.');
             }
         }
     }

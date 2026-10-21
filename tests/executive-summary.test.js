@@ -218,16 +218,16 @@ assert.equal(jogoResponsavelCapacitacaoDashboardOficial.percentualAtingido, 1);
 const lucroDashboardOficial = results.find((item) => item.indicador.id === 7);
 assert.equal(context.window.StrategicResults.officialSituation(lucroDashboardOficial), "Atingido");
 assert.equal(lucroDashboardOficial.competencia, "Março/2026");
-assert.ok(Math.abs(lucroDashboardOficial.meta - 90084434.66) < 0.0001);
+assert.ok(Math.abs(lucroDashboardOficial.meta - 89555555.56) < 0.0001);
 assert.ok(Math.abs(lucroDashboardOficial.resultado - 114310457.11) < 0.0001);
-assert.ok(Math.abs(lucroDashboardOficial.percentualAtingido - (114310457.11 / 90084434.66)) < 0.000001);
+assert.ok(Math.abs(lucroDashboardOficial.percentualAtingido - (114310457.11 / 89555555.56)) < 0.000001);
 
 const ieoDashboardOficial = results.find((item) => item.indicador.id === 6);
 assert.equal(context.window.StrategicResults.officialSituation(ieoDashboardOficial), "Atingido");
 assert.equal(ieoDashboardOficial.competencia, "Março/2026");
 assert.ok(Math.abs(ieoDashboardOficial.meta - 0.1441) < 0.000001);
 assert.ok(Math.abs(ieoDashboardOficial.resultado - 0.108) < 0.000001);
-assert.ok(Math.abs(ieoDashboardOficial.percentualAtingido - (0.1441 / 0.108)) < 0.000001);
+assert.ok(Math.abs(ieoDashboardOficial.percentualAtingido - (1 - ((0.108 - 0.1441) / (1 - 0.1441)))) < 0.000001);
 
 const ieoIndicator = indicators.find((item) => item.id === 6);
 const ieoRule = rules.find((item) => item.indicadorId === 6);
@@ -255,7 +255,7 @@ assert.equal(context.window.StrategicResults.officialSituation(ieoDashboardAgost
 assert.equal(ieoDashboardAgosto.competencia, "Agosto/2026");
 assert.ok(Math.abs(ieoDashboardAgosto.meta - 0.2664) < 0.000001);
 assert.ok(Math.abs(ieoDashboardAgosto.resultado - 0.20) < 0.000001);
-assert.ok(Math.abs(ieoDashboardAgosto.percentualAtingido - 1.332) < 0.000001);
+assert.ok(Math.abs(ieoDashboardAgosto.percentualAtingido - (1 - ((0.20 - 0.2664) / (1 - 0.2664)))) < 0.000001);
 
 const repasseDashboardOficial = results.find((item) => item.indicador.id === 17);
 assert.equal(context.window.StrategicResults.officialSituation(repasseDashboardOficial), "Atingido");
@@ -383,6 +383,53 @@ assert.ok(Math.abs(capacitacaoJunho.resultado - (177 / 183)) < 0.000001);
 assert.equal(capacitacaoJunho.percentualAtingido, 1);
 assert.equal(capacitacaoJunho.situacaoCalculada, "Atingido");
 
+const capacitacaoSetembroPendente = {
+  id: "C-SET",
+  indicadorId: 15,
+  ano: 2026,
+  mes: 9,
+  nomeMes: "Setembro",
+  competencia: "2026-09",
+  trimestre: "3TRI/2026",
+  status: "Em preenchimento",
+  metaReferencia: 0.90,
+  camposEntrada: {
+    tipoPosicaoCapacitacao: "apuracao_quantitativa",
+    modoResultadoCapacitacao: "oficial_informado",
+    resultadoOficialInformadoCapacitacao: 0.932,
+    percentualAtingidoOficialCapacitacao: 1.0355,
+    quantidadeCursosMinimaCapacitacao: 4,
+    componentesResultadoCapacitacao: [
+      { curso: "Customer Experience", empregadosCapacitados: 163, publicoAlvoElegivel: 171 },
+      { curso: "Ecossistema Negocial", empregadosCapacitados: 154, publicoAlvoElegivel: 171 }
+    ]
+  }
+};
+const capacitacaoComSetembroPendente = context.window.StrategicResults.calcularDashboard({
+  indicadores: [capacitacaoIndicator],
+  regras: [capacitacaoRule],
+  lancamentos: [...capacitacaoPositions, {
+    id: "C-JUN", indicadorId: 15, ano: 2026, mes: 6, nomeMes: "Junho", trimestre: "2TRI/2026", status: "Homologado",
+    camposEntrada: { tipoPosicaoCapacitacao: "apuracao_quantitativa", publicoAlvoElegivelCapacitacao: 183, empregadosCapacitadosCapacitacao: 177 }
+  }, capacitacaoSetembroPendente]
+}).resultadosOficiais[0];
+assert.equal(capacitacaoComSetembroPendente.competencia, "Junho/2026");
+assert.ok(Math.abs(capacitacaoComSetembroPendente.resultado - (177 / 183)) < 0.000001);
+assert.equal(capacitacaoComSetembroPendente.percentualAtingido, 1);
+
+const capacitacaoComSetembroHomologado = context.window.StrategicResults.calcularDashboard({
+  indicadores: [capacitacaoIndicator],
+  regras: [capacitacaoRule],
+  lancamentos: [...capacitacaoPositions, {
+    id: "C-JUN", indicadorId: 15, ano: 2026, mes: 6, nomeMes: "Junho", trimestre: "2TRI/2026", status: "Homologado",
+    camposEntrada: { tipoPosicaoCapacitacao: "apuracao_quantitativa", publicoAlvoElegivelCapacitacao: 183, empregadosCapacitadosCapacitacao: 177 }
+  }, { ...capacitacaoSetembroPendente, status: "Homologado" }]
+}).resultadosOficiais[0];
+assert.equal(capacitacaoComSetembroHomologado.competencia, "Setembro/2026");
+assert.equal(capacitacaoComSetembroHomologado.resultado, 0.932);
+assert.equal(capacitacaoComSetembroHomologado.percentualAtingido, 1.0355);
+assert.equal(capacitacaoComSetembroHomologado.situacaoCalculada, "Superado");
+
 const climaIndicator = { ...indicators.find((item) => item.id === 12), periodicidade: "Mensal" };
 const climaRule = rules.find((item) => item.indicadorId === 12);
 const climaPositions = [
@@ -402,12 +449,42 @@ assert.equal(climaComAcompanhamentos.lancamento.id, "CLIMA-MAR");
 assert.equal(climaComAcompanhamentos.lancamentoAcao.id, "CLIMA-6");
 assert.equal(climaComAcompanhamentos.competencia, "Março/2026");
 assert.equal(climaComAcompanhamentos.competenciaAtual, "Junho/2026");
-assert.equal(climaComAcompanhamentos.competenciaMedicaoCurta, "Mar/2026");
+assert.equal(climaComAcompanhamentos.competenciaMedicaoCurta, null);
+assert.equal(climaComAcompanhamentos.competenciaResultadoReportadoCurta, "Mar/2026");
 assert.equal(climaComAcompanhamentos.resultado, 60);
 assert.equal(climaComAcompanhamentos.percentualAtingido, 1);
 assert.equal(climaComAcompanhamentos.situacaoAtual, "Em acompanhamento");
 assert.equal(climaComAcompanhamentos.statusAtual, "Homologado");
+assert.equal(climaComAcompanhamentos.lancamento.status, "Homologado");
+assert.equal(climaComAcompanhamentos.medicaoOficialPesquisa2026, false);
+assert.equal(climaComAcompanhamentos.resultadoOficialReportado, true);
+assert.equal(climaComAcompanhamentos.contextoResultadoOficial, "Resultado oficial reportado no 1TRI/2026");
 assert.equal(context.window.StrategicResults.officialSituation(climaComAcompanhamentos), "Em acompanhamento");
+
+const climaComSetembroQualitativo = context.window.StrategicResults.calcularDashboard({
+  indicadores: [climaIndicator],
+  regras: [climaRule],
+  lancamentos: [
+    ...climaPositions,
+    { id: "CLIMA-7", indicadorId: 12, ano: 2026, mes: 7, nomeMes: "Julho", competencia: "2026-07", status: "Não iniciado", camposEntrada: {} },
+    { id: "CLIMA-8", indicadorId: 12, ano: 2026, mes: 8, nomeMes: "Agosto", competencia: "2026-08", status: "Não iniciado", camposEntrada: {} },
+    {
+      id: "CLIMA-9", indicadorId: 12, ano: 2026, mes: 9, nomeMes: "Setembro", competencia: "2026-09", status: "Em preenchimento",
+      camposEntrada: { tipoPosicaoClima: "Acompanhamento", metaReferenciaClima: 60, notaClimaApurada: "", dataBasePesquisaClima: "2026-09-30" }
+    }
+  ]
+}).resultadosOficiais[0];
+assert.equal(climaComSetembroQualitativo.lancamento.id, "CLIMA-MAR");
+assert.equal(climaComSetembroQualitativo.lancamentoAcao.id, "CLIMA-9");
+assert.equal(climaComSetembroQualitativo.competencia, "Março/2026");
+assert.equal(climaComSetembroQualitativo.competenciaAtual, "Setembro/2026");
+assert.equal(climaComSetembroQualitativo.resultado, 60);
+assert.equal(climaComSetembroQualitativo.percentualAtingido, 1);
+assert.equal(climaComSetembroQualitativo.statusAtual, "Em preenchimento");
+assert.equal(climaComSetembroQualitativo.situacaoAtual, "Em acompanhamento");
+assert.equal(climaComSetembroQualitativo.medicaoOficialPesquisa2026, false);
+assert.equal(climaComSetembroQualitativo.competenciaMedicaoCurta, null);
+assert.equal(climaComSetembroQualitativo.competenciaResultadoReportadoCurta, "Mar/2026");
 
 const climaFuturo = context.window.StrategicResults.calcularDashboard({
   indicadores: [climaIndicator],
@@ -431,6 +508,8 @@ assert.equal(climaFuturo.competenciaMedicaoCurta, "Out/2026");
 assert.equal(climaFuturo.resultado, 62);
 assert.ok(Math.abs(climaFuturo.percentualAtingido - (62 / 60)) < 0.000001);
 assert.equal(climaFuturo.situacaoAtual, "Em acompanhamento");
+assert.equal(climaFuturo.medicaoOficialPesquisa2026, true);
+assert.equal(climaFuturo.resultadoOficialReportado, false);
 
 const climaSemMedicao = context.window.StrategicResults.calcularDashboard({
   indicadores: [climaIndicator], regras: [climaRule], lancamentos: climaPositions.slice(1)
@@ -440,6 +519,148 @@ assert.equal(climaSemMedicao.lancamentoAcao.id, "CLIMA-6");
 assert.equal(climaSemMedicao.resultado, null);
 assert.equal(climaSemMedicao.percentualAtingido, null);
 assert.equal(climaSemMedicao.situacaoAtual, "Em acompanhamento");
+assert.equal(climaSemMedicao.medicaoOficialPesquisa2026, false);
+assert.equal(climaSemMedicao.resultadoOficialReportado, false);
 assert.equal(context.window.StrategicResults.officialSituation(climaSemMedicao), "Em acompanhamento");
+
+// A Tabela Executiva usa somente competências homologadas como posição oficial.
+const officialResultFor = (indicator, rule, indicatorLaunches) => (
+  context.window.StrategicResults.calcularDashboard({
+    indicadores: [indicator],
+    regras: [rule],
+    lancamentos: indicatorLaunches
+  }).resultadosOficiais[0]
+);
+
+const lucroIndicator = indicators.find((item) => item.id === 7);
+const lucroRule = rules.find((item) => item.indicadorId === 7);
+const lucroHomologatedThroughMarch = launches
+  .filter((item) => item.indicadorId === 7 && item.mes <= 3)
+  .map((item) => ({ ...item, status: "Homologado" }));
+const lucroPendingAfterMarch = [4, 5, 6, 7, 8, 9].map((mes) => ({
+  id: `LUCRO-${mes}`,
+  indicadorId: 7,
+  ano: 2026,
+  mes,
+  nomeMes: ["Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro"][mes - 4],
+  competencia: `2026-${String(mes).padStart(2, "0")}`,
+  status: "Em preenchimento",
+  camposEntrada: { lucroLiquidoRecorrenteCompetencia: 100000000 + mes }
+}));
+const lucroOfficialOnly = officialResultFor(
+  lucroIndicator,
+  lucroRule,
+  [...lucroHomologatedThroughMarch, ...lucroPendingAfterMarch]
+);
+assert.equal(lucroOfficialOnly.competencia, "Março/2026");
+assert.equal(lucroOfficialOnly.status, "Homologado");
+assert.equal(lucroOfficialOnly.lancamentoAcao.competencia, "2026-09");
+
+const womenIndicator = indicators.find((item) => item.id === 13);
+const womenRule = rules.find((item) => item.indicadorId === 13);
+const womenLaunch = (id, mes, nomeMes, status, mulheres, total) => ({
+  id,
+  indicadorId: 13,
+  ano: 2026,
+  mes,
+  nomeMes,
+  competencia: `2026-${String(mes).padStart(2, "0")}`,
+  status,
+  metaReferencia: 0.425,
+  camposEntrada: {
+    mulheresGestorasMes: mulheres,
+    totalGestoresMes: total,
+    dataBaseApuracao: `2026-${String(mes).padStart(2, "0")}-${mes === 9 ? "30" : "31"}`
+  }
+});
+const womenPositions = [
+  womenLaunch("MULHERES-JUL", 7, "Julho", "Homologado", 19, 46),
+  womenLaunch("MULHERES-AGO", 8, "Agosto", "Retificado", 20, 46),
+  womenLaunch("MULHERES-SET", 9, "Setembro", "Em preenchimento", 20, 46)
+];
+const womenOfficialJuly = officialResultFor(womenIndicator, womenRule, womenPositions);
+assert.equal(womenOfficialJuly.lancamento.id, "MULHERES-JUL");
+assert.equal(womenOfficialJuly.competencia, "Julho/2026");
+assert.equal(womenOfficialJuly.status, "Homologado");
+assert.equal(womenOfficialJuly.lancamentoAcao.id, "MULHERES-SET");
+assert.ok(Math.abs(womenOfficialJuly.resultado - (19 / 46)) < 0.000001);
+assert.ok(Math.abs(womenOfficialJuly.percentualAtingido - ((19 / 46) / 0.425)) < 0.000001);
+
+const womenWithReopenedAugust = officialResultFor(womenIndicator, womenRule, [
+  womenPositions[0],
+  womenLaunch("MULHERES-AGO-REABERTO", 8, "Agosto", "Reaberto", 20, 46)
+]);
+assert.equal(womenWithReopenedAugust.lancamento.id, "MULHERES-JUL");
+
+const womenWithRetifiedAugust = officialResultFor(womenIndicator, womenRule, womenPositions.slice(0, 2));
+assert.equal(womenWithRetifiedAugust.lancamento.id, "MULHERES-JUL");
+
+const womenWithoutHomologation = officialResultFor(womenIndicator, womenRule, womenPositions.slice(1));
+assert.equal(womenWithoutHomologation.lancamento, null);
+assert.equal(womenWithoutHomologation.competencia, null);
+assert.equal(womenWithoutHomologation.meta, null);
+assert.equal(womenWithoutHomologation.resultado, null);
+assert.equal(womenWithoutHomologation.percentualAtingido, null);
+assert.equal(womenWithoutHomologation.status, null);
+assert.equal(context.window.StrategicResults.officialSituation(womenWithoutHomologation), "Sem dados");
+
+const womenAfterSeptemberApproval = officialResultFor(
+  womenIndicator,
+  womenRule,
+  womenPositions.map((item) => item.id === "MULHERES-SET" ? { ...item, status: "Homologado" } : item)
+);
+assert.equal(womenAfterSeptemberApproval.lancamento.id, "MULHERES-SET");
+assert.equal(womenAfterSeptemberApproval.competencia, "Setembro/2026");
+assert.equal(womenAfterSeptemberApproval.status, "Homologado");
+assert.ok(Math.abs(womenAfterSeptemberApproval.resultado - (20 / 46)) < 0.000001);
+assert.ok(Math.abs(womenAfterSeptemberApproval.percentualAtingido - ((20 / 46) / 0.425)) < 0.000001);
+
+const diversityIndicator = indicators.find((item) => item.id === 14);
+const diversityRule = rules.find((item) => item.indicadorId === 14);
+const diversityLaunch = (id, mes, status, gestores, total) => ({
+  id,
+  indicadorId: 14,
+  ano: 2026,
+  mes,
+  nomeMes: ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro"][mes - 1],
+  competencia: `2026-${String(mes).padStart(2, "0")}`,
+  status,
+  metaReferencia: 0.35,
+  camposEntrada: { gestoresEnquadradosMes: gestores, totalGestoresMes: total }
+});
+const diversityPositions = [
+  diversityLaunch("DIVERSIDADE-JUL", 7, "Homologado", 12, 46),
+  diversityLaunch("DIVERSIDADE-AGO", 8, "Em preenchimento", 12, 46),
+  diversityLaunch("DIVERSIDADE-SET", 9, "Em preenchimento", 12, 46)
+];
+const diversityOfficialJuly = officialResultFor(diversityIndicator, diversityRule, diversityPositions);
+assert.equal(diversityRule.parametrosCalculo.arredondarResultadoAntesAtingimento, true);
+assert.equal(diversityRule.parametrosCalculo.casasDecimaisResultadoPercentual, 2);
+assert.equal(diversityOfficialJuly.lancamento.id, "DIVERSIDADE-JUL");
+assert.equal(diversityOfficialJuly.competencia, "Julho/2026");
+assert.equal(diversityOfficialJuly.status, "Homologado");
+assert.equal(diversityOfficialJuly.lancamentoAcao.id, "DIVERSIDADE-SET");
+assert.ok(Math.abs(diversityOfficialJuly.resultado - 0.2609) < 1e-12);
+assert.ok(Math.abs(diversityOfficialJuly.percentualAtingido - (0.2609 / 0.35)) < 1e-12);
+
+const ieoMarchLaunch = launches.find((item) => item.indicadorId === 6 && item.mes === 3);
+const ieoWithPendingSeptember = officialResultFor(ieoIndicator, ieoRule, [
+  { ...ieoMarchLaunch, status: "Homologado" },
+  {
+    ...ieoMarchLaunch,
+    id: "IEO-SET-PENDENTE",
+    mes: 9,
+    nomeMes: "Setembro",
+    competencia: "2026-09",
+    status: "Em preenchimento"
+  }
+]);
+assert.equal(ieoWithPendingSeptember.lancamento.id, ieoMarchLaunch.id);
+assert.equal(ieoWithPendingSeptember.competencia, "Março/2026");
+assert.ok(Math.abs(ieoWithPendingSeptember.resultado - ieoDashboardOficial.resultado) < 0.000001);
+assert.ok(Math.abs(ieoWithPendingSeptember.percentualAtingido - ieoDashboardOficial.percentualAtingido) < 0.000001);
+
+assert.equal(womenRule.tipoCalculo, "percentual_direto");
+assert.equal(lucroRule.tipoCalculo, "lucro_recorrente_mensal");
 
 console.log("Testes do resumo executivo OK");

@@ -43,6 +43,18 @@ final class EvidenciaController
         }
     }
 
+    public function listHistoryApi($launchId)
+    {
+        try {
+            $user = Auth::requirePermission('lancamentos', 'visualizar', true);
+            Response::success($this->service->listHistoryForLaunch($launchId, $user));
+        } catch (OutOfBoundsException $error) {
+            Response::error($error->getMessage(), 404);
+        } catch (UnexpectedValueException $error) {
+            Response::error($error->getMessage(), 403);
+        }
+    }
+
     public function removeApi($id)
     {
         try {

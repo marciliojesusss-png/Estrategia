@@ -102,7 +102,7 @@ test("Indicador 6 usa em Lançamentos a meta administrativa da competência", as
     }
   ));
   expect(calculation.resultadoMensal).toBeCloseTo(0.20, 10);
-  expect(calculation.percentualAtingidoMensal).toBeCloseTo(1.494, 10);
-  expect(calculation.percentualAtingidoMensalFormatado).toBe("149,40%");
+  expect(calculation.percentualAtingidoMensal).toBeCloseTo(1 - ((0.20 - 0.2988) / (1 - 0.2988)), 10);
+  expect(calculation.percentualAtingidoMensalFormatado).toBe("114,09%");
   expect(calculation.situacao).toBe("Atingido");
 });

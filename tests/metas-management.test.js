@@ -5,7 +5,7 @@ const vm = require("node:vm");
 
 const root = path.resolve(__dirname, "..");
 const metas = [
-  { id: 601, indicadorId: 6, ano: 2026, mes: 8, nomeMes: "Agosto", metaMensal: 0.2988 },
+  { id: 601, indicadorId: 6, ano: 2026, mes: 8, nomeMes: "Agosto", metaMensal: 0.2988, detalhesMetaMensal: "Texto de negócio." },
   { id: 602, indicadorId: 6, ano: 2026, mes: 9, nomeMes: "Setembro", metaMensal: 0.2711 },
   { id: 701, indicadorId: 7, ano: 2026, mes: 1, nomeMes: "Janeiro", metaMensal: 110 },
   { id: 702, indicadorId: 7, ano: 2026, mes: 2, nomeMes: "Fevereiro", metaMensal: 120 },
@@ -48,6 +48,7 @@ vm.runInContext(fs.readFileSync(path.join(root, "assets/js/dataStore.js"), "utf8
   const loadedLaunches = await store.loadJson("lancamentos");
 
   assert.equal(loadedMetas.find((item) => item.id === 601).metaMensal, 0.2988, "a normalização deve preservar a meta do SQL");
+  assert.equal(loadedMetas.find((item) => item.id === 601).detalhesMetaMensal, "Texto de negócio.", "os detalhes existentes devem ser preservados");
   assert.equal(loadedLaunches.find((item) => item.id === "ieo-ago").metaReferencia, 0.2988, "o lançamento deve usar a meta oficial");
   assert.equal(store.resolveMeta(6, 2026, 8, metas, 0.2664), 0.2988, "a meta oficial deve vencer o fallback de 26,64%");
   assert.equal(store.resolveMeta(6, 2026, 9, metas, 0.2664), 0.2711, "setembro deve preservar sua própria meta");
@@ -89,7 +90,7 @@ vm.runInContext(fs.readFileSync(path.join(root, "assets/js/dataStore.js"), "utf8
   assert.equal(ieoResult.metaAnualIeo, 0.2988);
   assert.match(ieoResult.formulaVigenteIeo, /Despesas Gerais e Administrativas/);
   assert.equal(ieoResult.situacao, "Abaixo da meta");
-  assert.ok(Math.abs(ieoResult.percentualAtingidoMensal - (0.2988 / 0.3)) < 1e-9, "IEO deve manter a fórmula inversa");
+  assert.ok(Math.abs(ieoResult.percentualAtingidoMensal - (1 - ((0.3 - 0.2988) / (1 - 0.2988)))) < 1e-9, "IEO deve usar a metodologia com VRM de 100%");
 
   const normalizedIeo = ieo.normalizarLancamentoParaExibicao(ieoLaunch, regraIeoOficial);
   assert.equal(normalizedIeo.metaMensal, 0.2988);
@@ -168,10 +169,18 @@ vm.runInContext(fs.readFileSync(path.join(root, "assets/js/dataStore.js"), "utf8
   assert.match(admin, /querySelector\('\[name="metaMensal"\]'\)/);
   assert.match(admin, /data-meta-edit-context/);
   assert.match(admin, /api\/administracao\/metas/);
+  assert.match(admin, /Detalhes da Meta Mensal/);
+  assert.match(admin, /acrescentarMetodologiaDetalhes/);
   assert.doesNotMatch(admin.slice(admin.indexOf("async function saveMetaForm"), admin.indexOf("function renderTiposCalculo")), /DataStore\.saveLocal\("metas"/);
   assert.match(view, /formulas\.js/);
+  const service = fs.readFileSync(path.join(root, "app/services/AdministracaoService.php"), "utf8");
+  assert.match(service, /detalhesMetaMensal/);
+  const indicators = fs.readFileSync(path.join(root, "assets/js/indicators.js"), "utf8");
+  const launchSource = fs.readFileSync(path.join(root, "assets/js/launches.js"), "utf8");
+  assert.match(indicators, /renderTextBlock\("Detalhes da Meta Mensal"/);
+  assert.match(launchSource, /\["Detalhes da Meta Mensal", resultado\.detalhesMetaMensal\]/);
 
-  for (const file of ["admin.js", "dataStore.js", "formulas.js", "ieo-recorrente.js", "lucro-recorrente.js", "central-persistence.js"]) {
+  for (const file of ["admin.js", "dataStore.js", "formulas.js", "ieo-recorrente.js", "lucro-recorrente.js", "central-persistence.js", "indicators.js", "launches.js"]) {
     assert.equal(
       fs.readFileSync(path.join(root, "assets/js", file), "utf8"),
       fs.readFileSync(path.join(root, "public/assets/js", file), "utf8"),

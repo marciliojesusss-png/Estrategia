@@ -33,18 +33,18 @@ for (const file of ["currency.js", "lucro-recorrente.js", "dataStore.js"]) {
 }
 
 const metasMensaisEsperadas = {
-  "2026-01": 90811101.33,
-  "2026-02": 77462728.16,
-  "2026-03": 90084434.66,
-  "2026-04": 96068372.33,
-  "2026-05": 94438480.16,
-  "2026-06": 106104677.05,
-  "2026-07": 98144245.44,
-  "2026-08": 94094264.37,
-  "2026-09": 128614993.92,
-  "2026-10": 101071987.08,
-  "2026-11": 91522592.68,
-  "2026-12": 236900370.02
+  "2026-01": 89555555.56,
+  "2026-02": 89555555.55,
+  "2026-03": 89555555.56,
+  "2026-04": 89555555.55,
+  "2026-05": 89555555.56,
+  "2026-06": 89555555.55,
+  "2026-07": 89555555.56,
+  "2026-08": 89555555.55,
+  "2026-09": 89555555.56,
+  "2026-10": 89555555.56,
+  "2026-11": 89555555.55,
+  "2026-12": 223888888.89
 };
 
 (async () => {
@@ -66,17 +66,18 @@ const metasMensaisEsperadas = {
   assert.equal(rule.camposEntrada[0].obrigatorio, true);
   assert.equal(rule.camposEntradaLegados[0].nome, "lucroLiquidoRecorrenteAcumulado");
   assert.equal(rule.camposEntradaLegados[0].tipo, "moeda");
-  assert.equal(Object.values(monthlyTargets).reduce((sum, value) => sum + Math.round(value * 100), 0) / 100, 1305318247.20);
-  assert.equal(accumulatedTargets["2026-01"], 90811101.33);
-  assert.equal(accumulatedTargets["2026-03"], 258358264.15);
-  assert.equal(accumulatedTargets["2026-06"], 554969793.69);
-  assert.equal(accumulatedTargets["2026-12"], 1305318247.20);
+  assert.equal(Object.values(monthlyTargets).reduce((sum, value) => sum + Math.round(value * 100), 0) / 100, 1209000000.00);
+  assert.equal(accumulatedTargets["2026-01"], 89555555.56);
+  assert.equal(accumulatedTargets["2026-03"], 268666666.67);
+  assert.equal(accumulatedTargets["2026-06"], 537333333.33);
+  assert.equal(accumulatedTargets["2026-09"], 806000000.00);
+  assert.equal(accumulatedTargets["2026-12"], 1209000000.00);
   assert.equal(indicator.periodicidade, "Mensal");
   assert.equal(indicator.metaAnualDescricao, "R$ 1.209.000.000,00");
-  assert.notEqual(
+  assert.equal(
     Object.values(monthlyTargets).reduce((sum, value) => sum + Math.round(value * 100), 0) / 100,
     rule.metaAnualValor,
-    "temporariamente, a curva mensal histórica não deve ser recalculada para fechar com a meta anual oficial"
+    "a curva mensal oficial deve fechar exatamente com a meta anual"
   );
 
   for (let mes = 1; mes <= 12; mes += 1) {
@@ -103,21 +104,27 @@ const metasMensaisEsperadas = {
   assert.equal(institutional.lancamentos[0].metaReferencia, 1, "a normalização não deve sobrescrever a meta persistida");
 
   const migration = fs.readFileSync(
-    path.join(root, "database", "sqlserver", "migrations", "20260902_001_indicador07_lucro_recorrente_mensal.sql"),
+    path.join(root, "database", "sqlserver", "migrations", "20261020_001_indicador07_curva_oficial_acumulado.sql"),
     "utf8"
   );
   assert.match(migration, /WHERE l\.indicador_id = @indicador_id[\s\S]*l\.ano = 2026/);
   assert.match(migration, /lucro_recorrente_mensal/);
   assert.match(migration, /ultima_posicao_mensal_homologada/);
-  assert.match(migration, /lucroLiquidoRecorrenteCompetencia/);
+  assert.match(migration, /dados_entrada_json/);
   for (const value of Object.values(metasMensaisEsperadas)) {
     assert.ok(migration.includes(value.toFixed(2)), `Migration sem a meta mensal ${value.toFixed(2)}`);
   }
   assert.match(migration, /WHERE chave = N'regrasIndicadores'/);
-  assert.match(migration, /lucroLiquidoRecorrenteAcumulado/);
+  assert.match(migration, /resultado_calculado/);
   assert.doesNotMatch(migration, /ALTER\s+TABLE/i);
   assert.doesNotMatch(migration, /INSERT\s+INTO\s+dbo\.lancamentos/i);
   assert.doesNotMatch(migration, /SET\s+l\.status\s*=/i);
+
+  const historicalMigration = fs.readFileSync(
+    path.join(root, "database", "sqlserver", "migrations", "20260902_001_indicador07_lucro_recorrente_mensal.sql"),
+    "utf8"
+  );
+  assert.match(historicalMigration, /1305318247\.20/, "a migration histórica deve permanecer intacta");
 
   console.log("Testes do Lucro Recorrente mensal OK");
 })().catch((error) => {

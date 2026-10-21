@@ -130,7 +130,7 @@
             <div class="evidence-section-heading">
               <div>
                 <p class="eyebrow">Documentação comprobatória</p>
-                <h3 id="launchEvidenceTitle">Evidências</h3>
+                <h3 id="launchEvidenceTitle">Evidências atuais</h3>
               </div>
               <span id="evidenceRequirementText" class="evidence-requirement"></span>
             </div>
@@ -151,9 +151,14 @@
             <p id="launchEvidencePendingStatus" class="evidence-pending-status" aria-live="polite" hidden></p>
 
             <div>
-              <h4>Arquivos anexados</h4>
+              <h4>Arquivos da versão atual</h4>
               <div id="launchEvidenceList" class="evidence-list" aria-live="polite"></div>
             </div>
+            <details id="launchEvidenceHistoryWrapper" class="evidence-history" hidden>
+              <summary>Evidências de versões anteriores</summary>
+              <p class="evidence-history-warning">Esta evidência pertence a uma versão anterior e não comprova a versão atual.</p>
+              <div id="launchEvidenceHistoryList" class="evidence-list" aria-live="polite"></div>
+            </details>
           </section>
 
           <label class="full-span">Métrica/Fórmula de referência

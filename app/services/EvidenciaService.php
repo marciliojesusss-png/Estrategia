@@ -37,6 +37,12 @@ final class EvidenciaService
         return array_map(array($this, 'publicEvidence'), $this->repo->byLaunch($launch['id']));
     }
 
+    public function listHistoryForLaunch($launchId, array $user)
+    {
+        $launch = $this->authorizedLaunch($launchId, $user);
+        return array_map(array($this, 'publicEvidence'), $this->repo->historicalByLaunch($launch['id']));
+    }
+
     public function attach($launchId, array $file, $description, array $user)
     {
         $launch = $this->authorizedLaunch($launchId, $user, true);
@@ -48,8 +54,11 @@ final class EvidenciaService
         $stored = $this->files->store($file, $validation);
         try {
             $this->db->beginTransaction();
+            $launch = $this->lockedEditableLaunch($launchId, $user);
+            $version = max(1, (int) $launch['versaoAtual']);
             $evidence = $this->repo->create(array(
                 'lancamento_id'=>(string)$launchId,
+                'versao_lancamento'=>$version,
                 'nome_arquivo'=>$validation['original'],
                 'tipo_arquivo'=>$validation['mime'],
                 'caminho_arquivo'=>$stored['path'],
@@ -57,7 +66,9 @@ final class EvidenciaService
                 'usuario'=>$user['matricula'],
             ));
             // Compatibilidade: evidencia_id aponta para o último anexo, mas a lista usa evidencias.lancamento_id.
-            $this->launches->setEvidence($launchId, $evidence['id']);
+            if (!$this->launches->setEvidence($launchId, $evidence['id'], $version)) {
+                throw new LogicException('O lancamento mudou de versao durante o upload. Tente novamente.');
+            }
             $this->audit->append(array(
                 'entidade'=>'evidencias',
                 'registroId'=>$evidence['id'],
@@ -80,13 +91,22 @@ final class EvidenciaService
         $evidence = $this->repo->find($id);
         if (!$evidence) throw new OutOfBoundsException('Evidência não encontrada.');
         $launch = $this->authorizedLaunch($evidence['lancamento_id'], $user, true);
+        if ((int)$evidence['versao_lancamento'] !== (int)$launch['versaoAtual']) {
+            throw new LogicException('Evidencia historica nao pode ser removida.');
+        }
 
         $this->db->beginTransaction();
         try {
+            $launch = $this->lockedEditableLaunch($evidence['lancamento_id'], $user);
+            $evidence = $this->repo->find($id);
+            if (!$evidence) throw new OutOfBoundsException('Evidencia nao encontrada.');
+            if ((int)$evidence['versao_lancamento'] !== (int)$launch['versaoAtual']) {
+                throw new LogicException('Evidencia historica nao pode ser removida.');
+            }
             $this->repo->delete($id);
             $remaining = $this->repo->byLaunch($launch['id']);
             $latest = $remaining ? end($remaining) : null;
-            $this->launches->setEvidence($launch['id'], $latest ? $latest['id'] : null);
+            $this->launches->setEvidence($launch['id'], $latest ? $latest['id'] : null, $launch['versaoAtual']);
             $this->audit->append(array(
                 'entidade'=>'evidencias',
                 'registroId'=>$id,
@@ -140,11 +160,33 @@ final class EvidenciaService
         return $launch;
     }
 
+    private function lockedEditableLaunch($launchId, array $user)
+    {
+        $launch = $this->launches->findForUpdate($launchId);
+        if (!$launch) throw new OutOfBoundsException('Lancamento nao encontrado.');
+        if ($user['perfil'] !== 'administrador' && !AccessPolicy::scopeAllows($user, $launch)) {
+            throw new UnexpectedValueException('Registro fora do escopo.');
+        }
+        if (!in_array($user['perfil'], array('administrador','unidade_apuradora'), true)) {
+            throw new UnexpectedValueException('Perfil sem permissao para alterar evidencias.');
+        }
+        if (!LancamentoStateMachine::editable($launch['status'])) {
+            throw new LogicException('Evidencias so podem ser alteradas em lancamento editavel.');
+        }
+        GovernancaHomologacao::assertLaunchMutable(
+            $launch,
+            $this->config->get(GovernancaHomologacao::CLOSURES_KEY, array()),
+            $this->homologacoes->exceptionalReopenCycleActive($launch['id'])
+        );
+        return $launch;
+    }
+
     private function publicEvidence(array $evidence)
     {
         return array(
             'id'=>$evidence['id'],
             'lancamentoId'=>$evidence['lancamento_id'],
+            'versaoLancamento'=>(int)$evidence['versao_lancamento'],
             'nomeArquivo'=>$evidence['nome_arquivo'],
             'tipoArquivo'=>$evidence['tipo_arquivo'],
             'descricao'=>$evidence['descricao'],

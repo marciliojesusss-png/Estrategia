@@ -12,7 +12,7 @@
     [5, "Maio"], [6, "Junho"], [7, "Julho"], [8, "Agosto"],
     [9, "Setembro"], [10, "Outubro"], [11, "Novembro"], [12, "Dezembro"]
   ];
-  const SITUATIONS = ["Atingido", "Abaixo da meta", "Sem dados", "Em andamento", "Sem cálculo"];
+  const SITUATIONS = ["Superado", "Atingido", "Abaixo da meta", "Sem dados", "Em andamento", "Em acompanhamento", "Sem cálculo"];
   const PLAN_ORDER = { PEI: 1, PN: 2 };
   const RVD_INDICATOR_IDS = new Set([2, 5, 6, 7]);
   const VIEW_SCOPE = Object.freeze({ OWN: "own", GENERAL: "general" });
@@ -364,41 +364,91 @@
     );
   }
 
+  function operationalLaunchForCompetence(indicator, competence) {
+    if (!competence) return null;
+    const launch = state.launches.find((item) => (
+      Number(item.indicadorId) === Number(indicator?.id) &&
+      window.PrazoApuracao.competenceOf(item) === competence
+    )) || null;
+    return launch && isExpectedDeadlineCycle(indicator, launch) ? launch : null;
+  }
+
+  function referenceDateKey(referenceDate) {
+    if (!(referenceDate instanceof Date) || Number.isNaN(referenceDate.getTime())) return null;
+    return [
+      referenceDate.getFullYear(),
+      String(referenceDate.getMonth() + 1).padStart(2, "0"),
+      String(referenceDate.getDate()).padStart(2, "0")
+    ].join("-");
+  }
+
+  function fillDeadlineExpired(deadline, referenceDate) {
+    const reference = referenceDateKey(referenceDate);
+    const fillDeadline = String(
+      deadline?.dataLimitePreenchimento || deadline?.data_limite_preenchimento || ""
+    ).match(/^\d{4}-\d{2}-\d{2}/)?.[0] || null;
+    return Boolean(reference && fillDeadline && reference > fillDeadline);
+  }
+
+  function oldestOverdueOperationalLaunch(indicator, deadlines, referenceDate) {
+    const orderedDeadlines = [...deadlines]
+      .filter((deadline) => fillDeadlineExpired(deadline, referenceDate))
+      .sort((left, right) => String(left.competencia).localeCompare(String(right.competencia)));
+
+    for (const deadline of orderedDeadlines) {
+      const launch = operationalLaunchForCompetence(indicator, String(deadline.competencia));
+      if (!launch) continue;
+      if (window.PrazoApuracao.avaliar(launch, deadline, referenceDate).atrasado) return launch;
+    }
+    return null;
+  }
+
   function operationalLaunchForResult(result, referenceDate = new Date()) {
     if (!result?.indicador) return null;
     const filters = selectedFilters();
     const effectiveFrequency = operationalFrequencyForIndicator(result.indicador);
-    const activeCompetences = (state.prazos || [])
+    const activeDeadlines = (state.prazos || [])
       .filter((item) => item?.ativo !== false)
-      .map((item) => String(item.competencia || ""))
-      .filter((item) => /^\d{4}-\d{2}$/.test(item))
-      .filter((item) => window.IndicatorPeriodicity?.isExpectedCompetence(effectiveFrequency, item) !== false);
+      .filter((item) => /^\d{4}-\d{2}$/.test(String(item.competencia || "")))
+      .filter((item) => window.IndicatorPeriodicity?.isExpectedCompetence(effectiveFrequency, item.competencia) !== false);
     const referenceCompetence = `${referenceDate.getFullYear()}-${String(referenceDate.getMonth() + 1).padStart(2, "0")}`;
-    let targetCompetence = null;
+    let scopedDeadlines = [];
 
     if (filters.periodo === "Mensal") {
       const selectedMonth = MONTHS.find(([, name]) => name === filters.competencia)?.[0] || null;
-      targetCompetence = selectedMonth
-        ? `2026-${String(selectedMonth).padStart(2, "0")}`
-        : activeCompetences.filter((item) => item <= referenceCompetence).sort().at(-1) || null;
+      if (selectedMonth) {
+        return operationalLaunchForCompetence(
+          result.indicador,
+          `2026-${String(selectedMonth).padStart(2, "0")}`
+        );
+      }
+      scopedDeadlines = activeDeadlines.filter((item) => String(item.competencia) <= referenceCompetence);
     } else if (filters.periodo === "Trimestral") {
       const quarter = QuarterlyConsolidation.QUARTERS.find((item) => `${item.label}/2026` === filters.competencia);
       const months = quarter?.months || quarter?.meses || [];
       const competences = months.map((month) => `2026-${String(month).padStart(2, "0")}`);
-      targetCompetence = activeCompetences.filter((item) => competences.includes(item) && item <= referenceCompetence).sort().at(-1) || null;
+      scopedDeadlines = activeDeadlines.filter((item) => (
+        competences.includes(String(item.competencia)) && String(item.competencia) <= referenceCompetence
+      ));
     } else {
-      targetCompetence = activeCompetences.filter((item) => item.startsWith("2026-") && item <= referenceCompetence).sort().at(-1) || null;
+      scopedDeadlines = activeDeadlines.filter((item) => (
+        String(item.competencia).startsWith("2026-") && String(item.competencia) <= referenceCompetence
+      ));
     }
 
+    const overdueLaunch = oldestOverdueOperationalLaunch(result.indicador, scopedDeadlines, referenceDate);
+    if (overdueLaunch) return overdueLaunch;
+
+    const targetCompetence = scopedDeadlines
+      .map((item) => String(item.competencia))
+      .sort()
+      .at(-1) || null;
     if (!targetCompetence) {
+      if (filters.periodo === "Trimestral") return null;
       const fallback = result.lancamentoAcao || result.lancamento || null;
       return fallback && isExpectedDeadlineCycle(result.indicador, fallback) ? fallback : null;
     }
-    const launch = state.launches.find((item) => (
-      Number(item.indicadorId) === Number(result.indicador.id) &&
-      window.PrazoApuracao.competenceOf(item) === targetCompetence
-    )) || null;
-    return launch && isExpectedDeadlineCycle(result.indicador, launch) ? launch : null;
+    return operationalLaunchForCompetence(result.indicador, targetCompetence);
   }
 
   function deadlineStatusForResult(result, referenceDate = new Date()) {
@@ -449,12 +499,18 @@
   }
 
   function performanceToneForResult(result) {
-    if (isTrackingSituation(displaySituation(result))) return "amarelo";
+    const situation = normalizeText(displaySituation(result));
+    if (situation === "em acompanhamento") return "azul";
+    if (situation === "atingido" || situation === "superado") return "verde";
+    if (situation === "critico") return "vermelho";
+    if (situation === "sem dados") return "cinza";
+    if (isTrackingSituation(situation)) return "amarelo";
     return performanceToneByPercent(result?.percentualAtingido);
   }
 
   function performanceToneLabel(tone) {
     if (tone === "verde") return "Meta atingida";
+    if (tone === "azul") return "Em acompanhamento";
     if (tone === "amarelo") return "Atenção";
     if (tone === "vermelho") return "Crítico";
     return "Sem dados";
@@ -462,9 +518,10 @@
 
   function performanceToneRank(tone) {
     if (tone === "verde") return 0;
-    if (tone === "amarelo") return 1;
-    if (tone === "vermelho") return 2;
-    return 3;
+    if (tone === "azul") return 1;
+    if (tone === "amarelo") return 2;
+    if (tone === "vermelho") return 3;
+    return 4;
   }
 
   function performancePercentLabel(percentual) {
@@ -506,7 +563,7 @@
 
   function badgeClass(value) {
     value = Situations.normalizarSituacao(value);
-    if (value === "Atingido" || value === "Homologado") return "ok";
+    if (value === "Superado" || value === "Atingido" || value === "Homologado") return "ok";
     if (value === "Devolvido para ajuste") return "danger";
     if (value === "Abaixo da meta" || value === "Enviado para homologação") return "warn";
     return "info";
@@ -522,9 +579,32 @@
     return result?.competenciaAtual || result?.competencia || null;
   }
 
+  function executiveTableCompetence(result) {
+    if (result?.regra?.tipoCalculo === "nota_pesquisa_anual" && result.resultadoOficialReportado) {
+      return result.competencia || null;
+    }
+    return executiveCompetence(result);
+  }
+
   function measurementReference(result) {
     if (!["nota_pesquisa_nps", "nota_pesquisa_anual"].includes(result?.regra?.tipoCalculo)) return null;
+    if (result?.regra?.tipoCalculo === "nota_pesquisa_anual" && result.medicaoOficialPesquisa2026 === false) return null;
     return result.competenciaMedicaoCurta || result.competenciaMedicao || null;
+  }
+
+  function officialResultContext(result) {
+    if (result?.regra?.tipoCalculo !== "nota_pesquisa_anual" || !result.resultadoOficialReportado) return null;
+    return result.contextoResultadoOficial || "Resultado oficial reportado em acompanhamento";
+  }
+
+  function researchSupportText(result) {
+    const measurement = measurementReference(result);
+    if (result?.regra?.tipoCalculo === "nota_pesquisa_anual" && result.medicaoOficialPesquisa2026 === false) {
+      return Number(result?.indicador?.id) === 12
+        ? "Pesquisa 2026 prevista para Nov/2026"
+        : "Pesquisa anual ainda não realizada";
+    }
+    return measurement ? `Pesquisa: ${measurement}` : "Sem nova medição";
   }
 
   function displaySituation(result) {
@@ -577,7 +657,7 @@
 
   function summarySituationGroup(value) {
     const normalized = normalizeText(normalizeSituation(value));
-    if (normalized === "atingido" || normalized === "atingida") return "atingido";
+    if (["superado", "superada", "atingido", "atingida"].includes(normalized)) return "atingido";
     if (normalized === "abaixo da meta" || normalized === "critico" || normalized === "nao atingido") return "abaixo_da_meta";
     if (isTrackingSituation(normalized)) return "acompanhamento";
     return "sem_dados";
@@ -1075,7 +1155,7 @@
     const attentionPillar = [...groups].sort((a, b) => b.attention - a.attention || b.total - a.total)[0];
     const plans = unique(results.map((item) => item.indicador.plano)).map((plan) => {
       const items = results.filter((item) => item.indicador.plano === plan);
-      const achieved = items.filter((item) => displaySituation(item) === "Atingido").length;
+      const achieved = items.filter((item) => summarySituationGroup(displaySituation(item)) === "atingido").length;
       const withData = items.filter((item) => displaySituation(item) !== "Sem dados").length;
       return { plan, total: items.length, achieved, withData, percent: items.length ? achieved / items.length : 0 };
     }).sort((a, b) => b.percent - a.percent || b.achieved - a.achieved);
@@ -1234,6 +1314,8 @@
     const status = displayStatus(result);
     const competence = executiveCompetence(result) || "-";
     const measurement = measurementReference(result);
+    const resultContext = officialResultContext(result);
+    const researchContext = researchSupportText(result);
     const isResearchSurvey = ["nota_pesquisa_nps", "nota_pesquisa_anual"].includes(result.regra?.tipoCalculo);
     const isPlataformaJogos = Number(result.indicador.id) === 10 && result.regra?.parametrosCalculo?.metaTipo === "meta_oficial_trimestral_projeto";
     const previous = previousMonthlyResult(result);
@@ -1257,6 +1339,7 @@
       `Percentual de atingimento: ${percentLabel}`,
       `Última competência: ${competence}`,
       ...(isResearchSurvey ? [`Última medição: ${measurement || "Sem nova medição"}`] : []),
+      ...(resultContext ? [`Contexto do resultado: ${resultContext}`] : []),
       `Resultado anterior: ${previous ? StrategicResults.formatOfficialResult(previous) : "-"}`,
       `Percentual anterior: ${previous ? performancePercentLabel(previous.percentualAtingido) : "Sem comparação"}`,
       `${variationTitle}: ${variationLabel}`,
@@ -1293,7 +1376,7 @@
         ${isResearchSurvey ? `
           <span class="executive-performance-footer executive-performance-context">
             <span>${escapeHtml(situation)}</span>
-            <span>${escapeHtml(measurement ? `Pesquisa: ${measurement}` : "Sem nova medição")}</span>
+            <span>${escapeHtml(researchContext)}</span>
           </span>
         ` : isPlataformaJogos ? `
           <span class="executive-performance-footer executive-performance-context">
@@ -1384,6 +1467,7 @@
       const situation = displaySituation(result);
       const status = displayStatus(result);
       const measurement = measurementReference(result);
+      const resultContext = officialResultContext(result);
       const officialValue = result.lancamento ? StrategicResults.formatOfficialResult(result) : "-";
       const isPlataformaJogos = Number(result.indicador.id) === 10 && result.regra?.parametrosCalculo?.metaTipo === "meta_oficial_trimestral_projeto";
       return `
@@ -1391,9 +1475,9 @@
           <td>${planBadgesMarkup(result.indicador)}</td>
           <td>${escapeHtml(result.indicador.pilar)}</td>
           <td class="indicator-name"><span class="executive-indicator-cell"><span>${escapeHtml(limparNomeIndicador(result.indicador.indicador))}</span>${responsibilityBadgeMarkup(result.indicador)}</span></td>
-          <td>${escapeHtml(executiveCompetence(result) || "-")}</td>
+          <td>${escapeHtml(executiveTableCompetence(result) || "-")}</td>
           <td>${StrategicResults.formatOfficialMeta(result)}</td>
-          <td class="official-value"><span class="executive-official-measurement"><strong>${escapeHtml(officialValue)}</strong>${isPlataformaJogos ? "<small>Evolução do projeto</small>" : measurement ? `<small>Medição: ${escapeHtml(measurement)}</small>` : ""}</span></td>
+          <td class="official-value"><span class="executive-official-measurement"><strong>${escapeHtml(officialValue)}</strong>${isPlataformaJogos ? "<small>Evolução do projeto</small>" : resultContext ? `<small>${escapeHtml(resultContext)}</small>` : measurement ? `<small>Medição: ${escapeHtml(measurement)}</small>` : ""}</span></td>
           <td class="col-situacao"><span class="badge badge-situacao ${badgeClass(situation)} ${String(situation).length > 16 ? "long" : ""}">${escapeHtml(situation)}</span></td>
           ${shouldHideStatusColumn() ? "" : `<td class="col-status"><span class="badge badge-status ${badgeClass(status)}">${escapeHtml(status)}</span></td>`}
           <td><a class="secondary-action table-action dashboard-action" href="${window.AppRoutes ? window.AppRoutes.page("indicadores", indicatorDetailNavigationParams(result.indicador.id)) : `/indicadores?${new URLSearchParams(indicatorDetailNavigationParams(result.indicador.id)).toString()}`}" title="Visualizar indicador">Ver</a></td>
@@ -1534,7 +1618,10 @@
       isOperationalCompetenceRequired,
       operationalFrequencyForIndicator,
       executiveCompetence,
+      executiveTableCompetence,
       measurementReference,
+      officialResultContext,
+      researchSupportText,
       summarySituationGroup,
       chartSituation,
       aggregate,

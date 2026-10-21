@@ -49,20 +49,24 @@ final class HomologacaoService
         $launch=$this->launches->find($id);
         if(!$launch) throw new OutOfBoundsException('Lancamento nao encontrado.');
         if($user['perfil']!=='administrador'&&!AccessPolicy::scopeAllows($user,$launch)) throw new UnexpectedValueException('Registro fora do escopo.');
-        $evidences=array_map(function($evidence){
+        $mapEvidence=function($evidence){
             return array(
                 'id'=>$evidence['id'],
                 'lancamento_id'=>$evidence['lancamento_id'],
+                'versao_lancamento'=>(int)$evidence['versao_lancamento'],
                 'nome_arquivo'=>$evidence['nome_arquivo'],
                 'tipo_arquivo'=>$evidence['tipo_arquivo'],
                 'descricao'=>$evidence['descricao'],
                 'data_upload'=>$evidence['data_upload'],
                 'usuario'=>$evidence['usuario'],
             );
-        },$this->evidence->byLaunch($id));
+        };
+        $evidences=array_map($mapEvidence,$this->evidence->byLaunch($id));
+        $historicalEvidences=array_map($mapEvidence,$this->evidence->historicalByLaunch($id));
         return array(
             'lancamento'=>$launch,
             'evidencias'=>$evidences,
+            'evidenciasHistoricas'=>$historicalEvidences,
             'historico'=>$this->repo->history(array('indicadorId'=>$launch['indicadorId']),1,100)['items'],
         );
     }

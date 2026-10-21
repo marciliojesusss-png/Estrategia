@@ -73,6 +73,9 @@
   }
 
   function getOfficialResult(calculation, rule) {
+    if (rule?.tipoCalculo === "lucro_recorrente_mensal") {
+      return toNumber(calculation?.resultadoAcumulado);
+    }
     if (rule?.tipoCalculo === "quantidade_acumulada") {
       const accumulatedQuantity = toNumber(calculation?.melhoriasEntreguesAcumuladas);
       if (accumulatedQuantity !== null) return accumulatedQuantity;
@@ -89,6 +92,9 @@
   }
 
   function getOfficialPerformance(calculation, rule) {
+    if (rule?.tipoCalculo === "lucro_recorrente_mensal") {
+      return toNumber(calculation?.percentualAtingidoAcumulado);
+    }
     const candidates = rule?.tipoCalculo === "plano_acao_por_elementos"
       ? [calculation?.percentualAtingidoAcumulado, calculation?.percentualAtingidoMensal, calculation?.percentualAtingidoAnual]
       : [calculation?.percentualAtingidoAnual, calculation?.percentualAtingidoAcumulado, calculation?.percentualAtingidoMensal];
@@ -127,16 +133,21 @@
   function getReferenceMeta(rule, quarterLaunches, quarterNumberValue, quarterLabel) {
     const params = rule?.parametrosCalculo || {};
     const referenceLaunch = lastByMonth((quarterLaunches || []).filter((item) => item.status === STATUS_LANCAMENTO.HOMOLOGADO)) || lastByMonth(quarterLaunches || []);
+    if (rule?.tipoCalculo === "lucro_recorrente_mensal") {
+      const year = getYear(quarterLabel);
+      const quarterEnd = QUARTERS.find((item) => item.number === quarterNumberValue)?.months.at(-1);
+      const monthlyCurve = params.metasMensaisPorCompetencia || {};
+      if (!quarterEnd) return null;
+      let totalCents = 0;
+      for (let month = 1; month <= quarterEnd; month += 1) {
+        const value = toNumber(monthlyCurve[`${year}-${String(month).padStart(2, "0")}`]);
+        if (value === null) return null;
+        totalCents += Math.round(value * 100);
+      }
+      return totalCents / 100;
+    }
     const metaCompetencia = toNumber(referenceLaunch?.metaReferencia ?? referenceLaunch?.metaMensal);
     if (metaCompetencia !== null) return metaCompetencia;
-    if (rule?.tipoCalculo === "lucro_recorrente_mensal") {
-      if (!referenceLaunch || referenceLaunch.status !== STATUS_LANCAMENTO.HOMOLOGADO) return null;
-      const key = competenciaKey(referenceLaunch);
-      const monthlyCurve = params.metasMensaisPorCompetencia || {};
-      return Object.prototype.hasOwnProperty.call(monthlyCurve, key)
-        ? toNumber(monthlyCurve[key])
-        : toNumber(referenceLaunch.metaMensal ?? referenceLaunch.metaReferencia);
-    }
     if (rule?.tipoCalculo === "participacao_ecossistema_com_cenarios") {
       const referenceLaunch = lastByMonth((quarterLaunches || []).filter((item) => item.status === STATUS_LANCAMENTO.HOMOLOGADO)) || lastByMonth(quarterLaunches || []);
       const rawScenario = referenceLaunch?.camposEntrada?.cenarioApuracaoEcossistema || params.cenarioOficialResumoExecutivo || "lotex_marketplace";
@@ -262,6 +273,17 @@
     return value !== null && value !== undefined && value !== "" && toNumber(value) !== null;
   }
 
+  function isQualitativeAnnualResearchPosition(rule, launch) {
+    if (rule?.tipoCalculo !== "nota_pesquisa_anual" || !launch) return false;
+    if ([STATUS_LANCAMENTO.NAO_INICIADO, STATUS_LANCAMENTO.CANCELADO, STATUS_LANCAMENTO.SUBSTITUIDO].includes(launch.status)) return false;
+    const params = rule.parametrosCalculo || {};
+    const fields = launch.camposEntrada || {};
+    const type = String(fields[params.campoTipoPosicao || "tipoPosicaoClima"] || "");
+    const note = fields[params.campoNota || "notaClimaApurada"];
+    return ["Acompanhamento", "Plano de ação", "Revisão metodológica"].includes(type) &&
+      (note === null || note === undefined || note === "");
+  }
+
   function buildMessage(status, count, names, hasReturned, expectedCount = 3) {
     if (status === "Sem dados") return "Nenhum mês homologado no trimestre.";
     if (status === "Fechado") return "Consolidado trimestral calculado com todas as competências oficiais homologadas.";
@@ -293,13 +315,16 @@
     const homologatedCount = homologatedInQuarter.length;
     const expectedCount = expectedMonths.length;
     const hasReturned = officialQuarterLaunches.some((item) => item.status === STATUS_LANCAMENTO.DEVOLVIDO_AJUSTE);
-    const quarterStatus = homologatedCount === 0 ? "Sem dados" : homologatedCount === expectedCount ? "Fechado" : "Parcial";
+    let quarterStatus = homologatedCount === 0 ? "Sem dados" : homologatedCount === expectedCount ? "Fechado" : "Parcial";
     const homologatedNames = monthlyComposition
       .filter((item) => item.status === STATUS_LANCAMENTO.HOMOLOGADO)
       .map((item) => item.nomeMes);
     let meta = getReferenceMeta(regra, quarterLaunches, number, label);
 
     if (!number || !months.length || homologatedCount === 0) {
+      const hasQualitativeAnnualResearchPosition = officialQuarterLaunches.some((item) => (
+        isQualitativeAnnualResearchPosition(regra, item)
+      ));
       return {
         indicador,
         regra,
@@ -309,18 +334,29 @@
         resultadoTrimestral: null,
         desempenhoTrimestral: null,
         metaTrimestral: meta,
-        situacaoTrimestral: "Sem dados",
+        situacaoTrimestral: hasQualitativeAnnualResearchPosition ? "Em acompanhamento" : "Sem dados",
         statusTrimestre: "Sem dados",
         mesesHomologados: 0,
         mesesEsperados: expectedCount,
         composicaoMensal: monthlyComposition,
         possuiMesDevolvido: hasReturned,
         mensagem: buildMessage("Sem dados", 0, [], hasReturned, expectedCount),
-        ultimoLancamentoHomologado: null
+        ultimoLancamentoHomologado: null,
+        medicaoOficialPesquisa2026: regra?.tipoCalculo === "nota_pesquisa_anual" ? false : null,
+        resultadoOficialReportado: false,
+        possuiPosicaoQualitativa: hasQualitativeAnnualResearchPosition
       };
     }
 
     let calculationScope = getCalculationScope(regra, lancamentosDoIndicador || [], months, year, months.at(-1));
+    const lucroRecorrente = regra?.tipoCalculo === "lucro_recorrente_mensal";
+    const lucroRecorrenteYtdCompleto = !lucroRecorrente || Array.from(
+      { length: months.at(-1) },
+      (_, index) => index + 1
+    ).every((month) => calculationScope.some((item) => Number(item.mes) === month));
+    if (lucroRecorrente && !lucroRecorrenteYtdCompleto && quarterStatus === "Fechado") {
+      quarterStatus = "Parcial";
+    }
     if (regra?.tipoCalculo === "cobertura_capacitacao") {
       calculationScope = calculationScope.filter((item) => (
         root.IndicatorFormulas?.resolverTipoPosicaoCapacitacao?.(item) === "apuracao_quantitativa"
@@ -343,11 +379,19 @@
     const calculation = current
       ? root.IndicatorFormulas?.calcularIndicador(indicador, regra, current, calculationScope)
       : null;
-    const validCalculation = calculation && !calculation.erro ? calculation : null;
+    const validCalculation = calculation && !calculation.erro && lucroRecorrenteYtdCompleto ? calculation : null;
     let result = getOfficialResult(validCalculation, regra);
     let performance = getOfficialPerformance(validCalculation, regra);
     let calculatedQuarterResult = result;
     let officialPresentedResult = result;
+
+    if (lucroRecorrente && validCalculation) {
+      meta = toNumber(validCalculation.metaAcumulada);
+      result = toNumber(validCalculation.resultadoAcumulado);
+      calculatedQuarterResult = result;
+      officialPresentedResult = result;
+      performance = meta && result !== null ? result / meta : null;
+    }
 
     if (regra?.tipoCalculo === "razao_pix" && validCalculation) {
       calculatedQuarterResult = toNumber(validCalculation.resultadoOficialAnual);
@@ -410,6 +454,15 @@
       possuiMesDevolvido: hasReturned,
       mensagem: buildMessage(quarterStatus, homologatedCount, homologatedNames, hasReturned, expectedCount),
       ultimoLancamentoHomologado: lastByMonth(homologatedInQuarter),
+      medicaoOficialPesquisa2026: regra?.tipoCalculo === "nota_pesquisa_anual"
+        ? Boolean(validCalculation?.medicaoOficialPesquisa2026)
+        : null,
+      resultadoOficialReportado: regra?.tipoCalculo === "nota_pesquisa_anual"
+        ? Boolean(validCalculation?.resultadoOficialReportado)
+        : false,
+      possuiPosicaoQualitativa: regra?.tipoCalculo === "nota_pesquisa_anual"
+        ? officialQuarterLaunches.some((item) => isQualitativeAnnualResearchPosition(regra, item))
+        : false,
       dadosCalculados: validCalculation
     };
   }

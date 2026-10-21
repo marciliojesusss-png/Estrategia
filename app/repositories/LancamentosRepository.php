@@ -91,7 +91,7 @@ final class LancamentosRepository
     {
         $id = uniqid('lancamento-', true);
         $now = date('c');
-        $stmt = $this->db->prepare('INSERT INTO lancamentos (id,indicador_id,competencia,ano,mes,trimestre,plano,pilar,unidade_apuradora,diretoria_responsavel,dados_entrada_json,resultado_calculado,resultado_oficial,meta_referencia,percentual_atingido,situacao,status,observacao_unidade,referencia_evidencia,evidencia_id,usuario_responsavel,created_at,updated_at) VALUES (:id,:indicador_id,:competencia,:ano,:mes,:trimestre,:plano,:pilar,:unidade_apuradora,:diretoria_responsavel,:dados,:resultado_calculado,:resultado_oficial,:meta,:percentual,:situacao,:status,:observacao,:referencia_evidencia,:evidencia,:usuario,:created,:updated)');
+        $stmt = $this->db->prepare('INSERT INTO lancamentos (id,indicador_id,competencia,ano,mes,trimestre,plano,pilar,unidade_apuradora,diretoria_responsavel,dados_entrada_json,resultado_calculado,resultado_oficial,meta_referencia,percentual_atingido,situacao,status,observacao_unidade,referencia_evidencia,evidencia_id,versao_atual,usuario_responsavel,created_at,updated_at) VALUES (:id,:indicador_id,:competencia,:ano,:mes,:trimestre,:plano,:pilar,:unidade_apuradora,:diretoria_responsavel,:dados,:resultado_calculado,:resultado_oficial,:meta,:percentual,:situacao,:status,:observacao,:referencia_evidencia,:evidencia,:versao_atual,:usuario,:created,:updated)');
         $params = $this->params($data);
         $params[':id'] = $id;
         $params[':created'] = $now;
@@ -118,11 +118,22 @@ final class LancamentosRepository
         return $stmt->rowCount() === 1;
     }
 
-    /** Compatibilidade legado: aponta para o anexo mais recente, sem ser fonte da lista. */
-    public function setEvidence($id, $evidenceId)
+    public function reopenWithNextVersion($id, $expectedStatus, $newStatus)
     {
-        $stmt = $this->db->prepare('UPDATE lancamentos SET evidencia_id=:evidencia,updated_at=:data WHERE id=:id');
-        $stmt->execute(array(':evidencia'=>$evidenceId,':data'=>date('c'),':id'=>(string)$id));
+        $stmt = $this->db->prepare('UPDATE lancamentos SET status=:novo,versao_atual=versao_atual+1,evidencia_id=NULL,updated_at=:data WHERE id=:id AND status=:esperado');
+        $stmt->execute(array(':novo'=>$newStatus,':data'=>date('c'),':id'=>(string)$id,':esperado'=>$expectedStatus));
+        return $stmt->rowCount() === 1;
+    }
+
+    /** Compatibilidade legado: aponta para o anexo mais recente, sem ser fonte da lista. */
+    public function setEvidence($id, $evidenceId, $version = null)
+    {
+        $sql = 'UPDATE lancamentos SET evidencia_id=:evidencia,updated_at=:data WHERE id=:id';
+        $params = array(':evidencia'=>$evidenceId,':data'=>date('c'),':id'=>(string)$id);
+        if ($version !== null) {$sql .= ' AND versao_atual=:versao';$params[':versao']=(int)$version;}
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->rowCount() === 1;
     }
 
     public function deleteDraft($id, $status)
@@ -135,7 +146,7 @@ final class LancamentosRepository
     public function replaceAll(array $items)
     {
         $update = $this->db->prepare('UPDATE lancamentos SET indicador_id=:indicador_id,competencia=:competencia,ano=:ano,mes=:mes,trimestre=:trimestre,plano=:plano,pilar=:pilar,unidade_apuradora=:unidade_apuradora,diretoria_responsavel=:diretoria_responsavel,dados_entrada_json=:dados,resultado_calculado=:resultado_calculado,resultado_oficial=:resultado_oficial,meta_referencia=:meta,percentual_atingido=:percentual,situacao=:situacao,status=:status,observacao_unidade=:observacao,referencia_evidencia=:referencia_evidencia,usuario_responsavel=:usuario,created_at=:created,updated_at=:updated WHERE id=:id');
-        $insert = $this->db->prepare('INSERT INTO lancamentos (id,indicador_id,competencia,ano,mes,trimestre,plano,pilar,unidade_apuradora,diretoria_responsavel,dados_entrada_json,resultado_calculado,resultado_oficial,meta_referencia,percentual_atingido,situacao,status,observacao_unidade,referencia_evidencia,evidencia_id,usuario_responsavel,created_at,updated_at) VALUES (:id,:indicador_id,:competencia,:ano,:mes,:trimestre,:plano,:pilar,:unidade_apuradora,:diretoria_responsavel,:dados,:resultado_calculado,:resultado_oficial,:meta,:percentual,:situacao,:status,:observacao,:referencia_evidencia,:evidencia,:usuario,:created,:updated)');
+        $insert = $this->db->prepare('INSERT INTO lancamentos (id,indicador_id,competencia,ano,mes,trimestre,plano,pilar,unidade_apuradora,diretoria_responsavel,dados_entrada_json,resultado_calculado,resultado_oficial,meta_referencia,percentual_atingido,situacao,status,observacao_unidade,referencia_evidencia,evidencia_id,versao_atual,usuario_responsavel,created_at,updated_at) VALUES (:id,:indicador_id,:competencia,:ano,:mes,:trimestre,:plano,:pilar,:unidade_apuradora,:diretoria_responsavel,:dados,:resultado_calculado,:resultado_oficial,:meta,:percentual,:situacao,:status,:observacao,:referencia_evidencia,:evidencia,:versao_atual,:usuario,:created,:updated)');
         $ownsTransaction = !$this->db->inTransaction();
         if ($ownsTransaction) $this->db->beginTransaction();
         try {
@@ -182,6 +193,9 @@ final class LancamentosRepository
             ':observacao'=>isset($data['observacaoArea'])?$data['observacaoArea']:(isset($data['observacao_unidade'])?$data['observacao_unidade']:null),
             ':referencia_evidencia'=>isset($data['referenciaEvidencia'])?$data['referenciaEvidencia']:(isset($data['referencia_evidencia'])?$data['referencia_evidencia']:null),
             ':evidencia'=>isset($data['evidenciaId'])?$data['evidenciaId']:null,
+            // Registros inseridos pelo fluxo legado sempre iniciam na versao 1.
+            // Atualizacoes de registros existentes nao alteram versao_atual.
+            ':versao_atual'=>1,
             ':usuario'=>isset($data['usuarioResponsavel'])?$data['usuarioResponsavel']:(isset($data['preenchidoPor'])?$data['preenchidoPor']:null),
             ':created'=>isset($data['createdAt'])?$data['createdAt']:(isset($data['dataPreenchimento'])?$data['dataPreenchimento']:$now),
             ':updated'=>isset($data['updatedAt'])?$data['updatedAt']:$now,
@@ -200,7 +214,7 @@ final class LancamentosRepository
             ':meta'=>$data['meta_referencia'], ':percentual'=>$data['percentual_atingido'], ':situacao'=>$data['situacao'],
             ':status'=>$data['status'], ':observacao'=>$data['observacao_unidade'],
             ':referencia_evidencia'=>isset($data['referencia_evidencia'])?$data['referencia_evidencia']:null,
-            ':evidencia'=>null, ':usuario'=>$data['usuario_responsavel'],
+            ':evidencia'=>null, ':versao_atual'=>max(1,(int)(isset($data['versao_atual'])?$data['versao_atual']:1)), ':usuario'=>$data['usuario_responsavel'],
         );
     }
 
@@ -216,7 +230,7 @@ final class LancamentosRepository
             'metaReferencia'=>$row['meta_referencia'], 'percentualAtingido'=>$row['percentual_atingido'],
             'situacaoCalculada'=>$row['situacao'], 'status'=>$row['status'], 'observacaoArea'=>$row['observacao_unidade'],
             'referenciaEvidencia'=>isset($row['referencia_evidencia'])?$row['referencia_evidencia']:'',
-            'evidenciaId'=>$row['evidencia_id'], 'usuarioResponsavel'=>$row['usuario_responsavel'],
+            'evidenciaId'=>$row['evidencia_id'], 'versaoAtual'=>max(1,(int)(isset($row['versao_atual'])?$row['versao_atual']:1)), 'usuarioResponsavel'=>$row['usuario_responsavel'],
             'createdAt'=>$row['created_at'], 'updatedAt'=>$row['updated_at'],
         );
     }

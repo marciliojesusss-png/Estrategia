@@ -9,6 +9,7 @@
     homologacoes: [],
     solicitacoesReabertura: [],
     evidenciasPorLancamento: {},
+    evidenciasHistoricasPorLancamento: {},
     reopenPolicies: {},
     selectedId: null
   };
@@ -140,6 +141,7 @@
     const items = state.evidenciasPorLancamento[String(lancamento.id)] || [];
     if (!items.length) {
       target.innerHTML = '<p class="evidence-empty">Nenhum arquivo anexado.</p>';
+      renderApprovalHistoricalEvidenceList(lancamento);
       return;
     }
     target.innerHTML = items.map((item) => `
@@ -155,13 +157,40 @@
         </div>
       </article>
     `).join("");
+
+    renderApprovalHistoricalEvidenceList(lancamento);
+  }
+
+  function renderApprovalHistoricalEvidenceList(lancamento) {
+    const wrapper = document.getElementById("approvalEvidenceHistoryWrapper");
+    const target = document.getElementById("approvalEvidenceHistoryList");
+    if (!wrapper || !target) return;
+    const items = state.evidenciasHistoricasPorLancamento[String(lancamento.id)] || [];
+    wrapper.hidden = !items.length;
+    target.innerHTML = items.map((item) => `
+      <article class="evidence-item">
+        <div class="evidence-item-icon" aria-hidden="true">&#128206;</div>
+        <div class="evidence-item-content">
+          <strong>Versão ${escapeHtml(item.versaoLancamento)} — ${escapeHtml(item.nomeArquivo)}</strong>
+          ${item.descricao ? `<p>${escapeHtml(item.descricao)}</p>` : ""}
+          <small>${escapeHtml([formatUploadDate(item.dataUpload), item.usuario].filter(Boolean).join(" â€¢ "))}</small>
+        </div>
+        <div class="evidence-item-actions">
+          <a class="secondary-action" href="${escapeHtml(appUrl(`evidencias/${encodeURIComponent(item.id)}/download`))}">Baixar</a>
+        </div>
+      </article>
+    `).join("");
   }
 
   async function loadApprovalEvidences(lancamento) {
     document.getElementById("approvalEvidenceList").innerHTML = '<p class="evidence-empty">Carregando anexos...</p>';
     try {
-      const items = await apiJson(`api/lancamentos/${encodeURIComponent(lancamento.id)}/evidencias`, { method: "GET" });
+      const [items, historicalItems] = await Promise.all([
+        apiJson(`api/lancamentos/${encodeURIComponent(lancamento.id)}/evidencias`, { method: "GET" }),
+        apiJson(`api/lancamentos/${encodeURIComponent(lancamento.id)}/evidencias/historico`, { method: "GET" })
+      ]);
       state.evidenciasPorLancamento[String(lancamento.id)] = Array.isArray(items) ? items : [];
+      state.evidenciasHistoricasPorLancamento[String(lancamento.id)] = Array.isArray(historicalItems) ? historicalItems : [];
       if (String(state.selectedId) === String(lancamento.id)) renderApprovalEvidenceList(lancamento);
     } catch (error) {
       document.getElementById("approvalEvidenceList").innerHTML = `<p class="evidence-empty">${escapeHtml(error.message)}</p>`;
@@ -172,7 +201,7 @@
     if (Number(indicador?.id) === 6 && window.IeoRecorrente) {
       return window.IeoRecorrente.normalizarLancamentoParaExibicao(lancamento, regra);
     }
-    if (!["nota_pesquisa_nps", "melhorias_acumuladas"].includes(regra?.tipoCalculo) || !window.IndicatorFormulas) return lancamento;
+    if (!["nota_pesquisa_nps", "melhorias_acumuladas", "lucro_recorrente_mensal"].includes(regra?.tipoCalculo) || !window.IndicatorFormulas) return lancamento;
 
     const scope = state.lancamentos.filter((item) => (
       Number(item.indicadorId) === Number(indicador.id) &&
@@ -365,8 +394,24 @@
     const tipoCapacitacao = regra?.tipoCalculo === "cobertura_capacitacao"
       ? window.IndicatorFormulas?.resolverTipoPosicaoCapacitacao?.(lancamento)
       : null;
+    const modoCapacitacao = tipoCapacitacao === "apuracao_quantitativa"
+      ? window.IndicatorFormulas?.resolverModoResultadoCapacitacao?.(lancamento)
+      : null;
+    const componentesCapacitacao = modoCapacitacao === "oficial_informado"
+      ? (lancamento.camposEntrada?.componentesResultadoCapacitacao || []).map((componente) => [
+        `Componente — ${componente.curso || "Curso"}`,
+        `${Calculations.formatarInteiroBR(componente.empregadosCapacitados)} de ${Calculations.formatarInteiroBR(componente.publicoAlvoElegivel)} empregados elegíveis`
+      ])
+      : [];
     const detalhesCapacitacao = tipoCapacitacao ? [
       ["Tipo da posição", tipoCapacitacao === "acompanhamento" ? "Acompanhamento sem nova medição" : "Apuração quantitativa"],
+      ...(modoCapacitacao ? [["Modo do resultado", modoCapacitacao === "oficial_informado" ? "Resultado oficial informado" : "Calculado a partir de capacitados / elegíveis"]] : []),
+      ...(modoCapacitacao === "oficial_informado" ? [
+        ["Resultado oficial informado", Calculations.formatarPercentual(indicatorCalculation?.resultadoOficialInformadoCapacitacao)],
+        ["% atingido oficial informado", Calculations.formatarPercentual(indicatorCalculation?.percentualAtingidoOficialCapacitacao)],
+        ["Critério trimestral", `${Calculations.formatarInteiroBR(indicatorCalculation?.quantidadeCursosMinimaCapacitacao)} cursos acumulados`],
+        ...componentesCapacitacao
+      ] : []),
       ...(tipoCapacitacao === "acompanhamento" ? [
         ["Ações realizadas / andamento", lancamento.camposEntrada?.acoesAcompanhamentoCapacitacao || "-", true]
       ] : []),
@@ -848,6 +893,7 @@
       homologacoes: data.homologacoes,
       solicitacoesReabertura: data.solicitacoesReabertura || [],
       evidenciasPorLancamento: {},
+      evidenciasHistoricasPorLancamento: {},
       reopenPolicies: {},
       selectedId: null
     };

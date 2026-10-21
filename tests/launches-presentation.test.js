@@ -62,6 +62,10 @@ const dataStoreSource = fs.readFileSync(path.join(root, "assets", "js", "dataSto
 assert.match(dataStoreSource, /nome: "tipoPosicaoCapacitacao"/);
 assert.match(dataStoreSource, /Acompanhamento sem nova medição/);
 assert.match(dataStoreSource, /nome: "acoesAcompanhamentoCapacitacao"/);
+assert.match(dataStoreSource, /nome: "modoResultadoCapacitacao"/);
+assert.match(dataStoreSource, /value: "oficial_informado"/);
+assert.match(dataStoreSource, /nome: "resultadoOficialInformadoCapacitacao"[\s\S]+entradaPtBr: true/);
+assert.match(dataStoreSource, /nome: "percentualAtingidoOficialCapacitacao"[\s\S]+entradaPtBr: true/);
 assert.match(dataStoreSource, /nome: "quantidadeCursosMinimaCapacitacao"[^\n]+somenteLeitura: true/);
 assert.match(dataStoreSource, /nome: "tipoPosicaoAprimoramento"/);
 assert.match(dataStoreSource, /nome: "melhoriasImplementadasMes"[^\n]+Melhorias implementadas no período de apuração[^\n]+tipo: "inteiro"/);
@@ -73,6 +77,8 @@ assert.match(dataStoreSource, /Registro de Aposta finalizado em ambiente de dese
 
 const launchesSource = fs.readFileSync(path.join(root, "assets", "js", "launches.js"), "utf8");
 assert.match(launchesSource, /function updateCapacitacaoPositionFields/);
+assert.match(launchesSource, /resultMode === "oficial_informado"/);
+assert.match(launchesSource, /Componente — \$\{curso\}/);
 assert.match(launchesSource, /function updateNpsPositionFields/);
 assert.match(launchesSource, /function updateAprimoramentoPositionFields/);
 assert.match(launchesSource, /melhorias implementadas no período para o fechamento quantitativo/);
@@ -83,7 +89,7 @@ assert.match(launchesSource, /async function persistLaunch\(action\) \{\s+const 
 assert.match(launchesSource, /Evidência anexada, mas não foi possível salvar o lançamento/);
 assert.match(launchesSource, /meta_oficial_trimestral_projeto/);
 assert.match(launchesSource, /Evolução oficial do projeto/);
-assert.match(launchesSource, /\["nota_pesquisa_nps", "iniciativas_apoiadas", "execucao_acoes_propostas"\]\.includes\(regra\?\.tipoCalculo\)/);
+assert.match(launchesSource, /\["nota_pesquisa_nps", "iniciativas_apoiadas", "execucao_acoes_propostas", "lucro_recorrente_mensal"\]\.includes\(regra\?\.tipoCalculo\)/);
 assert.match(launchesSource, /function updateSocioambientalInitiativeFields/);
 assert.match(launchesSource, /function validateSocioambientalRequiredFields/);
 assert.match(launchesSource, /Campo obrigatório para iniciativa apoiada\/realizada\./);
@@ -136,6 +142,7 @@ assert.deepEqual(socioambientalValidation({
 });
 
 const approvalsSource = fs.readFileSync(path.join(root, "assets", "js", "approvals.js"), "utf8");
+assert.match(approvalsSource, /\["nota_pesquisa_nps", "melhorias_acumuladas", "lucro_recorrente_mensal"\]\.includes\(regra\?\.tipoCalculo\)/);
 assert.match(approvalsSource, /Acompanhamento sem nova medição/);
 assert.match(approvalsSource, /Ações realizadas \/ andamento/);
 assert.match(approvalsSource, /"Em acompanhamento"/);

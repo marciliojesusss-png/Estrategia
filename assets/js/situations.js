@@ -17,6 +17,7 @@
     const normalized = normalizeText(situacao);
     if (normalized === "critico" || normalized === "nao atingido") return "Abaixo da meta";
     if (normalized === "atingido" || normalized === "atingida") return "Atingido";
+    if (normalized === "superado" || normalized === "superada") return "Superado";
     if (normalized === "abaixo da meta") return "Abaixo da meta";
     if (normalized === "sem dados") return "Sem dados";
     return situacao;

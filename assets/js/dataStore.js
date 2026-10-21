@@ -252,18 +252,18 @@
     "2026-12": 10452751135.00
   };
   const LUCRO_RECORRENTE_META_MENSAL_2026 = window.LucroRecorrente?.METAS_MENSAIS_2026 || Object.freeze({
-    "2026-01": 90811101.33,
-    "2026-02": 77462728.16,
-    "2026-03": 90084434.66,
-    "2026-04": 96068372.33,
-    "2026-05": 94438480.16,
-    "2026-06": 106104677.05,
-    "2026-07": 98144245.44,
-    "2026-08": 94094264.37,
-    "2026-09": 128614993.92,
-    "2026-10": 101071987.08,
-    "2026-11": 91522592.68,
-    "2026-12": 236900370.02
+    "2026-01": 89555555.56,
+    "2026-02": 89555555.55,
+    "2026-03": 89555555.56,
+    "2026-04": 89555555.55,
+    "2026-05": 89555555.56,
+    "2026-06": 89555555.55,
+    "2026-07": 89555555.56,
+    "2026-08": 89555555.55,
+    "2026-09": 89555555.56,
+    "2026-10": 89555555.56,
+    "2026-11": 89555555.55,
+    "2026-12": 223888888.89
   });
   const LUCRO_RECORRENTE_META_ACUMULADA_2026 = window.LucroRecorrente?.METAS_ACUMULADAS_2026 || Object.freeze(Object.entries(LUCRO_RECORRENTE_META_MENSAL_2026)
     .reduce((curve, [competence, monthlyTarget]) => {
@@ -1878,6 +1878,10 @@
             metaAnualValor: 0.90,
             parametrosCalculo: {
               campoTipoPosicao: "tipoPosicaoCapacitacao",
+              campoModoResultado: "modoResultadoCapacitacao",
+              campoResultadoOficialInformado: "resultadoOficialInformadoCapacitacao",
+              campoPercentualAtingidoOficial: "percentualAtingidoOficialCapacitacao",
+              campoComponentesResultado: "componentesResultadoCapacitacao",
               campoPublicoAlvo: "publicoAlvoElegivelCapacitacao",
               campoCapacitados: "empregadosCapacitadosCapacitacao",
               campoAcoesAcompanhamento: "acoesAcompanhamentoCapacitacao",
@@ -1903,6 +1907,18 @@
                 ]
               },
               { nome: "acoesAcompanhamentoCapacitacao", rotulo: "Ações realizadas / andamento", tipo: "textarea", obrigatorio: false },
+              {
+                nome: "modoResultadoCapacitacao",
+                rotulo: "Modo do resultado quantitativo",
+                tipo: "selecao",
+                obrigatorio: false,
+                opcoes: [
+                  { value: "calculado", label: "Calculado a partir de capacitados / elegíveis" },
+                  { value: "oficial_informado", label: "Resultado oficial informado" }
+                ]
+              },
+              { nome: "resultadoOficialInformadoCapacitacao", rotulo: "Resultado oficial informado", tipo: "percentual", entradaPtBr: true, obrigatorio: false },
+              { nome: "percentualAtingidoOficialCapacitacao", rotulo: "% atingido oficial informado", tipo: "percentual", entradaPtBr: true, obrigatorio: false },
               { nome: "publicoAlvoElegivelCapacitacao", rotulo: "Público-alvo elegível", tipo: "inteiro", obrigatorio: false },
               { nome: "empregadosCapacitadosCapacitacao", rotulo: "Empregados capacitados no critério do trimestre", tipo: "inteiro", obrigatorio: false },
               { nome: "quantidadeCursosMinimaCapacitacao", rotulo: "Quantidade mínima de cursos exigida", tipo: "inteiro", obrigatorio: false, somenteLeitura: true },

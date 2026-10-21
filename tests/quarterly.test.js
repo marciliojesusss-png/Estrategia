@@ -218,6 +218,51 @@ assert.equal(climaQuarter.metaTrimestral, 60);
 assert.equal(climaQuarter.resultadoTrimestral, 60);
 assert.equal(climaQuarter.desempenhoTrimestral, 1);
 assert.equal(climaQuarter.situacaoTrimestral, "Em acompanhamento");
+assert.equal(climaQuarter.medicaoOficialPesquisa2026, false);
+assert.equal(climaQuarter.resultadoOficialReportado, true);
+
+const climaQuarterAcompanhamento = (trimestre, meses) => consolidarTrimestre(
+  { id: 12, indicador: "Clima Organizacional", unidadeMedida: "pontos" },
+  climaQuarter.regra,
+  meses.map((mes) => ({
+    ano: 2026,
+    mes,
+    status: "Homologado",
+    competencia: `2026-${String(mes).padStart(2, "0")}`,
+    trimestre,
+    camposEntrada: { tipoPosicaoClima: "Acompanhamento", metaReferenciaClima: 60, acoesRealizadasClima: "Acompanhamento qualitativo." }
+  })),
+  trimestre
+);
+const climaSegundoTrimestre = climaQuarterAcompanhamento("2TRI/2026", [4, 5, 6]);
+assert.equal(climaSegundoTrimestre.statusTrimestre, "Fechado");
+assert.equal(climaSegundoTrimestre.resultadoTrimestral, null);
+assert.equal(climaSegundoTrimestre.desempenhoTrimestral, null);
+assert.equal(climaSegundoTrimestre.situacaoTrimestral, "Em acompanhamento");
+assert.equal(climaSegundoTrimestre.medicaoOficialPesquisa2026, false);
+
+const climaTerceiroTrimestre = climaQuarterAcompanhamento("3TRI/2026", [7, 8, 9]);
+assert.equal(climaTerceiroTrimestre.statusTrimestre, "Fechado");
+assert.equal(climaTerceiroTrimestre.resultadoTrimestral, null);
+assert.equal(climaTerceiroTrimestre.desempenhoTrimestral, null);
+assert.equal(climaTerceiroTrimestre.situacaoTrimestral, "Em acompanhamento");
+assert.equal(climaTerceiroTrimestre.medicaoOficialPesquisa2026, false);
+
+const climaTerceiroTrimestreEmPreenchimento = consolidarTrimestre(
+  { id: 12, indicador: "Clima Organizacional", unidadeMedida: "pontos" },
+  climaQuarter.regra,
+  [
+    { ano: 2026, mes: 7, status: "Não iniciado", competencia: "2026-07", trimestre: "3TRI/2026", camposEntrada: {} },
+    { ano: 2026, mes: 8, status: "Não iniciado", competencia: "2026-08", trimestre: "3TRI/2026", camposEntrada: {} },
+    { ano: 2026, mes: 9, status: "Em preenchimento", competencia: "2026-09", trimestre: "3TRI/2026", camposEntrada: { tipoPosicaoClima: "Acompanhamento", metaReferenciaClima: 60, notaClimaApurada: "", dataBasePesquisaClima: "2026-09-30" } }
+  ],
+  "3TRI/2026"
+);
+assert.equal(climaTerceiroTrimestreEmPreenchimento.statusTrimestre, "Sem dados");
+assert.equal(climaTerceiroTrimestreEmPreenchimento.situacaoTrimestral, "Em acompanhamento");
+assert.equal(climaTerceiroTrimestreEmPreenchimento.resultadoTrimestral, null);
+assert.equal(climaTerceiroTrimestreEmPreenchimento.desempenhoTrimestral, null);
+assert.equal(climaTerceiroTrimestreEmPreenchimento.possuiPosicaoQualitativa, true);
 
 const capacitacaoQuarter = consolidarTrimestre(
   { id: 15, indicador: "Capacitação dos Empregados da CAIXA Loterias", unidadeMedida: "percentual" },
@@ -281,6 +326,65 @@ assert.equal(capacitacaoQuarter2.mesesHomologados, 3);
 assert.ok(Math.abs(capacitacaoQuarter2.resultadoTrimestral - (177 / 183)) < 0.000001);
 assert.equal(capacitacaoQuarter2.desempenhoTrimestral, 1);
 assert.equal(capacitacaoQuarter2.situacaoTrimestral, "Atingido");
+
+const regraCapacitacaoOficial = {
+  ...capacitacaoQuarter.regra,
+  parametrosCalculo: {
+    ...capacitacaoQuarter.regra.parametrosCalculo,
+    curvaTrimestralCursos: {
+      ...capacitacaoQuarter.regra.parametrosCalculo.curvaTrimestralCursos,
+      "2TRI/2026": { metaCobertura: 0.90, quantidadeCursosMinima: 2 },
+      "3TRI/2026": { metaCobertura: 0.90, quantidadeCursosMinima: 4, descricao: "90% do público-alvo com 04 cursos concluídos acumulados" },
+      "4TRI/2026": { metaCobertura: 0.90, quantidadeCursosMinima: 5 }
+    }
+  }
+};
+const componentesCapacitacao3Tri = [
+  { curso: "Customer Experience", empregadosCapacitados: 163, publicoAlvoElegivel: 171 },
+  { curso: "Ecossistema Negocial", empregadosCapacitados: 154, publicoAlvoElegivel: 171 }
+];
+const lancamentosCapacitacao3Tri = [
+  { id: 175, ano: 2026, mes: 7, status: "Não iniciado", competencia: "2026-07", trimestre: "3TRI/2026", camposEntrada: {} },
+  { id: 176, ano: 2026, mes: 8, status: "Não iniciado", competencia: "2026-08", trimestre: "3TRI/2026", camposEntrada: {} },
+  {
+    id: 177,
+    ano: 2026,
+    mes: 9,
+    status: "Em preenchimento",
+    competencia: "2026-09",
+    trimestre: "3TRI/2026",
+    metaReferencia: 0.90,
+    camposEntrada: {
+      tipoPosicaoCapacitacao: "apuracao_quantitativa",
+      modoResultadoCapacitacao: "oficial_informado",
+      resultadoOficialInformadoCapacitacao: 0.932,
+      percentualAtingidoOficialCapacitacao: 1.0355,
+      quantidadeCursosMinimaCapacitacao: 4,
+      componentesResultadoCapacitacao: componentesCapacitacao3Tri
+    }
+  }
+];
+const capacitacao3TriPendente = consolidarTrimestre(
+  capacitacaoQuarter.indicador,
+  regraCapacitacaoOficial,
+  lancamentosCapacitacao3Tri,
+  "3TRI/2026"
+);
+assert.equal(capacitacao3TriPendente.statusTrimestre, "Sem dados");
+assert.equal(capacitacao3TriPendente.resultadoTrimestral, null);
+assert.equal(capacitacao3TriPendente.desempenhoTrimestral, null);
+
+const capacitacao3TriAposHomologacao = consolidarTrimestre(
+  capacitacaoQuarter.indicador,
+  regraCapacitacaoOficial,
+  lancamentosCapacitacao3Tri.map((item) => item.id === 177 ? { ...item, status: "Homologado" } : item),
+  "3TRI/2026"
+);
+assert.equal(capacitacao3TriAposHomologacao.statusTrimestre, "Parcial");
+assert.equal(capacitacao3TriAposHomologacao.resultadoTrimestral, 0.932);
+assert.equal(capacitacao3TriAposHomologacao.desempenhoTrimestral, 1.0355);
+assert.equal(capacitacao3TriAposHomologacao.situacaoTrimestral, "Superado");
+assert.equal(capacitacao3TriAposHomologacao.dadosCalculados.quantidadeCursosMinimaCapacitacao, 4);
 
 const aprimoramentoQuarter = consolidarTrimestre(
   { id: 4, indicador: "Aprimoramento da Experiência do Cliente", unidadeMedida: "percentual" },
@@ -673,7 +777,7 @@ assert.equal(ieoQuarter.statusTrimestre, "Fechado");
 assert.equal(ieoQuarter.mesesHomologados, 3);
 assert.ok(Math.abs(ieoQuarter.metaTrimestral - 0.1441) < 0.000001);
 assert.ok(Math.abs(ieoQuarter.resultadoTrimestral - 0.108) < 0.000001);
-assert.ok(Math.abs(ieoQuarter.desempenhoTrimestral - (0.1441 / 0.108)) < 0.000001);
+assert.ok(Math.abs(ieoQuarter.desempenhoTrimestral - (1 - ((0.108 - 0.1441) / (1 - 0.1441)))) < 0.000001);
 assert.equal(ieoQuarter.situacaoTrimestral, "Atingido");
 
 const ieoQuarterNovaMetodologia = consolidarTrimestre(
@@ -705,7 +809,7 @@ const ieoQuarterNovaMetodologia = consolidarTrimestre(
 assert.equal(ieoQuarterNovaMetodologia.statusTrimestre, "Fechado");
 assert.ok(Math.abs(ieoQuarterNovaMetodologia.metaTrimestral - 0.2664) < 0.000001);
 assert.ok(Math.abs(ieoQuarterNovaMetodologia.resultadoTrimestral - 0.24) < 0.000001);
-assert.ok(Math.abs(ieoQuarterNovaMetodologia.desempenhoTrimestral - 1.11) < 0.000001);
+assert.ok(Math.abs(ieoQuarterNovaMetodologia.desempenhoTrimestral - (1 - ((0.24 - 0.2664) / (1 - 0.2664)))) < 0.000001);
 assert.equal(ieoQuarterNovaMetodologia.situacaoTrimestral, "Atingido");
 
 const ofertasQuarter = consolidarTrimestre(
@@ -950,38 +1054,147 @@ assert.equal(pixQuarter.canaisAcumuladoTrimestre, 1686100000);
 assert.ok(Math.abs(pixQuarter.desempenhoTrimestral - (0.67 / 0.61)) < 0.000001);
 assert.equal(pixQuarter.situacaoTrimestral, "Atingido");
 
-const lucroQuarter = consolidarTrimestre(
-  { id: 7, indicador: "Lucro Liquido Recorrente", unidadeMedida: "moeda" },
-  {
-    indicadorId: 7,
-    tipoCalculo: "lucro_recorrente_mensal",
-    tipoConsolidacao: "ultima_posicao_mensal_homologada",
-    unidadeMedida: "moeda",
-    metaAnualValor: 1209000000.00,
-    parametrosCalculo: {
-      campoValorMensal: "lucroLiquidoRecorrenteCompetencia",
-      campoValorAcumuladoLegado: "lucroLiquidoRecorrenteAcumulado",
-      metaTipo: "curva_mensal_por_competencia",
-      metasMensaisPorCompetencia: {
-        "2026-01": 90811101.33,
-        "2026-02": 77462728.16,
-        "2026-03": 90084434.66
-      }
-    },
-    camposEntrada: [{ nome: "lucroLiquidoRecorrenteCompetencia", obrigatorio: true }]
+const indicadorLucroQuarter = { id: 7, indicador: "Lucro Liquido Recorrente", unidadeMedida: "moeda" };
+const regraLucroQuarter = {
+  indicadorId: 7,
+  tipoCalculo: "lucro_recorrente_mensal",
+  tipoConsolidacao: "ultima_posicao_mensal_homologada",
+  unidadeMedida: "moeda",
+  metaAnualValor: 1209000000.00,
+  parametrosCalculo: {
+    campoValorMensal: "lucroLiquidoRecorrenteCompetencia",
+    campoValorAcumuladoLegado: "lucroLiquidoRecorrenteAcumulado",
+    metaTipo: "curva_mensal_por_competencia",
+    metasMensaisPorCompetencia: {
+      "2026-01": 89555555.56,
+      "2026-02": 89555555.55,
+      "2026-03": 89555555.56,
+      "2026-04": 89555555.55,
+      "2026-05": 89555555.56,
+      "2026-06": 89555555.55,
+      "2026-07": 89555555.56,
+      "2026-08": 89555555.55,
+      "2026-09": 89555555.56,
+      "2026-10": 89555555.56,
+      "2026-11": 89555555.55,
+      "2026-12": 223888888.89
+    }
   },
-  [
-    { ano: 2026, mes: 1, status: "Homologado", competencia: "2026-01", camposEntrada: { lucroLiquidoRecorrenteCompetencia: 119377680.03 } },
-    { ano: 2026, mes: 2, status: "Homologado", competencia: "2026-02", camposEntrada: { lucroLiquidoRecorrenteCompetencia: 102633750.55 } },
-    { ano: 2026, mes: 3, status: "Homologado", competencia: "2026-03", camposEntrada: { lucroLiquidoRecorrenteCompetencia: 114310457.11 } }
-  ],
+  camposEntrada: [{ nome: "lucroLiquidoRecorrenteCompetencia", obrigatorio: true }]
+};
+const resultadosLucroJanJun = [119377680.03, 102633750.55, 114310457.11, 111802634.71, 114547512.59, 108526486.50]
+  .map((value, index) => ({
+    ano: 2026,
+    mes: index + 1,
+    status: "Homologado",
+    competencia: `2026-${String(index + 1).padStart(2, "0")}`,
+    camposEntrada: { lucroLiquidoRecorrenteCompetencia: value }
+  }));
+
+const lucroQuarter = consolidarTrimestre(
+  indicadorLucroQuarter,
+  regraLucroQuarter,
+  resultadosLucroJanJun.slice(0, 3),
   "1TRI/2026"
 );
 assert.equal(lucroQuarter.statusTrimestre, "Fechado");
-assert.ok(Math.abs(lucroQuarter.metaTrimestral - 90084434.66) < 0.0001);
-assert.ok(Math.abs(lucroQuarter.resultadoTrimestral - 114310457.11) < 0.0001);
-assert.ok(Math.abs(lucroQuarter.desempenhoTrimestral - (114310457.11 / 90084434.66)) < 0.000001);
+assert.ok(Math.abs(lucroQuarter.metaTrimestral - 268666666.67) < 0.0001);
+assert.ok(Math.abs(lucroQuarter.resultadoTrimestral - 336321887.69) < 0.0001);
+assert.ok(Math.abs(lucroQuarter.desempenhoTrimestral - (336321887.69 / 268666666.67)) < 0.000001);
 assert.equal(lucroQuarter.situacaoTrimestral, "Atingido");
+
+const lucroQuarterSemResultados2Tri = consolidarTrimestre(
+  indicadorLucroQuarter,
+  regraLucroQuarter,
+  resultadosLucroJanJun.slice(0, 3),
+  "2TRI/2026"
+);
+assert.equal(lucroQuarterSemResultados2Tri.statusTrimestre, "Sem dados");
+assert.equal(lucroQuarterSemResultados2Tri.metaTrimestral, 537333333.33);
+assert.equal(lucroQuarterSemResultados2Tri.resultadoTrimestral, null);
+
+const lucroQuarter2Tri = consolidarTrimestre(
+  indicadorLucroQuarter,
+  regraLucroQuarter,
+  resultadosLucroJanJun,
+  "2TRI/2026"
+);
+assert.equal(lucroQuarter2Tri.statusTrimestre, "Fechado");
+assert.ok(Math.abs(lucroQuarter2Tri.metaTrimestral - 537333333.33) < 0.0001);
+assert.ok(Math.abs(lucroQuarter2Tri.resultadoTrimestral - 671198521.49) < 0.0001);
+assert.ok(Math.abs(lucroQuarter2Tri.desempenhoTrimestral - (671198521.49 / 537333333.33)) < 0.000001);
+
+const resultadosLucroJanSet = [
+  ...resultadosLucroJanJun,
+  ...[120000000.00, 120000000.00, 129757173.59].map((value, index) => ({
+    ano: 2026,
+    mes: index + 7,
+    status: "Homologado",
+    competencia: `2026-${String(index + 7).padStart(2, "0")}`,
+    camposEntrada: { lucroLiquidoRecorrenteCompetencia: value }
+  }))
+];
+const lucroQuarter3Tri = consolidarTrimestre(
+  indicadorLucroQuarter,
+  regraLucroQuarter,
+  resultadosLucroJanSet,
+  "3TRI/2026"
+);
+assert.equal(lucroQuarter3Tri.statusTrimestre, "Fechado");
+assert.ok(Math.abs(lucroQuarter3Tri.metaTrimestral - 806000000.00) < 0.0001);
+assert.ok(Math.abs(lucroQuarter3Tri.resultadoTrimestral - 1040955695.08) < 0.0001);
+assert.ok(Math.abs(lucroQuarter3Tri.desempenhoTrimestral - (1040955695.08 / 806000000.00)) < 0.000001);
+
+const resultadosLucroEstadoAtual = [
+  119377680.03,
+  102633750.55,
+  114310457.11,
+  111802634.71,
+  114547512.59,
+  108526486.50,
+  109426456.08,
+  120214081.41,
+  140116636.10
+].map((value, index) => ({
+  ano: 2026,
+  mes: index + 1,
+  status: index < 3 ? "Homologado" : "Em preenchimento",
+  competencia: `2026-${String(index + 1).padStart(2, "0")}`,
+  camposEntrada: { lucroLiquidoRecorrenteCompetencia: value }
+}));
+
+const lucroEstadoAtual2Tri = consolidarTrimestre(
+  indicadorLucroQuarter,
+  regraLucroQuarter,
+  resultadosLucroEstadoAtual,
+  "2TRI/2026"
+);
+assert.equal(lucroEstadoAtual2Tri.statusTrimestre, "Sem dados");
+assert.equal(lucroEstadoAtual2Tri.mesesHomologados, 0);
+assert.equal(lucroEstadoAtual2Tri.resultadoTrimestral, null);
+assert.equal(lucroEstadoAtual2Tri.desempenhoTrimestral, null);
+
+const lucroEstadoAtual3Tri = consolidarTrimestre(
+  indicadorLucroQuarter,
+  regraLucroQuarter,
+  resultadosLucroEstadoAtual,
+  "3TRI/2026"
+);
+assert.equal(lucroEstadoAtual3Tri.statusTrimestre, "Sem dados");
+assert.equal(lucroEstadoAtual3Tri.mesesHomologados, 0);
+assert.equal(lucroEstadoAtual3Tri.resultadoTrimestral, null);
+assert.equal(lucroEstadoAtual3Tri.desempenhoTrimestral, null);
+
+const lucroEstadoAtual4Tri = consolidarTrimestre(
+  indicadorLucroQuarter,
+  regraLucroQuarter,
+  resultadosLucroEstadoAtual,
+  "4TRI/2026"
+);
+assert.equal(lucroEstadoAtual4Tri.statusTrimestre, "Sem dados");
+assert.equal(lucroEstadoAtual4Tri.mesesHomologados, 0);
+assert.equal(lucroEstadoAtual4Tri.resultadoTrimestral, null);
+assert.equal(lucroEstadoAtual4Tri.desempenhoTrimestral, null);
 
 const ecossistemaQuarter = consolidarTrimestre(
   { id: 22, indicador: "Arrecadação Gerada com o Ecossistema", unidadeMedida: "percentual" },
@@ -1140,6 +1353,84 @@ assert.ok(Math.abs(redeLotericaIncrementoQuarter.desempenhoTrimestral - 1.1386) 
 assert.ok(Math.abs(redeLotericaIncrementoQuarter.indiceRedeLotericaTrimestre - 1.005693) < 0.000001);
 assert.ok(Math.abs(redeLotericaIncrementoQuarter.incrementoRedeLotericaTrimestre - 0.005693) < 0.000001);
 assert.equal(redeLotericaIncrementoQuarter.situacaoTrimestral, "Atingido");
+
+const indicadorGestoresDiversidade = {
+  id: 14,
+  indicador: "Gestores Negros, Amarelos, Pardos ou Indígenas e/ou PcD",
+  periodicidade: "Mensal",
+  unidadeMedida: "percentual"
+};
+const regraGestoresDiversidade = {
+  indicadorId: 14,
+  tipoCalculo: "percentual_direto",
+  tipoConsolidacao: "ultima_posicao",
+  unidadeMedida: "percentual",
+  metaAnualValor: 0.35,
+  parametrosCalculo: {
+    numeradorCampo: "gestoresEnquadradosMes",
+    denominadorCampo: "totalGestoresMes",
+    metaReferencia: 0.35,
+    arredondarResultadoAntesAtingimento: true,
+    casasDecimaisResultadoPercentual: 2
+  },
+  camposEntrada: [
+    { nome: "gestoresEnquadradosMes", obrigatorio: true },
+    { nome: "totalGestoresMes", obrigatorio: true }
+  ]
+};
+const gestoresDiversidadeLancamentos = [
+  [1, 9, 33, "Homologado"],
+  [2, 11, 42, "Homologado"],
+  [3, 11, 43, "Homologado"],
+  [4, 11, 43, "Homologado"],
+  [5, 12, 45, "Homologado"],
+  [6, 11, 46, "Homologado"],
+  [7, 12, 46, "Homologado"],
+  [8, 12, 46, "Em preenchimento"],
+  [9, 12, 46, "Em preenchimento"]
+].map(([mes, gestores, total, status]) => ({
+  indicadorId: 14,
+  ano: 2026,
+  mes,
+  competencia: `2026-${String(mes).padStart(2, "0")}`,
+  status,
+  metaReferencia: 0.35,
+  camposEntrada: { gestoresEnquadradosMes: gestores, totalGestoresMes: total }
+}));
+
+const gestoresDiversidade1Tri = consolidarTrimestre(
+  indicadorGestoresDiversidade,
+  regraGestoresDiversidade,
+  gestoresDiversidadeLancamentos,
+  "1TRI/2026"
+);
+assert.equal(gestoresDiversidade1Tri.statusTrimestre, "Fechado");
+assert.equal(gestoresDiversidade1Tri.ultimoLancamentoHomologado.mes, 3);
+assert.ok(Math.abs(gestoresDiversidade1Tri.resultadoTrimestral - 0.2558) < 1e-12);
+assert.ok(Math.abs(gestoresDiversidade1Tri.desempenhoTrimestral - (0.2558 / 0.35)) < 1e-12);
+
+const gestoresDiversidade2Tri = consolidarTrimestre(
+  indicadorGestoresDiversidade,
+  regraGestoresDiversidade,
+  gestoresDiversidadeLancamentos,
+  "2TRI/2026"
+);
+assert.equal(gestoresDiversidade2Tri.statusTrimestre, "Fechado");
+assert.equal(gestoresDiversidade2Tri.ultimoLancamentoHomologado.mes, 6);
+assert.ok(Math.abs(gestoresDiversidade2Tri.resultadoTrimestral - 0.2391) < 1e-12);
+assert.ok(Math.abs(gestoresDiversidade2Tri.desempenhoTrimestral - (0.2391 / 0.35)) < 1e-12);
+
+const gestoresDiversidade3Tri = consolidarTrimestre(
+  indicadorGestoresDiversidade,
+  regraGestoresDiversidade,
+  gestoresDiversidadeLancamentos,
+  "3TRI/2026"
+);
+assert.equal(gestoresDiversidade3Tri.statusTrimestre, "Parcial");
+assert.equal(gestoresDiversidade3Tri.mesesHomologados, 1);
+assert.equal(gestoresDiversidade3Tri.ultimoLancamentoHomologado.mes, 7);
+assert.ok(Math.abs(gestoresDiversidade3Tri.resultadoTrimestral - 0.2609) < 1e-12);
+assert.ok(Math.abs(gestoresDiversidade3Tri.desempenhoTrimestral - (0.2609 / 0.35)) < 1e-12);
 console.log("Testes trimestrais OK");
 
 

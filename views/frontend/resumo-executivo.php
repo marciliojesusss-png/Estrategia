@@ -69,6 +69,7 @@
             <span class="legend-verde">Verde <strong>Meta atingida</strong></span>
             <span class="legend-amarelo">Amarelo <strong>Atenção</strong></span>
             <span class="legend-vermelho">Vermelho <strong>Crítico</strong></span>
+            <span class="legend-azul">Azul neutro <strong>Em acompanhamento</strong></span>
             <span class="legend-cinza">Cinza <strong>Sem dados</strong></span>
           </div>
         </div>

@@ -157,6 +157,11 @@
     APURACAO_QUANTITATIVA: "apuracao_quantitativa"
   });
 
+  const MODO_RESULTADO_CAPACITACAO = Object.freeze({
+    CALCULADO: "calculado",
+    OFICIAL_INFORMADO: "oficial_informado"
+  });
+
   const TIPO_POSICAO_APRIMORAMENTO = Object.freeze({
     ACOMPANHAMENTO: "acompanhamento",
     FECHAMENTO_QUANTITATIVO: "fechamento_quantitativo"
@@ -193,6 +198,16 @@
     const tipoExplicito = String(camposEntrada.tipoPosicaoCapacitacao || "").trim();
     if (Object.values(TIPO_POSICAO_CAPACITACAO).includes(tipoExplicito)) return tipoExplicito;
 
+    const modoResultado = String(camposEntrada.modoResultadoCapacitacao || "").trim();
+    const possuiResultadoOficial = modoResultado === MODO_RESULTADO_CAPACITACAO.OFICIAL_INFORMADO &&
+      camposEntrada.resultadoOficialInformadoCapacitacao !== undefined &&
+      camposEntrada.resultadoOficialInformadoCapacitacao !== null &&
+      camposEntrada.resultadoOficialInformadoCapacitacao !== "" &&
+      camposEntrada.percentualAtingidoOficialCapacitacao !== undefined &&
+      camposEntrada.percentualAtingidoOficialCapacitacao !== null &&
+      camposEntrada.percentualAtingidoOficialCapacitacao !== "";
+    if (possuiResultadoOficial) return TIPO_POSICAO_CAPACITACAO.APURACAO_QUANTITATIVA;
+
     const possuiPublico = camposEntrada.publicoAlvoElegivelCapacitacao !== undefined &&
       camposEntrada.publicoAlvoElegivelCapacitacao !== null &&
       camposEntrada.publicoAlvoElegivelCapacitacao !== "";
@@ -215,6 +230,20 @@
     ].some((value) => String(value || "").trim());
     if (statusHomologado && possuiRegistroQualitativo) return TIPO_POSICAO_CAPACITACAO.ACOMPANHAMENTO;
     return null;
+  }
+
+  function resolverModoResultadoCapacitacao(lancamento) {
+    const modo = String(raw(lancamento, "modoResultadoCapacitacao") || "").trim();
+    return Object.values(MODO_RESULTADO_CAPACITACAO).includes(modo)
+      ? modo
+      : MODO_RESULTADO_CAPACITACAO.CALCULADO;
+  }
+
+  function percentualPersistido(lancamento, nome) {
+    const value = raw(lancamento, nome);
+    if (value === null || value === undefined || value === "") return null;
+    if (typeof value === "number") return Number.isFinite(value) ? value : null;
+    return normalizarPercentual(value);
   }
 
   function resultadoAcompanhamentoCapacitacao(regra, lancamentoAtual) {
@@ -326,6 +355,16 @@
       if (resultadoMensal === null) return erro("Valor realizado deve ser informado.", regra.unidadeMedida);
     }
 
+    if (regra.parametrosCalculo?.arredondarResultadoAntesAtingimento === true) {
+      const casasConfiguradas = toNumber(regra.parametrosCalculo?.casasDecimaisResultadoPercentual);
+      const casas = casasConfiguradas === null
+        ? 2
+        : Math.min(10, Math.max(0, Math.trunc(casasConfiguradas)));
+      const fator = 10 ** casas;
+      const resultadoPercentual = Math.round((resultadoMensal * 100 + Number.EPSILON) * fator) / fator;
+      resultadoMensal = resultadoPercentual / 100;
+    }
+
     const percentual = resultadoMensal / meta;
     return ok(resultadoMensal, resultadoMensal, percentual, percentual, regra.unidadeMedida);
   }
@@ -350,9 +389,55 @@
       const required = validarObrigatorios(regra, lancamentoAtual);
       if (required) return erro(required, regra.unidadeMedida);
     }
+    const trimestre = lancamentoAtual.trimestre || `${Math.ceil(Number(lancamentoAtual.mes) / 3)}TRI/${lancamentoAtual.ano || 2026}`;
+    const curva = params.curvaTrimestralCursos || params.curvaJogoResponsavel2026 || {};
+    const criterioTrimestre = curva[trimestre] || {};
+    const metaCobertura = metaLancamento(lancamentoAtual) ?? toNumber(criterioTrimestre.metaCobertura ?? params.metaCobertura ?? params.metaReferencia ?? regra.metaAnualValor);
+    const quantidadeCursosCurva = toNumber(criterioTrimestre.quantidadeCursosMinima ?? criterioTrimestre.quantidadeMinimaIniciativas);
+    const campoQuantidadeMinima = params.campoQuantidadeCursos || params.campoQuantidadeMinima || "quantidadeCursosMinimaCapacitacao";
+    const quantidadeCursosMinima = permiteAcompanhamento
+      ? quantidadeCursosCurva
+      : campo(lancamentoAtual, campoQuantidadeMinima) ?? quantidadeCursosCurva;
+    if (metaCobertura === null || metaCobertura <= 0) {
+      return erro("Meta de cobertura de capacitação não configurada.", regra.unidadeMedida);
+    }
+
+    const modoResultado = permiteAcompanhamento
+      ? resolverModoResultadoCapacitacao(lancamentoAtual)
+      : MODO_RESULTADO_CAPACITACAO.CALCULADO;
+    if (modoResultado === MODO_RESULTADO_CAPACITACAO.OFICIAL_INFORMADO) {
+      const resultadoOficial = percentualPersistido(lancamentoAtual, "resultadoOficialInformadoCapacitacao");
+      const atingimentoOficial = percentualPersistido(lancamentoAtual, "percentualAtingidoOficialCapacitacao");
+      if (resultadoOficial === null || resultadoOficial < 0 || resultadoOficial > 1) {
+        return erro("Resultado oficial informado deve ser um percentual entre 0% e 100%.", regra.unidadeMedida);
+      }
+      if (atingimentoOficial === null || atingimentoOficial < 0) {
+        return erro("Percentual atingido oficial deve ser informado e não pode ser negativo.", regra.unidadeMedida);
+      }
+      const situacao = atingimentoOficial > 1
+        ? "Superado"
+        : atingimentoOficial === 1
+          ? "Atingido"
+          : "Abaixo da meta";
+      const componentes = raw(lancamentoAtual, "componentesResultadoCapacitacao");
+      return ok(resultadoOficial, resultadoOficial, atingimentoOficial, atingimentoOficial, regra.unidadeMedida, "Resultado e atingimento oficiais informados para o fechamento de capacitação.", {
+        tipoPosicaoCapacitacao: tipoPosicao || TIPO_POSICAO_CAPACITACAO.APURACAO_QUANTITATIVA,
+        modoResultadoCapacitacao: MODO_RESULTADO_CAPACITACAO.OFICIAL_INFORMADO,
+        resultadoOficialInformadoCapacitacao: resultadoOficial,
+        percentualAtingidoOficialCapacitacao: atingimentoOficial,
+        metaCoberturaCapacitacao: metaCobertura,
+        quantidadeCursosMinimaCapacitacao: quantidadeCursosMinima,
+        quantidadeMinimaIniciativasJR: quantidadeCursosMinima,
+        criterioCapacitacao: criterioTrimestre.descricao || null,
+        componentesResultadoCapacitacao: Array.isArray(componentes) ? componentes : [],
+        percentualAtingidoMatematico: null,
+        origemResultadoCapacitacao: "informe_oficial",
+        situacao
+      });
+    }
+
     const campoPublico = params.campoPublicoAlvo || "publicoAlvoElegivelCapacitacao";
     const campoCapacitados = params.campoCapacitados || "empregadosCapacitadosCapacitacao";
-    const campoQuantidadeMinima = params.campoQuantidadeCursos || params.campoQuantidadeMinima || "quantidadeCursosMinimaCapacitacao";
     const publicoAlvo = campo(lancamentoAtual, campoPublico);
     const capacitados = campo(lancamentoAtual, campoCapacitados);
     if (publicoAlvo === null || publicoAlvo <= 0) {
@@ -365,18 +450,6 @@
       return erro("Empregados capacitados não pode ser maior que o público-alvo elegível.", regra.unidadeMedida);
     }
 
-    const trimestre = lancamentoAtual.trimestre || `${Math.ceil(Number(lancamentoAtual.mes) / 3)}TRI/${lancamentoAtual.ano || 2026}`;
-    const curva = params.curvaTrimestralCursos || params.curvaJogoResponsavel2026 || {};
-    const criterioTrimestre = curva[trimestre] || {};
-    const metaCobertura = metaLancamento(lancamentoAtual) ?? toNumber(criterioTrimestre.metaCobertura ?? params.metaCobertura ?? params.metaReferencia ?? regra.metaAnualValor);
-    const quantidadeCursosCurva = toNumber(criterioTrimestre.quantidadeCursosMinima ?? criterioTrimestre.quantidadeMinimaIniciativas);
-    const quantidadeCursosMinima = permiteAcompanhamento
-      ? quantidadeCursosCurva
-      : campo(lancamentoAtual, campoQuantidadeMinima) ?? quantidadeCursosCurva;
-    if (metaCobertura === null || metaCobertura <= 0) {
-      return erro("Meta de cobertura de capacitação não configurada.", regra.unidadeMedida);
-    }
-
     const cobertura = capacitados / publicoAlvo;
     const percentualMatematico = cobertura / metaCobertura;
     const percentualAtingido = cobertura >= metaCobertura ? 1 : percentualMatematico;
@@ -386,6 +459,7 @@
 
     return ok(cobertura, cobertura, percentualAtingido, percentualAtingido, regra.unidadeMedida, "Cobertura de capacitação calculada por público-alvo elegível.", {
       tipoPosicaoCapacitacao: tipoPosicao || TIPO_POSICAO_CAPACITACAO.APURACAO_QUANTITATIVA,
+      modoResultadoCapacitacao: MODO_RESULTADO_CAPACITACAO.CALCULADO,
       publicoAlvoElegivelCapacitacao: publicoAlvo,
       empregadosCapacitadosCapacitacao: capacitados,
       metaCoberturaCapacitacao: metaCobertura,
@@ -673,13 +747,15 @@
     if (legacyAccumulated === null) return null;
     const month = Number(lancamento?.mes);
     const year = Number(lancamento?.ano);
-    if (month === 1) return legacyAccumulated;
+    if (month === 1) return Math.round(legacyAccumulated * 100) / 100;
 
     const previous = (lancamentosDoAno || []).find((item) => (
       Number(item?.ano) === year && Number(item?.mes) === month - 1
     ));
     const previousAccumulated = previous ? campo(previous, legacyField) : null;
-    return previousAccumulated === null ? null : legacyAccumulated - previousAccumulated;
+    return previousAccumulated === null
+      ? null
+      : (Math.round(legacyAccumulated * 100) - Math.round(previousAccumulated * 100)) / 100;
   }
 
   function calcularLucroRecorrenteMensal(indicador, regra, lancamentoAtual, lancamentosDoAno) {
@@ -701,11 +777,11 @@
     const resultadosMensais = ateMes
       .map((item) => getLucroRecorrenteMensal(regra, item, lancamentosDoAno))
       .filter((value) => value !== null && value >= 0);
-    const resultadoAcumulado = resultadosMensais.reduce((sum, value) => sum + value, 0);
+    const resultadoAcumulado = resultadosMensais.reduce((sum, value) => sum + Math.round(value * 100), 0) / 100;
     const metaAcumulada = ateMes.reduce((sum, item) => {
       const parsed = getLucroRecorrenteMetaMensal(regra, item);
-      return parsed === null ? sum : sum + parsed;
-    }, 0);
+      return parsed === null ? sum : sum + Math.round(parsed * 100);
+    }, 0) / 100;
     const percentualMensal = resultadoMensal / metaMensal;
     const percentualAcumulado = metaAcumulada > 0 ? resultadoAcumulado / metaAcumulada : null;
     const situacaoMensal = percentualMensal >= 1 ? "Atingido" : "Abaixo da meta";
@@ -1180,6 +1256,13 @@
     });
   }
 
+  function isMedicaoOficialPesquisaAnual(regra, lancamento) {
+    if (regra?.tipoCalculo !== "nota_pesquisa_anual") return false;
+    const campoTipoPosicao = regra.parametrosCalculo?.campoTipoPosicao || "tipoPosicaoClima";
+    const tipoPosicao = texto(lancamento || {}, campoTipoPosicao);
+    return ["Pesquisa oficial", "Fechamento anual"].includes(tipoPosicao);
+  }
+
   function calcularNotaPesquisaAnual(indicador, regra, lancamentoAtual) {
     const required = validarObrigatorios(regra, lancamentoAtual);
     if (required) return erro(required, regra.unidadeMedida);
@@ -1187,9 +1270,22 @@
     const campoNota = params.campoNota || "notaClimaApurada";
     const campoMetaReferencia = params.campoMetaReferencia || "metaReferenciaClima";
     const tipoPosicao = texto(lancamentoAtual, params.campoTipoPosicao || "tipoPosicaoClima");
+    const medicaoOficialPesquisa2026 = isMedicaoOficialPesquisaAnual(regra, lancamentoAtual);
+    const resultadoOficialReportado = !medicaoOficialPesquisa2026;
+    const isPlanoAcao = tipoPosicao === "Plano de ação";
+    const isAcompanhamento = ["Acompanhamento", "Revisão metodológica"].includes(tipoPosicao);
     const notaApurada = campo(lancamentoAtual, campoNota);
     if (notaApurada === null) {
-      return pendente("Nota/média geral apurada ou posição de referência deve ser informada.", regra.unidadeMedida);
+      return pendente("Nota/média geral apurada ou posição de referência deve ser informada.", regra.unidadeMedida, {
+        tipoPosicaoClima: tipoPosicao,
+        medicaoOficialPesquisa2026,
+        resultadoOficialReportado: false,
+        situacao: isPlanoAcao
+          ? "Plano de ação em andamento"
+          : isAcompanhamento || !medicaoOficialPesquisa2026
+            ? "Em acompanhamento"
+            : undefined
+      });
     }
     if (notaApurada < 0 || notaApurada > 100) {
       return erro("Nota/média geral apurada deve estar entre 0 e 100 pontos.", regra.unidadeMedida);
@@ -1208,12 +1304,9 @@
 
     const metaAnual = toNumber(regra.metaAnualValor ?? params.metaReferencia ?? metaReferenciaPeriodo);
     const percentualAtingido = notaApurada / metaReferenciaPeriodo;
-    const isPlanoAcao = tipoPosicao === "Plano de ação";
-    const isAcompanhamento = ["Acompanhamento", "Revisão metodológica"].includes(tipoPosicao);
-    const isPesquisaFinal = ["Pesquisa oficial", "Fechamento anual"].includes(tipoPosicao);
     const situacao = isPlanoAcao
       ? "Plano de ação em andamento"
-      : isAcompanhamento || !isPesquisaFinal
+      : isAcompanhamento || !medicaoOficialPesquisa2026
         ? "Em acompanhamento"
         : notaApurada >= metaAnual
           ? "Atingido"
@@ -1225,6 +1318,8 @@
       metaReferenciaClima: metaReferenciaPeriodo,
       desempenhoReferencia: percentualAtingido,
       tipoPosicaoClima: tipoPosicao,
+      medicaoOficialPesquisa2026,
+      resultadoOficialReportado,
       situacao
     });
   }
@@ -2004,9 +2099,12 @@
 
   const api = {
     TIPO_POSICAO_CAPACITACAO,
+    MODO_RESULTADO_CAPACITACAO,
     TIPO_POSICAO_APRIMORAMENTO,
     resolverTipoPosicaoCapacitacao,
+    resolverModoResultadoCapacitacao,
     resolverTipoPosicaoAprimoramento,
+    isMedicaoOficialPesquisaAnual,
     obterRegra,
     regraFallback,
     toNumber,

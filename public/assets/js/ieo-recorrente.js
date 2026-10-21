@@ -7,6 +7,8 @@
   const META_ANUAL_IEO_2026 = META_REFERENCIA_ORIGINAL_2026;
   const CAMPO_PERCENTUAL_OFICIAL_LEGADO = "percentualAtingidoOficialInformado";
   const CAMPO_OBSERVACAO_AJUSTE_LEGADO = "observacaoAjusteOficial";
+  const VRM_PERCENTUAL_ATINGIDO = 1;
+  const TITULO_METODOLOGIA_PERCENTUAL = "Metodologia do percentual atingido:";
 
   const CAMPOS_ORIGINAIS = Object.freeze([
     { nome: "despesaPessoalMes", rotulo: "Despesa de pessoal", tipo: "moeda", obrigatorio: true },
@@ -179,6 +181,66 @@
     return `${(value * 100).toLocaleString("pt-BR", { minimumFractionDigits, maximumFractionDigits: 2 })}%`;
   }
 
+  function numeroDecimal(value) {
+    if (value === null || value === undefined || value === "") return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  function arredondarIeoOficial(resultadoBruto) {
+    const resultadoNumerico = numeroDecimal(resultadoBruto);
+    if (resultadoNumerico === null) return null;
+    // O IEO e armazenado como decimal. Quatro casas decimais equivalem a
+    // duas casas percentuais (por exemplo, 0,160849... -> 16,08%).
+    return Math.round((resultadoNumerico + Number.EPSILON) * 10000) / 10000;
+  }
+
+  function calcularPercentualAtingido(meta, realizado) {
+    const metaNumerica = numeroDecimal(meta);
+    const realizadoNumerico = numeroDecimal(realizado);
+    if (metaNumerica === null || realizadoNumerico === null) return null;
+    if (metaNumerica < 0 || metaNumerica > VRM_PERCENTUAL_ATINGIDO) {
+      throw new RangeError("A meta do IEO deve estar armazenada como decimal entre 0 e 1.");
+    }
+    const denominador = VRM_PERCENTUAL_ATINGIDO - metaNumerica;
+    if (Math.abs(denominador) <= Number.EPSILON) {
+      throw new RangeError("A meta do IEO não pode ser igual ao VRM de 100%, pois isso gera divisão por zero.");
+    }
+    return 1 - ((realizadoNumerico - metaNumerica) / denominador);
+  }
+
+  function gerarDetalhesMetaMensal(meta, realizado, percentualAtingido) {
+    const metodologia = [
+      TITULO_METODOLOGIA_PERCENTUAL,
+      "Como o IEO Recorrente é um indicador em que valores menores representam maior eficiência, o percentual de atingimento é calculado pela fórmula:",
+      "",
+      "% Atingido = 1 - ((Realizado - Meta) / (VRM - Meta))",
+      "",
+      "considerando VRM = 100%.",
+      "",
+      "Realizado igual à meta corresponde a 100% de atingimento.",
+      "Realizado abaixo da meta resulta em atingimento superior a 100%.",
+      "Realizado acima da meta resulta em atingimento inferior a 100%."
+    ].join("\n");
+    const metaNumerica = numeroDecimal(meta);
+    const realizadoNumerico = numeroDecimal(realizado);
+    if (metaNumerica === null || realizadoNumerico === null) return metodologia;
+    const percentualInformado = numeroDecimal(percentualAtingido);
+    const percentual = percentualInformado === null
+      ? calcularPercentualAtingido(metaNumerica, realizadoNumerico)
+      : percentualInformado;
+    if (!Number.isFinite(percentual)) return metodologia;
+    return `${metodologia}\n\nCálculo da competência:\nMeta: ${formatarPercentual(metaNumerica, 2)}\nRealizado: ${formatarPercentual(realizadoNumerico, 2)}\n\n% Atingido =\n1 - ((${formatarPercentual(realizadoNumerico, 2)} - ${formatarPercentual(metaNumerica, 2)}) / (100,00% - ${formatarPercentual(metaNumerica, 2)}))\n= ${formatarPercentual(percentual, 2)}`;
+  }
+
+  function acrescentarMetodologiaDetalhes(detalhesExistentes, meta, realizado, percentualAtingido) {
+    const existente = String(detalhesExistentes || "").trim();
+    const inicioMetodologia = existente.indexOf(TITULO_METODOLOGIA_PERCENTUAL);
+    const conteudoNegocio = (inicioMetodologia >= 0 ? existente.slice(0, inicioMetodologia) : existente).trim();
+    const metodologia = gerarDetalhesMetaMensal(meta, realizado, percentualAtingido);
+    return conteudoNegocio ? `${conteudoNegocio}\n\n${metodologia}` : metodologia;
+  }
+
   function resultadoBase(unidadeMedida, mensagem, statusCalculo) {
     return {
       resultadoMensal: null,
@@ -277,21 +339,45 @@
       metaReferenciaMensal: getMetaCompetencia(lancamento, regraAjustada)
     });
 
-    const resultado = parcial.resultado;
-    if (resultado < 0) return falha(regraAjustada, "IEO realizado não pode ser negativo.", true);
+    const resultadoBruto = parcial.resultado;
+    if (resultadoBruto < 0) return falha(regraAjustada, "IEO realizado não pode ser negativo.", true);
+    const resultado = arredondarIeoOficial(resultadoBruto);
     const metaCompetencia = getMetaCompetencia(lancamento, regraAjustada);
     if (metaCompetencia === null || metaCompetencia <= 0) {
       const retorno = falha(regraAjustada, "IEO calculado. Meta de referência não cadastrada para a competência.", false);
+      retorno.resultado = resultado;
+      retorno.resultadoBruto = resultadoBruto;
       retorno.resultadoMensal = resultado;
       retorno.resultadoMensalFormatado = formatarPercentual(resultado);
       retorno.situacao = "Sem meta de referência";
       return retorno;
     }
 
-    const percentual = resultado === 0 ? null : metaCompetencia / resultado;
+    let percentual;
+    try {
+      percentual = calcularPercentualAtingido(metaCompetencia, resultado);
+    } catch (error) {
+      const retorno = falha(regraAjustada, error.message, true);
+      retorno.resultadoMensal = resultado;
+      retorno.resultadoMensalFormatado = formatarPercentual(resultado);
+      retorno.metaReferenciaMensal = metaCompetencia;
+      retorno.situacao = "Erro de configuração";
+      retorno.metodologiaIeo = metodologia.codigo;
+      retorno.descricaoMetodologiaIeo = metodologia.descricao;
+      retorno.formulaVigenteIeo = metodologia.formula;
+      return retorno;
+    }
     const situacao = resultado <= metaCompetencia ? "Atingido" : "Abaixo da meta";
     const casasMinimas = metodologia.codigo === "ca_agosto_2026" ? 2 : 0;
+    const detalhesMetaMensal = acrescentarMetodologiaDetalhes(
+      lancamento.detalhesMetaMensal ?? lancamento.detalhes_meta_mensal,
+      metaCompetencia,
+      resultado,
+      percentual
+    );
     return Object.assign({}, parcial, {
+      resultado,
+      resultadoBruto,
       resultadoMensal: resultado,
       resultadoMensalFormatado: formatarPercentual(resultado, casasMinimas),
       resultadoAcumulado: resultado,
@@ -320,7 +406,8 @@
       ieoRealizadoMes: resultado,
       metodologiaIeo: metodologia.codigo,
       descricaoMetodologiaIeo: metodologia.descricao,
-      formulaVigenteIeo: metodologia.formula
+      formulaVigenteIeo: metodologia.formula,
+      detalhesMetaMensal
     });
   }
 
@@ -334,7 +421,8 @@
       metaReferencia: metaCompetencia ?? lancamento.metaReferencia,
       metodologiaIeo: calculo.metodologiaIeo,
       descricaoMetodologiaIeo: calculo.descricaoMetodologiaIeo,
-      formulaVigenteIeo: calculo.formulaVigenteIeo
+      formulaVigenteIeo: calculo.formulaVigenteIeo,
+      detalhesMetaMensal: calculo.detalhesMetaMensal ?? lancamento.detalhesMetaMensal
     });
     if (calculo.resultadoMensal === null || calculo.resultadoMensal === undefined) return normalizado;
     return Object.assign(normalizado, {
@@ -399,6 +487,10 @@
     ajustarRegraIeo,
     calcularIeoMetodologiaOriginal,
     calcularIeoMetodologiaCa,
+    arredondarIeoOficial,
+    calcularPercentualAtingido,
+    gerarDetalhesMetaMensal,
+    acrescentarMetodologiaDetalhes,
     calcularIeo,
     normalizarLancamentoParaExibicao,
     instalarCorrecao

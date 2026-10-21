@@ -564,11 +564,12 @@
           <td>${escapeHtml(item.ano)}</td>
           <td>${escapeHtml(item.nomeMes)}</td>
           <td>${escapeHtml(item.metaMensal ?? "-")}</td>
+          <td class="cell-texto-longo">${escapeHtml(item.detalhesMetaMensal || "-")}</td>
           <td><button class="secondary-action table-action" type="button" data-edit-meta="${item.id}">Editar</button></td>
         </tr>
       `;
     });
-    table(["Indicador", "Ano", "Competência", "Meta da competência", "Ações"], rows);
+    table(["Indicador", "Ano", "Competência", "Meta da competência", "Detalhes da Meta Mensal", "Ações"], rows);
   }
 
   function openMetaForm(meta = null) {
@@ -592,6 +593,9 @@
         <select name="mes" required ${locked}>${options(MESES, source.mes)}</select>
       </label>
       <label>Meta da competência <input name="metaMensal" type="number" step="any" value="${escapeHtml(source.metaMensal ?? "")}" required></label>
+      <label class="full-span">Detalhes da Meta Mensal
+        <textarea name="detalhesMetaMensal" rows="8" placeholder="Registre a metodologia e as justificativas da meta mensal.">${escapeHtml(source.detalhesMetaMensal || "")}</textarea>
+      </label>
       <div class="form-actions full-span">
         <button class="primary-action" type="submit">Salvar meta</button>
         <button id="adminCancelForm" class="secondary-action" type="button">Cancelar</button>
@@ -655,8 +659,22 @@
       mes,
       nomeMes: MESES.find(([value]) => value === mes)?.[1] || "",
       metaMensal: values.metaMensal === "" ? null : Number(values.metaMensal),
+      detalhesMetaMensal: String(values.detalhesMetaMensal || "").trim(),
       fonte: "admin_sqlserver"
     };
+    if (Number(record.indicadorId) === window.IeoRecorrente?.INDICADOR_IEO_ID) {
+      const launch = state.data.lancamentos.find((item) => (
+        Number(item.indicadorId) === record.indicadorId &&
+        Number(item.ano) === record.ano &&
+        Number(item.mes) === record.mes
+      ));
+      const realizado = launch?.resultadoMensal ?? launch?.realizadoMensal ?? launch?.resultadoCalculado ?? null;
+      record.detalhesMetaMensal = window.IeoRecorrente.acrescentarMetodologiaDetalhes(
+        record.detalhesMetaMensal,
+        record.metaMensal,
+        realizado
+      );
+    }
     const nextMetas = state.editingId === null
       ? [...state.data.metas, record]
       : state.data.metas.map((item) => String(item.id) === String(state.editingId) ? record : item);

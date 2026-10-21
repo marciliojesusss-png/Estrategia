@@ -92,7 +92,7 @@
             <div class="evidence-section-heading">
               <div>
                 <p class="eyebrow">Documentação da unidade apuradora</p>
-                <h3 id="approvalEvidenceTitle">Evidências da Unidade Apuradora</h3>
+                <h3 id="approvalEvidenceTitle">Evidências atuais da Unidade Apuradora</h3>
               </div>
               <span class="evidence-requirement">Somente leitura</span>
             </div>
@@ -101,9 +101,14 @@
               <p id="approvalEvidenceReference">Não informada.</p>
             </div>
             <div>
-              <h4>Anexos</h4>
+              <h4>Anexos da versão atual</h4>
               <div id="approvalEvidenceList" class="evidence-list" aria-live="polite"></div>
             </div>
+            <details id="approvalEvidenceHistoryWrapper" class="evidence-history" hidden>
+              <summary>Evidências de versões anteriores</summary>
+              <p class="evidence-history-warning">Esta evidência pertence a uma versão anterior e não comprova a versão atual.</p>
+              <div id="approvalEvidenceHistoryList" class="evidence-list" aria-live="polite"></div>
+            </details>
           </section>
 
           <label class="full-span">Observação da diretoria

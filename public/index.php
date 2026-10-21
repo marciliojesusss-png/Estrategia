@@ -117,6 +117,7 @@ $router->post('/lancamentos/{id}/evidencias',array($evidencias,'upload'));
 $router->get('/evidencias/{id}/download',array($evidencias,'download'));
 $router->post('/evidencias/{id}/remover',array($evidencias,'remove'));
 $router->get('/api/lancamentos/{id}/evidencias',array($evidencias,'listApi'));
+$router->get('/api/lancamentos/{id}/evidencias/historico',array($evidencias,'listHistoryApi'));
 $router->post('/api/lancamentos/{id}/evidencias',array($evidencias,'uploadApi'));
 $router->post('/api/evidencias/{id}/remover',array($evidencias,'removeApi'));
 $homologacoes=new HomologacaoController();

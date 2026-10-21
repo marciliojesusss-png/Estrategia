@@ -650,7 +650,7 @@
 
   function performanceBadge(situation) {
     const normalized = window.Situations ? Situations.normalizarSituacao(situation) : situation;
-    if (normalized === "Atingido") return "ok";
+    if (normalized === "Atingido" || normalized === "Superado") return "ok";
     if (normalized === "Abaixo da meta" || normalized === "Atenção") return "warn";
     if (normalized === "Crítico") return "danger";
     return "info";
@@ -853,6 +853,21 @@
       ? window.IeoRecorrente?.getMetodologiaIeoPorCompetencia?.(lancamento)
       : null;
     const metodologiaIeoCa = metodologiaIeo?.codigo === "ca_agosto_2026";
+    const metaIeo = metodologiaIeo
+      ? state.data?.metas?.find((item) => (
+        Number(item.indicadorId) === Number(indicador.id) &&
+        Number(item.ano) === Number(lancamento.ano) &&
+        Number(item.mes) === Number(lancamento.mes)
+      ))
+      : null;
+    const detalhesMetaMensalIeo = metodologiaIeo
+      ? window.IeoRecorrente?.acrescentarMetodologiaDetalhes?.(
+        metaIeo?.detalhesMetaMensal,
+        metaReferencia,
+        resultadoCalculado,
+        percent
+      )
+      : null;
     const accumulatedBlock = isLucroRecorrente ? `
       <article class="launch-detail-card full-span">
         <h4>Acumulado no ano</h4>
@@ -922,6 +937,7 @@
           ].map(launchDetailItem).join("")}
         </div>
       </article>
+      ${metodologiaIeo ? renderTextBlock("Detalhes da Meta Mensal", detalhesMetaMensalIeo, "Metodologia não registrada.") : ""}
       ${accumulatedBlock}
       ${isPlataformaJogos ? "" : renderInputData(indicador, regra, lancamento)}
       ${renderTextBlock("Observação da área", lancamento.observacaoArea, "Sem observação registrada.")}
