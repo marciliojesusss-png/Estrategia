@@ -40,10 +40,10 @@
     return Math.max(0, Math.min(1, number > 1 ? number / 100 : number));
   }
 
-  function formatarPercentual(value, minimumFractionDigits = 0) {
+  function formatarPercentual(value, minimumFractionDigits = 0, maximumFractionDigits = Math.max(2, minimumFractionDigits)) {
     const number = toNumber(value);
     if (number === null) return "-";
-    return `${(number * 100).toLocaleString("pt-BR", { minimumFractionDigits, maximumFractionDigits: 2 })}%`;
+    return `${(number * 100).toLocaleString("pt-BR", { minimumFractionDigits, maximumFractionDigits })}%`;
   }
 
   function formatarValor(value, unidadeMedida) {
@@ -118,11 +118,14 @@
   }
 
   function getMetaAcumuladaCompetencia(regra, lancamento) {
-    const configured = toNumber(lancamento?.metaReferencia ?? lancamento?.metaMensal);
-    if (configured !== null) return configured;
     const params = regra?.parametrosCalculo || {};
     const curva = params.metasAcumuladasPorCompetencia || params.curvaMetaAcumulada || {};
     const key = competenciaKey(lancamento);
+    if (params.priorizarMetaCurvaConfigurada === true && Object.prototype.hasOwnProperty.call(curva, key)) {
+      return toNumber(curva[key]);
+    }
+    const configured = toNumber(lancamento?.metaReferencia ?? lancamento?.metaMensal);
+    if (configured !== null) return configured;
     if (Object.prototype.hasOwnProperty.call(curva, key)) {
       return toNumber(curva[key]);
     }
@@ -1722,10 +1725,23 @@
     const trimestre = lancamentoAtual.trimestre || `${Math.ceil(Number(lancamentoAtual.mes) / 3)}TRI/${lancamentoAtual.ano || 2026}`;
     const curva = params.curvaTrimestralAcumulada || {};
     const metaTrimestral = metaLancamento(lancamentoAtual) ?? toNumber(curva[trimestre]?.metaValorAcumulado);
+    const metaPercentual = toNumber(curva[trimestre]?.metaPercentualLucro);
+    const lucroLiquidoReferencia = toNumber(params.lucroLiquidoReferencia);
+    if (lucroLiquidoReferencia === null || lucroLiquidoReferencia <= 0) {
+      return erro("Lucro líquido de referência deve ser maior que zero para calcular o resultado percentual oficial.", regra.unidadeMedida);
+    }
+    const resultadoPercentualOficial = valorInvestidoAcumulado / lucroLiquidoReferencia;
     const possuiAndamento = ateMes.some((item) => ["Em prospecção", "Em estruturação", "Em rito de governança", "Aprovado"].includes(texto(item, campoStatus)));
 
     if (metaTrimestral === 0) {
       return ok(valorInvestidoAcumulado, valorInvestidoAcumulado, null, null, regra.unidadeMedida, "Sem meta de investimento no período.", {
+        realizadoFinanceiro: valorInvestidoAcumulado,
+        resultadoPercentualOficial,
+        resultadoPercentualOficialFormatado: formatarPercentual(resultadoPercentualOficial, 5, 5),
+        percentualAtingimento: null,
+        metaFinanceira: metaTrimestral,
+        metaPercentual,
+        lucroLiquidoReferencia,
         valorInvestidoAcumulado,
         valorInvestidoAcumuladoAteCompetencia: valorInvestidoAcumulado,
         metaTrimestral,
@@ -1747,6 +1763,13 @@
       ? "Atingido"
       : "Abaixo da meta";
     return ok(valorInvestidoAcumulado, valorInvestidoAcumulado, percentual, percentual, regra.unidadeMedida, "Investimento socioambiental acumulado calculado.", {
+      realizadoFinanceiro: valorInvestidoAcumulado,
+      resultadoPercentualOficial,
+      resultadoPercentualOficialFormatado: formatarPercentual(resultadoPercentualOficial, 5, 5),
+      percentualAtingimento: percentual,
+      metaFinanceira: metaReferencia,
+      metaPercentual,
+      lucroLiquidoReferencia,
       valorInvestidoAcumulado,
       valorInvestidoAcumuladoAteCompetencia: valorInvestidoAcumulado,
       metaTrimestral,

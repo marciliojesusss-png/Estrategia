@@ -483,6 +483,19 @@
       contextoResultadoOficial: resultadoOficialReportado ? reportedResultContext(lancamentoOficial) : null,
       statusAtual: positionBased ? lancamentoAcao.status : null,
       meta,
+      resultadoFinanceiro: regra?.tipoCalculo === "investimento_socioambiental"
+        ? toFiniteNumber(resultadoCalculado?.realizadoFinanceiro ?? resultadoTecnico)
+        : null,
+      metaFinanceira: regra?.tipoCalculo === "investimento_socioambiental"
+        ? toFiniteNumber(resultadoCalculado?.metaFinanceira ?? metaTecnica)
+        : null,
+      resultadoPercentualOficial: regra?.tipoCalculo === "investimento_socioambiental"
+        ? toFiniteNumber(resultadoCalculado?.resultadoPercentualOficial)
+        : null,
+      metaPercentual: regra?.tipoCalculo === "investimento_socioambiental"
+        ? toFiniteNumber(resultadoCalculado?.metaPercentual)
+        : null,
+      dadosCalculados: resultadoCalculado,
       situacaoAtual,
       situacaoOficial,
       situacaoTecnica,
@@ -733,6 +746,9 @@
   }
 
   function formatOfficialResult(resultado) {
+    if (resultado?.regra?.tipoCalculo === "investimento_socioambiental") {
+      return Calculations.formatarPercentual(resultado.resultadoPercentualOficial, 5, 5);
+    }
     if (resultado?.regra?.parametrosCalculo?.metaTipo === "meta_oficial_trimestral_projeto") {
       return Calculations.formatarPercentual(resultado.resultado, 2);
     }
@@ -743,6 +759,9 @@
   }
 
   function formatOfficialMeta(resultado) {
+    if (resultado?.regra?.tipoCalculo === "investimento_socioambiental") {
+      return Calculations.formatarPercentual(resultado.metaPercentual, 2, 2);
+    }
     if (resultado?.regra?.parametrosCalculo?.metaTipo === "meta_oficial_trimestral_projeto") {
       return Calculations.formatarPercentual(resultado.meta, 2);
     }

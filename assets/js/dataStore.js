@@ -243,10 +243,10 @@
     "2026-03": 2142991572.00,
     "2026-04": 2926098294.00,
     "2026-05": 3688125380.00,
-    "2026-06": 4545104157.00,
-    "2026-07": 5335136943.00,
-    "2026-08": 6121095220.00,
-    "2026-09": 7165115749.00,
+    "2026-06": 4545104157.26,
+    "2026-07": 5335136942.72,
+    "2026-08": 6121095220.48,
+    "2026-09": 7165115749.39,
     "2026-10": 7982318714.00,
     "2026-11": 8738217864.00,
     "2026-12": 10452751135.00
@@ -1825,6 +1825,8 @@
               valorAcumuladoCampo: "repasseSocialAcumuladoCompetencia",
               metaTipo: "curva_acumulada_por_competencia",
               metasAcumuladasPorCompetencia: REPASSE_SOCIAL_META_ACUMULADA_2026,
+              priorizarMetaCurvaConfigurada: true,
+              mesesFechamentoTrimestral: [3, 6, 9, 12],
               sentidoMeta: "quanto_maior_melhor"
             },
             camposEntrada: [{
@@ -2069,6 +2071,7 @@
               metaTipo: "curva_trimestral_acumulada",
               lucroLiquidoReferencia: 1305400000,
               percentualMetaAnual: 0.0033,
+              mesesFechamentoTrimestral: [3, 6, 9, 12],
               curvaTrimestralAcumulada: INCENTIVO_SOCIOAMBIENTAL_CURVA_2026,
               sentidoMeta: "quanto_maior_melhor"
             },

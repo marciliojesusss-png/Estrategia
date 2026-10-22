@@ -1910,9 +1910,13 @@ const regraIncentivoSocioambiental = {
     campoValorAcumulado: "valorInvestidoAcumuladoCompetencia",
     statusQueConta: "Investimento realizado",
     metaTipo: "curva_trimestral_acumulada",
+    lucroLiquidoReferencia: 1305400000,
+    mesesFechamentoTrimestral: [3, 6, 9, 12],
     curvaTrimestralAcumulada: {
       "1TRI/2026": { metaPercentualLucro: 0, metaValorAcumulado: 0 },
-      "2TRI/2026": { metaPercentualLucro: 0.0005, metaValorAcumulado: 652700 }
+      "2TRI/2026": { metaPercentualLucro: 0.0005, metaValorAcumulado: 652700 },
+      "3TRI/2026": { metaPercentualLucro: 0.001, metaValorAcumulado: 1305400 },
+      "4TRI/2026": { metaPercentualLucro: 0.0033, metaValorAcumulado: 4307900 }
     },
     sentidoMeta: "quanto_maior_melhor"
   },
@@ -1966,6 +1970,29 @@ const incentivo2Tri = formulas.calcularIndicador(
 assert.equal(incentivo2Tri.resultadoMensal, 652700);
 closeTo(incentivo2Tri.percentualAtingidoMensal, 1);
 assert.equal(incentivo2Tri.situacao, "Atingido");
+
+const lancamentosIncentivo3Tri = [
+  { ano: 2026, mes: 7, trimestre: "3TRI/2026", camposEntrada: { nomeProjetoIncentivoSocioambiental: "Brasil Ladies Cup 2026", statusProjetoIncentivoSocioambiental: "Investimento realizado", valorInvestidoMes: 190000, valorInvestidoAcumuladoCompetencia: 190000 } },
+  { ano: 2026, mes: 8, trimestre: "3TRI/2026", camposEntrada: { nomeProjetoIncentivoSocioambiental: "Brasil Ladies Cup 2026", statusProjetoIncentivoSocioambiental: "Investimento realizado", valorInvestidoMes: 0, valorInvestidoAcumuladoCompetencia: 190000 } },
+  { ano: 2026, mes: 9, trimestre: "3TRI/2026", camposEntrada: { nomeProjetoIncentivoSocioambiental: "Brasil Ladies Cup 2026", statusProjetoIncentivoSocioambiental: "Investimento realizado", valorInvestidoMes: 0, valorInvestidoAcumuladoCompetencia: 190000 } }
+];
+const incentivo3Tri = formulas.calcularIndicador(
+  indicador(19, "Incentivo Socioambiental"),
+  regraIncentivoSocioambiental,
+  lancamentosIncentivo3Tri[2],
+  lancamentosIncentivo3Tri
+);
+assert.equal(incentivo3Tri.resultadoMensal, 190000);
+assert.equal(incentivo3Tri.realizadoFinanceiro, 190000);
+assert.equal(incentivo3Tri.metaFinanceira, 1305400);
+assert.equal(incentivo3Tri.metaPercentual, 0.001);
+closeTo(incentivo3Tri.resultadoPercentualOficial, 190000 / 1305400000, 0.000000000001);
+closeTo(incentivo3Tri.percentualAtingimento, 190000 / 1305400, 0.000000000001);
+assert.notEqual(incentivo3Tri.resultadoPercentualOficial, incentivo3Tri.percentualAtingimento);
+assert.equal(incentivo3Tri.resultadoPercentualOficialFormatado, "0,01455%");
+assert.equal(lancamentosIncentivo3Tri.reduce((total, item) => total + item.camposEntrada.valorInvestidoMes, 0), 190000);
+assert.equal(incentivo3Tri.valorInvestidoAcumuladoAteCompetencia, 190000);
+assert.equal(incentivo3Tri.situacao, "Abaixo da meta");
 
 const regraVisibilidadeRepasses = {
   indicadorId: 20,
@@ -2231,6 +2258,112 @@ assert.equal(setembroCapacitacaoBootstrap.camposEntrada.modoResultadoCapacitacao
 assert.equal(setembroCapacitacaoBootstrap.resultadoMensal, 0.932);
 assert.equal(setembroCapacitacaoBootstrap.percentualAtingido, 1.0355);
 assert.equal(setembroCapacitacaoBootstrap.situacaoCalculada, "Superado");
+
+const regraRepasseSocialBootstrap = regras.find((regra) => regra.indicadorId === 17);
+assert.deepEqual(regraRepasseSocialBootstrap.parametrosCalculo.mesesFechamentoTrimestral, [3, 6, 9, 12]);
+assert.equal(regraRepasseSocialBootstrap.parametrosCalculo.priorizarMetaCurvaConfigurada, true);
+assert.equal(regraRepasseSocialBootstrap.parametrosCalculo.metasAcumuladasPorCompetencia["2026-06"], 4545104157.26);
+assert.equal(regraRepasseSocialBootstrap.parametrosCalculo.metasAcumuladasPorCompetencia["2026-07"], 5335136942.72);
+assert.equal(regraRepasseSocialBootstrap.parametrosCalculo.metasAcumuladasPorCompetencia["2026-08"], 6121095220.48);
+assert.equal(regraRepasseSocialBootstrap.parametrosCalculo.metasAcumuladasPorCompetencia["2026-09"], 7165115749.39);
+
+const junhoRepasseSocial = {
+  indicadorId: 17,
+  ano: 2026,
+  mes: 6,
+  competencia: "2026-06",
+  metaReferencia: 4545104157,
+  camposEntrada: { repasseSocialAcumuladoCompetencia: 4615037076.03 }
+};
+const calculoJunhoRepasseSocial = formulas.calcularIndicador(
+  { id: 17, indicador: "Repasse Social", unidadeMedida: "moeda" },
+  regraRepasseSocialBootstrap,
+  junhoRepasseSocial,
+  [junhoRepasseSocial]
+);
+assert.equal(calculoJunhoRepasseSocial.resultadoAcumulado, 4615037076.03);
+assert.equal(calculoJunhoRepasseSocial.metaAcumulada, 4545104157.26);
+closeTo(calculoJunhoRepasseSocial.percentualAtingidoMensal, 4615037076.03 / 4545104157.26, 1e-12);
+assert.equal(calculoJunhoRepasseSocial.percentualAtingidoMensalFormatado, "101,54%");
+
+const julhoRepasseSocial = {
+  indicadorId: 17,
+  ano: 2026,
+  mes: 7,
+  competencia: "2026-07",
+  metaReferencia: 5335136942.72,
+  camposEntrada: { repasseSocialAcumuladoCompetencia: 5374023216.12, dataBaseApuracao: "2026-07-31" }
+};
+const calculoJulhoRepasseSocial = formulas.calcularIndicador(
+  { id: 17, indicador: "Repasse Social", unidadeMedida: "moeda" },
+  regraRepasseSocialBootstrap,
+  julhoRepasseSocial,
+  [junhoRepasseSocial, julhoRepasseSocial]
+);
+assert.equal(calculoJulhoRepasseSocial.resultadoMensal, 5374023216.12);
+assert.equal(calculoJulhoRepasseSocial.resultadoAcumulado, 5374023216.12);
+assert.equal(calculoJulhoRepasseSocial.metaAcumulada, 5335136942.72);
+closeTo(calculoJulhoRepasseSocial.percentualAtingidoMensal, 5374023216.12 / 5335136942.72, 1e-12);
+assert.equal(calculoJulhoRepasseSocial.percentualAtingidoMensalFormatado, "100,73%");
+assert.equal(calculoJulhoRepasseSocial.situacao, "Atingido");
+
+const agostoRepasseSocial = {
+  indicadorId: 17,
+  ano: 2026,
+  mes: 8,
+  competencia: "2026-08",
+  metaReferencia: 6121095220.48,
+  camposEntrada: { repasseSocialAcumuladoCompetencia: 6147750537.47, dataBaseApuracao: "2026-08-31" }
+};
+const calculoAgostoRepasseSocial = formulas.calcularIndicador(
+  { id: 17, indicador: "Repasse Social", unidadeMedida: "moeda" },
+  regraRepasseSocialBootstrap,
+  agostoRepasseSocial,
+  [junhoRepasseSocial, julhoRepasseSocial, agostoRepasseSocial]
+);
+assert.equal(calculoAgostoRepasseSocial.resultadoMensal, 6147750537.47);
+assert.equal(calculoAgostoRepasseSocial.resultadoAcumulado, 6147750537.47);
+assert.equal(calculoAgostoRepasseSocial.metaAcumulada, 6121095220.48);
+closeTo(calculoAgostoRepasseSocial.percentualAtingidoMensal, 6147750537.47 / 6121095220.48, 1e-12);
+assert.equal(calculoAgostoRepasseSocial.percentualAtingidoMensalFormatado, "100,44%");
+assert.equal(calculoAgostoRepasseSocial.situacao, "Atingido");
+
+const setembroRepasseSocial = {
+  indicadorId: 17,
+  ano: 2026,
+  mes: 9,
+  competencia: "2026-09",
+  metaReferencia: 7165115749.39,
+  camposEntrada: { repasseSocialAcumuladoCompetencia: 7095683438.69, dataBaseApuracao: "2026-09-30" }
+};
+const calculoSetembroRepasseSocial = formulas.calcularIndicador(
+  { id: 17, indicador: "Repasse Social", unidadeMedida: "moeda" },
+  regraRepasseSocialBootstrap,
+  setembroRepasseSocial,
+  [setembroRepasseSocial]
+);
+assert.equal(calculoSetembroRepasseSocial.resultadoMensal, 7095683438.69);
+assert.equal(calculoSetembroRepasseSocial.resultadoAcumulado, 7095683438.69);
+assert.equal(calculoSetembroRepasseSocial.metaAcumulada, 7165115749.39);
+closeTo(calculoSetembroRepasseSocial.percentualAtingidoMensal, 7095683438.69 / 7165115749.39, 1e-12);
+assert.equal(calculoSetembroRepasseSocial.percentualAtingidoMensalFormatado, "99,03%");
+assert.equal(calculoSetembroRepasseSocial.situacao, "Abaixo da meta");
+
+const julhoRepasseSocialBootstrap = bootstrapData.lancamentos.find((item) => item.id === 199);
+const agostoRepasseSocialBootstrap = bootstrapData.lancamentos.find((item) => item.id === 200);
+const setembroRepasseSocialBootstrap = bootstrapData.lancamentos.find((item) => item.id === 201);
+assert.equal(julhoRepasseSocialBootstrap.status, "Em preenchimento");
+assert.equal(julhoRepasseSocialBootstrap.camposEntrada.repasseSocialAcumuladoCompetencia, 5374023216.12);
+assert.equal(julhoRepasseSocialBootstrap.resultadoMensal, 5374023216.12);
+assert.equal(julhoRepasseSocialBootstrap.situacaoCalculada, "Atingido");
+assert.equal(agostoRepasseSocialBootstrap.status, "Em preenchimento");
+assert.equal(agostoRepasseSocialBootstrap.camposEntrada.repasseSocialAcumuladoCompetencia, 6147750537.47);
+assert.equal(agostoRepasseSocialBootstrap.resultadoMensal, 6147750537.47);
+assert.equal(agostoRepasseSocialBootstrap.situacaoCalculada, "Atingido");
+assert.equal(setembroRepasseSocialBootstrap.status, "Em preenchimento");
+assert.equal(setembroRepasseSocialBootstrap.resultadoMensal, 7095683438.69);
+assert.equal(setembroRepasseSocialBootstrap.situacaoCalculada, "Abaixo da meta");
+
 const amostras = {
   1: { baseClientesAtivosCompetencia: 1000, clientesUnicosComOfertaPersonalizadaCompetencia: 100 },
   2: { tipoPosicaoNPS: "Fechamento anual", metaReferenciaCompetenciaNPS: 58, npsApurado: 58, dataBasePesquisaNPS: "2026-12-31", fontePesquisaNPS: "Relatorio oficial" },

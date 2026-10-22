@@ -110,11 +110,14 @@
   }
 
   function getMetaAcumuladaCompetencia(rule, lancamento) {
-    const metaCompetencia = toNumber(lancamento?.metaReferencia ?? lancamento?.metaMensal);
-    if (metaCompetencia !== null) return metaCompetencia;
     const params = rule?.parametrosCalculo || {};
     const curva = params.metasAcumuladasPorCompetencia || params.curvaMetaAcumulada || {};
     const key = competenciaKey(lancamento);
+    if (params.priorizarMetaCurvaConfigurada === true && Object.prototype.hasOwnProperty.call(curva, key)) {
+      return toNumber(curva[key]);
+    }
+    const metaCompetencia = toNumber(lancamento?.metaReferencia ?? lancamento?.metaMensal);
+    if (metaCompetencia !== null) return metaCompetencia;
     if (Object.prototype.hasOwnProperty.call(curva, key)) {
       return toNumber(curva[key]);
     }
@@ -145,6 +148,10 @@
         totalCents += Math.round(value * 100);
       }
       return totalCents / 100;
+    }
+    if (params.metaTipo === "curva_acumulada_por_competencia" && params.priorizarMetaCurvaConfigurada === true) {
+      const metaCurva = referenceLaunch ? getMetaAcumuladaCompetencia(rule, referenceLaunch) : null;
+      if (metaCurva !== null) return metaCurva;
     }
     const metaCompetencia = toNumber(referenceLaunch?.metaReferencia ?? referenceLaunch?.metaMensal);
     if (metaCompetencia !== null) return metaCompetencia;
@@ -424,6 +431,19 @@
     const technicalMeta = meta;
     const technicalResult = result;
     const technicalPerformance = performance;
+    const incentivoSocioambiental = regra?.tipoCalculo === "investimento_socioambiental";
+    const resultadoFinanceiroTrimestral = incentivoSocioambiental
+      ? toNumber(validCalculation?.realizadoFinanceiro ?? technicalResult)
+      : null;
+    const metaFinanceiraTrimestral = incentivoSocioambiental
+      ? toNumber(validCalculation?.metaFinanceira ?? technicalMeta)
+      : null;
+    const resultadoPercentualTrimestral = incentivoSocioambiental
+      ? toNumber(validCalculation?.resultadoPercentualOficial)
+      : null;
+    const metaPercentualTrimestral = incentivoSocioambiental
+      ? toNumber(validCalculation?.metaPercentual)
+      : null;
     const technicalSituation = getSituation(validCalculation, technicalPerformance);
     const officialPresentation = root.IndicatorFormulas?.obterApresentacaoOficialTrimestre?.(regra, label) || null;
     if (officialPresentation) {
@@ -448,6 +468,10 @@
       resultadoTrimestral: result,
       resultadoCalculadoTrimestral: calculatedQuarterResult,
       resultadoOficialApresentado: officialPresentedResult,
+      resultadoFinanceiroTrimestral,
+      metaFinanceiraTrimestral,
+      resultadoPercentualTrimestral,
+      metaPercentualTrimestral,
       pixAcumuladoTrimestre: regra?.tipoCalculo === "razao_pix" ? validCalculation?.pixAcumulado ?? null : null,
       canaisAcumuladoTrimestre: regra?.tipoCalculo === "razao_pix" ? validCalculation?.canaisEletronicosAcumulado ?? null : null,
       canaisDigitaisAcumuladoTrimestre: regra?.tipoCalculo === "razao_canais_digitais" ? validCalculation?.canaisEletronicosAcumulado ?? null : null,

@@ -1341,6 +1341,7 @@
 
   function quarterlyMetaDetail(resultado, regra, lancamento) {
     if (resultado?.metaTrimestral === undefined) return null;
+    if (regra?.tipoCalculo === "investimento_socioambiental") return null;
     const value = resultado.metaTrimestral;
     if (regra?.tipoCalculo === "execucao_acoes_propostas") {
       return ["Meta trimestral", Calculations.formatarPercentual(resultado.metaPercentualTrimestral)];
@@ -1430,6 +1431,15 @@
     }
     if (resultado.incrementoRedeLoterica !== undefined) {
       details.push(["Incremento percentual", Calculations.formatarPercentual(resultado.incrementoRedeLoterica)]);
+    }
+    if (regra?.tipoCalculo === "investimento_socioambiental") {
+      details.push(["Lucro líquido de referência", Calculations.formatarValor(resultado.lucroLiquidoReferencia, "moeda")]);
+      details.push(["Meta percentual", Calculations.formatarPercentual(resultado.metaPercentual, 2, 2)]);
+      details.push(["Meta financeira", Calculations.formatarValor(resultado.metaFinanceira, "moeda")]);
+      details.push(["Resultado percentual oficial", Calculations.formatarPercentual(resultado.resultadoPercentualOficial, 5, 5)]);
+      details.push(["Realizado financeiro", Calculations.formatarValor(resultado.realizadoFinanceiro, "moeda")]);
+      details.push(["% da meta atingida", Calculations.formatarPercentual(resultado.percentualAtingimento, 2, 2)]);
+      details.push(["Situação", resultado.situacao || "-"]);
     }
     const quarterlyMeta = quarterlyMetaDetail(resultado, regra, lancamento);
     if (quarterlyMeta) details.push(quarterlyMeta);

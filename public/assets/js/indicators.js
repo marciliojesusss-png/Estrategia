@@ -840,6 +840,7 @@
       : (calculated.resultadoOficial ?? lancamento.resultadoOficial ?? "-");
     const percent = calculated.percentualAtingidoMensal ?? calculated.percentualAtingido ?? lancamento.percentualAtingido;
     const isLucroRecorrente = Number(indicador.id) === 7 && regra?.tipoCalculo === "lucro_recorrente_mensal";
+    const isIncentivoSocioambiental = Number(indicador.id) === 19 && regra?.tipoCalculo === "investimento_socioambiental";
     const isNps = regra?.tipoCalculo === "nota_pesquisa_nps";
     const isAprimoramento = Number(indicador.id) === 4 && regra?.tipoCalculo === "melhorias_acumuladas";
     const isPlataformaJogos = Number(indicador.id) === 10 && regra?.parametrosCalculo?.metaTipo === "meta_oficial_trimestral_projeto";
@@ -928,7 +929,13 @@
               ["Metodologia vigente", metodologiaIeo.descricao, true],
               ["Fórmula vigente", metodologiaIeo.formula, true]
             ] : []),
-            ...(!isPlataformaJogos ? [
+            ...(isIncentivoSocioambiental ? [
+              ["Meta percentual", Calculations.formatarPercentual(calculated.metaPercentual, 2, 2)],
+              ["Meta financeira", Calculations.formatarValor(calculated.metaFinanceira, "moeda")],
+              ["Resultado percentual oficial", Calculations.formatarPercentual(calculated.resultadoPercentualOficial, 5, 5)],
+              ["Realizado financeiro", Calculations.formatarValor(calculated.realizadoFinanceiro, "moeda")],
+              ["% da meta atingida", Calculations.formatarPercentual(calculated.percentualAtingimento, 2, 2)]
+            ] : !isPlataformaJogos ? [
               [isLucroRecorrente ? "Meta da competência" : isAprimoramento ? "Meta do período" : "Meta de referência", formatMeasureValue(metaReferencia, regra?.unidadeMedida)],
               [metodologiaIeoCa ? "IEO calculado da competência" : isNps ? "NPS calculado" : isLucroRecorrente ? "Resultado da competência" : "Resultado calculado", formatMeasureValue(resultadoCalculado, regra?.unidadeMedida)],
               ...(!metodologiaIeoCa && !isNps ? [["Resultado oficial", resultadoOficial === "-" ? "-" : formatMeasureValue(resultadoOficial, regra?.unidadeMedida)]] : []),
@@ -1224,7 +1231,8 @@
       <th>Ação</th>
     ` : isIncentivoSocioambiental ? `
       <th>Mês/competência</th>
-      <th>Meta do trimestre</th>
+      <th>Meta percentual / financeira</th>
+      <th>Realizado percentual / financeiro</th>
       <th>Projeto/Iniciativa</th>
       <th>Tipo</th>
       <th>Status do projeto</th>
@@ -1232,6 +1240,7 @@
       <th>Valor acumulado</th>
       <th>Data do investimento</th>
       <th>Conta?</th>
+      <th>% atingido</th>
       <th>Situação</th>
       <th>Evidência</th>
       <th>Status mensal</th>
@@ -1583,7 +1592,8 @@
         return `
           <tr>
             <td>${name}/2026</td>
-            <td>${Calculations.formatarValor(curve[quarter]?.metaValorAcumulado, "moeda")}</td>
+            <td>${Calculations.formatarPercentual(curve[quarter]?.metaPercentualLucro, 2, 2)}<small class="quarter-message">${Calculations.formatarValor(curve[quarter]?.metaValorAcumulado, "moeda")}</small></td>
+            <td>${Calculations.formatarPercentual(calculated?.resultadoPercentualOficial, 5, 5)}<small class="quarter-message">${Calculations.formatarValor(calculated?.realizadoFinanceiro, "moeda")}</small></td>
             <td>${escapeHtml(launch?.camposEntrada?.nomeProjetoIncentivoSocioambiental || "-")}</td>
             <td>${escapeHtml(launch?.camposEntrada?.tipoIncentivoSocioambiental || "-")}</td>
             <td>${escapeHtml(status || "-")}</td>
@@ -1591,6 +1601,7 @@
             <td>${Calculations.formatarValor(calculated?.valorInvestidoAcumuladoAteCompetencia ?? launch?.camposEntrada?.valorInvestidoAcumuladoCompetencia ?? calculated?.resultadoMensal, "moeda")}</td>
             <td>${escapeHtml(launch?.camposEntrada?.dataInvestimentoSocioambiental || "-")}</td>
             <td>${counts ? "Sim" : "Não"}</td>
+            <td>${Calculations.formatarPercentual(calculated?.percentualAtingimento, 2, 2)}</td>
             <td>${escapeHtml(situation)}</td>
             <td>${escapeHtml(documentation.reference || "-")}</td>
             <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologação" ? "warn" : "info"}">${escapeHtml(launch?.status || "Não iniciado")}</span></td>
@@ -1852,9 +1863,13 @@
           <small class="quarter-message">${escapeHtml(quarter.mensagem)}</small>
         </td>
         <td>${quarter.mesesHomologados} de ${quarter.mesesEsperados}</td>
-        <td>${Calculations.formatarValor(quarter.metaTrimestral, quarterlyUnit)}</td>
+        <td>${isIncentivoSocioambiental
+          ? `${Calculations.formatarPercentual(quarter.metaPercentualTrimestral, 2, 2)}<small class="quarter-message">${Calculations.formatarValor(quarter.metaFinanceiraTrimestral, "moeda")}</small>`
+          : Calculations.formatarValor(quarter.metaTrimestral, quarterlyUnit)}</td>
         <td>
-          ${Calculations.formatarValor(quarter.resultadoCalculadoTrimestral, quarterlyUnit)}
+          ${isIncentivoSocioambiental
+            ? `${Calculations.formatarPercentual(quarter.resultadoPercentualTrimestral, 5, 5)}<small class="quarter-message">${Calculations.formatarValor(quarter.resultadoFinanceiroTrimestral, "moeda")}</small>`
+            : Calculations.formatarValor(quarter.resultadoCalculadoTrimestral, quarterlyUnit)}
           ${isPix && quarter.pixAcumuladoTrimestre != null
             ? `<small class="quarter-message">PIX: ${Calculations.formatarMoedaBR(quarter.pixAcumuladoTrimestre)}<br>Canais: ${Calculations.formatarMoedaBR(quarter.canaisAcumuladoTrimestre)}</small>`
             : isDigitalChannels && quarter.canaisDigitaisAcumuladoTrimestre != null
@@ -1869,7 +1884,9 @@
                 ? `<small class="quarter-message">Base 2025: ${Calculations.formatarMoedaBR(quarter.baseReferencia2025Trimestre)}<br>Indice: ${Calculations.formatarPercentual(quarter.indiceTrimestral)}<br>Crescimento: ${Calculations.formatarPercentual(quarter.crescimentoTrimestral)}</small>`
               : ""}
         </td>
-        <td>${Calculations.formatarValor(quarter.resultadoOficialApresentado, quarterlyUnit)}</td>
+        <td>${isIncentivoSocioambiental
+          ? `${Calculations.formatarPercentual(quarter.resultadoPercentualTrimestral, 5, 5)}<small class="quarter-message">${Calculations.formatarValor(quarter.resultadoFinanceiroTrimestral, "moeda")}</small>`
+          : Calculations.formatarValor(quarter.resultadoOficialApresentado, quarterlyUnit)}</td>
         <td>${formatPerformance(quarter.desempenhoTrimestral, regra)}</td>
         <td>${escapeHtml(quarter.situacaoTrimestral)}</td>
         <td><span class="badge ${quarter.statusTrimestre === "Fechado" ? "ok" : quarter.statusTrimestre === "Parcial" ? "warn" : "info"}">${quarter.statusTrimestre}</span></td>

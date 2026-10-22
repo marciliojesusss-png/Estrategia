@@ -933,8 +933,13 @@ const incentivoQuarter = consolidarTrimestre(
       campoValorAcumulado: "valorInvestidoAcumuladoCompetencia",
       statusQueConta: "Investimento realizado",
       metaTipo: "curva_trimestral_acumulada",
+      lucroLiquidoReferencia: 1305400000,
+      mesesFechamentoTrimestral: [3, 6, 9, 12],
       curvaTrimestralAcumulada: {
-        "1TRI/2026": { metaPercentualLucro: 0, metaValorAcumulado: 0 }
+        "1TRI/2026": { metaPercentualLucro: 0, metaValorAcumulado: 0 },
+        "2TRI/2026": { metaPercentualLucro: 0.0005, metaValorAcumulado: 652700 },
+        "3TRI/2026": { metaPercentualLucro: 0.001, metaValorAcumulado: 1305400 },
+        "4TRI/2026": { metaPercentualLucro: 0.0033, metaValorAcumulado: 4307900 }
       }
     },
     camposEntrada: [
@@ -950,11 +955,58 @@ const incentivoQuarter = consolidarTrimestre(
   "1TRI/2026"
 );
 assert.equal(incentivoQuarter.statusTrimestre, "Fechado");
-assert.equal(incentivoQuarter.mesesHomologados, 3);
+assert.equal(incentivoQuarter.mesesHomologados, 1);
+assert.equal(incentivoQuarter.mesesEsperados, 1);
+assert.equal(incentivoQuarter.composicaoMensal[0].mes, 3);
 assert.equal(incentivoQuarter.metaTrimestral, 0);
 assert.equal(incentivoQuarter.resultadoTrimestral, 0);
 assert.equal(incentivoQuarter.desempenhoTrimestral, null);
 assert.equal(incentivoQuarter.situacaoTrimestral, "Em prospecção/estruturação");
+
+const incentivo3TriRule = {
+  indicadorId: 19,
+  tipoCalculo: "investimento_socioambiental",
+  tipoConsolidacao: "valor_acumulado",
+  unidadeMedida: "moeda",
+  metaAnualValor: 4307900,
+  parametrosCalculo: {
+    campoStatus: "statusProjetoIncentivoSocioambiental",
+    campoValorMes: "valorInvestidoMes",
+    campoValorAcumulado: "valorInvestidoAcumuladoCompetencia",
+    statusQueConta: "Investimento realizado",
+    metaTipo: "curva_trimestral_acumulada",
+    lucroLiquidoReferencia: 1305400000,
+    mesesFechamentoTrimestral: [3, 6, 9, 12],
+    curvaTrimestralAcumulada: {
+      "3TRI/2026": { metaPercentualLucro: 0.001, metaValorAcumulado: 1305400 }
+    }
+  },
+  camposEntrada: [
+    { nome: "nomeProjetoIncentivoSocioambiental", obrigatorio: true },
+    { nome: "statusProjetoIncentivoSocioambiental", obrigatorio: true }
+  ]
+};
+const incentivo3TriQuarter = consolidarTrimestre(
+  { id: 19, indicador: "Incentivo Socioambiental", unidadeMedida: "moeda" },
+  incentivo3TriRule,
+  [
+    { ano: 2026, mes: 7, status: "Em preenchimento", competencia: "2026-07", trimestre: "3TRI/2026", camposEntrada: { nomeProjetoIncentivoSocioambiental: "Brasil Ladies Cup 2026", statusProjetoIncentivoSocioambiental: "Investimento realizado", valorInvestidoMes: 190000, valorInvestidoAcumuladoCompetencia: 190000 } },
+    { ano: 2026, mes: 8, status: "Em preenchimento", competencia: "2026-08", trimestre: "3TRI/2026", camposEntrada: { nomeProjetoIncentivoSocioambiental: "Brasil Ladies Cup 2026", statusProjetoIncentivoSocioambiental: "Investimento realizado", valorInvestidoMes: 0, valorInvestidoAcumuladoCompetencia: 190000 } },
+    { ano: 2026, mes: 9, status: "Homologado", competencia: "2026-09", trimestre: "3TRI/2026", metaReferencia: 1305400, camposEntrada: { nomeProjetoIncentivoSocioambiental: "Brasil Ladies Cup 2026", statusProjetoIncentivoSocioambiental: "Investimento realizado", valorInvestidoMes: 0, valorInvestidoAcumuladoCompetencia: 190000 } }
+  ],
+  "3TRI/2026"
+);
+assert.equal(incentivo3TriQuarter.statusTrimestre, "Fechado");
+assert.equal(incentivo3TriQuarter.mesesEsperados, 1);
+assert.equal(incentivo3TriQuarter.mesesHomologados, 1);
+assert.equal(incentivo3TriQuarter.composicaoMensal.length, 1);
+assert.equal(incentivo3TriQuarter.composicaoMensal[0].mes, 9);
+assert.equal(incentivo3TriQuarter.resultadoFinanceiroTrimestral, 190000);
+assert.equal(incentivo3TriQuarter.metaFinanceiraTrimestral, 1305400);
+assert.ok(Math.abs(incentivo3TriQuarter.resultadoPercentualTrimestral - (190000 / 1305400000)) < 0.000000000001);
+assert.equal(incentivo3TriQuarter.metaPercentualTrimestral, 0.001);
+assert.ok(Math.abs(incentivo3TriQuarter.desempenhoTrimestral - (190000 / 1305400)) < 0.000000000001);
+assert.equal(incentivo3TriQuarter.situacaoTrimestral, "Abaixo da meta");
 
 const visibilidadeQuarter = consolidarTrimestre(
   { id: 20, indicador: "Visibilidade dos Repasses Sociais das Loterias CAIXA", unidadeMedida: "percentual" },
@@ -1529,6 +1581,86 @@ assert.equal(gestoresDiversidade3Tri.mesesHomologados, 1);
 assert.equal(gestoresDiversidade3Tri.ultimoLancamentoHomologado.mes, 7);
 assert.ok(Math.abs(gestoresDiversidade3Tri.resultadoTrimestral - 0.2609) < 1e-12);
 assert.ok(Math.abs(gestoresDiversidade3Tri.desempenhoTrimestral - (0.2609 / 0.35)) < 1e-12);
+
+const indicadorRepasseSocial = {
+  id: 17,
+  indicador: "Repasse Social",
+  periodicidade: "Mensal",
+  unidadeMedida: "moeda"
+};
+const regraRepasseSocial = {
+  indicadorId: 17,
+  tipoCalculo: "valor_financeiro_acumulado",
+  tipoConsolidacao: "ultima_posicao_acumulada",
+  unidadeMedida: "moeda",
+  metaAnualValor: 10400000000,
+  parametrosCalculo: {
+    valorAcumuladoCampo: "repasseSocialAcumuladoCompetencia",
+    metaTipo: "curva_acumulada_por_competencia",
+    priorizarMetaCurvaConfigurada: true,
+    mesesFechamentoTrimestral: [3, 6, 9, 12],
+    metasAcumuladasPorCompetencia: { "2026-09": 7165115749.39 },
+    sentidoMeta: "quanto_maior_melhor"
+  },
+  camposEntrada: [{ nome: "repasseSocialAcumuladoCompetencia", obrigatorio: true }]
+};
+const lancamentosRepasseSocial3Tri = [
+  {
+    id: 199,
+    indicadorId: 17,
+    ano: 2026,
+    mes: 7,
+    competencia: "2026-07",
+    status: "Em preenchimento",
+    metaReferencia: 5335136942.72,
+    camposEntrada: { repasseSocialAcumuladoCompetencia: 5374023216.12, dataBaseApuracao: "2026-07-31" }
+  },
+  {
+    id: 200,
+    indicadorId: 17,
+    ano: 2026,
+    mes: 8,
+    competencia: "2026-08",
+    status: "Em preenchimento",
+    metaReferencia: 6121095220.48,
+    camposEntrada: { repasseSocialAcumuladoCompetencia: 6147750537.47, dataBaseApuracao: "2026-08-31" }
+  },
+  {
+    id: 201,
+    indicadorId: 17,
+    ano: 2026,
+    mes: 9,
+    competencia: "2026-09",
+    status: "Em preenchimento",
+    metaReferencia: 7165115749.39,
+    camposEntrada: { repasseSocialAcumuladoCompetencia: 7095683438.69, dataBaseApuracao: "2026-09-30" }
+  }
+];
+
+const repasseSocial3TriEmPreenchimento = consolidarTrimestre(
+  indicadorRepasseSocial,
+  regraRepasseSocial,
+  lancamentosRepasseSocial3Tri,
+  "3TRI/2026"
+);
+assert.equal(repasseSocial3TriEmPreenchimento.statusTrimestre, "Sem dados");
+assert.equal(repasseSocial3TriEmPreenchimento.mesesEsperados, 1);
+assert.equal(repasseSocial3TriEmPreenchimento.resultadoTrimestral, null);
+
+const repasseSocial3TriHomologado = consolidarTrimestre(
+  indicadorRepasseSocial,
+  regraRepasseSocial,
+  lancamentosRepasseSocial3Tri.map((item) => item.id === 201 ? { ...item, status: "Homologado" } : item),
+  "3TRI/2026"
+);
+assert.equal(repasseSocial3TriHomologado.statusTrimestre, "Fechado");
+assert.equal(repasseSocial3TriHomologado.mesesEsperados, 1);
+assert.equal(repasseSocial3TriHomologado.mesesHomologados, 1);
+assert.equal(repasseSocial3TriHomologado.ultimoLancamentoHomologado.id, 201);
+assert.equal(repasseSocial3TriHomologado.metaTrimestral, 7165115749.39);
+assert.equal(repasseSocial3TriHomologado.resultadoTrimestral, 7095683438.69);
+assert.ok(Math.abs(repasseSocial3TriHomologado.desempenhoTrimestral - (7095683438.69 / 7165115749.39)) < 1e-12);
+assert.equal(repasseSocial3TriHomologado.situacaoTrimestral, "Abaixo da meta");
 console.log("Testes trimestrais OK");
 
 

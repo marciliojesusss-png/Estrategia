@@ -98,10 +98,10 @@
     return "Abaixo da meta";
   }
 
-  function formatarPercentual(valor, minimumFractionDigits = 0) {
+  function formatarPercentual(valor, minimumFractionDigits = 0, maximumFractionDigits = Math.max(2, minimumFractionDigits)) {
     const numero = toNumber(valor);
     if (numero === null) return "-";
-    return `${(numero * 100).toLocaleString("pt-BR", { minimumFractionDigits, maximumFractionDigits: 2 })}%`;
+    return `${(numero * 100).toLocaleString("pt-BR", { minimumFractionDigits, maximumFractionDigits })}%`;
   }
 
   function parseInteiroBR(value) {

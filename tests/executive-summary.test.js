@@ -200,6 +200,28 @@ assert.equal(incentivoDashboardOficial.competencia, "Março/2026");
 assert.equal(incentivoDashboardOficial.meta, 0);
 assert.equal(incentivoDashboardOficial.resultado, 0);
 assert.equal(incentivoDashboardOficial.percentualAtingido, null);
+assert.equal(incentivoDashboardOficial.lancamento.id, 219);
+assert.equal(incentivoDashboardOficial.lancamentoAcao.id, 225);
+
+const indicadorIncentivo = indicators.find((item) => item.id === 19);
+const regraIncentivo = rules.find((item) => item.indicadorId === 19);
+const incentivoAposHomologacaoAutenticaSetembro = context.window.StrategicResults.calcularDashboard({
+  indicadores: [indicadorIncentivo],
+  regras: [regraIncentivo],
+  lancamentos: [
+    { id: 223, indicadorId: 19, ano: 2026, mes: 7, nomeMes: "Julho", competencia: "2026-07", trimestre: "3TRI/2026", status: "Em preenchimento", metaReferencia: 1305400, camposEntrada: { nomeProjetoIncentivoSocioambiental: "Brasil Ladies Cup 2026", statusProjetoIncentivoSocioambiental: "Investimento realizado", valorInvestidoMes: 190000, valorInvestidoAcumuladoCompetencia: 190000 } },
+    { id: 224, indicadorId: 19, ano: 2026, mes: 8, nomeMes: "Agosto", competencia: "2026-08", trimestre: "3TRI/2026", status: "Em preenchimento", metaReferencia: 1305400, camposEntrada: { nomeProjetoIncentivoSocioambiental: "Brasil Ladies Cup 2026", statusProjetoIncentivoSocioambiental: "Investimento realizado", valorInvestidoMes: 0, valorInvestidoAcumuladoCompetencia: 190000 } },
+    { id: 225, indicadorId: 19, ano: 2026, mes: 9, nomeMes: "Setembro", competencia: "2026-09", trimestre: "3TRI/2026", status: "Homologado", metaReferencia: 1305400, camposEntrada: { nomeProjetoIncentivoSocioambiental: "Brasil Ladies Cup 2026", statusProjetoIncentivoSocioambiental: "Investimento realizado", valorInvestidoMes: 0, valorInvestidoAcumuladoCompetencia: 190000 } }
+  ]
+}).resultadosOficiais[0];
+assert.equal(incentivoAposHomologacaoAutenticaSetembro.competencia, "Setembro/2026");
+assert.equal(incentivoAposHomologacaoAutenticaSetembro.resultadoFinanceiro, 190000);
+assert.equal(incentivoAposHomologacaoAutenticaSetembro.metaFinanceira, 1305400);
+assert.ok(Math.abs(incentivoAposHomologacaoAutenticaSetembro.resultadoPercentualOficial - (190000 / 1305400000)) < 0.000000000001);
+assert.ok(Math.abs(incentivoAposHomologacaoAutenticaSetembro.percentualAtingido - (190000 / 1305400)) < 0.000000000001);
+assert.equal(context.window.StrategicResults.formatOfficialResult(incentivoAposHomologacaoAutenticaSetembro), "0,01455%");
+assert.equal(context.window.StrategicResults.formatOfficialMeta(incentivoAposHomologacaoAutenticaSetembro), "0,10%");
+assert.equal(context.window.StrategicResults.officialSituation(incentivoAposHomologacaoAutenticaSetembro), "Abaixo da meta");
 
 const visibilidadeDashboardOficial = results.find((item) => item.indicador.id === 20);
 assert.equal(context.window.StrategicResults.officialSituation(visibilidadeDashboardOficial), "Em elaboração/homologação");
@@ -606,6 +628,26 @@ const lucroOfficialOnly = officialResultFor(
 assert.equal(lucroOfficialOnly.competencia, "Março/2026");
 assert.equal(lucroOfficialOnly.status, "Homologado");
 assert.equal(lucroOfficialOnly.lancamentoAcao.competencia, "2026-09");
+
+const repasseIndicator = indicators.find((item) => item.id === 17);
+const repasseRule = rules.find((item) => item.indicadorId === 17);
+const repasseOfficialOnly = officialResultFor(
+  repasseIndicator,
+  repasseRule,
+  launches
+    .filter((item) => item.indicadorId === 17 && item.mes <= 9)
+    .map((item) => item.id === 198 ? {
+      ...item,
+      status: "Homologado",
+      camposEntrada: { repasseSocialAcumuladoCompetencia: 4615037076.03, dataBaseApuracao: "2026-06-30" },
+      realizado: 4615037076.03,
+      resultadoMensal: 4615037076.03
+    } : item)
+);
+assert.equal(repasseOfficialOnly.competencia, "Junho/2026");
+assert.equal(repasseOfficialOnly.status, "Homologado");
+assert.equal(repasseOfficialOnly.resultado, 4615037076.03);
+assert.equal(repasseOfficialOnly.lancamentoAcao.competencia, "2026-09");
 
 const womenIndicator = indicators.find((item) => item.id === 13);
 const womenRule = rules.find((item) => item.indicadorId === 13);
