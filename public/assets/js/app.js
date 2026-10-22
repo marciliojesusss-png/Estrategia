@@ -194,6 +194,7 @@
     const page = document.body.dataset.page;
     const centralExecutive = page === "resumoExecutivo";
     const independentInitiativeApproval = page === "iniciativasHomologacao";
+    const independentAudit = page === "auditoria";
     const storageInfo = independentInitiativeApproval ? null : await DataStore.getStorageInfo();
 
     if (page === "login") {
@@ -215,7 +216,7 @@
 
     const module = window.PageModules && window.PageModules[page];
     if (module) {
-      if (centralExecutive || independentInitiativeApproval) {
+      if (centralExecutive || independentInitiativeApproval || independentAudit) {
         await module.init({ user });
       } else {
         const data = await DataStore.loadAll();

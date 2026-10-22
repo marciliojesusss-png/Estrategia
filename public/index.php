@@ -130,7 +130,7 @@ $router->get('/administracao',$frontendPage('administracao.php'));
 $router->post('/administracao/usuarios',function()use($administracao){$administracao->saveUser();});
 $router->post('/administracao/usuarios/{id}',array($administracao,'saveUser'));
 $router->post('/administracao/configuracoes/{key}',array($administracao,'saveConfig'));
-$router->get('/auditoria',array($administracao,'audit'));
+$router->get('/auditoria',$frontendPage('auditoria.php'));
 $router->any('/logout', $frontendPage('logout.php'));
 
 foreach (array('database', 'configuracoes', 'homologacoes', 'indicadores', 'lancamentos', 'relatorios', 'resumo-executivo', 'solicitacoes-reabertura', 'usuarios-acesso', 'visao-trimestral') as $api) {
