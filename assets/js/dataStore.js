@@ -48,7 +48,7 @@
     "Sustentabilidade e Cidadania",
     "Atuação em Ecossistema"
   ];
-  const PIX_QUARTER_TARGETS = [0.61, 0.62, 0.63, 0.65];
+  const PIX_OPERATIONAL_TARGETS_2026 = [0.63, 0.61, 0.61, 0.61, 0.61, 0.62, 0.63, 0.63, 0.63, 0.6342, 0.6383, 0.6543];
   const ECOSSISTEMA_CURVAS_2026 = {
     lotex: {
       "1TRI": { referencia2025: 0.90, meta2026: 0.99 },
@@ -285,6 +285,8 @@
     "arrecadacaoTotalProdutosLoteriasMes",
     "arrecadacaoPixMes",
     "arrecadacaoTotalCanaisEletronicosMes",
+    "arrecadacaoPixAcumuladaCompetencia",
+    "arrecadacaoTotalCanaisEletronicosAcumuladaCompetencia",
     "pixAcumuladoTrimestre",
     "canaisAcumuladoTrimestre",
     "repasseSocialAcumulado",
@@ -1070,7 +1072,7 @@
     if (id === 6) return getIeoMetaAcumulada(ano, mes);
     if (id === 7) return getLucroRecorrenteMetaMensal(ano, mes);
     if (id === 8) return 0.2805;
-    if (id === 9) return PIX_QUARTER_TARGETS[Math.ceil(Number(mes) / 3) - 1] ?? null;
+    if (id === 9) return Number(ano) === 2026 ? PIX_OPERATIONAL_TARGETS_2026[Number(mes) - 1] ?? null : null;
     if (id === 10) return getPlataformaJogosMetaTrimestral(ano, mes);
     if (id === 11) return getCapacidadeTicMetaTrimestral(ano, mes);
     if (id === 12) return 60;
@@ -1498,7 +1500,9 @@
           metaAnualDescricao: "Aumentar em 05 p.p. as vendas com o meio de pagamento PIX no canal eletrônico.",
           metrica: "(Arrecadação com o meio de pagamento PIX no ano corrente) / (Arrecadação total nos canais eletrônicos no ano corrente)",
           tipoCalculo: "razao_pix",
-          unidadeMedida: "percentual"
+          tipoConsolidacao: "ultima_posicao_acumulada",
+          unidadeMedida: "percentual",
+          observacaoMetodologica: "A base de arrecadação dos canais eletrônicos usada na apuração do PIX não considera o Internet Banking CAIXA (IBC), pois o PIX não é aceito nesse canal."
         } : normalized;
       });
     }
@@ -2154,25 +2158,51 @@
         ...rule,
         nome: INDICATOR_NAMES[8],
         tipoCalculo: "razao_pix",
-        tipoConsolidacao: "razao_acumulada_no_ano",
+        tipoConsolidacao: "ultima_posicao_acumulada",
         unidadeMedida: "percentual",
         metaAnualValor: 0.65,
         parametrosCalculo: {
-          campoNumerador: "arrecadacaoPixMes",
-          campoDenominador: "arrecadacaoTotalCanaisEletronicosMes",
+          campoNumeradorAcumulado: "arrecadacaoPixAcumuladaCompetencia",
+          campoDenominadorAcumulado: "arrecadacaoTotalCanaisEletronicosAcumuladaCompetencia",
+          campoNumeradorMensalLegado: "arrecadacaoPixMes",
+          campoDenominadorMensalLegado: "arrecadacaoTotalCanaisEletronicosMes",
+          campoResultadoOficial: "resultadoOficialPix",
+          campoPercentualAtingidoOficial: "percentualAtingidoOficialPix",
+          modoEntrada: "posicao_acumulada_prioritaria",
+          excluirInternetBankingCaixa: true,
+          observacaoMetodologica: "O denominador exclui Internet Banking CAIXA (IBC), pois o PIX não é aceito nesse canal.",
           metasTrimestrais: {
             "1TRI/2026": 0.61,
             "2TRI/2026": 0.62,
             "3TRI/2026": 0.63,
             "4TRI/2026": 0.65
           },
-          arredondamentoOficialCasasPercentuais: 0
+          metasOperacionaisPorCompetencia: {
+            "2026-01": 0.63, "2026-02": 0.61, "2026-03": 0.61,
+            "2026-04": 0.61, "2026-05": 0.61, "2026-06": 0.62,
+            "2026-07": 0.63, "2026-08": 0.63, "2026-09": 0.63,
+            "2026-10": 0.6342, "2026-11": 0.6383, "2026-12": 0.6543
+          },
+          trajetoriaTecnicaAuxiliar: {
+            "2026-07": 0.6215, "2026-08": 0.6255, "2026-09": 0.6298
+          },
+          mesesFechamentoTrimestral: [3, 6, 9, 12],
+          apresentacoesOficiaisTrimestrais: {
+            "1TRI/2026": { metaOficialReportada: 0.61, resultadoOficialReportado: 0.67, percentualAtingidoOficialReportado: 1.1009, situacaoOficial: "Atingido", fonte: "Informe DILOT/GERIN nº 0029/2026" },
+            "2TRI/2026": { metaOficialReportada: 0.62, resultadoOficialReportado: 0.6713, percentualAtingidoOficialReportado: 1.0914, situacaoOficial: "Atingido", fonte: "Informe DILOT/GERIN nº 0056/2026" },
+            "3TRI/2026": { metaOficialReportada: 0.63, resultadoOficialReportado: 0.6764, percentualAtingidoOficialReportado: 1.0737, situacaoOficial: "Atingido", fonte: "Informe DILOT/GERIN nº 0078/2026" },
+            "4TRI/2026": { metaOficialReportada: 0.65, resultadoOficialReportado: null, percentualAtingidoOficialReportado: null, situacaoOficial: "Sem dados", fonte: "Curva trimestral oficial 2026" }
+          }
         },
         camposEntrada: [
-          { nome: "arrecadacaoPixMes", rotulo: "Arrecadação com PIX no mês", tipo: "moeda", obrigatorio: true },
-          { nome: "arrecadacaoTotalCanaisEletronicosMes", rotulo: "Arrecadação total nos canais eletrônicos no mês", tipo: "moeda", obrigatorio: false }
+          { nome: "arrecadacaoPixAcumuladaCompetencia", rotulo: "Arrecadação com PIX acumulada até a competência", tipo: "moeda", obrigatorio: false },
+          { nome: "arrecadacaoTotalCanaisEletronicosAcumuladaCompetencia", rotulo: "Arrecadação total acumulada nos canais eletrônicos (sem IBC)", tipo: "moeda", obrigatorio: false },
+          { nome: "resultadoOficialPix", rotulo: "Resultado oficial reportado", tipo: "percentual", obrigatorio: false },
+          { nome: "percentualAtingidoOficialPix", rotulo: "Atingimento oficial reportado", tipo: "percentual", obrigatorio: false }
         ],
-        resultadoOficial: "razao_trimestral_arredondada_informe"
+        campoResultadoPrincipal: "resultadoAcumulado",
+        campoPercentualAtingido: "percentualAtingidoAnual",
+        resultadoOficial: "resultado_documental_do_informe_preservado"
       } : {
         ...rule,
         nome: INDICATOR_NAMES[Number(rule.indicadorId) - 1] || rule.nome,
@@ -2209,7 +2239,7 @@
         trimestre: launch.trimestre || `${Math.ceil(Number(launch.mes) / 3)}TRI/${launch.ano}`,
         nomeMes: launch.nomeMes || (MESES.find(([mes]) => mes === Number(launch.mes)) || [null, ""])[1],
         ...(Number(launch.indicadorId) === 9 ? {
-          metaMensal: PIX_QUARTER_TARGETS[Math.ceil(Number(launch.mes) / 3) - 1],
+          metaMensal: resolveMeta(9, launch.ano, launch.mes, cache.metas, persistedMeta),
           metaAnualDescricao: "Aumentar em 05 p.p. as vendas com o meio de pagamento PIX no canal eletrônico."
         } : {}),
         ...(Number(launch.indicadorId) === 1 ? {

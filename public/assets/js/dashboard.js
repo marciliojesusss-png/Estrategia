@@ -122,7 +122,11 @@
     );
   }
 
-  function isOfficialCompetence(indicator, launch) {
+  function isOfficialCompetence(indicator, launch, rule = null) {
+    const closingMonths = rule?.parametrosCalculo?.mesesFechamentoTrimestral;
+    if (Array.isArray(closingMonths) && closingMonths.length) {
+      return closingMonths.includes(Number(launch?.mes));
+    }
     return window.IndicatorPeriodicity?.isExpectedCompetence(indicator, launch) !== false;
   }
 
@@ -303,12 +307,12 @@
       .filter(hasValidLaunchData)
       .sort(sortByOfficialCompetence);
     const allOperationalLaunches = allHistoricalLaunches
-      .filter((launch) => isOfficialCompetence(indicador, launch));
+      .filter((launch) => isOfficialCompetence(indicador, launch, regra));
     const historicalLaunches = officialSource
       .filter(hasValidLaunchData)
       .sort(sortByOfficialCompetence);
     const operationalLaunches = historicalLaunches
-      .filter((launch) => isOfficialCompetence(indicador, launch));
+      .filter((launch) => isOfficialCompetence(indicador, launch, regra));
     const quantitativeLaunches = operationalLaunches
       .filter((launch) => isQuantitativePerformanceLaunch(regra, launch));
     return {
@@ -340,7 +344,7 @@
 
   function obterResultadosMensais(indicador, regra, lancamentosDoIndicador) {
     const lancamentosValidos = (lancamentosDoIndicador || [])
-      .filter((launch) => isOfficialCompetence(indicador, launch))
+      .filter((launch) => isOfficialCompetence(indicador, launch, regra))
       .filter(hasValidLaunchData)
       .sort(sortByOfficialCompetence);
 
@@ -377,7 +381,7 @@
 
     if (!lancamentosValidos.length) {
       const lancamentosOrdenados = [...(lancamentosDoIndicador || [])]
-        .filter((launch) => isOfficialCompetence(indicador, launch))
+        .filter((launch) => isOfficialCompetence(indicador, launch, regra))
         .sort(sortByOfficialCompetence);
       const agora = new Date();
       const lancamentoCompetenciaAtual = lancamentosOrdenados.find((item) => (

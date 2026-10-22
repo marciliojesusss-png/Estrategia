@@ -1197,11 +1197,11 @@ const pixQuarter = consolidarTrimestre(
 );
 assert.equal(pixQuarter.statusTrimestre, "Fechado");
 assert.ok(Math.abs(pixQuarter.resultadoCalculadoTrimestral - (1127026595.61 / 1686100000)) < 0.000001);
-assert.equal(pixQuarter.resultadoOficialApresentado, 0.67);
-assert.equal(pixQuarter.resultadoTrimestral, 0.67);
+assert.ok(Math.abs(pixQuarter.resultadoOficialApresentado - (1127026595.61 / 1686100000)) < 0.000001);
+assert.ok(Math.abs(pixQuarter.resultadoTrimestral - (1127026595.61 / 1686100000)) < 0.000001);
 assert.equal(pixQuarter.pixAcumuladoTrimestre, 1127026595.61);
 assert.equal(pixQuarter.canaisAcumuladoTrimestre, 1686100000);
-assert.ok(Math.abs(pixQuarter.desempenhoTrimestral - (0.67 / 0.61)) < 0.000001);
+assert.ok(Math.abs(pixQuarter.desempenhoTrimestral - ((1127026595.61 / 1686100000) / 0.61)) < 0.000001);
 assert.equal(pixQuarter.situacaoTrimestral, "Atingido");
 
 const indicadorLucroQuarter = { id: 7, indicador: "Lucro Liquido Recorrente", unidadeMedida: "moeda" };

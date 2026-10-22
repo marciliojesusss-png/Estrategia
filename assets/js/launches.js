@@ -1852,9 +1852,16 @@
     if (
       action === "send" &&
       regra.tipoCalculo === "razao_pix" &&
-      !result.camposEntrada.arrecadacaoTotalCanaisEletronicosMes
+      !(
+        result.camposEntrada[regra.parametrosCalculo?.campoNumeradorAcumulado || "arrecadacaoPixAcumuladaCompetencia"] &&
+        result.camposEntrada[regra.parametrosCalculo?.campoDenominadorAcumulado || "arrecadacaoTotalCanaisEletronicosAcumuladaCompetencia"]
+      ) &&
+      !(
+        result.camposEntrada[regra.parametrosCalculo?.campoResultadoOficial || "resultadoOficialPix"] &&
+        result.camposEntrada[regra.parametrosCalculo?.campoPercentualAtingidoOficial || "percentualAtingidoOficialPix"]
+      )
     ) {
-      showMessage("Informe a arrecadação total nos canais eletrônicos antes de enviar para homologação.", "warning");
+      showMessage("Informe os componentes acumulados exatos ou o resultado e o atingimento documentais antes de enviar para homologação.", "warning");
       return false;
     }
     if (

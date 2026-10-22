@@ -959,52 +959,83 @@
   }
 
   function calcularRazaoPix(indicador, regra, lancamentoAtual, lancamentosDoAno) {
-    const pixField = regra.parametrosCalculo?.campoNumerador || "arrecadacaoPixMes";
-    const totalField = regra.parametrosCalculo?.campoDenominador || "arrecadacaoTotalCanaisEletronicosMes";
-    const pixMonthly = currency.parseMoedaBR(raw(lancamentoAtual, pixField));
-    const totalMonthly = currency.parseMoedaBR(raw(lancamentoAtual, totalField));
-    if (pixMonthly === null || pixMonthly < 0) {
-      return erro("Arrecadação com PIX no mês deve ser informada e não pode ser negativa.", regra.unidadeMedida);
-    }
-    if (totalMonthly === null || totalMonthly === 0) {
-      return pendente(
-        "Informe a arrecadação total nos canais eletrônicos para calcular o resultado percentual.",
-        regra.unidadeMedida,
-        { arrecadacaoPixMes: pixMonthly }
+    const params = regra.parametrosCalculo || {};
+    const accumulatedPixField = params.campoNumeradorAcumulado || "arrecadacaoPixAcumuladaCompetencia";
+    const accumulatedTotalField = params.campoDenominadorAcumulado || "arrecadacaoTotalCanaisEletronicosAcumuladaCompetencia";
+    const legacyPixField = params.campoNumeradorMensalLegado || params.campoNumerador || "arrecadacaoPixMes";
+    const legacyTotalField = params.campoDenominadorMensalLegado || params.campoDenominador || "arrecadacaoTotalCanaisEletronicosMes";
+    const hasAccumulatedPosition = raw(lancamentoAtual, accumulatedPixField) !== undefined ||
+      raw(lancamentoAtual, accumulatedTotalField) !== undefined;
+    const pixField = hasAccumulatedPosition ? accumulatedPixField : legacyPixField;
+    const totalField = hasAccumulatedPosition ? accumulatedTotalField : legacyTotalField;
+    const pixCurrent = currency.parseMoedaBR(raw(lancamentoAtual, pixField));
+    const totalCurrent = currency.parseMoedaBR(raw(lancamentoAtual, totalField));
+    if (pixCurrent === null || pixCurrent < 0) {
+      return erro(
+        hasAccumulatedPosition
+          ? "A arrecadação acumulada com PIX deve ser informada e não pode ser negativa."
+          : "Arrecadação com PIX no mês deve ser informada e não pode ser negativa.",
+        regra.unidadeMedida
       );
     }
-    if (totalMonthly < 0) {
+    if (totalCurrent === null || totalCurrent === 0) {
+      return pendente(
+        hasAccumulatedPosition
+          ? "Informe a posição acumulada exata dos canais eletrônicos para calcular o resultado técnico."
+          : "Informe a arrecadação total nos canais eletrônicos para calcular o resultado percentual.",
+        regra.unidadeMedida,
+        {
+          pixAcumulado: hasAccumulatedPosition ? pixCurrent : null,
+          origemPosicaoPix: hasAccumulatedPosition ? "acumulada" : "mensal_legada"
+        }
+      );
+    }
+    if (totalCurrent < 0) {
       return erro("Arrecadação total nos canais eletrônicos não pode ser negativa.", regra.unidadeMedida);
     }
-    if (pixMonthly > totalMonthly) {
+    if (pixCurrent > totalCurrent) {
       return erro("Arrecadação com PIX não pode ser maior que a arrecadação total nos canais eletrônicos.", regra.unidadeMedida);
     }
 
-    const launches = lancamentosAteMes(lancamentoAtual, lancamentosDoAno);
-    const pixAccumulated = Math.round(
-      launches.reduce((sum, launch) => sum + (currency.parseMoedaBR(raw(launch, pixField)) || 0), 0) * 100
-    ) / 100;
-    const totalAccumulated = Math.round(
-      launches.reduce((sum, launch) => sum + (currency.parseMoedaBR(raw(launch, totalField)) || 0), 0) * 100
-    ) / 100;
+    const launches = hasAccumulatedPosition ? [] : lancamentosAteMes(lancamentoAtual, lancamentosDoAno);
+    const pixAccumulated = hasAccumulatedPosition
+      ? pixCurrent
+      : Math.round(launches.reduce((sum, launch) => sum + (currency.parseMoedaBR(raw(launch, pixField)) || 0), 0) * 100) / 100;
+    const totalAccumulated = hasAccumulatedPosition
+      ? totalCurrent
+      : Math.round(launches.reduce((sum, launch) => sum + (currency.parseMoedaBR(raw(launch, totalField)) || 0), 0) * 100) / 100;
     if (totalAccumulated <= 0) {
       return pendente("Ainda não há denominador acumulado para o cálculo do indicador PIX.", regra.unidadeMedida);
     }
-    const monthlyResult = pixMonthly / totalMonthly;
+    const monthlyResult = pixCurrent / totalCurrent;
     const accumulatedResult = pixAccumulated / totalAccumulated;
     const annualTarget = toNumber(lancamentoAtual.metaReferencia ?? lancamentoAtual.metaMensal ?? regra.metaAnualValor) || 0.65;
+    const officialResult = normalizarPercentual(raw(lancamentoAtual, params.campoResultadoOficial || "resultadoOficialPix"));
+    const officialPerformanceRaw = raw(lancamentoAtual, params.campoPercentualAtingidoOficial || "percentualAtingidoOficialPix");
+    const officialPerformanceNumber = toNumber(officialPerformanceRaw);
+    const officialPerformance = officialPerformanceNumber !== null
+      ? (officialPerformanceNumber > 10 ? officialPerformanceNumber / 100 : officialPerformanceNumber)
+      : normalizarPercentual(officialPerformanceRaw);
     return ok(
       monthlyResult,
       accumulatedResult,
       monthlyResult / annualTarget,
       accumulatedResult / annualTarget,
       regra.unidadeMedida,
-      "Participação das vendas com PIX calculada pela razão entre arrecadações.",
+      hasAccumulatedPosition
+        ? "Resultado técnico calculado diretamente sobre a posição acumulada da competência, sem nova soma."
+        : "Participação das vendas com PIX calculada pela soma dos fluxos mensais legados.",
       {
         pixAcumulado: pixAccumulated,
         canaisEletronicosAcumulado: totalAccumulated,
         resultadoCalculado: accumulatedResult,
-        metaReferencia: annualTarget
+        resultadoOficialAnual: officialResult ?? accumulatedResult,
+        percentualAtingidoAnual: officialPerformance ?? (accumulatedResult / annualTarget),
+        resultadoOficialDocumental: officialResult,
+        percentualAtingidoOficialDocumental: officialPerformance,
+        metaReferencia: annualTarget,
+        origemPosicaoPix: hasAccumulatedPosition ? "acumulada" : "mensal_legada",
+        excluiInternetBankingCaixa: params.excluirInternetBankingCaixa === true
       }
     );
   }

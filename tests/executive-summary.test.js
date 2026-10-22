@@ -60,7 +60,7 @@ const results = context.window.StrategicResults.calcularDashboard({
 }).resultadosOficiais;
 
 assert.equal(results.length, 23);
-assert.equal(results.filter((item) => context.window.StrategicResults.officialSituation(item) === "Sem dados").length, 3);
+assert.equal(results.filter((item) => context.window.StrategicResults.officialSituation(item) === "Sem dados").length, 4);
 assert.equal(results.filter((item) => item.indicador.plano === "PEI").length, 11);
 assert.equal(results.filter((item) => item.indicador.plano === "PN").length, 12);
 assert.equal(new Set(results.map((item) => item.indicador.pilar)).size, 6);

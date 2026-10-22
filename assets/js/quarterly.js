@@ -135,6 +135,8 @@
 
   function getReferenceMeta(rule, quarterLaunches, quarterNumberValue, quarterLabel) {
     const params = rule?.parametrosCalculo || {};
+    const configuredPixQuarterTarget = toNumber(params.metasTrimestrais?.[quarterLabel] ?? PIX_QUARTER_TARGETS[quarterLabel]);
+    if (rule?.tipoCalculo === "razao_pix" && configuredPixQuarterTarget !== null) return configuredPixQuarterTarget;
     const referenceLaunch = lastByMonth((quarterLaunches || []).filter((item) => item.status === STATUS_LANCAMENTO.HOMOLOGADO)) || lastByMonth(quarterLaunches || []);
     if (rule?.tipoCalculo === "lucro_recorrente_mensal") {
       const year = getYear(quarterLabel);
@@ -206,8 +208,6 @@
       const quarterEnd = QUARTERS.find((item) => item.number === quarterNumberValue)?.months.at(-1);
       return getReferenciaNpsCompetencia(rule, { ano: year, mes: quarterEnd, competencia: `${year}-${String(quarterEnd).padStart(2, "0")}` });
     }
-    const configuredQuarterTarget = toNumber(params.metasTrimestrais?.[quarterLabel] ?? PIX_QUARTER_TARGETS[quarterLabel]);
-    if (rule?.tipoCalculo === "razao_pix" && configuredQuarterTarget !== null) return configuredQuarterTarget;
     if (rule?.tipoCalculo === "razao_canais_digitais") {
       return toNumber(params.metaReferencia ?? rule.metaAnualValor) ?? 0.2805;
     }
@@ -403,12 +403,11 @@
     }
 
     if (regra?.tipoCalculo === "razao_pix" && validCalculation) {
-      calculatedQuarterResult = toNumber(validCalculation.resultadoOficialAnual);
-      officialPresentedResult = calculatedQuarterResult === null
-        ? null
-        : Math.round(calculatedQuarterResult * 100) / 100;
+      calculatedQuarterResult = toNumber(validCalculation.resultadoCalculado ?? validCalculation.resultadoAcumulado);
+      officialPresentedResult = toNumber(validCalculation.resultadoOficialDocumental ?? validCalculation.resultadoOficialAnual);
       result = officialPresentedResult;
-      performance = officialPresentedResult !== null && meta ? officialPresentedResult / meta : null;
+      performance = toNumber(validCalculation.percentualAtingidoOficialDocumental) ??
+        (officialPresentedResult !== null && meta ? officialPresentedResult / meta : null);
     }
 
     if (["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(regra?.tipoCalculo) && validCalculation) {
@@ -429,8 +428,10 @@
     }
 
     const technicalMeta = meta;
-    const technicalResult = result;
-    const technicalPerformance = performance;
+    const technicalResult = regra?.tipoCalculo === "razao_pix" ? calculatedQuarterResult : result;
+    const technicalPerformance = regra?.tipoCalculo === "razao_pix" && calculatedQuarterResult !== null && meta
+      ? calculatedQuarterResult / meta
+      : performance;
     const incentivoSocioambiental = regra?.tipoCalculo === "investimento_socioambiental";
     const resultadoFinanceiroTrimestral = incentivoSocioambiental
       ? toNumber(validCalculation?.realizadoFinanceiro ?? technicalResult)
