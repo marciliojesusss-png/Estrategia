@@ -301,10 +301,10 @@ assert.ok(Math.abs(ieoDashboardAgosto.percentualAtingido - (1 - ((0.20 - 0.2664)
 
 const repasseDashboardOficial = results.find((item) => item.indicador.id === 17);
 assert.equal(context.window.StrategicResults.officialSituation(repasseDashboardOficial), "Atingido");
-assert.equal(repasseDashboardOficial.competencia, "Março/2026");
-assert.ok(Math.abs(repasseDashboardOficial.meta - 2142991572.00) < 0.0001);
-assert.ok(Math.abs(repasseDashboardOficial.resultado - 2253033146.00) < 0.0001);
-assert.ok(Math.abs(repasseDashboardOficial.percentualAtingido - (2253033146.00 / 2142991572.00)) < 0.000001);
+assert.equal(repasseDashboardOficial.competencia, "Junho/2026");
+assert.ok(Math.abs(repasseDashboardOficial.meta - 4545104157.26) < 0.0001);
+assert.ok(Math.abs(repasseDashboardOficial.resultado - 4615037076.03) < 0.0001);
+assert.ok(Math.abs(repasseDashboardOficial.percentualAtingido - (4615037076.03 / 4545104157.26)) < 0.000001);
 
 const digitalIndicator = indicators.find((item) => item.id === 8);
 const digitalRule = rules.find((item) => item.indicadorId === 8);
