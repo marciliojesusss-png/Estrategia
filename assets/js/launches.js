@@ -1227,11 +1227,12 @@
     const statusField = regra.parametrosCalculo?.campoStatus || "statusIniciativaSocioambiental";
     const nameField = regra.parametrosCalculo?.campoNome || "nomeIniciativaSocioambiental";
     const dateField = regra.parametrosCalculo?.campoDataApoio || "dataApoioIniciativa";
+    const allowDocumentedPeriod = regra.parametrosCalculo?.permitirPeriodoNaDescricaoSemDataPontual === true;
     const completedStatus = regra.parametrosCalculo?.statusQueConta || "Apoiada/realizada";
     const completed = document.querySelector(`[data-entry-field="${statusField}"]`)?.value === completedStatus;
     [nameField, dateField].forEach((fieldName) => {
       const input = document.querySelector(`[data-entry-field="${fieldName}"]`);
-      if (input) input.required = completed;
+      if (input) input.required = completed && !(fieldName === dateField && allowDocumentedPeriod);
     });
     if (!completed) clearSocioambientalValidation(regra);
   }
@@ -1243,12 +1244,16 @@
     const statusField = regra.parametrosCalculo?.campoStatus || "statusIniciativaSocioambiental";
     const nameField = regra.parametrosCalculo?.campoNome || "nomeIniciativaSocioambiental";
     const dateField = regra.parametrosCalculo?.campoDataApoio || "dataApoioIniciativa";
+    const descriptionField = regra.parametrosCalculo?.campoDescricao || "descricaoAndamentoSocioambiental";
     const completedStatus = regra.parametrosCalculo?.statusQueConta || "Apoiada/realizada";
     if (values[statusField] !== completedStatus) {
       return { applies: false, missing: [], message: "" };
     }
 
-    const missing = [nameField, dateField].filter((fieldName) => !String(values[fieldName] || "").trim());
+    const periodDocumentedWithoutPointDate = regra.parametrosCalculo?.permitirPeriodoNaDescricaoSemDataPontual === true
+      && String(values[descriptionField] || "").trim();
+    const requiredFields = periodDocumentedWithoutPointDate ? [nameField] : [nameField, dateField];
+    const missing = requiredFields.filter((fieldName) => !String(values[fieldName] || "").trim());
     let message = "";
     if (missing.length === 2) {
       message = "Para registrar uma iniciativa como Apoiada/realizada, preencha:\n• Nome da iniciativa\n• Data de apoio/realização";

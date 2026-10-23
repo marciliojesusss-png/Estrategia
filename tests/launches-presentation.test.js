@@ -176,6 +176,24 @@ assert.deepEqual(socioambientalValidation({
   });
 });
 
+const socioambientalRuleWithDocumentedPeriod = {
+  ...socioambientalRule,
+  parametrosCalculo: {
+    ...socioambientalRule.parametrosCalculo,
+    campoDescricao: "descricaoAndamentoSocioambiental",
+    permitirPeriodoNaDescricaoSemDataPontual: true
+  }
+};
+assert.deepEqual(JSON.parse(JSON.stringify(internals.socioambientalRequiredFieldState(
+  socioambientalRuleWithDocumentedPeriod,
+  {
+    statusIniciativaSocioambiental: "Apoiada/realizada",
+    nomeIniciativaSocioambiental: "Brasil Ladies Cup 2026",
+    dataApoioIniciativa: "",
+    descricaoAndamentoSocioambiental: "Realizada no período de julho a setembro de 2026."
+  }
+))), { applies: true, missing: [], message: "" });
+
 const approvalsSource = fs.readFileSync(path.join(root, "assets", "js", "approvals.js"), "utf8");
 assert.match(approvalsSource, /\["nota_pesquisa_nps", "melhorias_acumuladas", "lucro_recorrente_mensal"\]\.includes\(regra\?\.tipoCalculo\)/);
 assert.match(approvalsSource, /Acompanhamento sem nova medição/);

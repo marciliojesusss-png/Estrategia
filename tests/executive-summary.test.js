@@ -195,12 +195,12 @@ assert.ok(Math.abs(capacitacaoDashboardOficial.resultado - (137 / 151)) < 0.0000
 assert.equal(capacitacaoDashboardOficial.percentualAtingido, 1);
 
 const incentivoDashboardOficial = results.find((item) => item.indicador.id === 19);
-assert.equal(context.window.StrategicResults.officialSituation(incentivoDashboardOficial), "Em prospecção/estruturação");
-assert.equal(incentivoDashboardOficial.competencia, "Março/2026");
-assert.equal(incentivoDashboardOficial.meta, 0);
+assert.equal(context.window.StrategicResults.officialSituation(incentivoDashboardOficial), "Abaixo da meta");
+assert.equal(incentivoDashboardOficial.competencia, "Junho/2026");
+assert.equal(incentivoDashboardOficial.meta, 652700);
 assert.equal(incentivoDashboardOficial.resultado, 0);
-assert.equal(incentivoDashboardOficial.percentualAtingido, null);
-assert.equal(incentivoDashboardOficial.lancamento.id, 219);
+assert.equal(incentivoDashboardOficial.percentualAtingido, 0);
+assert.equal(incentivoDashboardOficial.lancamento.id, 222);
 assert.equal(incentivoDashboardOficial.lancamentoAcao.id, 225);
 
 const indicadorIncentivo = indicators.find((item) => item.id === 19);
