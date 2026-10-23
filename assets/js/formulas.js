@@ -970,7 +970,38 @@
     const totalField = hasAccumulatedPosition ? accumulatedTotalField : legacyTotalField;
     const pixCurrent = currency.parseMoedaBR(raw(lancamentoAtual, pixField));
     const totalCurrent = currency.parseMoedaBR(raw(lancamentoAtual, totalField));
+    const pixApproximate = currency.parseMoedaBR(raw(lancamentoAtual, "arrecadacaoPixAcumuladaCompetenciaAproximada"));
+    const annualTarget = toNumber(lancamentoAtual.metaReferencia ?? lancamentoAtual.metaMensal ?? regra.metaAnualValor) || 0.65;
+    const officialResult = normalizarPercentual(raw(lancamentoAtual, params.campoResultadoOficial || "resultadoOficialPix"));
+    const officialPerformanceRaw = raw(lancamentoAtual, params.campoPercentualAtingidoOficial || "percentualAtingidoOficialPix");
+    const officialPerformanceNumber = toNumber(officialPerformanceRaw);
+    const officialPerformance = officialPerformanceNumber !== null
+      ? (officialPerformanceNumber > 10 ? officialPerformanceNumber / 100 : officialPerformanceNumber)
+      : normalizarPercentual(officialPerformanceRaw);
+    const closingMonths = Array.isArray(params.mesesFechamentoTrimestral) ? params.mesesFechamentoTrimestral : [3, 6, 9, 12];
+    const isOfficialClosing = closingMonths.includes(Number(lancamentoAtual.mes));
+    const officialSituation = isOfficialClosing
+      ? situacaoPorPercentual(officialPerformance ?? (officialResult !== null && annualTarget ? officialResult / annualTarget : null))
+      : "Em acompanhamento";
+    const officialOnlyResult = (message) => pendente(message, regra.unidadeMedida, {
+      pixAcumulado: pixCurrent ?? pixApproximate,
+      canaisEletronicosAcumulado: totalCurrent,
+      resultadoCalculado: null,
+      resultadoOficialAnual: officialResult,
+      resultadoOficialAnualFormatado: formatarValor(officialResult, regra.unidadeMedida),
+      percentualAtingidoAnual: officialPerformance,
+      percentualAtingidoAnualFormatado: formatarPercentual(officialPerformance),
+      resultadoOficialDocumental: officialResult,
+      percentualAtingidoOficialDocumental: officialPerformance,
+      metaReferencia: annualTarget,
+      situacao: officialSituation,
+      origemPosicaoPix: "documental_sem_componentes_tecnicos_exatos",
+      excluiInternetBankingCaixa: params.excluirInternetBankingCaixa === true
+    });
     if (pixCurrent === null || pixCurrent < 0) {
+      if (pixCurrent === null && (officialResult !== null || officialPerformance !== null)) {
+        return officialOnlyResult("Resultado oficial preservado; componentes exatos insuficientes para o cálculo técnico.");
+      }
       return erro(
         hasAccumulatedPosition
           ? "A arrecadação acumulada com PIX deve ser informada e não pode ser negativa."
@@ -979,6 +1010,9 @@
       );
     }
     if (totalCurrent === null || totalCurrent === 0) {
+      if (officialResult !== null || officialPerformance !== null) {
+        return officialOnlyResult("Resultado oficial preservado; informe o denominador exato para habilitar o cálculo técnico.");
+      }
       return pendente(
         hasAccumulatedPosition
           ? "Informe a posição acumulada exata dos canais eletrônicos para calcular o resultado técnico."
@@ -1009,13 +1043,7 @@
     }
     const monthlyResult = pixCurrent / totalCurrent;
     const accumulatedResult = pixAccumulated / totalAccumulated;
-    const annualTarget = toNumber(lancamentoAtual.metaReferencia ?? lancamentoAtual.metaMensal ?? regra.metaAnualValor) || 0.65;
-    const officialResult = normalizarPercentual(raw(lancamentoAtual, params.campoResultadoOficial || "resultadoOficialPix"));
-    const officialPerformanceRaw = raw(lancamentoAtual, params.campoPercentualAtingidoOficial || "percentualAtingidoOficialPix");
-    const officialPerformanceNumber = toNumber(officialPerformanceRaw);
-    const officialPerformance = officialPerformanceNumber !== null
-      ? (officialPerformanceNumber > 10 ? officialPerformanceNumber / 100 : officialPerformanceNumber)
-      : normalizarPercentual(officialPerformanceRaw);
+    const performanceForSituation = officialPerformance ?? (accumulatedResult / annualTarget);
     return ok(
       monthlyResult,
       accumulatedResult,
@@ -1034,6 +1062,7 @@
         resultadoOficialDocumental: officialResult,
         percentualAtingidoOficialDocumental: officialPerformance,
         metaReferencia: annualTarget,
+        situacao: isOfficialClosing ? situacaoPorPercentual(performanceForSituation) : "Em acompanhamento",
         origemPosicaoPix: hasAccumulatedPosition ? "acumulada" : "mensal_legada",
         excluiInternetBankingCaixa: params.excluirInternetBankingCaixa === true
       }

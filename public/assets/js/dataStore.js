@@ -2197,8 +2197,8 @@
         camposEntrada: [
           { nome: "arrecadacaoPixAcumuladaCompetencia", rotulo: "Arrecadação com PIX acumulada até a competência", tipo: "moeda", obrigatorio: false },
           { nome: "arrecadacaoTotalCanaisEletronicosAcumuladaCompetencia", rotulo: "Arrecadação total acumulada nos canais eletrônicos (sem IBC)", tipo: "moeda", obrigatorio: false },
-          { nome: "resultadoOficialPix", rotulo: "Resultado oficial reportado", tipo: "percentual", obrigatorio: false },
-          { nome: "percentualAtingidoOficialPix", rotulo: "Atingimento oficial reportado", tipo: "percentual", obrigatorio: false }
+          { nome: "resultadoOficialPix", rotulo: "Resultado oficial reportado", tipo: "percentual", entradaPtBr: true, escalaPercentual: "decimal", obrigatorio: false },
+          { nome: "percentualAtingidoOficialPix", rotulo: "Atingimento oficial reportado", tipo: "percentual", entradaPtBr: true, escalaPercentual: "decimal", obrigatorio: false }
         ],
         campoResultadoPrincipal: "resultadoAcumulado",
         campoPercentualAtingido: "percentualAtingidoAnual",

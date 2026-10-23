@@ -1,6 +1,10 @@
 (function () {
   const EDITABLE_STATUSES = ["Não iniciado", "Nao iniciado", "Rascunho", "Em preenchimento", "Devolvido para ajuste", "Reaberto", "Retificado"];
   const MANUAL_TYPES = ["manual_homologado", "qualitativo"];
+  const DECIMAL_PERCENTAGE_ENTRY_FIELDS = new Set([
+    "resultadoOficialPix",
+    "percentualAtingidoOficialPix"
+  ]);
 
   let state = {
     data: null,
@@ -81,8 +85,24 @@
     if (typeof IndicatorFormulas !== "undefined" && IndicatorFormulas.normalizarPercentual) {
       return IndicatorFormulas.normalizarPercentual(value);
     }
-    const number = toNumberOrNull(value);
+    let normalizedValue = value;
+    if (typeof normalizedValue === "string") {
+      normalizedValue = normalizedValue.trim().replace("%", "");
+      if (normalizedValue.includes(",")) normalizedValue = normalizedValue.replace(/\./g, "").replace(",", ".");
+    }
+    const number = toNumberOrNull(normalizedValue);
     return number === null ? null : number > 1 ? number / 100 : number;
+  }
+
+  function usesDecimalPercentageEntry(field) {
+    return field?.tipo === "percentual" && (
+      field.escalaPercentual === "decimal" ||
+      DECIMAL_PERCENTAGE_ENTRY_FIELDS.has(field.nome)
+    );
+  }
+
+  function usesLocalizedPercentageEntry(field) {
+    return field?.tipo === "percentual" && (field.entradaPtBr === true || usesDecimalPercentageEntry(field));
   }
 
   function badgeClass(status) {
@@ -538,6 +558,10 @@
   function formatEntryValue(field, value) {
     if (field.tipo === "moeda" && value !== "") return CurrencyBR.formatarMoedaBR(value).replace(/^R\$\s?/, "");
     if (field.tipo === "inteiro" && value !== "") return Calculations.formatarInteiroBR(value);
+    if (usesDecimalPercentageEntry(field) && value !== "") {
+      const decimal = toNumberOrNull(value);
+      return decimal === null ? "" : `${(decimal * 100).toLocaleString("pt-BR", { maximumFractionDigits: 4 })}%`;
+    }
     if (field.tipo === "percentual" && field.entradaPtBr && value !== "") {
       const normalized = normalizarPercentual(value);
       return normalized === null ? "" : (normalized * 100).toLocaleString("pt-BR", { maximumFractionDigits: 4 });
@@ -624,8 +648,8 @@
           class="dynamic-entry-field"
           data-entry-field="${escapeHtml(field.nome)}"
           data-entry-type="${escapeHtml(field.tipo || "numero")}"
-          type="${["texto", "moeda", "inteiro"].includes(field.tipo) || (field.tipo === "percentual" && field.entradaPtBr) ? "text" : field.tipo === "data" ? "date" : "number"}"
-          ${field.tipo === "moeda" || (field.tipo === "percentual" && field.entradaPtBr) ? "inputmode=\"decimal\" placeholder=\"0,00\"" : field.tipo === "inteiro" ? "inputmode=\"numeric\" placeholder=\"0\"" : field.tipo === "texto" || field.tipo === "data" ? "" : "step=\"any\""}
+          type="${["texto", "moeda", "inteiro"].includes(field.tipo) || usesLocalizedPercentageEntry(field) ? "text" : field.tipo === "data" ? "date" : "number"}"
+          ${field.tipo === "moeda" || usesLocalizedPercentageEntry(field) ? "inputmode=\"decimal\" placeholder=\"0,00\"" : field.tipo === "inteiro" ? "inputmode=\"numeric\" placeholder=\"0\"" : field.tipo === "texto" || field.tipo === "data" ? "" : "step=\"any\""}
           value="${escapeHtml(formatEntryValue(field, value))}"
           ${field.obrigatorio ? "required" : ""}
           ${field.somenteLeitura ? "readonly" : ""}
@@ -1614,23 +1638,7 @@
     document.querySelectorAll(".dynamic-entry-field").forEach((input) => {
       if (input.disabled) return;
       const type = input.dataset.entryType || "numero";
-      if (type === "numero") {
-        values[input.dataset.entryField] = input.value === "" ? "" : toNumberOrNull(input.value);
-        return;
-      }
-      if (type === "inteiro") {
-        values[input.dataset.entryField] = input.value === "" ? "" : Calculations.parseInteiroBR(input.value);
-        return;
-      }
-      if (type === "moeda") {
-        values[input.dataset.entryField] = input.value === "" ? "" : CurrencyBR.parseMoedaBR(input.value);
-        return;
-      }
-      if (type === "percentual") {
-        values[input.dataset.entryField] = input.value === "" ? "" : normalizarPercentual(input.value);
-        return;
-      }
-      values[input.dataset.entryField] = input.value.trim();
+      values[input.dataset.entryField] = parseEntryValue(type, input.value);
     });
     const selectedLaunch = getSelectedLaunch();
     const selectedIndicator = selectedLaunch && getIndicatorMap()[selectedLaunch.indicadorId];
@@ -1638,6 +1646,15 @@
       values.elementosRGFAtendidos = collectRgfRows();
     }
     return values;
+  }
+
+  function parseEntryValue(type, value) {
+    if (value === "") return "";
+    if (type === "numero") return toNumberOrNull(value);
+    if (type === "inteiro") return Calculations.parseInteiroBR(value);
+    if (type === "moeda") return CurrencyBR.parseMoedaBR(value);
+    if (type === "percentual") return normalizarPercentual(value);
+    return String(value).trim();
   }
 
   function updateCapacidadeTicPercentual(marcoSelecionado) {
@@ -2253,6 +2270,9 @@
     quarterlyMetaDetail,
     getDisplayMeta,
     formatDisplayMeta,
+    formatEntryValue,
+    parseEntryValue,
+    usesDecimalPercentageEntry,
     renderEntryInput,
     socioambientalRequiredFieldState,
     normalizeRgfKey,

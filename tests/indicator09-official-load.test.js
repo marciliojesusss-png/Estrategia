@@ -64,6 +64,8 @@ assert.equal(launches.some((item) => item.status === "Homologado"), false);
 const jan = context.window.IndicatorFormulas.calcularIndicador(indicator, rule, byMonth[1], [byMonth[1]]);
 const feb = context.window.IndicatorFormulas.calcularIndicador(indicator, rule, byMonth[2], [byMonth[1], byMonth[2]]);
 const mar = context.window.IndicatorFormulas.calcularIndicador(indicator, rule, byMonth[3], [byMonth[1], byMonth[2], byMonth[3]]);
+const jun = context.window.IndicatorFormulas.calcularIndicador(indicator, rule, byMonth[6], launches.filter((item) => Number(item.mes) <= 6));
+const set = context.window.IndicatorFormulas.calcularIndicador(indicator, rule, byMonth[9], launches.filter((item) => Number(item.mes) <= 9));
 closeTo(jan.resultadoCalculado, 411428638.26 / 602431775.22);
 closeTo(feb.resultadoCalculado, 767756452.21 / 1143106805.37);
 closeTo(mar.resultadoCalculado, 1127026595.61 / 1686118105.09);
@@ -71,6 +73,31 @@ assert.equal(feb.pixAcumulado, 767756452.21, "posição acumulada não pode ser 
 assert.equal(feb.canaisEletronicosAcumulado, 1143106805.37, "denominador acumulado não pode ser somado novamente");
 assert.equal(mar.resultadoOficialDocumental, 0.67);
 assert.equal(mar.percentualAtingidoOficialDocumental, 1.1009);
+assert.equal(mar.resultadoOficialAnualFormatado, "67%");
+assert.equal(mar.percentualAtingidoAnualFormatado, "110,09%");
+assert.equal(mar.situacao, "Atingido");
+assert.equal(jun.resultadoOficialDocumental, 0.6713);
+assert.equal(jun.percentualAtingidoOficialDocumental, 1.0914);
+assert.equal(jun.resultadoOficialAnualFormatado, "67,13%");
+assert.equal(jun.percentualAtingidoAnualFormatado, "109,14%");
+assert.equal(jun.situacao, "Atingido");
+assert.equal(set.resultadoCalculado, null);
+assert.equal(set.resultadoOficialDocumental, 0.6764);
+assert.equal(set.percentualAtingidoOficialDocumental, 1.0737);
+assert.equal(set.resultadoOficialAnualFormatado, "67,64%");
+assert.equal(set.percentualAtingidoAnualFormatado, "107,37%");
+assert.equal(set.situacao, "Atingido");
+assert.equal(jan.situacao, "Em acompanhamento");
+
+const abaixoDaMeta = context.window.IndicatorFormulas.calcularIndicador(indicator, rule, {
+  ...byMonth[6],
+  camposEntrada: {
+    ...byMonth[6].camposEntrada,
+    resultadoOficialPix: 0.60,
+    percentualAtingidoOficialPix: 0.9677
+  }
+}, launches.filter((item) => Number(item.mes) <= 6));
+assert.equal(abaixoDaMeta.situacao, "Abaixo da meta");
 
 const quarterly = context.window.QuarterlyConsolidation;
 function quarter(number, closingMonth) {

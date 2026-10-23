@@ -44,6 +44,26 @@ assert.deepEqual(
   ["Meta trimestral", "R$ 2500.00"]
 );
 assert.equal(internals.quarterLabel({ mes: 12 }), "4TRI");
+
+const pixOfficialResultField = { nome: "resultadoOficialPix", tipo: "percentual" };
+const pixOfficialPerformanceField = { nome: "percentualAtingidoOficialPix", tipo: "percentual" };
+assert.equal(internals.usesDecimalPercentageEntry(pixOfficialResultField), true);
+assert.equal(internals.formatEntryValue(pixOfficialResultField, 0.67), "67%");
+assert.equal(internals.formatEntryValue(pixOfficialResultField, 0.6713), "67,13%");
+assert.equal(internals.formatEntryValue(pixOfficialPerformanceField, 1.1009), "110,09%");
+assert.equal(internals.formatEntryValue(pixOfficialPerformanceField, 1.0914), "109,14%");
+assert.equal(internals.formatEntryValue(pixOfficialResultField, 0.6764), "67,64%");
+assert.equal(internals.formatEntryValue(pixOfficialPerformanceField, 1.0737), "107,37%");
+assert.equal(internals.parseEntryValue("percentual", "67,13"), 0.6713);
+assert.equal(internals.parseEntryValue("percentual", "109,14"), 1.0914);
+assert.equal(
+  internals.parseEntryValue("percentual", internals.formatEntryValue(pixOfficialPerformanceField, 1.0914)),
+  1.0914,
+  "a conversão de ida e volta não pode multiplicar o atingimento novamente"
+);
+assert.match(internals.renderEntryInput(pixOfficialResultField, 0.6713), /type="text"/);
+assert.match(internals.renderEntryInput(pixOfficialResultField, 0.6713), /value="67,13%"/);
+assert.match(internals.renderEntryInput(pixOfficialPerformanceField, 1.0914), /value="109,14%"/);
 assert.equal(internals.normalizeRgfKey("  Orientação AO Jogador  "), "orientacao ao jogador");
 assert.deepEqual(
   JSON.parse(JSON.stringify(internals.rgfRowsFromLaunch({ camposEntrada: {

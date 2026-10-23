@@ -2464,12 +2464,16 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
           "nome": "resultadoOficialPix",
           "rotulo": "Resultado oficial reportado",
           "tipo": "percentual",
+          "entradaPtBr": true,
+          "escalaPercentual": "decimal",
           "obrigatorio": false
         },
         {
           "nome": "percentualAtingidoOficialPix",
           "rotulo": "Atingimento oficial reportado",
           "tipo": "percentual",
+          "entradaPtBr": true,
+          "escalaPercentual": "decimal",
           "obrigatorio": false
         }
       ],
