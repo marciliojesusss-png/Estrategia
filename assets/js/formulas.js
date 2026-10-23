@@ -1177,7 +1177,6 @@
     if (["entregue", "mvp entregue", "formalizado", "celebrada", "concluido", "concluído"].includes(status)) {
       percentual = 1;
     }
-    if (percentual === null) return erro("Percentual de execução deve ser informado.", regra.unidadeMedida);
     const trimestre = lancamentoAtual.trimestre || `${Math.ceil(Number(lancamentoAtual.mes) / 3)}TRI/${lancamentoAtual.ano || 2026}`;
     const curva = regra.parametrosCalculo?.curvaTrimestralPercentual || {};
     const metaConfigurada = toNumber(lancamentoAtual.metaReferencia ?? lancamentoAtual.metaMensal);
@@ -1186,8 +1185,23 @@
       : regra.parametrosCalculo?.metaTipo === "curva_trimestral_percentual"
         ? toNumber(curva[trimestre]?.metaPercentual)
         : null;
+    const mesesFechamento = regra.parametrosCalculo?.mesesFechamentoTrimestral;
+    const mesAtual = Number(lancamentoAtual.mes);
+    const fechamentoTrimestral = !Array.isArray(mesesFechamento) || mesesFechamento.includes(mesAtual);
+    if (percentual === null && !fechamentoTrimestral && statusOriginal) {
+      return ok(null, null, null, null, regra.unidadeMedida, "Acompanhamento qualitativo do projeto registrado com sucesso.", {
+        marcoAlcancado: statusOriginal,
+        marcoEsperadoTrimestre: curva[trimestre]?.marcoEsperado || null,
+        metaTrimestral,
+        situacao: "Em acompanhamento",
+        desempenhoNaoAplicavel: true
+      });
+    }
+    if (percentual === null) return erro("Percentual de execução deve ser informado.", regra.unidadeMedida);
     const percentualAtingido = metaTrimestral ? percentual / metaTrimestral : percentual;
-    const situacao = metaTrimestral
+    const situacao = !fechamentoTrimestral
+      ? "Em acompanhamento"
+      : metaTrimestral
       ? percentual >= metaTrimestral
         ? "Atingido"
         : "Abaixo da meta"

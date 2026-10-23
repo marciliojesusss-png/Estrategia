@@ -26,7 +26,7 @@
     "Vendas Provenientes de Canais Digitais",
     "Vendas com Meio de Pagamento PIX",
     "Share da Plataforma de Jogos",
-    "Ampliar Capacidade de Desenvolvimento de Soluções de TIC",
+    "Ampliar a Capacidade de Desenvolvimento de Soluções de TIC",
     "Clima Organizacional (Pesquisa GPTW)",
     "Mulheres Chefes de Unidade e Gestoras",
     "Gestores Negros, Amarelos, Pardos ou Indígenas e/ou PcD",
@@ -1667,6 +1667,7 @@
               campoPercentual: "percentualRealizadoTIC",
               metaTipo: "curva_trimestral_percentual",
               curvaTrimestralPercentual: CAPACIDADE_TIC_CURVA_TRIMESTRAL_2026,
+              mesesFechamentoTrimestral: [3, 6, 9, 12],
               marcosCapacidadeTIC: CAPACIDADE_TIC_MARCOS,
               sentidoMeta: "quanto_maior_melhor"
             },
