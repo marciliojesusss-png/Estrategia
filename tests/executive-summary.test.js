@@ -60,7 +60,7 @@ const results = context.window.StrategicResults.calcularDashboard({
 }).resultadosOficiais;
 
 assert.equal(results.length, 23);
-assert.equal(results.filter((item) => context.window.StrategicResults.officialSituation(item) === "Sem dados").length, 4);
+assert.equal(results.filter((item) => context.window.StrategicResults.officialSituation(item) === "Sem dados").length, 3);
 assert.equal(results.filter((item) => item.indicador.plano === "PEI").length, 11);
 assert.equal(results.filter((item) => item.indicador.plano === "PN").length, 12);
 assert.equal(new Set(results.map((item) => item.indicador.pilar)).size, 6);
@@ -137,11 +137,12 @@ assert.ok(Math.abs(capacidadeTicDashboardOficial.resultado - 0.35) < 0.000001);
 assert.ok(Math.abs(capacidadeTicDashboardOficial.percentualAtingido - 1) < 0.000001);
 
 const plataformaJogosDashboardOficial = results.find((item) => item.indicador.id === 10);
-assert.equal(context.window.StrategicResults.officialSituation(plataformaJogosDashboardOficial), "Sem dados");
-assert.equal(plataformaJogosDashboardOficial.competencia, null);
+assert.equal(context.window.StrategicResults.officialSituation(plataformaJogosDashboardOficial), "Em acompanhamento");
+assert.equal(plataformaJogosDashboardOficial.competencia, "Março/2026");
 assert.equal(plataformaJogosDashboardOficial.meta, null);
 assert.equal(plataformaJogosDashboardOficial.resultado, null);
 assert.equal(plataformaJogosDashboardOficial.percentualAtingido, null);
+assert.notEqual(plataformaJogosDashboardOficial.competencia, "Setembro/2026");
 
 const indicadorPlataformaJogos = indicators.find((item) => item.id === 10);
 const regraPlataformaJogos = rules.find((item) => item.indicadorId === 10);

@@ -476,7 +476,10 @@
       state.data?.metas || [],
       lancamento?.metaReferencia ?? lancamento?.metaMensal ?? null
     );
-    const metaReferencia = metaOficialCompetencia !== null && metaOficialCompetencia !== undefined && Number.isFinite(Number(metaOficialCompetencia))
+    const metaPercentualAcoesPropostas = Calculations.resolverMetaPercentualAcoesPropostas?.(regra, lancamento);
+    const metaReferencia = metaPercentualAcoesPropostas !== null && metaPercentualAcoesPropostas !== undefined
+      ? Calculations.formatarPercentual(metaPercentualAcoesPropostas)
+      : metaOficialCompetencia !== null && metaOficialCompetencia !== undefined && Number.isFinite(Number(metaOficialCompetencia))
       ? Calculations.formatarValor(Number(metaOficialCompetencia), regra && regra.unidadeMedida)
       : isPlataformaJogos
       ? Calculations.formatarPercentual(indicatorCalculation?.metaTrimestral, 2)

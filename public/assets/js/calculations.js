@@ -142,6 +142,31 @@
     return numero.toLocaleString("pt-BR", { maximumFractionDigits: 4 });
   }
 
+  function resolverMetaPercentualAcoesPropostas(regra, referencia = {}) {
+    if (regra?.tipoCalculo !== "execucao_acoes_propostas") return null;
+
+    const mes = toNumber(referencia?.mes);
+    const ano = toNumber(referencia?.ano) || 2026;
+    const trimestre = referencia?.trimestre || (mes >= 1 && mes <= 12
+      ? `${Math.ceil(mes / 3)}TRI/${ano}`
+      : null);
+    const curva = regra?.parametrosCalculo?.curvaTrimestralAcumulada || {};
+    const posicao = trimestre ? curva[trimestre] : null;
+    const metaPercentual = toNumber(posicao?.metaPercentual);
+    if (metaPercentual !== null) return metaPercentual;
+
+    const metaQuantidade = toNumber(
+      posicao?.metaAcoesRealizadasAcumuladas ??
+      referencia?.metaTrimestral ??
+      referencia?.metaReferencia ??
+      referencia?.metaMensal
+    );
+    const totalAcoesPropostas = toNumber(regra?.parametrosCalculo?.totalAcoesPropostas);
+    return metaQuantidade !== null && totalAcoesPropostas > 0
+      ? metaQuantidade / totalAcoesPropostas
+      : null;
+  }
+
   window.Calculations = {
     calcularPercentual,
     calcularAcumulado,
@@ -149,6 +174,7 @@
     normalizarSituacao: (value) => window.Situations ? Situations.normalizarSituacao(value) : value,
     formatarPercentual,
     formatarValor,
+    resolverMetaPercentualAcoesPropostas,
     parseInteiroBR,
     formatarInteiroBR,
     parseMoedaBR: CurrencyBR.parseMoedaBR,

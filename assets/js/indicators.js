@@ -841,6 +841,7 @@
     const percent = calculated.percentualAtingidoMensal ?? calculated.percentualAtingido ?? lancamento.percentualAtingido;
     const isLucroRecorrente = Number(indicador.id) === 7 && regra?.tipoCalculo === "lucro_recorrente_mensal";
     const isIncentivoSocioambiental = Number(indicador.id) === 19 && regra?.tipoCalculo === "investimento_socioambiental";
+    const isVisibilidadeRepasses = Number(indicador.id) === 20 && regra?.tipoCalculo === "execucao_acoes_propostas";
     const isNps = regra?.tipoCalculo === "nota_pesquisa_nps";
     const isAprimoramento = Number(indicador.id) === 4 && regra?.tipoCalculo === "melhorias_acumuladas";
     const isPlataformaJogos = Number(indicador.id) === 10 && regra?.parametrosCalculo?.metaTipo === "meta_oficial_trimestral_projeto";
@@ -936,7 +937,9 @@
               ["Realizado financeiro", Calculations.formatarValor(calculated.realizadoFinanceiro, "moeda")],
               ["% da meta atingida", Calculations.formatarPercentual(calculated.percentualAtingimento, 2, 2)]
             ] : !isPlataformaJogos ? [
-              [isLucroRecorrente ? "Meta da competência" : isAprimoramento ? "Meta do período" : "Meta de referência", formatMeasureValue(metaReferencia, regra?.unidadeMedida)],
+              [isLucroRecorrente ? "Meta da competência" : isAprimoramento ? "Meta do período" : "Meta de referência", isVisibilidadeRepasses
+                ? Calculations.formatarPercentual(Calculations.resolverMetaPercentualAcoesPropostas(regra, lancamento))
+                : formatMeasureValue(metaReferencia, regra?.unidadeMedida)],
               [metodologiaIeoCa ? "IEO calculado da competência" : isNps ? "NPS calculado" : isLucroRecorrente ? "Resultado da competência" : "Resultado calculado", formatMeasureValue(resultadoCalculado, regra?.unidadeMedida)],
               ...(!metodologiaIeoCa && !isNps ? [["Resultado oficial", resultadoOficial === "-" ? "-" : formatMeasureValue(resultadoOficial, regra?.unidadeMedida)]] : []),
               [isLucroRecorrente ? "% da meta atingida" : "% atingido", Calculations.formatarPercentual(percent)]
@@ -1630,7 +1633,11 @@
         return `
           <tr>
             <td>${name}/2026</td>
-            <td>${Calculations.formatarValor(curve[quarter]?.metaAcoesRealizadasAcumuladas, "quantidade")}</td>
+            <td>${Calculations.formatarPercentual(Calculations.resolverMetaPercentualAcoesPropostas(regra, {
+              ...launch,
+              trimestre: quarter,
+              metaTrimestral: curve[quarter]?.metaAcoesRealizadasAcumuladas
+            }))}</td>
             <td>${escapeHtml(visibilidadeActionLabel(actionValue))}</td>
             <td>${escapeHtml(visibilidadeActionSemester(actionValue))}</td>
             <td>${escapeHtml(status || "-")}</td>
@@ -1865,7 +1872,12 @@
         <td>${quarter.mesesHomologados} de ${quarter.mesesEsperados}</td>
         <td>${isIncentivoSocioambiental
           ? `${Calculations.formatarPercentual(quarter.metaPercentualTrimestral, 2, 2)}<small class="quarter-message">${Calculations.formatarValor(quarter.metaFinanceiraTrimestral, "moeda")}</small>`
-          : Calculations.formatarValor(quarter.metaTrimestral, quarterlyUnit)}</td>
+          : isVisibilidadeRepasses
+            ? Calculations.formatarPercentual(Calculations.resolverMetaPercentualAcoesPropostas(regra, {
+              trimestre: quarter.trimestre,
+              metaTrimestral: quarter.metaTrimestral
+            }))
+            : Calculations.formatarValor(quarter.metaTrimestral, quarterlyUnit)}</td>
         <td>
           ${isIncentivoSocioambiental
             ? `${Calculations.formatarPercentual(quarter.resultadoPercentualTrimestral, 5, 5)}<small class="quarter-message">${Calculations.formatarValor(quarter.resultadoFinanceiroTrimestral, "moeda")}</small>`

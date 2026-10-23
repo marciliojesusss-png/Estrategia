@@ -9,6 +9,15 @@ const calculations = {
   formatarValor(value, unit) {
     if (unit === "moeda") return `R$ ${Number(value).toFixed(2)}`;
     return String(Number(value));
+  },
+  resolverMetaPercentualAcoesPropostas(rule, reference = {}) {
+    if (rule?.tipoCalculo !== "execucao_acoes_propostas") return null;
+    const quarter = reference.trimestre || `${Math.ceil(Number(reference.mes) / 3)}TRI/${reference.ano || 2026}`;
+    const target = rule?.parametrosCalculo?.curvaTrimestralAcumulada?.[quarter] || {};
+    if (target.metaPercentual !== null && target.metaPercentual !== undefined) return Number(target.metaPercentual);
+    const quantity = Number(target.metaAcoesRealizadasAcumuladas ?? reference.metaReferencia ?? reference.metaMensal);
+    const total = Number(rule?.parametrosCalculo?.totalAcoesPropostas);
+    return Number.isFinite(quantity) && total > 0 ? quantity / total : null;
   }
 };
 const context = {

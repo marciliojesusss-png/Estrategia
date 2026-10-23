@@ -434,6 +434,10 @@
 
   function getDisplayMeta(regra, lancamento, metas = state.data?.metas || []) {
     const persistedMeta = lancamento?.metaReferencia ?? lancamento?.metaMensal ?? null;
+    const metaPercentualAcoesPropostas = Calculations.resolverMetaPercentualAcoesPropostas?.(regra, lancamento);
+    if (metaPercentualAcoesPropostas !== null && metaPercentualAcoesPropostas !== undefined) {
+      return metaPercentualAcoesPropostas;
+    }
     const resolvedMeta = window.DataStore?.resolveMeta?.(
       lancamento?.indicadorId ?? lancamento?.indicador_id ?? regra?.indicadorId,
       lancamento?.ano,
@@ -450,10 +454,6 @@
       return Object.prototype.hasOwnProperty.call(metas, trimestre) ? metas[trimestre] : null;
     }
     if (regra?.tipoCalculo === "melhorias_acumuladas") {
-      const trimestre = lancamento?.trimestre || `${Math.ceil(Number(lancamento?.mes) / 3)}TRI/${lancamento?.ano || 2026}`;
-      return regra?.parametrosCalculo?.curvaTrimestralAcumulada?.[trimestre]?.metaPercentual ?? null;
-    }
-    if (regra?.tipoCalculo === "execucao_acoes_propostas") {
       const trimestre = lancamento?.trimestre || `${Math.ceil(Number(lancamento?.mes) / 3)}TRI/${lancamento?.ano || 2026}`;
       return regra?.parametrosCalculo?.curvaTrimestralAcumulada?.[trimestre]?.metaPercentual ?? null;
     }

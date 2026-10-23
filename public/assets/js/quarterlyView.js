@@ -133,12 +133,25 @@
     return ["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(rule?.tipoCalculo) ? "moeda" : rule?.unidadeMedida;
   }
 
+  function formatQuarterMeta(row, quarter) {
+    const metaPercentualAcoesPropostas = Calculations.resolverMetaPercentualAcoesPropostas?.(row.rule, {
+      trimestre: quarter.trimestre,
+      metaTrimestral: quarter.metaTrimestral
+    });
+    if (metaPercentualAcoesPropostas !== null && metaPercentualAcoesPropostas !== undefined) {
+      return Calculations.formatarPercentual(metaPercentualAcoesPropostas);
+    }
+    return Calculations.formatarValor(quarter.metaTrimestral, quarterValueUnit(row.rule));
+  }
+
   function quarterCells(row) {
     const unit = quarterValueUnit(row.rule);
+    const isPlataformaJogos = row.rule?.tipoCalculo === "projeto_marco_entrega";
     return row.quarters.map((quarter) => `
-      <td>${Calculations.formatarValor(quarter.metaTrimestral, unit)}</td>
+      <td>${formatQuarterMeta(row, quarter)}${isPlataformaJogos ? "<small>Meta de evolução do MVP</small>" : ""}</td>
       <td class="official-value">
         ${Calculations.formatarValor(quarter.resultadoTrimestral, unit)}
+        ${isPlataformaJogos ? "<small>Evolução realizada do MVP</small>" : ""}
         ${row.rule.tipoCalculo === "razao_pix" && quarter.resultadoCalculadoTrimestral != null
           ? `<small>Calculado: ${Calculations.formatarValor(quarter.resultadoCalculadoTrimestral, row.rule.unidadeMedida)}<br>PIX: ${Calculations.formatarMoedaBR(quarter.pixAcumuladoTrimestre)}<br>Canais: ${Calculations.formatarMoedaBR(quarter.canaisAcumuladoTrimestre)}</small>`
           : row.rule.tipoCalculo === "razao_canais_digitais" && quarter.resultadoCalculadoTrimestral != null
@@ -156,6 +169,7 @@
         ${row.rule.tipoCalculo === "razao_canais_digitais" && quarter.desempenhoTrimestral != null
           ? `${(quarter.desempenhoTrimestral * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`
           : Calculations.formatarPercentual(quarter.desempenhoTrimestral)}
+        ${isPlataformaJogos ? "<small>% de atingimento da evolução prevista</small>" : ""}
         <span class="quarter-situation">${escapeHtml(quarter.situacaoTrimestral)}</span>
       </td>
       <td>
@@ -179,7 +193,7 @@
           <tbody>
             ${items.map((row) => `
               <tr>
-                <td class="indicator-name">${escapeHtml(limparNomeIndicador(row.indicator.indicador))}</td>
+                <td class="indicator-name">${escapeHtml(limparNomeIndicador(row.indicator.indicador))}${row.rule?.tipoCalculo === "projeto_marco_entrega" ? "<small>Acompanhamento 2026: evolução do MVP/projeto</small>" : ""}</td>
                 ${quarterCells(row)}
                 <td><a class="secondary-action table-action dashboard-action" href="${window.AppRoutes ? window.AppRoutes.page("indicadores", { indicadorId: row.indicator.id }) : `/indicadores?indicadorId=${row.indicator.id}`}">Visualizar</a></td>
               </tr>

@@ -140,13 +140,15 @@
     { label: "Acessos concedidos", percentualReferencia: null },
     { label: "Funcionalidade negocial definida", percentualReferencia: null },
     { label: "Registro de Aposta finalizado em ambiente de desenvolvimento", percentualReferencia: null },
+    { label: "Desenvolvimento do MVP em acompanhamento", percentualReferencia: null },
+    { label: "Evolução acumulada do MVP no 3TRI", percentualReferencia: 0.38 },
     { label: "Piloto/MVP concluído", percentualReferencia: 1 }
   ];
   const PLATAFORMA_JOGOS_METAS_2026 = Object.freeze({
     "1TRI/2026": null,
     "2TRI/2026": 1 / 3,
-    "3TRI/2026": null,
-    "4TRI/2026": null
+    "3TRI/2026": 0.67,
+    "4TRI/2026": 1
   });
   const APOIO_SOCIOAMBIENTAL_CURVA_2026 = {
     "1TRI/2026": {
@@ -1624,6 +1626,14 @@
               campoPercentual: "percentualEvolucaoPlataformaJogos",
               metaTipo: "meta_oficial_trimestral_projeto",
               metasTrimestraisOficiais: PLATAFORMA_JOGOS_METAS_2026,
+              mesesFechamentoTrimestral: [3, 6, 9, 12],
+              apresentacoesOficiaisTrimestrais: {
+                "2TRI/2026": { metaOficialReportada: 1 / 3, resultadoOficialReportado: 0.1, percentualAtingidoOficialReportado: 0.3, situacaoOficial: "Abaixo da meta" },
+                "3TRI/2026": { metaOficialReportada: 0.67, resultadoOficialReportado: 0.38, percentualAtingidoOficialReportado: 0.5672, situacaoOficial: "Abaixo da meta", nota: "Resultado oficial do Informe 0078/2026: evolução acumulada do MVP de 38%." }
+              },
+              marcosTrimestraisOficiais: {
+                "4TRI/2026": "Piloto/MVP da Plataforma de Jogos"
+              },
               sentidoMeta: "quanto_maior_melhor",
               metaAnualMarco: "Piloto/MVP da Plataforma de Jogos",
               marcoConcluido: "Piloto/MVP concluído",

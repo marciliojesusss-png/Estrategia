@@ -818,15 +818,17 @@
     return items.map((item) => {
       const situacao = officialSituation(item);
       const status = item.status || item.lancamento?.status || "Sem dados";
+      const isPlataformaJogos = item.regra?.tipoCalculo === "projeto_marco_entrega";
       return `
         <tr>
           <td class="indicator-name">
             <span>${escapeHtml(limparNomeIndicador(item.indicador.indicador))}</span>
+            ${isPlataformaJogos ? "<small>Acompanhamento 2026: evolução do MVP/projeto</small>" : ""}
           </td>
           <td>${escapeHtml(item.competencia || "-")}</td>
-          <td class="official-value">${item.lancamento ? formatOfficialResult(item) : "-"}</td>
-          <td>${formatOfficialMeta(item)}</td>
-          <td>${hasOfficialPercent(item) ? Calculations.formatarPercentual(item.percentualAtingido) : "-"}</td>
+          <td class="official-value">${item.lancamento ? formatOfficialResult(item) : "-"}${isPlataformaJogos ? "<small>Evolução realizada do MVP</small>" : ""}</td>
+          <td>${formatOfficialMeta(item)}${isPlataformaJogos ? "<small>Meta de evolução do MVP</small>" : ""}</td>
+          <td>${hasOfficialPercent(item) ? Calculations.formatarPercentual(item.percentualAtingido) : "-"}${isPlataformaJogos ? "<small>% de atingimento da evolução prevista</small>" : ""}</td>
           <td><span class="badge ${badgeClass(situacao)}">${escapeHtml(situacao)}</span></td>
           <td><span class="badge ${badgeClass(status)}">${escapeHtml(status)}</span></td>
           <td>${renderActions(item)}</td>

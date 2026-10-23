@@ -1496,9 +1496,10 @@ const regraPlataformaJogos = {
     metasTrimestraisOficiais: {
       "1TRI/2026": null,
       "2TRI/2026": 1 / 3,
-      "3TRI/2026": null,
-      "4TRI/2026": null
+      "3TRI/2026": 0.67,
+      "4TRI/2026": 1
     },
+    mesesFechamentoTrimestral: [3, 6, 9, 12],
     sentidoMeta: "quanto_maior_melhor",
     metaAnualMarco: "Piloto/MVP da Plataforma de Jogos",
     marcoConcluido: "Piloto/MVP concluído",
@@ -1552,7 +1553,7 @@ assert.equal(plataformaJogos2Tri.resultadoMensalFormatado, "10,00%");
 assert.equal(plataformaJogos2Tri.percentualAtingidoMensalFormatado, "30,00%");
 assert.equal(plataformaJogos2Tri.situacao, "Abaixo da meta");
 
-const plataformaJogosSemMetaFutura = formulas.calcularIndicador(
+const plataformaJogosAcompanhamento3Tri = formulas.calcularIndicador(
   indicador(10, "Share da Plataforma de Jogos"),
   regraPlataformaJogos,
   {
@@ -1560,17 +1561,37 @@ const plataformaJogosSemMetaFutura = formulas.calcularIndicador(
     mes: 7,
     trimestre: "3TRI/2026",
     camposEntrada: {
-      marcoAtualPlataformaJogos: "Registro de Aposta finalizado em ambiente de desenvolvimento",
-      statusProjetoPlataformaJogos: "Piloto/MVP em desenvolvimento",
-      percentualEvolucaoPlataformaJogos: 0.15
+      marcoAtualPlataformaJogos: "Desenvolvimento do MVP em acompanhamento",
+      statusProjetoPlataformaJogos: "Piloto/MVP em desenvolvimento"
     }
   },
   []
 );
-closeTo(plataformaJogosSemMetaFutura.resultadoMensal, 0.15);
-assert.equal(plataformaJogosSemMetaFutura.metaTrimestral, null);
-assert.equal(plataformaJogosSemMetaFutura.percentualAtingidoMensal, null);
-assert.equal(plataformaJogosSemMetaFutura.situacao, "Em acompanhamento");
+assert.equal(plataformaJogosAcompanhamento3Tri.resultadoMensal, null);
+closeTo(plataformaJogosAcompanhamento3Tri.metaTrimestral, 0.67);
+assert.equal(plataformaJogosAcompanhamento3Tri.percentualAtingidoMensal, null);
+assert.equal(plataformaJogosAcompanhamento3Tri.situacao, "Em acompanhamento");
+
+const plataformaJogosFechamento3Tri = formulas.calcularIndicador(
+  indicador(10, "Share da Plataforma de Jogos"),
+  regraPlataformaJogos,
+  {
+    ano: 2026,
+    mes: 9,
+    trimestre: "3TRI/2026",
+    camposEntrada: {
+      marcoAtualPlataformaJogos: "Evolução acumulada do MVP no 3TRI",
+      statusProjetoPlataformaJogos: "Piloto/MVP em desenvolvimento",
+      percentualEvolucaoPlataformaJogos: 0.38
+    }
+  },
+  []
+);
+closeTo(plataformaJogosFechamento3Tri.metaTrimestral, 0.67);
+closeTo(plataformaJogosFechamento3Tri.resultadoMensal, 0.38);
+closeTo(plataformaJogosFechamento3Tri.percentualAtingidoMensal, 0.38 / 0.67);
+assert.equal(plataformaJogosFechamento3Tri.percentualAtingidoMensalFormatado, "56,72%");
+assert.equal(plataformaJogosFechamento3Tri.situacao, "Abaixo da meta");
 
 for (const percentualInvalido of [-1, 101]) {
   const invalido = formulas.calcularIndicador(
@@ -2402,9 +2423,9 @@ for (const regra of regras) {
   const resultado = formulas.calcularIndicador(indicador(regra.indicadorId, regra.nome), regra, lancamento, [lancamento]);
   assert.equal(resultado.erro, undefined, `Regra ${regra.indicadorId} não deveria falhar: ${resultado.mensagem}`);
   if (regra.indicadorId === 10) {
-    assert.equal(resultado.percentualAtingidoMensal, null, "Regra 10 não deve calcular percentual mensal em 2026");
+    closeTo(resultado.percentualAtingidoMensal, 0.10);
     assert.equal(resultado.resultadoMensal, 0.10);
-    assert.equal(resultado.situacao, "Em acompanhamento");
+    assert.equal(resultado.situacao, "Abaixo da meta");
   } else {
     assert.notEqual(resultado.percentualAtingidoMensal, null, `Regra ${regra.indicadorId} sem percentual mensal`);
   }
