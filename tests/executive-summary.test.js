@@ -60,10 +60,16 @@ const results = context.window.StrategicResults.calcularDashboard({
 }).resultadosOficiais;
 
 assert.equal(results.length, 23);
-assert.equal(results.filter((item) => context.window.StrategicResults.officialSituation(item) === "Sem dados").length, 3);
+assert.equal(results.filter((item) => context.window.StrategicResults.officialSituation(item) === "Sem dados").length, 4);
 assert.equal(results.filter((item) => item.indicador.plano === "PEI").length, 11);
 assert.equal(results.filter((item) => item.indicador.plano === "PN").length, 12);
 assert.equal(new Set(results.map((item) => item.indicador.pilar)).size, 6);
+
+const canaisDigitaisSemPosicaoCorrente = results.find((item) => item.indicador.id === 8);
+assert.equal(canaisDigitaisSemPosicaoCorrente.possuiPosicaoOficial, false);
+assert.equal(canaisDigitaisSemPosicaoCorrente.status, null);
+assert.equal(canaisDigitaisSemPosicaoCorrente.competencia, null);
+assert.equal(canaisDigitaisSemPosicaoCorrente.resultado, null);
 
 const ofertasDashboardOficial = results.find((item) => item.indicador.id === 1);
 assert.equal(context.window.StrategicResults.officialSituation(ofertasDashboardOficial), "Atingido");
@@ -132,6 +138,7 @@ assert.ok(Math.abs(aprimoramentoDashboardOficial.percentualAtingido - 1) < 0.000
 const capacidadeTicDashboardOficial = results.find((item) => item.indicador.id === 11);
 assert.equal(context.window.StrategicResults.officialSituation(capacidadeTicDashboardOficial), "Atingido");
 assert.equal(capacidadeTicDashboardOficial.competencia, "Março/2026");
+assert.equal(Number(capacidadeTicDashboardOficial.lancamento.mes), 3, "JAN/FEV e AGO não podem concorrer como fechamento oficial");
 assert.ok(Math.abs(capacidadeTicDashboardOficial.meta - 0.35) < 0.000001);
 assert.ok(Math.abs(capacidadeTicDashboardOficial.resultado - 0.35) < 0.000001);
 assert.ok(Math.abs(capacidadeTicDashboardOficial.percentualAtingido - 1) < 0.000001);
@@ -327,9 +334,10 @@ const digitalDashboard = context.window.StrategicResults.calcularDashboard({
     }
   ]
 }).resultadosOficiais[0];
-assert.ok(Math.abs(digitalDashboard.resultado - (1180000000 / 3980000000)) < 0.000001);
-assert.equal(digitalDashboard.competencia, "Fevereiro/2026");
-assert.equal(digitalDashboard.meta, 0.2805);
+assert.equal(digitalDashboard.resultado, null);
+assert.equal(digitalDashboard.competencia, null);
+assert.equal(digitalDashboard.meta, null);
+assert.equal(digitalDashboard.possuiPosicaoOficial, false, "JAN/FEV são acompanhamento e MAR ainda não está homologado");
 
 const principiosIndicator = { ...indicators.find((item) => item.id === 18), periodicidade: "Trimestral" };
 const principiosRule = rules.find((item) => item.indicadorId === 18);
@@ -345,7 +353,8 @@ const aprimoramentoEntrePosicoes = context.window.StrategicResults.calcularDashb
 }).resultadosOficiais[0];
 assert.equal(aprimoramentoEntrePosicoes.competencia, "Março/2026");
 assert.ok(Math.abs(aprimoramentoEntrePosicoes.resultado - 0.0454) < 0.000001);
-assert.equal(aprimoramentoEntrePosicoes.situacaoAtual, "Em acompanhamento");
+assert.equal(aprimoramentoEntrePosicoes.situacaoAtual, "Atingido");
+assert.equal(aprimoramentoEntrePosicoes.latestOperationalLaunch.mes, 3, "ABR/MAI não podem concorrer com o fechamento de MAR.");
 
 const aprimoramentoJunhoDashboard = context.window.StrategicResults.calcularDashboard({
   indicadores: [aprimoramentoIndicator],

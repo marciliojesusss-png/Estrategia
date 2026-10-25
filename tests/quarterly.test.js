@@ -493,6 +493,7 @@ const capacidadeTicQuarter = consolidarTrimestre(
       campoStatus: "marcoAlcancadoTIC",
       campoPercentual: "percentualRealizadoTIC",
       metaTipo: "curva_trimestral_percentual",
+      mesesFechamentoTrimestral: [3, 6, 9, 12],
       curvaTrimestralPercentual: {
         "1TRI/2026": { metaPercentual: 0.35, marcoEsperado: "Realização de Consulta Pública de Informações - RFI" },
         "2TRI/2026": { metaPercentual: 0.70, marcoEsperado: "Realização de Consulta Pública de Propostas - RFP" },
@@ -517,7 +518,7 @@ const capacidadeTicQuarter = consolidarTrimestre(
   "1TRI/2026"
 );
 assert.equal(capacidadeTicQuarter.statusTrimestre, "Fechado");
-assert.equal(capacidadeTicQuarter.mesesHomologados, 3);
+assert.equal(capacidadeTicQuarter.mesesHomologados, 1);
 assert.ok(Math.abs(capacidadeTicQuarter.metaTrimestral - 0.35) < 0.000001);
 assert.ok(Math.abs(capacidadeTicQuarter.resultadoTrimestral - 0.35) < 0.000001);
 assert.ok(Math.abs(capacidadeTicQuarter.desempenhoTrimestral - 1) < 0.000001);
@@ -724,12 +725,12 @@ const ratio = consolidarTrimestre(
   ],
   "1TRI/2026"
 );
-assert.ok(Math.abs(ratio.resultadoTrimestral - (1170000000 / 3966900000)) < 0.000001);
-assert.ok(Math.abs(ratio.desempenhoTrimestral - ((1170000000 / 3966900000) / 0.2805)) < 0.000001);
+assert.ok(Math.abs(ratio.resultadoTrimestral - (1770200000 / 5966900000)) < 0.000001);
+assert.ok(Math.abs(ratio.desempenhoTrimestral - ((1770200000 / 5966900000) / 0.2805)) < 0.000001);
 assert.equal(ratio.metaTrimestral, 0.2805);
 assert.equal(ratio.statusTrimestre, "Parcial");
-assert.equal(ratio.canaisDigitaisAcumuladoTrimestre, 1170000000);
-assert.equal(ratio.produtosLoteriasAcumuladoTrimestre, 3966900000);
+assert.equal(ratio.canaisDigitaisAcumuladoTrimestre, 1770200000);
+assert.equal(ratio.produtosLoteriasAcumuladoTrimestre, 5966900000);
 
 const ggrFormulaQuarter = consolidarTrimestre(
   { id: 5, indicador: "Gross Gaming Revenue (GGR)", unidadeMedida: "moeda" },

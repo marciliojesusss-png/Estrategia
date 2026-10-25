@@ -227,7 +227,11 @@ final class BaseDadosService
         $this->db->beginTransaction();
         try {
             $before = $this->lancamentos->findForUpdate($launchId);
-            if (!$before || !LancamentoStateMachine::editable($before['status'])) {
+            if (!$before) {
+                throw new LogicException('Lancamento inexistente ou indisponivel para edicao.');
+            }
+            $this->assertLegacyLaunchAllowed($before);
+            if (!LancamentoStateMachine::editable($before['status'])) {
                 throw new LogicException('Lancamento inexistente ou indisponivel para edicao.');
             }
             if (!AccessPolicy::scopeAllows($user, $before)) {
@@ -308,13 +312,28 @@ final class BaseDadosService
             if (!is_array($item) || empty($item['id'])) continue;
             $existing = $this->lancamentos->find($item['id']);
             if (!$existing) continue;
-            if (LancamentoStateMachine::normalize($existing['status']) === LancamentoStateMachine::HOMOLOGATED
-                && $this->launchProductionChanged($existing, $item)) {
-                throw new InvalidArgumentException('Lancamento homologado somente pode ser alterado pelo fluxo central de reabertura.');
-            }
             if ($this->launchProductionChanged($existing, $item)) {
+                $this->assertLegacyLaunchAllowed($existing);
                 $this->assertLaunchMutable($existing);
             }
+        }
+    }
+
+    private function assertLegacyLaunchAllowed(array $launch): void
+    {
+        $status = LancamentoStateMachine::normalize($launch['status'] ?? '');
+        $transactionalStatuses = array(
+            LancamentoStateMachine::REOPENED,
+            LancamentoStateMachine::RECTIFIED,
+            LancamentoStateMachine::HOMOLOGATED,
+        );
+        $pendingReopenCycle = $status === LancamentoStateMachine::IN_PROGRESS
+            && (int)($launch['versaoAtual'] ?? 1) > 1
+            && $this->homologacoes->reopenCycleActive($launch['id']);
+        if (in_array($status, $transactionalStatuses, true) || $pendingReopenCycle) {
+            throw new InvalidArgumentException(
+                'Lancamento em ciclo transacional deve ser alterado exclusivamente por PATCH /api/lancamentos/{id}.'
+            );
         }
     }
 

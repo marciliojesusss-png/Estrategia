@@ -209,7 +209,10 @@
       return getReferenciaNpsCompetencia(rule, { ano: year, mes: quarterEnd, competencia: `${year}-${String(quarterEnd).padStart(2, "0")}` });
     }
     if (rule?.tipoCalculo === "razao_canais_digitais") {
-      return toNumber(params.metaReferencia ?? rule.metaAnualValor) ?? 0.2805;
+      const year = getYear(quarterLabel);
+      const quarterEnd = QUARTERS.find((item) => item.number === quarterNumberValue)?.months.at(-1);
+      const key = `${year}-${String(quarterEnd).padStart(2, "0")}`;
+      return toNumber(params.metasPorCompetencia?.[key] ?? params.metaReferencia ?? rule.metaAnualValor);
     }
     const fixedMonthly = toNumber(params.metaMensalFixa ?? params.metaMensalPix);
     if (fixedMonthly !== null) return fixedMonthly * 3;
@@ -324,13 +327,36 @@
     const homologatedCount = homologatedInQuarter.length;
     const expectedCount = expectedMonths.length;
     const hasReturned = officialQuarterLaunches.some((item) => item.status === STATUS_LANCAMENTO.DEVOLVIDO_AJUSTE);
-    let quarterStatus = homologatedCount === 0 ? "Sem dados" : homologatedCount === expectedCount ? "Fechado" : "Parcial";
+    const capacidadeTicEmFechamento = regra?.tipoCalculo === "marco_projeto_percentual" &&
+      regra?.parametrosCalculo?.metaTipo === "curva_trimestral_percentual" &&
+      officialQuarterLaunches.some((item) => item.status === STATUS_LANCAMENTO.EM_PREENCHIMENTO);
+    const aprimoramentoEmFechamento = regra?.tipoCalculo === "melhorias_acumuladas" &&
+      officialQuarterLaunches.some((item) => (
+        item.status === STATUS_LANCAMENTO.EM_PREENCHIMENTO &&
+        root.IndicatorFormulas?.resolverTipoPosicaoAprimoramento?.(item) === "fechamento_quantitativo"
+      ));
+    const ggrEmFechamento = regra?.tipoCalculo === "ggr_formula" &&
+      officialQuarterLaunches.some((item) => (
+        item.status === STATUS_LANCAMENTO.EM_PREENCHIMENTO &&
+        toNumber(item?.camposEntrada?.[regra?.parametrosCalculo?.campoGgrAcumuladoDocumental || "ggrAcumuladoOficial"]) !== null
+      ));
+    const canaisDigitaisEmFechamento = regra?.tipoCalculo === "razao_canais_digitais" &&
+      officialQuarterLaunches.some((item) => (
+        [STATUS_LANCAMENTO.EM_PREENCHIMENTO, "Reaberto", "Retificado"].includes(item.status) &&
+        (
+          toNumber(item?.camposEntrada?.[regra?.parametrosCalculo?.campoDenominador || "arrecadacaoTotalProdutosLoteriasMes"]) !== null ||
+          toNumber(item?.camposEntrada?.[regra?.parametrosCalculo?.campoResultadoAcumuladoDocumental || "resultadoAcumuladoDocumentalCanaisDigitais"]) !== null
+        )
+      ));
+    let quarterStatus = homologatedCount === 0
+      ? (capacidadeTicEmFechamento || aprimoramentoEmFechamento || ggrEmFechamento || canaisDigitaisEmFechamento ? "Parcial" : "Sem dados")
+      : homologatedCount === expectedCount ? "Fechado" : "Parcial";
     const homologatedNames = monthlyComposition
       .filter((item) => item.status === STATUS_LANCAMENTO.HOMOLOGADO)
       .map((item) => item.nomeMes);
     let meta = getReferenceMeta(regra, quarterLaunches, number, label);
 
-    if (!number || !months.length || homologatedCount === 0) {
+    if (!number || !months.length || (homologatedCount === 0 && !capacidadeTicEmFechamento && !aprimoramentoEmFechamento && !ggrEmFechamento && !canaisDigitaisEmFechamento)) {
       const hasQualitativeAnnualResearchPosition = officialQuarterLaunches.some((item) => (
         isQualitativeAnnualResearchPosition(regra, item)
       ));
@@ -357,7 +383,46 @@
       };
     }
 
-    let calculationScope = getCalculationScope(regra, lancamentosDoIndicador || [], months, year, months.at(-1));
+    let calculationScope = capacidadeTicEmFechamento
+      ? officialQuarterLaunches
+      : getCalculationScope(regra, lancamentosDoIndicador || [], months, year, months.at(-1));
+    if (aprimoramentoEmFechamento) {
+      calculationScope = (lancamentosDoIndicador || []).filter((item) => (
+        Number(item.ano) === year &&
+        Number(item.mes) <= months.at(-1) &&
+        (
+          item.status === STATUS_LANCAMENTO.HOMOLOGADO ||
+          (
+            item.status === STATUS_LANCAMENTO.EM_PREENCHIMENTO &&
+            root.IndicatorFormulas?.resolverTipoPosicaoAprimoramento?.(item) === "fechamento_quantitativo"
+          )
+        )
+      ));
+    }
+    if (ggrEmFechamento) {
+      calculationScope = (lancamentosDoIndicador || []).filter((item) => (
+        Number(item.ano) === year &&
+        Number(item.mes) <= months.at(-1) &&
+        (
+          item.status === STATUS_LANCAMENTO.HOMOLOGADO ||
+          (
+            item.status === STATUS_LANCAMENTO.EM_PREENCHIMENTO &&
+            expectedMonths.includes(Number(item.mes))
+          )
+        )
+      ));
+    }
+    if (canaisDigitaisEmFechamento) {
+      calculationScope = (lancamentosDoIndicador || []).filter((item) => {
+        if (Number(item.ano) !== year || Number(item.mes) > months.at(-1)) return false;
+        if ([STATUS_LANCAMENTO.CANCELADO, STATUS_LANCAMENTO.SUBSTITUIDO, STATUS_LANCAMENTO.NAO_INICIADO].includes(item.status)) return false;
+        const fields = item.camposEntrada || {};
+        const numerator = fields[regra?.parametrosCalculo?.campoNumerador || "arrecadacaoCanaisEletronicosMes"];
+        const denominator = fields[regra?.parametrosCalculo?.campoDenominador || "arrecadacaoTotalProdutosLoteriasMes"];
+        const documented = fields[regra?.parametrosCalculo?.campoResultadoAcumuladoDocumental || "resultadoAcumuladoDocumentalCanaisDigitais"];
+        return (toNumber(numerator) !== null && toNumber(denominator) !== null) || toNumber(documented) !== null;
+      });
+    }
     const lucroRecorrente = regra?.tipoCalculo === "lucro_recorrente_mensal";
     const lucroRecorrenteYtdCompleto = !lucroRecorrente || Array.from(
       { length: months.at(-1) },

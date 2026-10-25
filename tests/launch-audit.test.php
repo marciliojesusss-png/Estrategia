@@ -35,6 +35,28 @@ final class FakeEvents
         $this->rows[] = compact('id', 'before', 'after', 'user');
     }
     public function exceptionalReopenCycleActive($id) { return false; }
+    public function reopenCycleActive($id) { return true; }
+}
+
+foreach (array('Reaberto', 'Retificado', 'Homologado') as $protectedStatus) {
+    $db = new FakeAuditDb();
+    $launches = new FakeLaunches();
+    $launches->before['status'] = $protectedStatus;
+    $service = launchAuditService($db, $launches, new FakeEvents(), new FakeEvents());
+    try {
+        $service->saveLaunchAction(array($launches->before), 'L1', 'draft', array('perfil'=>'administrador','matricula'=>'C123456'));
+        fwrite(STDERR, "Endpoint legado aceitou estado protegido {$protectedStatus}.\n");
+        exit(1);
+    } catch (InvalidArgumentException $expected) {
+        if (strpos($expected->getMessage(), 'PATCH /api/lancamentos/{id}') === false) {
+            fwrite(STDERR, "Erro estrutural inesperado para {$protectedStatus}.\n");
+            exit(1);
+        }
+    }
+    if ($launches->saved !== null || $db->commits !== 0) {
+        fwrite(STDERR, "Endpoint legado persistiu estado protegido {$protectedStatus}.\n");
+        exit(1);
+    }
 }
 
 final class FakeLaunchConfig

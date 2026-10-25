@@ -92,6 +92,17 @@ final class HomologacoesRepository
         return $stmt->fetchColumn() === 'reabertura_excepcional_pos_fechamento_ca';
     }
 
+    public function reopenCycleActive($launchId)
+    {
+        $stmt = $this->db->prepare(
+            "SELECT TOP 1 acao FROM homologacoes WHERE lancamento_id=:lancamento "
+            . "AND acao IN ('reabertura_excepcional_pos_fechamento_ca','lancamento_reaberto','homologacao_lancamento') "
+            . 'ORDER BY data_acao DESC, created_at DESC, id DESC'
+        );
+        $stmt->execute(array(':lancamento' => (string) $launchId));
+        return in_array($stmt->fetchColumn(), array('reabertura_excepcional_pos_fechamento_ca', 'lancamento_reaberto'), true);
+    }
+
     public function all(array $filters=array()){return $this->history($filters,1,100)['items'];}
 
     public function replaceAll(array $items)

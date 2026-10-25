@@ -427,7 +427,8 @@
         parametrosCalculo: {
           ...(regra.parametrosCalculo || {}),
           campoTipoPosicao: "tipoPosicaoAprimoramento",
-          campoPosicaoAcumulada: "melhoriasImplementadasAcumuladas"
+          campoPosicaoAcumulada: "melhoriasImplementadasAcumuladas",
+          mesesFechamentoTrimestral: [3, 6, 9, 12]
         },
         camposEntrada: [
           {
@@ -648,6 +649,42 @@
       (calculated?.statusCalculo === "aguardando_dados" ? "Sem cálculo" : Calculations.calcularStatusDesempenho(resolved?.percentualAtingido));
   }
 
+  function resolveCapacidadeTicPresentation(indicador, regra, launch, calculated) {
+    const applies = Number(indicador?.id) === 11 && regra?.tipoCalculo === "marco_projeto_percentual";
+    if (!applies) return { applies: false };
+
+    const closingMonths = regra?.parametrosCalculo?.mesesFechamentoTrimestral || [3, 6, 9, 12];
+    const closing = closingMonths.includes(Number(launch?.mes));
+    const metaReferenciaTrimestre = calculated?.metaReferenciaTrimestre ??
+      calculated?.metaTrimestral ??
+      launch?.metaReferenciaTrimestre ??
+      launch?.camposEntrada?.metaReferenciaTrimestre ??
+      null;
+    const metaOficial = closing
+      ? calculated?.metaOficialCompetencia ?? launch?.metaOficialCompetencia ?? launch?.metaReferencia ?? launch?.metaMensal ?? metaReferenciaTrimestre
+      : null;
+    const resultadoOficial = closing
+      ? calculated?.resultadoMensal ?? calculated?.resultadoCalculado ?? launch?.resultadoMensal ?? null
+      : null;
+    const atingimentoOficial = closing
+      ? calculated?.percentualAtingidoMensal ?? calculated?.percentualAtingido ?? launch?.percentualAtingido ?? null
+      : null;
+    const semResultado = resultadoOficial == null && atingimentoOficial == null;
+
+    return {
+      applies: true,
+      closing,
+      tipoPosicao: closing ? "Fechamento trimestral" : "Acompanhamento do trimestre",
+      metaReferenciaTrimestre,
+      metaOficial,
+      resultadoOficial,
+      atingimentoOficial,
+      situacao: closing
+        ? (semResultado ? "Sem avaliação" : calculated?.situacao || launch?.situacaoCalculada || Calculations.calcularStatusDesempenho(atingimentoOficial))
+        : (launch?.status === "Não iniciado" ? "Sem avaliação" : "Em acompanhamento")
+    };
+  }
+
   function performanceBadge(situation) {
     const normalized = window.Situations ? Situations.normalizarSituacao(situation) : situation;
     if (normalized === "Atingido" || normalized === "Superado") return "ok";
@@ -832,13 +869,23 @@
 
     const regra = getRule(indicador);
     const calculated = launchCalculation(indicador, regra, lancamento) || {};
-    const situation = calculated.situacao || lancamento.situacaoCalculada || Calculations.calcularStatusDesempenho(calculated.percentualAtingidoMensal ?? lancamento.percentualAtingido);
-    const metaReferencia = calculated.metaReferenciaMensal ?? calculated.metaReferenciaPeriodo ?? calculated.metaTrimestral ?? calculated.metaAcumulada ?? lancamento.metaMensal ?? regra?.metaAnualValor;
-    const resultadoCalculado = calculated.resultadoMensal ?? calculated.resultadoCalculado ?? lancamento.resultadoMensal ?? lancamento.realizadoMensal;
+    const isCapacidadeTic = Number(indicador.id) === 11 && regra?.tipoCalculo === "marco_projeto_percentual";
+    const capacidadeTicPresentation = resolveCapacidadeTicPresentation(indicador, regra, lancamento, calculated);
+    const situation = capacidadeTicPresentation.applies
+      ? capacidadeTicPresentation.situacao
+      : calculated.situacao || lancamento.situacaoCalculada || Calculations.calcularStatusDesempenho(calculated.percentualAtingidoMensal ?? lancamento.percentualAtingido);
+    const metaReferencia = capacidadeTicPresentation.applies
+      ? capacidadeTicPresentation.metaOficial
+      : calculated.metaReferenciaMensal ?? calculated.metaReferenciaPeriodo ?? calculated.metaTrimestral ?? calculated.metaAcumulada ?? lancamento.metaMensal ?? regra?.metaAnualValor;
+    const resultadoCalculado = capacidadeTicPresentation.applies
+      ? capacidadeTicPresentation.resultadoOficial
+      : calculated.resultadoMensal ?? calculated.resultadoCalculado ?? lancamento.resultadoMensal ?? lancamento.realizadoMensal;
     const resultadoOficial = lancamento.status === "Homologado"
       ? resultadoCalculado
       : (calculated.resultadoOficial ?? lancamento.resultadoOficial ?? "-");
-    const percent = calculated.percentualAtingidoMensal ?? calculated.percentualAtingido ?? lancamento.percentualAtingido;
+    const percent = capacidadeTicPresentation.applies
+      ? capacidadeTicPresentation.atingimentoOficial
+      : calculated.percentualAtingidoMensal ?? calculated.percentualAtingido ?? lancamento.percentualAtingido;
     const isLucroRecorrente = Number(indicador.id) === 7 && regra?.tipoCalculo === "lucro_recorrente_mensal";
     const isIncentivoSocioambiental = Number(indicador.id) === 19 && regra?.tipoCalculo === "investimento_socioambiental";
     const isVisibilidadeRepasses = Number(indicador.id) === 20 && regra?.tipoCalculo === "execucao_acoes_propostas";
@@ -930,7 +977,14 @@
               ["Metodologia vigente", metodologiaIeo.descricao, true],
               ["Fórmula vigente", metodologiaIeo.formula, true]
             ] : []),
-            ...(isIncentivoSocioambiental ? [
+            ...(isCapacidadeTic ? [
+              ["Tipo da posição", capacidadeTicPresentation.tipoPosicao],
+              ["Meta do fechamento trimestral", formatMeasureValue(capacidadeTicPresentation.metaReferenciaTrimestre, regra?.unidadeMedida)],
+              ["Avaliação oficial", capacidadeTicPresentation.closing ? "Fechamento trimestral" : "Posição oficial somente no fechamento", true],
+              ["Meta oficial da competência", formatMeasureValue(capacidadeTicPresentation.metaOficial, regra?.unidadeMedida)],
+              ["Resultado oficial da competência", formatMeasureValue(capacidadeTicPresentation.resultadoOficial, regra?.unidadeMedida)],
+              ["% atingido oficial", Calculations.formatarPercentual(capacidadeTicPresentation.atingimentoOficial)]
+            ] : isIncentivoSocioambiental ? [
               ["Meta percentual", Calculations.formatarPercentual(calculated.metaPercentual, 2, 2)],
               ["Meta financeira", Calculations.formatarValor(calculated.metaFinanceira, "moeda")],
               ["Resultado percentual oficial", Calculations.formatarPercentual(calculated.resultadoPercentualOficial, 5, 5)],
@@ -1264,6 +1318,7 @@
       <th>Ação</th>
     ` : isGgrFormula ? `
       <th>Mês</th>
+      <th>Tipo da posição</th>
       <th>Meta acumulada de referência</th>
       <th>Arrecadação total</th>
       <th>Prêmios a pagar</th>
@@ -1334,6 +1389,14 @@
       <th>Situacao</th>
       <th>Status</th>
       <th>Acao</th>
+    ` : isCapacidadeTic ? `
+      <th>Mês</th>
+      <th>Meta oficial</th>
+      <th>Resultado oficial</th>
+      <th>% atingido</th>
+      <th>Situação</th>
+      <th>Status mensal</th>
+      <th>Ação</th>
     ` : isAccumulatedGoalCurve ? `
       <th>Mes</th>
       <th>Meta acumulada de referencia</th>
@@ -1460,21 +1523,30 @@
       }
       if (isAprimoramentoExperiencia) {
         const calculationScope = launches
-          .filter((item) => Number(item.mes) <= month && (item.status === "Homologado" || item === launch))
+          .filter((item) => Number(item.mes) <= month && (
+            item.status === "Homologado" ||
+            item === launch ||
+            (
+              item.status === "Em preenchimento" &&
+              IndicatorFormulas.resolverTipoPosicaoAprimoramento(item) === "fechamento_quantitativo"
+            )
+          ))
           .sort((a, b) => Number(a.mes) - Number(b.mes));
         const calculated = launch
           ? calculateIndicatorForDisplay(indicador, regra, launch, calculationScope)
           : null;
         const percent = calculated?.percentualAtingidoMensal ?? null;
-        const situation = calculated?.situacao || (calculated?.statusCalculo === "aguardando_dados" ? "Sem calculo" : Calculations.calcularStatusDesempenho(percent));
+        const positionType = launch
+          ? IndicatorFormulas.resolverTipoPosicaoAprimoramento(launch)
+          : null;
+        const situation = positionType === "acompanhamento" && launch?.status === "Não iniciado"
+          ? "Sem avaliação"
+          : calculated?.situacao || (calculated?.statusCalculo === "aguardando_dados" ? "Sem calculo" : Calculations.calcularStatusDesempenho(percent));
         const totalImprovements = Number(calculated?.totalMelhoriasPlano2026 ?? regra?.parametrosCalculo?.totalMelhoriasPlano2026);
         const accumulatedImprovements = calculated?.melhoriasImplementadasAcumuladas ??
           (Number.isFinite(totalImprovements) && calculated?.resultadoMensal != null
             ? Math.round(Number(calculated.resultadoMensal) * totalImprovements)
             : null);
-        const positionType = launch
-          ? IndicatorFormulas.resolverTipoPosicaoAprimoramento(launch)
-          : null;
         return `
           <tr>
             <td>${name}/2026</td>
@@ -1658,16 +1730,18 @@
         const calculated = launch
           ? calculateIndicatorForDisplay(indicador, regra, launch, calculationScope)
           : null;
+        const tipoPosicao = window.IndicatorFormulas?.resolverTipoPosicaoGgr?.(syntheticLaunch, regra) || "acompanhamento";
         const percent = calculated?.percentualAtingidoAnual ?? calculated?.percentualAtingidoMensal ?? null;
         const situation = calculated?.situacao || (calculated?.statusCalculo === "aguardando_dados" ? "Sem calculo" : Calculations.calcularStatusDesempenho(percent));
         const percentLabel = percent === null || percent === undefined ? "Sem cálculo" : Calculations.formatarPercentual(percent);
         return `
           <tr>
             <td>${name}/2026</td>
+            <td>${tipoPosicao === "fechamento_trimestral" ? "Fechamento trimestral" : "Acompanhamento"}</td>
             <td>${escapeHtml(formatCurveMeta(syntheticLaunch))}</td>
             <td>${Calculations.formatarValor(launch?.camposEntrada?.arrecadacaoTotalMes, "moeda")}</td>
             <td>${Calculations.formatarValor(launch?.camposEntrada?.premiosAPagarMes, "moeda")}</td>
-            <td>${Calculations.formatarValor(calculated?.ggrCalculadoMes ?? calculated?.resultadoMensal, "moeda")}</td>
+            <td>${Calculations.formatarValor(calculated?.ggrCalculadoMes, "moeda")}</td>
             <td>${Calculations.formatarValor(calculated?.ggrAcumuladoAteCompetencia ?? calculated?.resultadoOficialAnual, "moeda")}</td>
             <td>${Calculations.formatarPercentual(percent)}</td>
             <td>${escapeHtml(situation)}</td>
@@ -1841,18 +1915,23 @@
         ? calculateIndicatorForDisplay(indicador, regra, launch, calculationScope)
         : null;
       const resolved = resolveMonthlyCalculation(calculated, launch);
-      const metaReference = calculated?.metaReferenciaMensal ??
-        calculated?.metaReferenciaPeriodo ??
-        launch?.metaReferencia ??
-        launch?.metaMensal ??
-        regra.metaAnualValor;
-      const situation = resolveMonthlySituation(calculated, resolved);
+      const capacidadeTicPresentation = resolveCapacidadeTicPresentation(indicador, regra, launch, calculated);
+      const metaReference = capacidadeTicPresentation.applies
+        ? capacidadeTicPresentation.metaOficial
+        : calculated?.metaReferenciaMensal ??
+          calculated?.metaReferenciaPeriodo ??
+          launch?.metaReferencia ??
+          launch?.metaMensal ??
+          regra.metaAnualValor;
+      const displayedResult = capacidadeTicPresentation.applies ? capacidadeTicPresentation.resultadoOficial : resolved.resultadoMensal;
+      const displayedAchievement = capacidadeTicPresentation.applies ? capacidadeTicPresentation.atingimentoOficial : resolved.percentualAtingido;
+      const situation = capacidadeTicPresentation.applies ? capacidadeTicPresentation.situacao : resolveMonthlySituation(calculated, resolved);
       return `
         <tr>
           <td>${name}/2026</td>
           <td>${Calculations.formatarValor(metaReference, regra.unidadeMedida)}</td>
-          <td>${Calculations.formatarValor(resolved.resultadoMensal, regra.unidadeMedida)}</td>
-          <td>${Calculations.formatarPercentual(resolved.percentualAtingido)}</td>
+          <td>${Calculations.formatarValor(displayedResult, regra.unidadeMedida)}</td>
+          <td>${Calculations.formatarPercentual(displayedAchievement)}</td>
           <td><span class="badge ${performanceBadge(situation)}">${escapeHtml(situation)}</span></td>
           <td><span class="badge ${launchBadge(launch?.status)}">${escapeHtml(launch?.status || "Não iniciado")}</span></td>
           <td>${monthlyAction(launch)}</td>
@@ -2090,6 +2169,7 @@
       resolveAccumulatedGoalCalculation,
       mergeCalculationForDisplay,
       resolveMonthlySituation,
+      resolveCapacidadeTicPresentation,
       performanceBadge,
       requestedDetailScope,
       isGeneralDetailRequest,

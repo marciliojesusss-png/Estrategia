@@ -52,12 +52,59 @@ const {
   resolveAccumulatedGoalCalculation,
   mergeCalculationForDisplay,
   resolveMonthlySituation,
+  resolveCapacidadeTicPresentation,
   performanceBadge,
   resolveGrowthTrackingModes,
   usesAccumulatedGoalCurve,
   formatInputValue,
   renderInputData
 } = context.window.IndicatorsInternals;
+
+const capacidadeTicIndicator = { id: 11 };
+const capacidadeTicRule = {
+  tipoCalculo: "marco_projeto_percentual",
+  parametrosCalculo: { mesesFechamentoTrimestral: [3, 6, 9, 12] }
+};
+const ticJanuary = resolveCapacidadeTicPresentation(
+  capacidadeTicIndicator,
+  capacidadeTicRule,
+  { mes: 1, status: "Homologado", metaMensal: 0.35, resultadoMensal: 0, percentualAtingido: 0, situacaoCalculada: "Abaixo da meta", camposEntrada: { metaReferenciaTrimestre: 0.35 } },
+  { metaTrimestral: 0.35, resultadoMensal: 0, percentualAtingidoMensal: 0, situacao: "Abaixo da meta" }
+);
+assert.equal(ticJanuary.metaOficial, null);
+assert.equal(ticJanuary.resultadoOficial, null);
+assert.equal(ticJanuary.atingimentoOficial, null);
+assert.equal(ticJanuary.situacao, "Em acompanhamento");
+const ticMarch = resolveCapacidadeTicPresentation(
+  capacidadeTicIndicator,
+  capacidadeTicRule,
+  { mes: 3, status: "Homologado", metaMensal: 0.35, resultadoMensal: 0.35, percentualAtingido: 1 },
+  { metaReferenciaTrimestre: 0.35, metaOficialCompetencia: 0.35, resultadoMensal: 0.35, percentualAtingidoMensal: 1, situacao: "Atingido" }
+);
+assert.equal(ticMarch.metaOficial, 0.35);
+assert.equal(ticMarch.resultadoOficial, 0.35);
+assert.equal(ticMarch.atingimentoOficial, 1);
+assert.equal(ticMarch.situacao, "Atingido");
+const ticAugust = resolveCapacidadeTicPresentation(
+  capacidadeTicIndicator,
+  capacidadeTicRule,
+  { mes: 8, status: "Em preenchimento", metaMensal: 0.85, resultadoMensal: 1, percentualAtingido: 1 / 0.85, camposEntrada: { metaReferenciaTrimestre: 0.85 } },
+  { metaTrimestral: 0.85, resultadoMensal: 1, percentualAtingidoMensal: 1 / 0.85, situacao: "Atingido" }
+);
+assert.equal(ticAugust.metaOficial, null);
+assert.equal(ticAugust.resultadoOficial, null);
+assert.equal(ticAugust.atingimentoOficial, null);
+assert.equal(ticAugust.situacao, "Em acompanhamento");
+const ticDecember = resolveCapacidadeTicPresentation(
+  capacidadeTicIndicator,
+  capacidadeTicRule,
+  { mes: 12, status: "Não iniciado", metaMensal: 1, camposEntrada: { metaReferenciaTrimestre: 1 } },
+  { metaReferenciaTrimestre: 1, metaOficialCompetencia: 1 }
+);
+assert.equal(ticDecember.metaOficial, 1);
+assert.equal(ticDecember.resultadoOficial, null);
+assert.equal(ticDecember.atingimentoOficial, null);
+assert.equal(ticDecember.situacao, "Sem avaliação");
 
 assert.equal(formatInputValue(119377680.03, { tipo: "moeda" }), "R$ 119.377.680,03");
 assert.equal(formatInputValue(null, { tipo: "moeda" }), "-");

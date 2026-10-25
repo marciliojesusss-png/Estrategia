@@ -164,7 +164,13 @@ governance_ok(strpos($legacyRequests, '$lancamentoService->reopen(') !== false, 
 governance_ok(strpos($legacyRequests, "updateStatus(") === false, 'solicitacao antiga nao pode alterar status diretamente');
 governance_ok(strpos($legacyRequests, 'Novas solicitacoes administrativas de reabertura nao sao aceitas') !== false, 'novas solicitacoes legadas devem permanecer desativadas');
 governance_ok(strpos($legacyDatabaseJs, 'status: "Reaberto"') === false, 'helper JavaScript legado deve usar endpoint central de reabertura');
-governance_ok(strpos($baseService, 'Lancamento homologado somente pode ser alterado pelo fluxo central de reabertura') !== false, 'gravacao em lote nao pode contornar a reabertura central');
+governance_ok(
+    strpos($baseService, 'Lancamento em ciclo transacional deve ser alterado exclusivamente por PATCH /api/lancamentos/{id}.') !== false
+    && strpos($baseService, 'LancamentoStateMachine::REOPENED') !== false
+    && strpos($baseService, 'LancamentoStateMachine::RECTIFIED') !== false
+    && strpos($baseService, 'LancamentoStateMachine::HOMOLOGATED') !== false,
+    'gravacao em lote nao pode contornar reabertura, retificacao ou homologacao central'
+);
 governance_ok(strpos($baseService, 'Homologacoes devem ser gravadas exclusivamente pelo fluxo oficial de decisao') !== false, 'eventos de homologacao nao podem ser fabricados pela API generica');
 governance_ok(strpos($genericDatabaseApi, 'Lancamentos devem ser gravados exclusivamente pelas acoes oficiais') !== false, 'API generica nao pode alterar lancamentos fora do fluxo auditado');
 $fakeConfigDb = new FakeCouncilConfigDb();

@@ -175,10 +175,30 @@
     FECHAMENTO_QUANTITATIVO: "fechamento_quantitativo"
   });
 
+  const TIPO_POSICAO_GGR = Object.freeze({
+    ACOMPANHAMENTO: "acompanhamento",
+    FECHAMENTO_TRIMESTRAL: "fechamento_trimestral"
+  });
+
+  function resolverTipoPosicaoGgr(lancamento, regra = null) {
+    const campoTipo = regra?.parametrosCalculo?.campoTipoPosicao || "tipoPosicaoGGR";
+    const tipoExplicito = String(raw(lancamento || {}, campoTipo) || "").trim();
+    if (Object.values(TIPO_POSICAO_GGR).includes(tipoExplicito)) return tipoExplicito;
+    const mesesFechamento = regra?.parametrosCalculo?.mesesFechamentoTrimestral || [3, 6, 9, 12];
+    return mesesFechamento.includes(Number(lancamento?.mes))
+      ? TIPO_POSICAO_GGR.FECHAMENTO_TRIMESTRAL
+      : TIPO_POSICAO_GGR.ACOMPANHAMENTO;
+  }
+
   function resolverTipoPosicaoAprimoramento(lancamento) {
     const camposEntrada = lancamento?.camposEntrada || {};
     const tipoExplicito = String(camposEntrada.tipoPosicaoAprimoramento || "").trim();
     if (Object.values(TIPO_POSICAO_APRIMORAMENTO).includes(tipoExplicito)) return tipoExplicito;
+
+    const mes = Number(lancamento?.mes);
+    if (Number.isInteger(mes) && ![3, 6, 9, 12].includes(mes)) {
+      return TIPO_POSICAO_APRIMORAMENTO.ACOMPANHAMENTO;
+    }
 
     const possuiAcumulado = camposEntrada.melhoriasImplementadasAcumuladas !== undefined &&
       camposEntrada.melhoriasImplementadasAcumuladas !== null &&
@@ -191,11 +211,14 @@
   }
 
   function resultadoAcompanhamentoAprimoramento(regra, lancamentoAtual) {
+    const semAvaliacao = lancamentoAtual?.status === "Não iniciado";
     return {
-      ...pendente("Acompanhamento registrado sem nova posição quantitativa.", regra.unidadeMedida, {
+      ...pendente(semAvaliacao
+        ? "Competência de acompanhamento ainda sem avaliação."
+        : "Acompanhamento registrado sem nova posição quantitativa.", regra.unidadeMedida, {
         statusCalculo: "acompanhamento",
         tipoPosicaoAprimoramento: TIPO_POSICAO_APRIMORAMENTO.ACOMPANHAMENTO,
-        situacao: "Em acompanhamento"
+        situacao: semAvaliacao ? "Sem avaliação" : "Em acompanhamento"
       }),
       descricaoMelhoriasMes: raw(lancamentoAtual, "descricaoMelhoriasMes") || null
     };
@@ -649,22 +672,70 @@
   }
 
   function calcularGgrFormula(indicador, regra, lancamentoAtual, lancamentosDoAno) {
-    const required = validarObrigatorios(regra, lancamentoAtual);
-    if (required) return pendente("Dados insuficientes para cálculo.", regra.unidadeMedida);
+    const params = regra.parametrosCalculo || {};
+    const campoAcumuladoDocumental = params.campoGgrAcumuladoDocumental || "ggrAcumuladoOficial";
+    const ggrAcumuladoDocumental = campo(lancamentoAtual, campoAcumuladoDocumental);
+    const metaAcumulada = getMetaAcumuladaCompetencia(regra, lancamentoAtual);
+    const tipoPosicaoGGR = resolverTipoPosicaoGgr(lancamentoAtual, regra);
 
-    const arrecadacao = campo(lancamentoAtual, regra.parametrosCalculo?.campoArrecadacao || "arrecadacaoTotalMes");
-    const premios = campo(lancamentoAtual, regra.parametrosCalculo?.campoPremios || "premiosAPagarMes");
+    if (ggrAcumuladoDocumental !== null) {
+      if (ggrAcumuladoDocumental < 0) {
+        return erro("A posição acumulada documental do GGR não pode ser negativa.", regra.unidadeMedida);
+      }
+      if (metaAcumulada === null || metaAcumulada <= 0) {
+        return pendente("Meta de referência não cadastrada para a competência. Pendente de curva orçamentária.", regra.unidadeMedida, {
+          resultadoAcumulado: ggrAcumuladoDocumental,
+          resultadoAcumuladoFormatado: formatarValor(ggrAcumuladoDocumental, regra.unidadeMedida),
+          resultadoOficialAnual: ggrAcumuladoDocumental,
+          resultadoOficialAnualFormatado: formatarValor(ggrAcumuladoDocumental, regra.unidadeMedida),
+          metaPendente: true,
+          metaReferenciaMensagem: "Pendente de curva orçamentária",
+          ggrCalculadoMes: null,
+          ggrAcumuladoAteCompetencia: ggrAcumuladoDocumental,
+          ggrAcumuladoDocumental: true,
+          tipoPosicaoGGR
+        });
+      }
+
+      const percentual = ggrAcumuladoDocumental / metaAcumulada;
+      const acompanhamento = tipoPosicaoGGR === TIPO_POSICAO_GGR.ACOMPANHAMENTO;
+      return ok(
+        ggrAcumuladoDocumental,
+        ggrAcumuladoDocumental,
+        percentual,
+        percentual,
+        regra.unidadeMedida,
+        acompanhamento
+          ? "Posição acumulada documental de acompanhamento comparada com a curva da competência."
+          : "Posição acumulada documental do fechamento trimestral comparada com a meta oficial.",
+        {
+          resultadoOficialAnual: ggrAcumuladoDocumental,
+          percentualAtingidoAnual: percentual,
+          metaReferenciaMensal: metaAcumulada,
+          metaAcumulada,
+          realizadoAcumulado: ggrAcumuladoDocumental,
+          ggrCalculadoMes: null,
+          ggrAcumuladoAteCompetencia: ggrAcumuladoDocumental,
+          ggrAcumuladoDocumental: true,
+          tipoPosicaoGGR,
+          percentualMetaAcumulada: percentual,
+          situacao: acompanhamento ? "Em acompanhamento" : situacaoPorPercentual(percentual)
+        }
+      );
+    }
+
+    const arrecadacao = campo(lancamentoAtual, params.campoArrecadacao || "arrecadacaoTotalMes");
+    const premios = campo(lancamentoAtual, params.campoPremios || "premiosAPagarMes");
     if (arrecadacao === null || premios === null) return pendente("Dados insuficientes para cálculo.", regra.unidadeMedida);
     if (arrecadacao < 0 || premios < 0) return erro("Arrecadação total e prêmios a pagar não podem ser negativos.", regra.unidadeMedida);
 
     const ggrMes = arrecadacao - premios;
     const ateMes = lancamentosAteMes(lancamentoAtual, lancamentosDoAno);
     const ggrAcumulado = ateMes.reduce((sum, item) => {
-      const itemArrecadacao = campo(item, regra.parametrosCalculo?.campoArrecadacao || "arrecadacaoTotalMes");
-      const itemPremios = campo(item, regra.parametrosCalculo?.campoPremios || "premiosAPagarMes");
+      const itemArrecadacao = campo(item, params.campoArrecadacao || "arrecadacaoTotalMes");
+      const itemPremios = campo(item, params.campoPremios || "premiosAPagarMes");
       return itemArrecadacao === null || itemPremios === null ? sum : sum + itemArrecadacao - itemPremios;
     }, 0);
-    const metaAcumulada = getMetaAcumuladaCompetencia(regra, lancamentoAtual);
 
     if (metaAcumulada === null || metaAcumulada <= 0) {
       return pendente("Meta de referência não cadastrada para a competência. Pendente de curva orçamentária.", regra.unidadeMedida, {
@@ -689,6 +760,8 @@
       metaAcumulada,
       ggrCalculadoMes: ggrMes,
       ggrAcumuladoAteCompetencia: ggrAcumulado,
+      ggrAcumuladoDocumental: false,
+      tipoPosicaoGGR,
       percentualMetaAcumulada: percentual,
       situacao: situacaoPorPercentual(percentual)
     });
@@ -903,11 +976,50 @@
   }
 
   function calcularRazaoCanaisDigitais(indicador, regra, lancamentoAtual, lancamentosDoAno) {
-    const numeratorField = regra.parametrosCalculo?.campoNumerador || "arrecadacaoCanaisEletronicosMes";
-    const denominatorField = regra.parametrosCalculo?.campoDenominador || "arrecadacaoTotalProdutosLoteriasMes";
+    const params = regra.parametrosCalculo || {};
+    const numeratorField = params.campoNumerador || "arrecadacaoCanaisEletronicosMes";
+    const denominatorField = params.campoDenominador || "arrecadacaoTotalProdutosLoteriasMes";
+    const documentedResultField = params.campoResultadoAcumuladoDocumental || "resultadoAcumuladoDocumentalCanaisDigitais";
+    const documentedPerformanceField = params.campoPercentualAtingidoOficial || "percentualAtingidoOficialCanaisDigitais";
     const monthlyNumerator = currency.parseMoedaBR(raw(lancamentoAtual, numeratorField));
     const monthlyDenominator = currency.parseMoedaBR(raw(lancamentoAtual, denominatorField));
-    const target = toNumber(lancamentoAtual.metaReferencia ?? lancamentoAtual.metaMensal ?? regra.parametrosCalculo?.metaReferencia ?? regra.metaAnualValor) || 0.2805;
+    const documentedResult = toNumber(raw(lancamentoAtual, documentedResultField));
+    const documentedPerformance = toNumber(raw(lancamentoAtual, documentedPerformanceField));
+    const key = competenciaKey(lancamentoAtual);
+    const targets = params.metasPorCompetencia || params.metasMensaisPorCompetencia || params.metasOficiaisPorCompetencia || {};
+    const target = toNumber(targets[key]) ??
+      toNumber(lancamentoAtual.metaReferencia ?? lancamentoAtual.metaMensal) ??
+      toNumber(params.metaReferencia ?? regra.metaAnualValor) ??
+      0.2805;
+
+    if (target <= 0) return erro("Meta da competencia deve ser maior que zero.", regra.unidadeMedida);
+
+    const missingMonthlyComponents = monthlyNumerator === null || monthlyDenominator === null;
+    if (missingMonthlyComponents && documentedResult !== null) {
+      if (documentedResult < 0 || documentedResult > 1) {
+        return erro("Resultado acumulado documental deve estar na escala decimal entre zero e um.", regra.unidadeMedida);
+      }
+      if (documentedPerformance !== null && documentedPerformance < 0) {
+        return erro("Atingimento oficial documental nao pode ser negativo.", regra.unidadeMedida);
+      }
+      const officialPerformance = documentedPerformance ?? documentedResult / target;
+      return ok(
+        null,
+        documentedResult,
+        null,
+        officialPerformance,
+        regra.unidadeMedida,
+        "Posicao acumulada documental utilizada sem criacao de componentes inexistentes.",
+        {
+          resultadoCalculadoAcumulado: null,
+          resultadoAcumuladoDocumental: documentedResult,
+          percentualAtingidoOficialDocumental: officialPerformance,
+          metaReferencia: target,
+          origemResultadoCanaisDigitais: "documental_direta",
+          situacao: officialPerformance >= 1 ? "Atingido" : "Abaixo da meta"
+        }
+      );
+    }
 
     if (monthlyNumerator === null || monthlyNumerator < 0) {
       return erro("Arrecadação total nos canais eletrônicos deve ser informada e não pode ser negativa.", regra.unidadeMedida);
@@ -938,20 +1050,26 @@
     }
 
     const monthlyResult = monthlyNumerator / monthlyDenominator;
-    const accumulatedResult = accumulatedNumerator / accumulatedDenominator;
+    const calculatedAccumulatedResult = accumulatedNumerator / accumulatedDenominator;
+    const accumulatedResult = documentedResult ?? calculatedAccumulatedResult;
+    const accumulatedPerformance = documentedPerformance ?? accumulatedResult / target;
     return ok(
       monthlyResult,
       accumulatedResult,
       monthlyResult / target,
-      accumulatedResult / target,
+      accumulatedPerformance,
       regra.unidadeMedida,
       "Participação dos canais digitais calculada pela razão acumulada entre as arrecadações.",
       {
         canaisEletronicosAcumulado: accumulatedNumerator,
         produtosLoteriasAcumulado: accumulatedDenominator,
-        resultadoCalculado: accumulatedResult,
+        resultadoCalculado: calculatedAccumulatedResult,
+        resultadoCalculadoAcumulado: calculatedAccumulatedResult,
+        resultadoAcumuladoDocumental: documentedResult,
+        percentualAtingidoOficialDocumental: documentedPerformance,
         metaReferencia: target,
-        situacao: accumulatedResult >= target
+        origemResultadoCanaisDigitais: documentedResult === null ? "componentes_mensais" : "documental_com_componentes",
+        situacao: accumulatedPerformance >= 1
           ? "Atingido"
           : "Abaixo da meta"
       }
@@ -1070,9 +1188,36 @@
   }
 
   function calcularProjetoMarcoEntrega(indicador, regra, lancamentoAtual) {
+    const params = regra.parametrosCalculo || {};
+    const mesAtual = Number(lancamentoAtual.mes);
+    const mesesFechamento = params.mesesFechamentoTrimestral;
+    if (
+      params.metaTipo === "curva_trimestral_percentual" &&
+      Array.isArray(mesesFechamento) &&
+      !mesesFechamento.includes(mesAtual)
+    ) {
+      const statusAcompanhamento = texto(lancamentoAtual, params.campoStatus || "statusProjeto");
+      const marcos = params.marcosCapacidadeTIC || params.marcosProjeto || [];
+      const marcoConfigurado = marcos.find((item) => item.label === statusAcompanhamento);
+      const percentualAcompanhamento = marcoConfigurado
+        ? toNumber(marcoConfigurado.percentual)
+        : clamp01(campo(lancamentoAtual, params.campoPercentual || "percentualExecucao"));
+      const trimestre = lancamentoAtual.trimestre || `${Math.ceil(mesAtual / 3)}TRI/${lancamentoAtual.ano || 2026}`;
+      const metaTrimestral = toNumber(params.curvaTrimestralPercentual?.[trimestre]?.metaPercentual);
+      return ok(null, null, null, null, regra.unidadeMedida, "Acompanhamento do projeto registrado sem avaliação oficial mensal.", {
+        marcoAlcancado: statusAcompanhamento,
+        marcoEsperadoTrimestre: params.curvaTrimestralPercentual?.[trimestre]?.marcoEsperado || null,
+        metaTrimestral,
+        metaReferenciaTrimestre: metaTrimestral,
+        metaOficialCompetencia: null,
+        percentualAcompanhamentoTIC: percentualAcompanhamento,
+        tipoPosicaoTIC: "acompanhamento",
+        situacao: "Em acompanhamento",
+        desempenhoNaoAplicavel: true
+      });
+    }
     const required = validarObrigatorios(regra, lancamentoAtual);
     if (required) return erro(required, regra.unidadeMedida);
-    const params = regra.parametrosCalculo || {};
     const statusOriginal = texto(lancamentoAtual, params.campoStatus || "statusProjeto");
     const status = statusOriginal.toLowerCase();
     if (params.metaTipo === "meta_oficial_trimestral_projeto") {
@@ -1185,23 +1330,23 @@
       : regra.parametrosCalculo?.metaTipo === "curva_trimestral_percentual"
         ? toNumber(curva[trimestre]?.metaPercentual)
         : null;
-    const mesesFechamento = regra.parametrosCalculo?.mesesFechamentoTrimestral;
-    const mesAtual = Number(lancamentoAtual.mes);
     const fechamentoTrimestral = !Array.isArray(mesesFechamento) || mesesFechamento.includes(mesAtual);
-    if (percentual === null && !fechamentoTrimestral && statusOriginal) {
-      return ok(null, null, null, null, regra.unidadeMedida, "Acompanhamento qualitativo do projeto registrado com sucesso.", {
+    if (!fechamentoTrimestral) {
+      return ok(null, null, null, null, regra.unidadeMedida, "Acompanhamento do projeto registrado sem avaliação oficial mensal.", {
         marcoAlcancado: statusOriginal,
         marcoEsperadoTrimestre: curva[trimestre]?.marcoEsperado || null,
         metaTrimestral,
+        metaReferenciaTrimestre: metaTrimestral,
+        metaOficialCompetencia: null,
+        percentualAcompanhamentoTIC: percentual,
+        tipoPosicaoTIC: "acompanhamento",
         situacao: "Em acompanhamento",
         desempenhoNaoAplicavel: true
       });
     }
     if (percentual === null) return erro("Percentual de execução deve ser informado.", regra.unidadeMedida);
     const percentualAtingido = metaTrimestral ? percentual / metaTrimestral : percentual;
-    const situacao = !fechamentoTrimestral
-      ? "Em acompanhamento"
-      : metaTrimestral
+    const situacao = metaTrimestral
       ? percentual >= metaTrimestral
         ? "Atingido"
         : "Abaixo da meta"
@@ -1214,6 +1359,9 @@
       marcoAlcancado: statusOriginal,
       marcoEsperadoTrimestre: curva[trimestre]?.marcoEsperado || null,
       metaTrimestral,
+      metaReferenciaTrimestre: metaTrimestral,
+      metaOficialCompetencia: metaTrimestral,
+      tipoPosicaoTIC: "fechamento_trimestral",
       situacao
     });
   }
@@ -1433,6 +1581,17 @@
       const acumuladoCompatibilidadeAtual = aprimoramentoExperiencia ? campo(lancamentoAtual, campoAcumulado) : null;
       const mensal = incrementoAtual ?? incrementoLegadoAtual;
       if (aprimoramentoExperiencia && mensal === null && acumuladoCompatibilidadeAtual === null) {
+        if (lancamentoAtual?.status === "Não iniciado") {
+          const trimestrePendente = `${Math.ceil(Number(lancamentoAtual.mes) / 3)}TRI/${lancamentoAtual.ano || 2026}`;
+          const criterioPendente = regra.parametrosCalculo?.curvaTrimestralAcumulada?.[trimestrePendente] || {};
+          return pendente("Fechamento trimestral aguardando resultado oficial.", regra.unidadeMedida, {
+            statusCalculo: "aguardando_resultado_oficial",
+            tipoPosicaoAprimoramento: TIPO_POSICAO_APRIMORAMENTO.FECHAMENTO_QUANTITATIVO,
+            metaTrimestral: toNumber(criterioPendente.metaPercentual),
+            metaQuantidadeTrimestral: toNumber(criterioPendente.metaQuantidadeAcumulada),
+            situacao: "Sem avaliação"
+          });
+        }
         return erro("Melhorias implementadas no período de apuração devem ser informadas.", regra.unidadeMedida);
       }
       if (!aprimoramentoExperiencia && (mensal === null || mensal < 0)) {
@@ -2259,9 +2418,11 @@
     TIPO_POSICAO_CAPACITACAO,
     MODO_RESULTADO_CAPACITACAO,
     TIPO_POSICAO_APRIMORAMENTO,
+    TIPO_POSICAO_GGR,
     resolverTipoPosicaoCapacitacao,
     resolverModoResultadoCapacitacao,
     resolverTipoPosicaoAprimoramento,
+    resolverTipoPosicaoGgr,
     isMedicaoOficialPesquisaAnual,
     obterRegra,
     regraFallback,

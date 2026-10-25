@@ -40,9 +40,26 @@ require(path.join(root, "assets/js/central-persistence.js"));
   assert.equal(body.value[1].updatedAt, "preservado");
   assert.equal(request.options.headers["X-CSRF-Token"], "token-teste");
 
+  const retified = await global.CentralPersistence.persistLaunchAction("draft", [
+    { id: "L1", indicadorId: 8, status: "Em preenchimento", camposEntrada: { valor: 4 } }
+  ], "L1", { transactional: true, requiresRetification: true, correctionReason: "Correcao dos componentes oficiais" });
+  assert.equal(retified.usuarioResponsavel, "C123456");
+  assert.equal(calls.length, 3);
+  assert.match(calls[2].url, /api\/lancamentos\/L1$/);
+  assert.equal(calls[2].options.method, "PATCH");
+  assert.equal(JSON.parse(calls[2].options.body).justificativaRetificacao, "Correcao dos componentes oficiais");
+
+  await assert.rejects(
+    () => global.CentralPersistence.persistLaunchAction("draft", [
+      { id: "L1", indicadorId: 8, status: "Reaberto", camposEntrada: { valor: 5 } }
+    ], "L1", { transactional: true, requiresRetification: true }),
+    /justificativa da retificacao e obrigatoria/
+  );
+  assert.equal(calls.length, 3, "nao pode haver fallback para api/database sem justificativa");
+
   const launches = read("assets/js/launches.js");
   const saveAction = launches.slice(launches.indexOf("async function saveLaunchData"), launches.indexOf("function recomputeAccumulatedForIndicator"));
-  assert.match(saveAction, /persistLaunchAction\(action, changedLaunches, updated\.id\)/);
+  assert.match(saveAction, /persistLaunchAction\(action, changedLaunches, updated\.id, persistenceOptions\)/);
   assert.doesNotMatch(saveAction, /DataStore\.appendHistory|DataStore\.salvarLancamentos/);
 
   const service = read("app/services/BaseDadosService.php");
@@ -52,6 +69,7 @@ require(path.join(root, "assets/js/central-persistence.js"));
   assert.match(action, /\$this->auditoria->append\(/);
   assert.match(action, /\$this->homologacoes->recordSubmission\(/);
   assert.match(action, /\$this->db->commit\(\)/);
+  assert.match(action, /assertLegacyLaunchAllowed\(\$before\)/);
 
   console.log("Auditoria de preenchimento e envio: requisicao e transacao verificadas.");
 })().catch((error) => { console.error(error); process.exitCode = 1; });

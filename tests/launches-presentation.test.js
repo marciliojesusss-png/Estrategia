@@ -54,6 +54,30 @@ assert.deepEqual(
 );
 assert.equal(internals.quarterLabel({ mes: 12 }), "4TRI");
 
+const capacidadeTicRule = {
+  indicadorId: 11,
+  tipoCalculo: "marco_projeto_percentual",
+  unidadeMedida: "percentual",
+  metaAnualValor: 1,
+  parametrosCalculo: {
+    metaTipo: "curva_trimestral_percentual",
+    curvaTrimestralPercentual: {
+      "3TRI/2026": { metaPercentual: 0.85 },
+      "4TRI/2026": { metaPercentual: 1 }
+    }
+  }
+};
+assert.equal(internals.getMetaLabel(capacidadeTicRule), "Meta do fechamento trimestral");
+assert.equal(
+  internals.getDisplayMeta(capacidadeTicRule, { indicadorId: 11, ano: 2026, mes: 8, metaMensal: null, camposEntrada: { metaReferenciaTrimestre: 0.85 } }, []),
+  0.85,
+  "AGO deve exibir a referência do fechamento, não a meta anual como meta mensal"
+);
+assert.equal(
+  internals.getDisplayMeta(capacidadeTicRule, { indicadorId: 11, ano: 2026, mes: 12, metaMensal: 1, camposEntrada: { metaReferenciaTrimestre: 1 } }, []),
+  1
+);
+
 const pixOfficialResultField = { nome: "resultadoOficialPix", tipo: "percentual" };
 const pixOfficialPerformanceField = { nome: "percentualAtingidoOficialPix", tipo: "percentual" };
 assert.equal(internals.usesDecimalPercentageEntry(pixOfficialResultField), true);
@@ -133,7 +157,7 @@ assert.match(launchesSource, /async function persistLaunch\(action\) \{\s+const 
 assert.match(launchesSource, /Evidência anexada, mas não foi possível salvar o lançamento/);
 assert.match(launchesSource, /meta_oficial_trimestral_projeto/);
 assert.match(launchesSource, /Evolução oficial do projeto/);
-assert.match(launchesSource, /\["nota_pesquisa_nps", "iniciativas_apoiadas", "execucao_acoes_propostas", "lucro_recorrente_mensal"\]\.includes\(regra\?\.tipoCalculo\)/);
+assert.match(launchesSource, /\["nota_pesquisa_nps", "iniciativas_apoiadas", "execucao_acoes_propostas", "lucro_recorrente_mensal", "razao_canais_digitais"\]\.includes\(regra\?\.tipoCalculo\)/);
 assert.match(launchesSource, /function updateSocioambientalInitiativeFields/);
 assert.match(launchesSource, /function validateSocioambientalRequiredFields/);
 assert.match(launchesSource, /Campo obrigatório para iniciativa apoiada\/realizada\./);

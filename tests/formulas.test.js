@@ -664,10 +664,10 @@ assert.equal(melhorias.situacao, "Atingido");
 const melhoriasAcimaDoPlano = formulas.calcularIndicador(
   indicador(4, "Aprimoramento da Experiência do Cliente"),
   regraAprimoramento,
-  { ano: 2026, mes: 2, camposEntrada: { melhoriasImplementadasMes: 12 } },
+  { ano: 2026, mes: 6, camposEntrada: { melhoriasImplementadasMes: 12 } },
   [
-    { ano: 2026, mes: 1, camposEntrada: { melhoriasImplementadasMes: 11 } },
-    { ano: 2026, mes: 2, camposEntrada: { melhoriasImplementadasMes: 12 } }
+    { ano: 2026, mes: 3, camposEntrada: { melhoriasImplementadasMes: 11 } },
+    { ano: 2026, mes: 6, camposEntrada: { melhoriasImplementadasMes: 12 } }
   ]
 );
 assert.equal(melhoriasAcimaDoPlano.erro, true);
@@ -1455,6 +1455,7 @@ const regraCapacidadeTic = {
     campoStatus: "marcoAlcancadoTIC",
     campoPercentual: "percentualRealizadoTIC",
     metaTipo: "curva_trimestral_percentual",
+    mesesFechamentoTrimestral: [3, 6, 9, 12],
     curvaTrimestralPercentual: {
       "1TRI/2026": { metaPercentual: 0.35, marcoEsperado: "Realização de Consulta Pública de Informações - RFI" },
       "2TRI/2026": { metaPercentual: 0.70, marcoEsperado: "Realização de Consulta Pública de Propostas - RFP" },
@@ -1481,6 +1482,19 @@ closeTo(capacidadeTic.resultadoMensal, 0.35);
 closeTo(capacidadeTic.percentualAtingidoMensal, 1);
 assert.equal(capacidadeTic.marcoEsperadoTrimestre, "Realização de Consulta Pública de Informações - RFI");
 assert.equal(capacidadeTic.situacao, "Atingido");
+
+const capacidadeTicAcompanhamento = formulas.calcularIndicador(
+  indicador(11, "Ampliar Capacidade de Desenvolvimento de Soluções de TIC"),
+  regraCapacidadeTic,
+  { ano: 2026, mes: 8, trimestre: "3TRI/2026", camposEntrada: { marcoAlcancadoTIC: "Contrato assinado com fornecedor", percentualRealizadoTIC: 1 } },
+  []
+);
+assert.equal(capacidadeTicAcompanhamento.resultadoMensal, null);
+assert.equal(capacidadeTicAcompanhamento.percentualAtingidoMensal, null);
+assert.equal(capacidadeTicAcompanhamento.metaReferenciaTrimestre, 0.85);
+assert.equal(capacidadeTicAcompanhamento.percentualAcompanhamentoTIC, 1);
+assert.equal(capacidadeTicAcompanhamento.tipoPosicaoTIC, "acompanhamento");
+assert.equal(capacidadeTicAcompanhamento.situacao, "Em acompanhamento");
 
 const regraPlataformaJogos = {
   indicadorId: 10,

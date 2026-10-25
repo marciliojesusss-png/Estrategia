@@ -228,16 +228,30 @@
     "2026-01": 1056593039,
     "2026-02": 1997659493,
     "2026-03": 3070246140.78,
-    "2026-04": 4193018947,
-    "2026-05": 5285128208,
-    "2026-06": 6512131485,
-    "2026-07": 7644597006,
-    "2026-08": 8771034927,
-    "2026-09": 10271204884,
+    "2026-04": 4193018946.75,
+    "2026-05": 5285128207.78,
+    "2026-06": 6782063824.52,
+    "2026-07": 7644597006.08,
+    "2026-08": 8771034926.84,
+    "2026-09": 10271204883.87,
     "2026-10": 11442642920,
     "2026-11": 12525118608,
-    "2026-12": 15600000000
+    "2026-12": 14996238568.92
   };
+  const CANAIS_DIGITAIS_METAS_2026 = Object.freeze({
+    "2026-01": 0.2770,
+    "2026-02": 0.2829,
+    "2026-03": 0.2805,
+    "2026-04": 0.2803,
+    "2026-05": 0.2798,
+    "2026-06": 0.2798,
+    "2026-07": 0.2815,
+    "2026-08": 0.2827,
+    "2026-09": 0.2837,
+    "2026-10": 0.2859,
+    "2026-11": 0.2878,
+    "2026-12": 0.2911
+  });
   const IEO_META_ACUMULADA_2026 = window.IeoRecorrente?.IEO_META_MENSAL_2026 || Object.freeze({});
   const REPASSE_SOCIAL_META_ACUMULADA_2026 = {
     "2026-01": 737118539.30,
@@ -655,6 +669,10 @@
     return GGR_META_ACUMULADA_2026[`${ano}-${String(mes).padStart(2, "0")}`] ?? null;
   }
 
+  function getCanaisDigitaisMeta(ano, mes) {
+    return CANAIS_DIGITAIS_METAS_2026[`${ano}-${String(mes).padStart(2, "0")}`] ?? null;
+  }
+
   function getIeoMetaAcumulada(ano, mes) {
     const key = `${ano}-${String(mes).padStart(2, "0")}`;
     return Object.prototype.hasOwnProperty.call(IEO_META_ACUMULADA_2026, key) ? IEO_META_ACUMULADA_2026[key] : null;
@@ -672,6 +690,68 @@
   function getCapacidadeTicMetaTrimestral(ano, mes) {
     const trimestre = `${Math.ceil(Number(mes) / 3)}TRI/${ano}`;
     return CAPACIDADE_TIC_CURVA_TRIMESTRAL_2026[trimestre]?.metaPercentual ?? null;
+  }
+
+  const CAPACIDADE_TIC_MESES_FECHAMENTO = [3, 6, 9, 12];
+
+  function isCapacidadeTicFechamento(mes) {
+    return CAPACIDADE_TIC_MESES_FECHAMENTO.includes(Number(mes));
+  }
+
+  function getCapacidadeTicMetaOficialCompetencia(ano, mes) {
+    return isCapacidadeTicFechamento(mes) ? getCapacidadeTicMetaTrimestral(ano, mes) : null;
+  }
+
+  function normalizarPosicaoCapacidadeTic(normalized, source, officialMeta) {
+    if (Number(source?.indicadorId ?? source?.indicador_id) !== 11) {
+      return { ...normalized, metaMensal: officialMeta, metaReferencia: officialMeta };
+    }
+
+    const mes = Number(source?.mes);
+    const fechamentoTrimestral = isCapacidadeTicFechamento(mes);
+    const tipoPosicaoTIC = fechamentoTrimestral ? "fechamento_trimestral" : "acompanhamento";
+    const metaReferenciaTrimestre = getCapacidadeTicMetaTrimestral(source?.ano, mes);
+    const camposEntrada = {
+      ...(normalized.camposEntrada || {}),
+      tipoPosicaoTIC,
+      metaReferenciaTrimestre
+    };
+
+    if (fechamentoTrimestral) {
+      return {
+        ...normalized,
+        camposEntrada,
+        tipoPosicaoTIC,
+        metaReferenciaTrimestre,
+        metaOficialCompetencia: officialMeta,
+        resultadoOficialCompetencia: normalized.resultadoOficialAnual ?? normalized.resultadoMensal ?? null,
+        percentualAtingidoOficialCompetencia: normalized.percentualAtingido ?? normalized.percentualAtingidoMensal ?? null,
+        metaMensal: officialMeta,
+        metaReferencia: officialMeta
+      };
+    }
+
+    const acompanhamentoComSituacao = mes <= 9 || normalized.status !== "Não iniciado";
+    return {
+      ...normalized,
+      camposEntrada,
+      tipoPosicaoTIC,
+      metaReferenciaTrimestre,
+      metaOficialCompetencia: null,
+      resultadoOficialCompetencia: null,
+      percentualAtingidoOficialCompetencia: null,
+      metaMensal: null,
+      metaReferencia: null,
+      realizadoMensal: null,
+      resultadoMensal: null,
+      resultadoAcumulado: null,
+      resultadoOficialAnual: null,
+      percentualAtingido: null,
+      percentualAtingidoMensal: null,
+      percentualAtingidoAcumulado: null,
+      percentualAtingidoAnual: null,
+      situacaoCalculada: acompanhamentoComSituacao ? "Em acompanhamento" : undefined
+    };
   }
 
   function getPlataformaJogosMetaTrimestral(ano, mes) {
@@ -938,6 +1018,17 @@
       camposEntrada.melhoriasImplementadasMes = camposEntrada.melhoriasEntreguesMes;
       camposEntrada.melhoriasEntreguesMesMigrado = camposEntrada.melhoriasEntreguesMes;
     }
+    if (!camposEntrada.tipoPosicaoAprimoramento) {
+      const mes = Number(launch?.mes);
+      if (Number.isInteger(mes) && ![3, 6, 9, 12].includes(mes)) {
+        camposEntrada.tipoPosicaoAprimoramento = "acompanhamento";
+      } else if (
+        camposEntrada.melhoriasImplementadasMes !== undefined ||
+        camposEntrada.melhoriasImplementadasAcumuladas !== undefined
+      ) {
+        camposEntrada.tipoPosicaoAprimoramento = "fechamento_quantitativo";
+      }
+    }
     return { ...launch, camposEntrada };
   }
 
@@ -1073,7 +1164,7 @@
     if (id === 5) return getGgrMetaAcumulada(ano, mes);
     if (id === 6) return getIeoMetaAcumulada(ano, mes);
     if (id === 7) return getLucroRecorrenteMetaMensal(ano, mes);
-    if (id === 8) return 0.2805;
+    if (id === 8) return getCanaisDigitaisMeta(ano, mes);
     if (id === 9) return Number(ano) === 2026 ? PIX_OPERATIONAL_TARGETS_2026[Number(mes) - 1] ?? null : null;
     if (id === 10) return getPlataformaJogosMetaTrimestral(ano, mes);
     if (id === 11) return getCapacidadeTicMetaTrimestral(ano, mes);
@@ -1102,6 +1193,8 @@
   }
 
   function resolveMeta(indicadorId, ano, mes, metas = cache.metas || [], persistedValue = null) {
+    if (Number(indicadorId) === 11 && !isCapacidadeTicFechamento(mes)) return null;
+    if (Number(indicadorId) === 8 && Number(ano) === 2026) return getCanaisDigitaisMeta(ano, mes);
     const official = configuredMeta(indicadorId, ano, mes, metas);
     if (official !== null && Number.isFinite(official)) return official;
     if (persistedValue !== null && persistedValue !== undefined && persistedValue !== "") {
@@ -1329,6 +1422,7 @@
             metaAnualDescricao: "Aumentar em 05 p.p. as vendas provenientes de canais digitais.",
             metrica: "(Arrecadação total nos canais eletrônicos) / (Arrecadação total dos produtos de loterias)",
             tipoCalculo: "razao_canais_digitais",
+            tipoConsolidacao: "razao_acumulada_no_periodo",
             unidadeMedida: "percentual"
           };
         }
@@ -1346,7 +1440,7 @@
             ...normalized,
             tipoCalculo: "ggr_formula",
             unidadeMedida: "moeda",
-            metaAnualDescricao: "≥ R$ 15,6 bilhões",
+            metaAnualDescricao: "≥ R$ 14.996.238.568,92",
             metrica: "GGR = Arrecadação total - Prêmios a pagar"
           };
         }
@@ -1598,6 +1692,7 @@
               metaPercentualAnualAprimoramento: 0.25,
               metaMinimaMelhoriasAno: 6,
               metaTipo: "curva_trimestral_acumulada",
+              mesesFechamentoTrimestral: [3, 6, 9, 12],
               curvaTrimestralAcumulada: APRIMORAMENTO_CURVA_TRIMESTRAL_2026,
               sentidoMeta: "quanto_maior_melhor"
             },
@@ -1722,20 +1817,36 @@
             tipoCalculo: "ggr_formula",
             tipoConsolidacao: "acumulado_por_soma_mensal",
             unidadeMedida: "moeda",
-            metaAnualValor: 15600000000,
+            metaAnualValor: 14996238568.92,
             parametrosCalculo: {
               campoArrecadacao: "arrecadacaoTotalMes",
               campoPremios: "premiosAPagarMes",
+              campoGgrAcumuladoDocumental: "ggrAcumuladoOficial",
+              campoTipoPosicao: "tipoPosicaoGGR",
               metaTipo: "curva_acumulada_por_competencia",
               metasAcumuladasPorCompetencia: GGR_META_ACUMULADA_2026,
-              sentidoMeta: "quanto_maior_melhor"
+              sentidoMeta: "quanto_maior_melhor",
+              mesesFechamentoTrimestral: [3, 6, 9, 12],
+              metaAnualOriginalGGR: 15600000000,
+              fonteMetaAnualVigente: "Proposição DILOT/GERIN nº 0050/2026, de 06/08/2026",
+              apresentacoesOficiaisTrimestrais: {
+                "1TRI/2026": { metaOficialReportada: 3070246140.78, resultadoOficialReportado: 3322204494.29, percentualAtingidoOficialReportado: 1.0820645453025435, situacaoOficial: "Atingido", fonte: "Informe DILOT/GERIN nº 0029/2026" },
+                "2TRI/2026": { metaOficialReportada: 6782063824.52, resultadoOficialReportado: 6784050495.32, percentualAtingidoOficialReportado: 1.0002929301244285, situacaoOficial: "Atingido", fonte: "Informe DILOT/GERIN nº 0056/2026" },
+                "3TRI/2026": { metaOficialReportada: 10271204883.87, resultadoOficialReportado: 10435959467.05, percentualAtingidoOficialReportado: 1.0160404339162517, situacaoOficial: "Atingido", fonte: "Informe DILOT/GERIN nº 0078/2026" },
+                "4TRI/2026": { metaOficialReportada: 14996238568.92, resultadoOficialReportado: null, percentualAtingidoOficialReportado: null, situacaoOficial: "Sem dados", fonte: "Proposição DILOT/GERIN nº 0050/2026" }
+              }
             },
             camposEntrada: [
-              { nome: "arrecadacaoTotalMes", rotulo: "Arrecadação total no mês", tipo: "moeda", obrigatorio: true },
-              { nome: "premiosAPagarMes", rotulo: "Prêmios a pagar no mês", tipo: "moeda", obrigatorio: true }
+              { nome: "arrecadacaoTotalMes", rotulo: "Arrecadação total no mês", tipo: "moeda", obrigatorio: false },
+              { nome: "premiosAPagarMes", rotulo: "Prêmios a pagar no mês", tipo: "moeda", obrigatorio: false },
+              { nome: "ggrAcumuladoOficial", rotulo: "GGR acumulado documental até a competência", tipo: "moeda", obrigatorio: false },
+              { nome: "tipoPosicaoGGR", rotulo: "Tipo da posição", tipo: "selecao", obrigatorio: false, opcoes: ["acompanhamento", "fechamento_trimestral"] },
+              { nome: "fonteResultadoGGR", rotulo: "Fonte do resultado acumulado", tipo: "texto", obrigatorio: false },
+              { nome: "metaPlanilhaGGR", rotulo: "Meta de acompanhamento da planilha", tipo: "moeda", obrigatorio: false },
+              { nome: "atingimentoPlanilhaGGR", rotulo: "Atingimento de acompanhamento da planilha", tipo: "percentual", entradaPtBr: true, escalaPercentual: "decimal", obrigatorio: false }
             ],
-            campoResultadoPrincipal: "resultadoMensal",
-            campoPercentualAtingido: "percentualAtingidoMensal",
+            campoResultadoPrincipal: "resultadoAcumulado",
+            campoPercentualAtingido: "percentualAtingidoAnual",
             resultadoOficial: "ggr_acumulado_por_curva"
           };
         }
@@ -2149,19 +2260,34 @@
             tipoCalculo: "razao_canais_digitais",
             tipoConsolidacao: "razao_acumulada_no_periodo",
             unidadeMedida: "percentual",
-            metaAnualValor: 0.2805,
+            metaAnualValor: 0.2911,
             parametrosCalculo: {
               campoNumerador: "arrecadacaoCanaisEletronicosMes",
               campoDenominador: "arrecadacaoTotalProdutosLoteriasMes",
+              campoResultadoAcumuladoDocumental: "resultadoAcumuladoDocumentalCanaisDigitais",
+              campoPercentualAtingidoOficial: "percentualAtingidoOficialCanaisDigitais",
               percentualReferencia2025: 0.2305,
               acrescimoMetaPontosPercentuais: 0.05,
-              metaReferencia: 0.2805,
-              metaTipo: "fixa_anual"
+              metaTipo: "curva_por_competencia",
+              metasPorCompetencia: CANAIS_DIGITAIS_METAS_2026,
+              mesesFechamentoTrimestral: [3, 6, 9, 12],
+              apresentacoesOficiaisTrimestrais: {
+                "1TRI/2026": { metaOficialReportada: 0.2805, resultadoOficialReportado: 0.2967, percentualAtingidoOficialReportado: 1.058, situacaoOficial: "Atingido", fonte: "Informe DILOT/GERIN nº 0029/2026" },
+                "2TRI/2026": { metaOficialReportada: 0.2798, resultadoOficialReportado: 0.2902, percentualAtingidoOficialReportado: 1.0372, situacaoOficial: "Atingido", fonte: "Informe DILOT/GERIN nº 0056/2026" },
+                "3TRI/2026": { metaOficialReportada: 0.2837, resultadoOficialReportado: 0.2917, percentualAtingidoOficialReportado: 1.0282, situacaoOficial: "Atingido", fonte: "Informe DILOT/GERIN nº 0078/2026" },
+                "4TRI/2026": { metaOficialReportada: 0.2911, resultadoOficialReportado: null, percentualAtingidoOficialReportado: null, situacaoOficial: "Sem dados", fonte: "16.10(3).xlsx" }
+              }
             },
             camposEntrada: [
-              { nome: "arrecadacaoCanaisEletronicosMes", rotulo: "Arrecadação total nos canais eletrônicos no mês", tipo: "moeda", obrigatorio: true },
-              { nome: "arrecadacaoTotalProdutosLoteriasMes", rotulo: "Arrecadação total dos produtos de loterias no mês", tipo: "moeda", obrigatorio: true }
+              { nome: "arrecadacaoCanaisEletronicosMes", rotulo: "Arrecadação total nos canais eletrônicos no mês", tipo: "moeda", obrigatorio: false },
+              { nome: "arrecadacaoTotalProdutosLoteriasMes", rotulo: "Arrecadação total dos produtos de loterias no mês", tipo: "moeda", obrigatorio: false },
+              { nome: "resultadoAcumuladoDocumentalCanaisDigitais", rotulo: "Resultado acumulado documental", tipo: "percentual", escalaPercentual: "decimal", obrigatorio: false },
+              { nome: "percentualAtingidoOficialCanaisDigitais", rotulo: "Atingimento oficial documental", tipo: "percentual", escalaPercentual: "decimal", obrigatorio: false },
+              { nome: "tipoPosicaoCanaisDigitais", rotulo: "Natureza da posição", tipo: "texto", obrigatorio: false },
+              { nome: "fonteResultadoCanaisDigitais", rotulo: "Fonte documental", tipo: "texto", obrigatorio: false }
             ],
+            campoResultadoPrincipal: "resultadoAcumulado",
+            campoPercentualAtingido: "percentualAtingidoAnual",
             resultadoOficial: "razao_acumulada_homologada_no_periodo"
           };
         }
@@ -2274,7 +2400,9 @@
           metaAnualDescricao: "Piloto ou MVP da Plataforma de Jogos"
         } : {}),
         ...(Number(launch.indicadorId) === 11 ? {
-          metaMensal: getCapacidadeTicMetaTrimestral(launch.ano, launch.mes),
+          metaMensal: getCapacidadeTicMetaOficialCompetencia(launch.ano, launch.mes),
+          metaReferenciaTrimestre: getCapacidadeTicMetaTrimestral(launch.ano, launch.mes),
+          tipoPosicaoTIC: isCapacidadeTicFechamento(launch.mes) ? "fechamento_trimestral" : "acompanhamento",
           metaAnualDescricao: "Contratação e/ou celebração de parceria para o desenvolvimento de soluções de TIC até o final do exercício de 2026."
         } : {}),
         ...(Number(launch.indicadorId) === 12 ? {
@@ -2299,7 +2427,7 @@
         } : {}),
         ...(Number(launch.indicadorId) === 5 ? {
           metaMensal: getGgrMetaAcumulada(launch.ano, launch.mes),
-          metaAnualDescricao: "≥ R$ 15,6 bilhões"
+          metaAnualDescricao: "≥ R$ 14.996.238.568,92"
         } : {}),
         ...(Number(launch.indicadorId) === 6 ? {
           metaMensal: getIeoMetaAcumulada(launch.ano, launch.mes),
@@ -2338,19 +2466,17 @@
         ...(Number(launch.indicadorId) === 8 ? {
           unidadeApuradora: "SUCOL",
           diretoriaResponsavel: "DICOT",
-          metaMensal: 0.2805,
+          metaMensal: getCanaisDigitaisMeta(launch.ano, launch.mes),
           metaAnualDescricao: "Aumentar em 05 p.p. as vendas provenientes de canais digitais."
         } : {})
       }))))))))))))))))));
         const officialMeta = resolveMeta(launch.indicadorId ?? launch.indicador_id, launch.ano, launch.mes, cache.metas || [], persistedMeta);
-        return {
+        return normalizarPosicaoCapacidadeTic({
           ...normalized,
-          metaMensal: officialMeta,
-          metaReferencia: officialMeta,
           ...(Number(launch.indicadorId ?? launch.indicador_id) === 7 ? {
             metaAcumulada: getLucroRecorrenteMetaAcumuladaOficial(launch.ano, launch.mes)
           } : {})
-        };
+        }, launch, officialMeta);
       });
     }
 
@@ -2495,6 +2621,9 @@
     completarLancamentosAusentes,
     resetarBaseOperacionalGlobal,
     resolveMeta,
+    getCapacidadeTicMetaTrimestral,
+    getCapacidadeTicMetaOficialCompetencia,
+    isCapacidadeTicFechamento,
     metasForRule,
     getLucroRecorrenteMetaAcumuladaOficial,
     resetarDadosOperacionais,

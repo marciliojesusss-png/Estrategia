@@ -3,7 +3,9 @@
   const MANUAL_TYPES = ["manual_homologado", "qualitativo"];
   const DECIMAL_PERCENTAGE_ENTRY_FIELDS = new Set([
     "resultadoOficialPix",
-    "percentualAtingidoOficialPix"
+    "percentualAtingidoOficialPix",
+    "resultadoAcumuladoDocumentalCanaisDigitais",
+    "percentualAtingidoOficialCanaisDigitais"
   ]);
 
   let state = {
@@ -105,6 +107,15 @@
     return field?.tipo === "percentual" && (field.entradaPtBr === true || usesDecimalPercentageEntry(field));
   }
 
+  function isCanaisDigitaisDocumentalField(field) {
+    return [
+      "resultadoAcumuladoDocumentalCanaisDigitais",
+      "percentualAtingidoOficialCanaisDigitais",
+      "tipoPosicaoCanaisDigitais",
+      "fonteResultadoCanaisDigitais"
+    ].includes(String(field?.nome || ""));
+  }
+
   function badgeClass(status) {
     if (status === "Homologado") return "ok";
     if (status === "Devolvido para ajuste") return "danger";
@@ -159,6 +170,30 @@
       .sort((left, right) => String(right.dataAcao ?? right.data_acao ?? right.createdAt ?? right.created_at ?? "")
         .localeCompare(String(left.dataAcao ?? left.data_acao ?? left.createdAt ?? left.created_at ?? "")));
     return relevant[0]?.acao === "reabertura_excepcional_pos_fechamento_ca";
+  }
+
+  function latestReopenCycleAction(lancamento, homologacoes = state.data?.homologacoes || []) {
+    return (homologacoes || [])
+      .filter((entry) => String(entry.lancamentoId ?? entry.lancamento_id ?? "") === String(lancamento?.id ?? ""))
+      .filter((entry) => [
+        "reabertura_excepcional_pos_fechamento_ca",
+        "lancamento_reaberto",
+        "homologacao_lancamento"
+      ].includes(String(entry.acao || "")))
+      .sort((left, right) => String(right.dataAcao ?? right.data_acao ?? right.createdAt ?? right.created_at ?? "")
+        .localeCompare(String(left.dataAcao ?? left.data_acao ?? left.createdAt ?? left.created_at ?? "")))[0]?.acao || null;
+  }
+
+  function unresolvedReopenCycle(lancamento, homologacoes = state.data?.homologacoes || []) {
+    const status = Situations.normalizeText(lancamento?.status);
+    if (status === "reaberto") return true;
+    if (status !== "em preenchimento" || Number(lancamento?.versaoAtual ?? lancamento?.versao_atual ?? 1) <= 1) return false;
+    return ["lancamento_reaberto", "reabertura_excepcional_pos_fechamento_ca"]
+      .includes(latestReopenCycleAction(lancamento, homologacoes));
+  }
+
+  function requiresTransactionalPersistence(lancamento, homologacoes = state.data?.homologacoes || []) {
+    return Situations.normalizeText(lancamento?.status) === "retificado" || unresolvedReopenCycle(lancamento, homologacoes);
   }
 
   function launchMutationPolicy(lancamento) {
@@ -409,6 +444,10 @@
   }
 
   function getMetaLabel(regra) {
+    if (regra?.tipoCalculo === "razao_canais_digitais") return "Meta da competência";
+    if (regra?.tipoCalculo === "marco_projeto_percentual" && regra?.parametrosCalculo?.metaTipo === "curva_trimestral_percentual") {
+      return "Meta do fechamento trimestral";
+    }
     if (regra?.tipoCalculo === "melhorias_acumuladas") return "Meta acumulada do período";
     if (regra?.parametrosCalculo?.metaTipo === "meta_oficial_trimestral_projeto") return "Meta oficial do período";
     if (regra?.tipoCalculo === "participacao_ecossistema_com_cenarios") return "Meta trimestral 2026";
@@ -434,6 +473,13 @@
 
   function getDisplayMeta(regra, lancamento, metas = state.data?.metas || []) {
     const persistedMeta = lancamento?.metaReferencia ?? lancamento?.metaMensal ?? null;
+    if (regra?.tipoCalculo === "marco_projeto_percentual" && regra?.parametrosCalculo?.metaTipo === "curva_trimestral_percentual") {
+      const trimestre = lancamento?.trimestre || `${Math.ceil(Number(lancamento?.mes) / 3)}TRI/${lancamento?.ano || 2026}`;
+      return lancamento?.metaReferenciaTrimestre ??
+        lancamento?.camposEntrada?.metaReferenciaTrimestre ??
+        regra.parametrosCalculo.curvaTrimestralPercentual?.[trimestre]?.metaPercentual ??
+        null;
+    }
     const metaPercentualAcoesPropostas = Calculations.resolverMetaPercentualAcoesPropostas?.(regra, lancamento);
     if (metaPercentualAcoesPropostas !== null && metaPercentualAcoesPropostas !== undefined) {
       return metaPercentualAcoesPropostas;
@@ -485,6 +531,20 @@
       regra?.parametrosCalculo?.metaReferencia ??
       lancamento.metaMensal ??
       regra?.metaAnualValor;
+  }
+
+  function getLaunchListPerformance(regra, lancamento, calculation = null) {
+    const accumulatedRatio = regra?.tipoCalculo === "razao_canais_digitais";
+    if (accumulatedRatio) {
+      return {
+        resultado: calculation?.resultadoAcumulado ?? calculation?.resultadoOficialAnual ?? lancamento?.resultadoAcumulado ?? lancamento?.resultadoOficialAnual ?? null,
+        percentual: calculation?.percentualAtingidoAnual ?? calculation?.percentualAtingidoAcumulado ?? lancamento?.percentualAtingidoAnual ?? lancamento?.percentualAtingidoAcumulado ?? lancamento?.percentualAtingido ?? null
+      };
+    }
+    return {
+      resultado: calculation ? calculation.resultadoMensal : lancamento?.resultadoMensal ?? lancamento?.realizadoMensal,
+      percentual: calculation?.percentualAtingidoMensal ?? lancamento?.percentualAtingido ?? lancamento?.percentualAtingidoMensal ?? null
+    };
   }
 
   function formatDisplayMeta(regra, lancamento, metas = state.data?.metas || []) {
@@ -602,6 +662,9 @@
 
   function renderEntryInput(field, value, extra = "") {
     const wrapperClass = field.tipo === "textarea" ? "full-span" : "";
+    const emptyDocumentalField = isCanaisDigitaisDocumentalField(field) && (
+      value === null || value === undefined || value === ""
+    );
     if (field.tipo === "selecao") {
       const options = field.opcoes || [];
       return `
@@ -649,8 +712,8 @@
           data-entry-field="${escapeHtml(field.nome)}"
           data-entry-type="${escapeHtml(field.tipo || "numero")}"
           type="${["texto", "moeda", "inteiro"].includes(field.tipo) || usesLocalizedPercentageEntry(field) ? "text" : field.tipo === "data" ? "date" : "number"}"
-          ${field.tipo === "moeda" || usesLocalizedPercentageEntry(field) ? "inputmode=\"decimal\" placeholder=\"0,00\"" : field.tipo === "inteiro" ? "inputmode=\"numeric\" placeholder=\"0\"" : field.tipo === "texto" || field.tipo === "data" ? "" : "step=\"any\""}
-          value="${escapeHtml(formatEntryValue(field, value))}"
+          ${emptyDocumentalField ? "placeholder=\"-\"" : field.tipo === "moeda" || usesLocalizedPercentageEntry(field) ? "inputmode=\"decimal\" placeholder=\"0,00\"" : field.tipo === "inteiro" ? "inputmode=\"numeric\" placeholder=\"0\"" : field.tipo === "texto" || field.tipo === "data" ? "" : "step=\"any\""}
+          value="${escapeHtml(emptyDocumentalField ? "" : formatEntryValue(field, value))}"
           ${field.obrigatorio ? "required" : ""}
           ${field.somenteLeitura ? "readonly" : ""}
           ${extra}
@@ -884,7 +947,7 @@
         : isEditable(item)
           ? "Preencher"
           : "Visualizar";
-      const tableCalculation = ["nota_pesquisa_nps", "iniciativas_apoiadas", "execucao_acoes_propostas", "lucro_recorrente_mensal"].includes(regra?.tipoCalculo)
+      const tableCalculation = ["nota_pesquisa_nps", "iniciativas_apoiadas", "execucao_acoes_propostas", "lucro_recorrente_mensal", "razao_canais_digitais"].includes(regra?.tipoCalculo)
         ? IndicatorFormulas.calcularIndicador(
           indicador,
           regra,
@@ -896,20 +959,18 @@
           ))
         )
         : null;
-      const resultadoMensal = tableCalculation
-        ? tableCalculation.resultadoMensal
-        : item.resultadoMensal ?? item.realizadoMensal;
+      const tablePerformance = getLaunchListPerformance(regra, item, tableCalculation);
       const situacao = Situations.normalizarSituacao(
         tableCalculation?.situacao ||
         item.situacaoCalculada ||
-        getCalculatedSituation(tableCalculation?.percentualAtingidoMensal ?? item.percentualAtingido ?? item.percentualAtingidoMensal)
+        getCalculatedSituation(tablePerformance.percentual)
       );
       return `
         <tr>
           <td>${escapeHtml(indicador ? indicador.indicador : item.indicadorId)}</td>
           <td>${escapeHtml(launchMonthName(item))}/${escapeHtml(item.ano)}</td>
           <td>${escapeHtml(formatDisplayMeta(regra, item))}</td>
-          <td>${Calculations.formatarValor(resultadoMensal, regra && regra.unidadeMedida)}</td>
+          <td>${Calculations.formatarValor(tablePerformance.resultado, regra && regra.unidadeMedida)}</td>
           <td>${escapeHtml(situacao)}</td>
           <td><span class="badge ${badgeClass(item.status)}">${escapeHtml(item.status)}</span></td>
           <td><button class="secondary-action table-action" type="button" data-id="${item.id}">${actionLabel}</button></td>
@@ -1006,7 +1067,9 @@
       document.getElementById("percentualAnualWrapper").hidden = true;
     }
 
-    document.getElementById("launchResultadoMensalLabel").textContent = isIeoRule(regra)
+    document.getElementById("launchResultadoMensalLabel").textContent = regra?.tipoCalculo === "marco_projeto_percentual"
+      ? "Resultado oficial da competência"
+      : isIeoRule(regra)
       ? "IEO calculado da competência"
       : regra?.tipoCalculo === "nota_pesquisa_nps"
         ? "Resultado NPS calculado"
@@ -1019,7 +1082,9 @@
       : ["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(regra?.tipoCalculo)
         ? "Indice 2026/2025"
       : "Resultado da competência";
-    document.getElementById("launchPercentualCalculadoLabel").textContent = isIeoRule(regra)
+    document.getElementById("launchPercentualCalculadoLabel").textContent = regra?.tipoCalculo === "marco_projeto_percentual"
+      ? "Atingimento oficial"
+      : isIeoRule(regra)
       ? "% atingido"
       : regra?.tipoCalculo === "incremento_rede_loterica_base_2025"
         ? "% atingido"
@@ -1044,7 +1109,9 @@
       : regra?.tipoCalculo === "plano_acao_por_elementos"
         ? "% da meta anual"
       : "% da meta atingida anual";
-    document.getElementById("launchSituacaoCalculadaLabel").textContent = isIeoRule(regra)
+    document.getElementById("launchSituacaoCalculadaLabel").textContent = regra?.tipoCalculo === "marco_projeto_percentual"
+      ? "Situação oficial"
+      : isIeoRule(regra)
       ? "Situação da competência"
       : "Situação";
 
@@ -1371,6 +1438,7 @@
   function quarterlyMetaDetail(resultado, regra, lancamento) {
     if (resultado?.metaTrimestral === undefined) return null;
     if (regra?.tipoCalculo === "investimento_socioambiental") return null;
+    if (regra?.tipoCalculo === "marco_projeto_percentual") return null;
     const value = resultado.metaTrimestral;
     if (regra?.tipoCalculo === "execucao_acoes_propostas") {
       return ["Meta trimestral", Calculations.formatarPercentual(resultado.metaPercentualTrimestral)];
@@ -1396,6 +1464,77 @@
     const target = document.getElementById("formulaDetails");
     const details = [];
     const metodologiaCa = isIeoCaCompetence(regra, lancamento);
+
+    if (regra?.tipoCalculo === "razao_canais_digitais") {
+      indicator08CalculatedDetails(resultado).forEach((detail) => details.push(detail));
+    }
+
+    if (regra?.tipoCalculo === "marco_projeto_percentual") {
+      const memoria = lancamento?.camposEntrada || {};
+      const fechamentoTrimestral = memoria.tipoPosicaoTIC === "fechamento_trimestral";
+      const tipoPosicao = fechamentoTrimestral
+        ? "Fechamento trimestral"
+        : "Acompanhamento do trimestre";
+      details.push(["Tipo de posição", tipoPosicao]);
+      if (memoria.metaReferenciaTrimestre !== null && memoria.metaReferenciaTrimestre !== undefined) {
+        details.push(["Meta do fechamento trimestral", Calculations.formatarPercentual(memoria.metaReferenciaTrimestre)]);
+      }
+      if (!fechamentoTrimestral) details.push(["Avaliação oficial", "Posição oficial somente no fechamento"]);
+      if (memoria.fonteAcompanhamentoTIC) details.push(["Fonte de acompanhamento", memoria.fonteAcompanhamentoTIC]);
+      if (memoria.fonteFechamentoTIC) details.push(["Fonte do fechamento", memoria.fonteFechamentoTIC]);
+      if (memoria.metaPlanilhaTIC !== null && memoria.metaPlanilhaTIC !== undefined) {
+        details.push(["Memória da planilha — meta", Calculations.formatarPercentual(memoria.metaPlanilhaTIC)]);
+      }
+      if (memoria.realizadoPlanilhaTIC !== null && memoria.realizadoPlanilhaTIC !== undefined) {
+        details.push(["Memória da planilha — realizado", Calculations.formatarPercentual(memoria.realizadoPlanilhaTIC)]);
+      }
+      if (memoria.atingimentoPlanilhaTIC !== null && memoria.atingimentoPlanilhaTIC !== undefined) {
+        details.push(["Memória da planilha — atingimento", Calculations.formatarPercentual(memoria.atingimentoPlanilhaTIC)]);
+      }
+      if (memoria.descricaoPlanilhaTIC) details.push(["Referência da planilha / memória de acompanhamento", memoria.descricaoPlanilhaTIC]);
+    }
+
+    if (regra?.tipoCalculo === "melhorias_acumuladas") {
+      const memoria = lancamento?.camposEntrada || {};
+      const fechamento = IndicatorFormulas.resolverTipoPosicaoAprimoramento(lancamento) === "fechamento_quantitativo";
+      details.push(["Tipo de posição", fechamento ? "Fechamento trimestral" : "Acompanhamento do trimestre"]);
+      if (!fechamento) details.push(["Avaliação oficial", "Posição oficial somente em MAR, JUN, SET e DEZ"]);
+      if (memoria.fonteFechamentoAprimoramento) details.push(["Fonte do fechamento", memoria.fonteFechamentoAprimoramento]);
+      if (memoria.fontePlanilhaAprimoramento) details.push(["Fonte da memória mensal", memoria.fontePlanilhaAprimoramento]);
+      if (memoria.metaPlanilhaAprimoramento !== null && memoria.metaPlanilhaAprimoramento !== undefined) {
+        details.push(["Memória da planilha — meta", Calculations.formatarPercentual(memoria.metaPlanilhaAprimoramento)]);
+      }
+      if (memoria.realizadoPlanilhaAprimoramento !== null && memoria.realizadoPlanilhaAprimoramento !== undefined) {
+        details.push(["Memória da planilha — realizado", Calculations.formatarPercentual(memoria.realizadoPlanilhaAprimoramento)]);
+      }
+      if (memoria.atingimentoPlanilhaAprimoramento !== null && memoria.atingimentoPlanilhaAprimoramento !== undefined) {
+        details.push(["Memória da planilha — atingimento", Calculations.formatarPercentual(memoria.atingimentoPlanilhaAprimoramento)]);
+      }
+      if (memoria.descricaoPlanilhaAprimoramento) details.push(["Referência da planilha / memória documental", memoria.descricaoPlanilhaAprimoramento]);
+    }
+
+    if (regra?.tipoCalculo === "ggr_formula") {
+      const memoria = lancamento?.camposEntrada || {};
+      const fechamento = resultado.tipoPosicaoGGR === "fechamento_trimestral";
+      details.push(["Tipo da posição", fechamento ? "Fechamento trimestral" : "Acompanhamento"]);
+      if (resultado.ggrAcumuladoDocumental) {
+        details.push(["Natureza do realizado", "Posição acumulada documental; não somar com competências anteriores"]);
+      }
+      if (memoria.fonteResultadoGGR) details.push(["Fonte do resultado", memoria.fonteResultadoGGR]);
+      if (memoria.metaPlanilhaGGR !== null && memoria.metaPlanilhaGGR !== undefined) {
+        details.push(["Memória da planilha — meta", Calculations.formatarValor(memoria.metaPlanilhaGGR, "moeda")]);
+      }
+      if (memoria.atingimentoPlanilhaGGR !== null && memoria.atingimentoPlanilhaGGR !== undefined) {
+        details.push(["Memória da planilha — atingimento", Calculations.formatarPercentual(memoria.atingimentoPlanilhaGGR)]);
+      }
+      if (memoria.metaOficialFechamentoGGR !== null && memoria.metaOficialFechamentoGGR !== undefined) {
+        details.push(["Meta oficial do fechamento", Calculations.formatarValor(memoria.metaOficialFechamentoGGR, "moeda")]);
+      }
+      if (memoria.atingimentoOficialGGR !== null && memoria.atingimentoOficialGGR !== undefined) {
+        details.push(["Atingimento oficial do fechamento", Calculations.formatarPercentual(memoria.atingimentoOficialGGR)]);
+      }
+      if (memoria.fonteOficialGGR) details.push(["Fonte oficial do fechamento", memoria.fonteOficialGGR]);
+    }
 
     if (resultado.modoResultadoCapacitacao === "oficial_informado") {
       details.push(["Modo do resultado", "Resultado oficial informado"]);
@@ -1572,6 +1711,23 @@
         <p>${escapeHtml(value)}</p>
       </article>
     `).join("");
+  }
+
+  function indicator08CalculatedDetails(resultado) {
+    const accumulatedResult = toNumberOrNull(
+      resultado?.resultadoAcumulado ?? resultado?.resultadoOficialAnual ?? resultado?.resultadoCalculadoAcumulado
+    );
+    const target = toNumberOrNull(resultado?.metaReferencia);
+    const technicalPerformance = toNumberOrNull(
+      resultado?.percentualAtingidoAnual ?? resultado?.percentualAtingidoAcumulado
+    ) ?? (accumulatedResult !== null && target !== null && target > 0 ? accumulatedResult / target : null);
+    const documentedResult = toNumberOrNull(resultado?.resultadoAcumuladoDocumental);
+    const documentedPerformance = toNumberOrNull(resultado?.percentualAtingidoOficialDocumental);
+    return [
+      ["Atingimento técnico", Calculations.formatarPercentual(technicalPerformance, 2, 2)],
+      ["Resultado acumulado documental", documentedResult === null ? "-" : Calculations.formatarPercentual(documentedResult, 2, 2)],
+      ["Atingimento oficial documental", documentedPerformance === null ? "-" : Calculations.formatarPercentual(documentedPerformance, 2, 2)]
+    ];
   }
 
   function renderEditor() {
@@ -1787,7 +1943,9 @@
       document.getElementById("launchPercentualCalculado").value = "-";
       document.getElementById("launchResultadoAcumulado").value = "-";
       document.getElementById("launchPercentualAcumulado").value = "-";
-      document.getElementById("launchSituacaoCalculada").value = "Sem cálculo";
+      document.getElementById("launchSituacaoCalculada").value = result.regra?.tipoCalculo === "marco_projeto_percentual"
+        ? "Sem avaliação"
+        : "Sem cálculo";
     }
     renderFormulaDetails(result.resultado, result.regra, lancamento);
     return result;
@@ -1889,9 +2047,13 @@
     if (
       action === "send" &&
       regra.tipoCalculo === "razao_canais_digitais" &&
-      !result.camposEntrada.arrecadacaoTotalProdutosLoteriasMes
+      !(
+        result.camposEntrada[regra.parametrosCalculo?.campoNumerador || "arrecadacaoCanaisEletronicosMes"] &&
+        result.camposEntrada[regra.parametrosCalculo?.campoDenominador || "arrecadacaoTotalProdutosLoteriasMes"]
+      ) &&
+      !result.camposEntrada[regra.parametrosCalculo?.campoResultadoAcumuladoDocumental || "resultadoAcumuladoDocumentalCanaisDigitais"]
     ) {
-      showMessage("Informe a arrecadação total dos produtos de loterias antes de enviar para homologação.", "warning");
+      showMessage("Informe os componentes mensais ou a posição acumulada documental antes de enviar para homologação.", "warning");
       return false;
     }
     if (
@@ -1948,6 +2110,16 @@
     setEvidenceOperationBusy(true);
     let evidenceUploaded = false;
     try {
+      let correctionReason = "";
+      const requiresRetification = unresolvedReopenCycle(lancamento);
+      const transactional = requiresTransactionalPersistence(lancamento);
+      if (requiresRetification) {
+        correctionReason = String(window.prompt("Informe a justificativa da retifica\u00e7\u00e3o:") || "").trim();
+        if (!correctionReason) {
+          showActionFeedback("A justificativa da retifica\u00e7\u00e3o \u00e9 obrigat\u00f3ria.", "warning");
+          return;
+        }
+      }
       if (action === "send") {
         await loadEvidenceList(lancamento.id, true);
       }
@@ -1962,14 +2134,14 @@
             showActionFeedback(`Não foi possível anexar a evidência. O lançamento não foi enviado para homologação. ${uploadError.message}`, "error");
             return;
           }
-          await saveLaunchData(action, lancamento, indicador);
+          await saveLaunchData(action, lancamento, indicador, { transactional, requiresRetification, correctionReason });
           showActionFeedback(`Rascunho salvo, mas não foi possível anexar a evidência. O arquivo continua selecionado para nova tentativa. ${uploadError.message}`, "warning");
           return;
         }
       }
 
       if (!validateLaunch(indicador, action)) return;
-      await saveLaunchData(action, lancamento, indicador);
+      await saveLaunchData(action, lancamento, indicador, { transactional, requiresRetification, correctionReason });
       if (action === "send") {
         showActionFeedback("Lançamento enviado para homologação com sucesso.");
       } else {
@@ -1991,8 +2163,9 @@
     }
   }
 
-  async function saveLaunchData(action, lancamento, indicador) {
+  async function saveLaunchData(action, lancamento, indicador, persistenceOptions = {}) {
     const calculation = updateCalculatedPreview();
+    const canaisDigitais = calculation.regra?.tipoCalculo === "razao_canais_digitais";
     const now = new Date().toISOString();
     const updated = {
       ...lancamento,
@@ -2000,7 +2173,9 @@
       resultadoMensal: calculation.resultado.resultadoMensal,
       realizadoMensal: calculation.realizado,
       percentualManual: isManual(indicador) ? calculation.percentualManual : null,
-      percentualAtingido: calculation.resultado.percentualAtingidoMensal,
+      percentualAtingido: canaisDigitais
+        ? calculation.resultado.percentualAtingidoAnual ?? calculation.resultado.percentualAtingidoAcumulado
+        : calculation.resultado.percentualAtingidoMensal,
       percentualAtingidoMensal: calculation.resultado.percentualAtingidoMensal,
       resultadoAcumulado: calculation.resultado.resultadoAcumulado,
       percentualAtingidoAcumulado: calculation.resultado.percentualAtingidoAcumulado,
@@ -2013,6 +2188,10 @@
       ...(calculation.regra?.tipoCalculo === "lucro_recorrente_mensal" ? {
         metaReferencia: calculation.resultado.metaReferenciaMensal,
         metaMensal: calculation.resultado.metaReferenciaMensal
+      } : {}),
+      ...(canaisDigitais ? {
+        metaReferencia: calculation.resultado.metaReferencia,
+        metaMensal: calculation.resultado.metaReferencia
       } : {}),
       situacaoCalculada: Situations.normalizarSituacao(calculation.resultado.situacao || getCalculatedSituation(calculation.resultado.percentualAtingidoAnual ?? calculation.resultado.percentualAtingidoMensal)),
       status: action === "send" ? "Enviado para homologação" : "Em preenchimento",
@@ -2035,7 +2214,7 @@
     ));
     let saved;
     try {
-      saved = await CentralPersistence.persistLaunchAction(action, changedLaunches, updated.id);
+      saved = await CentralPersistence.persistLaunchAction(action, changedLaunches, updated.id, persistenceOptions);
     } catch (error) {
       state.lancamentos = previousLaunches;
       throw error;
@@ -2061,8 +2240,11 @@
       const ateMes = ordered.filter((item) => item.mes <= lancamento.mes);
       const resultado = IndicatorFormulas.calcularIndicador(indicador, regra, lancamento, ateMes);
       if (!resultado.erro) {
+        const canaisDigitais = regra?.tipoCalculo === "razao_canais_digitais";
         lancamento.resultadoMensal = resultado.resultadoMensal;
-        lancamento.percentualAtingido = resultado.percentualAtingidoMensal;
+        lancamento.percentualAtingido = canaisDigitais
+          ? resultado.percentualAtingidoAnual ?? resultado.percentualAtingidoAcumulado
+          : resultado.percentualAtingidoMensal;
         lancamento.percentualAtingidoMensal = resultado.percentualAtingidoMensal;
         lancamento.resultadoAcumulado = resultado.resultadoAcumulado;
         lancamento.percentualAtingidoAcumulado = resultado.percentualAtingidoAcumulado;
@@ -2273,14 +2455,21 @@
     officialOperationalLaunches,
     quarterLabel,
     quarterlyMetaDetail,
+    getMetaLabel,
     getDisplayMeta,
+    getLaunchListPerformance,
     formatDisplayMeta,
     formatEntryValue,
     parseEntryValue,
     usesDecimalPercentageEntry,
+    isCanaisDigitaisDocumentalField,
     renderEntryInput,
+    indicator08CalculatedDetails,
     socioambientalRequiredFieldState,
     normalizeRgfKey,
-    rgfRowsFromLaunch
+    rgfRowsFromLaunch,
+    latestReopenCycleAction,
+    unresolvedReopenCycle,
+    requiresTransactionalPersistence
   };
 })();

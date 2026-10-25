@@ -119,12 +119,36 @@
     };
   }
 
-  async function persistLaunchAction(action, launches, launchId) {
+  async function persistLaunchAction(action, launches, launchId, options = {}) {
     if (!Array.isArray(launches) || !["draft", "send"].includes(action) || !launchId) {
       throw new Error("AÃ§Ã£o de lanÃ§amento invÃ¡lida.");
     }
     const backend = await getBackendInfo();
     if (!backend.available) throw new Error("SQL Server indisponÃ­vel.");
+    const target = launches.find((launch) => String(launch.id) === String(launchId));
+    if (!target) throw new Error("Lancamento alterado nao enviado.");
+
+    if (options.transactional) {
+      const reason = String(options.correctionReason || "").trim();
+      if (options.requiresRetification && !reason) throw new Error("A justificativa da retificacao e obrigatoria.");
+      const updateResponse = await requestJson(`api/lancamentos/${encodeURIComponent(launchId)}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          ...prepareLaunchForCentral(target),
+          ...(reason ? { justificativaRetificacao: reason } : {})
+        })
+      });
+      let saved = updateResponse.dados ?? updateResponse.lancamento ?? updateResponse;
+      if (action === "send") {
+        const submitResponse = await requestJson(`api/lancamentos/${encodeURIComponent(launchId)}/submeter`, {
+          method: "POST",
+          body: JSON.stringify({})
+        });
+        saved = submitResponse.dados ?? submitResponse.lancamento ?? submitResponse;
+      }
+      return saved;
+    }
+
     const value = launches.map((launch) => String(launch.id) === String(launchId)
       ? prepareLaunchForCentral(launch)
       : launch);
