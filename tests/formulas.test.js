@@ -1307,21 +1307,14 @@ const regraRedeLoterica = {
     campoValor2026Acumulado: "arrecadacaoRedeLotericaAcumulada2026",
     campoBase2025PeriodoEquivalente: "arrecadacaoRedeLoterica2025PeriodoEquivalente",
     campoBase2025Acumulada: "arrecadacaoRedeLoterica2025Acumulada",
-    campoValor2026PeriodoAtual: "arrecadacaoRedeLoterica2026PeriodoAtual",
-    campoNumerador: "arrecadacaoRedeLotericaMes2026",
-    campoNumerador2025: "arrecadacaoRedeLoterica2025PeriodoEquivalente",
-    metaCrescimento: 0.02,
     metaIndice: 1.02,
-    mensagemBaseInsuficiente: "Dados insuficientes: informe a arrecadação da Rede Lotérica em 2025 para o período equivalente."
+    mesesFechamentoTrimestral: [3, 6, 9, 12]
   },
   camposEntrada: [
-    { nome: "arrecadacaoRedeLoterica2025PeriodoEquivalente", obrigatorio: true },
-    { nome: "arrecadacaoRedeLotericaMes2026", obrigatorio: true },
+    { nome: "arrecadacaoRedeLoterica2025PeriodoEquivalente", obrigatorio: false },
+    { nome: "arrecadacaoRedeLotericaMes2026", obrigatorio: false },
     { nome: "arrecadacaoRedeLotericaAcumulada2026", obrigatorio: false },
-    { nome: "arrecadacaoRedeLoterica2026PeriodoAtual", obrigatorio: false },
-    { nome: "arrecadacaoTotalLoteriasPeriodo", obrigatorio: false },
-    { nome: "fonteEvidenciaRedeLoterica", obrigatorio: false },
-    { nome: "observacaoArea", obrigatorio: false }
+    { nome: "resultadoDocumentalRedeLoterica", obrigatorio: false }
   ]
 };
 
@@ -1338,10 +1331,10 @@ const redeLoterica = formulas.calcularIndicador(
 );
 closeTo(redeLoterica.baseReferencia2025Periodo, 3000000000);
 closeTo(redeLoterica.realizado2026Periodo, 3090000000);
-closeTo(redeLoterica.metaCalculada2026, 3060000000);
+closeTo(redeLoterica.metaIndiceCrescimento, 1.02);
 closeTo(redeLoterica.indiceEmRelacaoA2025, 1.03);
 closeTo(redeLoterica.crescimentoVs2025, 0.03);
-closeTo(redeLoterica.percentualAtingidoMensal, 3090000000 / 3060000000);
+closeTo(redeLoterica.percentualAtingidoMensal, 1.03 / 1.02);
 assert.equal(redeLoterica.situacao, "Atingido");
 
 const redeLotericaBaseZero = formulas.calcularIndicador(
@@ -1351,65 +1344,47 @@ const redeLotericaBaseZero = formulas.calcularIndicador(
   [{ mes: 1, camposEntrada: { arrecadacaoRedeLoterica2025PeriodoEquivalente: 0, arrecadacaoRedeLotericaMes2026: 1000000 } }]
 );
 assert.equal(redeLotericaBaseZero.erro, true);
-assert.equal(redeLotericaBaseZero.mensagem, "Dados insuficientes: informe a arrecadação da Rede Lotérica em 2025 para o período equivalente.");
+assert.match(redeLotericaBaseZero.mensagem, /maior que zero/);
 
-const regraRedeLotericaIncremento = {
-  indicadorId: 23,
-  tipoCalculo: "incremento_rede_loterica_base_2025",
-  tipoConsolidacao: "ultima_posicao",
-  unidadeMedida: "percentual",
-  metaAnualValor: 0.02,
-  parametrosCalculo: {
-    campoValor2026: "arrecadacaoRedeLoterica2026",
-    campoBase2025: "arrecadacaoRedeLoterica2025",
-    metaTipo: "curva_trimestral_incremento",
-    curvaIncrementoTrimestral: {
-      "1TRI": { metaIncremento: 0.50 },
-      "2TRI": { metaIncremento: 1.00 },
-      "3TRI": { metaIncremento: 1.50 },
-      "4TRI": { metaIncremento: 2.00 }
-    },
-    mensagemBaseInsuficiente: "Dados insuficientes: informe a arrecadação da Rede Lotérica em 2025 para o período equivalente."
-  },
-  camposEntrada: [
-    { nome: "arrecadacaoRedeLoterica2025", obrigatorio: true },
-    { nome: "arrecadacaoRedeLoterica2026", obrigatorio: true },
-    { nome: "metaTrimestral", obrigatorio: false }
-  ]
-};
-
-const redeLotericaIncremento1Tri = formulas.calcularIndicador(
+const fechamentoRede = (mes, meta, resultado, atingimentoOficial, escala, fonte) => formulas.calcularIndicador(
   indicador(23, "Participação da Rede Lotérica nos Negócios da CAIXA Loterias"),
-  regraRedeLotericaIncremento,
-  { ano: 2026, mes: 3, trimestre: "1TRI/2026", camposEntrada: { arrecadacaoRedeLoterica2025: 3000000000, arrecadacaoRedeLoterica2026: 3017079000 } },
+  regraRedeLoterica,
+  { ano: 2026, mes, metaReferencia: meta, camposEntrada: {
+    resultadoDocumentalRedeLoterica: resultado,
+    percentualAtingidoOficialRedeLoterica: atingimentoOficial,
+    tipoPosicaoRedeLoterica: "fechamento_trimestral",
+    fonteResultadoRedeLoterica: fonte,
+    escalaResultadoDocumentalRedeLoterica: escala
+  } },
   []
 );
-closeTo(redeLotericaIncremento1Tri.indiceRedeLoterica, 1.005693);
-closeTo(redeLotericaIncremento1Tri.incrementoRedeLoterica, 0.005693);
-closeTo(redeLotericaIncremento1Tri.resultadoMensal, 0.005693);
-closeTo(redeLotericaIncremento1Tri.metaTrimestral, 0.005);
-closeTo(redeLotericaIncremento1Tri.percentualAtingidoMensal, 1.1386);
-assert.equal(redeLotericaIncremento1Tri.situacao, "Atingido");
 
-const redeLotericaIncrementoAbaixo = formulas.calcularIndicador(
+const redeMar = fechamentoRede(3, 1.005, 0.0057, 1.1386, "incremento", "Informe 0029");
+closeTo(redeMar.metaIndiceCrescimento, 1.005);
+closeTo(redeMar.indiceEmRelacaoA2025, 1.0057);
+closeTo(redeMar.percentualAtingidoTecnico, 1.0057 / 1.005);
+closeTo(redeMar.percentualAtingidoOficialRedeLoterica, 1.1386);
+assert.equal(redeMar.situacao, "Atingido");
+
+const redeJun = fechamentoRede(6, 1.01, 0.988, 0.9784, "indice", "Informe 0056");
+closeTo(redeJun.percentualAtingidoTecnico, 0.988 / 1.01);
+closeTo(redeJun.percentualAtingidoOficialRedeLoterica, 0.9784);
+assert.equal(redeJun.situacao, "Abaixo da meta");
+
+const redeSet = fechamentoRede(9, 1.015, 0.9816, 0.9671, "indice", "Informe 0078");
+closeTo(redeSet.percentualAtingidoTecnico, 0.9816 / 1.015);
+assert.equal(redeSet.situacao, "Abaixo da meta");
+
+const redeDez = formulas.calcularIndicador(
   indicador(23, "Participação da Rede Lotérica nos Negócios da CAIXA Loterias"),
-  regraRedeLotericaIncremento,
-  { ano: 2026, mes: 3, trimestre: "1TRI/2026", camposEntrada: { arrecadacaoRedeLoterica2025: 3000000000, arrecadacaoRedeLoterica2026: 3012000000 } },
+  regraRedeLoterica,
+  { ano: 2026, mes: 12, metaReferencia: 1.02, camposEntrada: {} },
   []
 );
-closeTo(redeLotericaIncrementoAbaixo.incrementoRedeLoterica, 0.004);
-closeTo(redeLotericaIncrementoAbaixo.percentualAtingidoMensal, 0.8);
-assert.equal(redeLotericaIncrementoAbaixo.situacao, "Abaixo da meta");
-
-const redeLotericaIncrementoAbaixoMetaBaixo = formulas.calcularIndicador(
-  indicador(23, "Participação da Rede Lotérica nos Negócios da CAIXA Loterias"),
-  regraRedeLotericaIncremento,
-  { ano: 2026, mes: 3, trimestre: "1TRI/2026", camposEntrada: { arrecadacaoRedeLoterica2025: 3000000000, arrecadacaoRedeLoterica2026: 3006000000 } },
-  []
-);
-closeTo(redeLotericaIncrementoAbaixoMetaBaixo.incrementoRedeLoterica, 0.002);
-closeTo(redeLotericaIncrementoAbaixoMetaBaixo.percentualAtingidoMensal, 0.4);
-assert.equal(redeLotericaIncrementoAbaixoMetaBaixo.situacao, "Abaixo da meta");
+assert.equal(redeDez.metaIndiceCrescimento, 1.02);
+assert.equal(redeDez.resultadoMensal, null);
+assert.equal(redeDez.percentualAtingidoMensal, null);
+assert.equal(redeDez.situacao, null);
 
 const regraRepasseSocial = {
   indicadorId: 17,
@@ -2422,7 +2397,7 @@ const amostras = {
   20: { acaoPropostaVisibilidade: "campanha_repasses_sociais", statusAcaoVisibilidade: "Publicada/realizada" },
   21: { publicoAlvoElegivelJR: 1000, empregadosCapacitadosJR: 900, quantidadeMinimaIniciativasJR: 2, iniciativasConsideradasJR: "Duas iniciativas concluídas" },
   22: { arrecadacaoEcossistema2025PeriodoEquivalente: 10000000, arrecadacaoEcossistemaMes2026: 12000000 },
-  23: { arrecadacaoRedeLoterica2025PeriodoEquivalente: 1000000000, arrecadacaoRedeLotericaMes2026: 1030000000 }
+  23: { arrecadacaoRedeLoterica2025Acumulada: 1000000000, arrecadacaoRedeLotericaAcumulada2026: 1030000000 }
 };
 
 assert.equal(regras.length, 23);

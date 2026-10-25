@@ -130,7 +130,7 @@
   }
 
   function quarterValueUnit(rule) {
-    return ["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(rule?.tipoCalculo) ? "moeda" : rule?.unidadeMedida;
+    return rule?.tipoCalculo === "crescimento_comparado_base_2025" ? "moeda" : rule?.unidadeMedida;
   }
 
   function formatQuarterMeta(row, quarter) {
@@ -158,9 +158,9 @@
             ? `<small>Canais eletrônicos: ${Calculations.formatarMoedaBR(quarter.canaisDigitaisAcumuladoTrimestre)}<br>Produtos de loterias: ${Calculations.formatarMoedaBR(quarter.produtosLoteriasAcumuladoTrimestre)}</small>`
           : row.rule.tipoCalculo === "participacao_ecossistema_com_cenarios" && quarter.dadosCalculados
             ? `<small>Cenário: ${escapeHtml(quarter.cenarioEcossistemaLabel || "-")}<br>Referência 2025: ${Calculations.formatarPercentual(quarter.referencia2025EcossistemaTrimestre)}<br>Via ecossistema: ${Calculations.formatarMoedaBR(quarter.arrecadacaoViaEcossistemaTrimestre)}<br>Total: ${Calculations.formatarMoedaBR(quarter.arrecadacaoTotalEcossistemaTrimestre)}</small>`
-          : row.rule.tipoCalculo === "incremento_rede_loterica_base_2025" && quarter.dadosCalculados
-            ? `<small>Base 2025: ${Calculations.formatarMoedaBR(quarter.baseReferenciaRedeLotericaTrimestre)}<br>Rede 2026: ${Calculations.formatarMoedaBR(quarter.arrecadacaoRedeLoterica2026Trimestre)}<br>Índice: ${Calculations.formatarPercentual(quarter.indiceRedeLotericaTrimestre)}</small>`
-          : ["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(row.rule.tipoCalculo) && quarter.baseReferencia2025Trimestre != null
+          : row.rule.tipoCalculo === "crescimento_rede_loterica_base_2025" && quarter.resultadoTecnicoTrimestral != null
+            ? `<small>Índice técnico: ${Calculations.formatarPercentual(quarter.resultadoTecnicoTrimestral)}<br>Crescimento equivalente: ${Calculations.formatarPercentual(quarter.crescimentoTrimestral)}<br>Atingimento técnico: ${Calculations.formatarPercentual(quarter.desempenhoTecnicoTrimestral)}<br>Resultado documental: ${Calculations.formatarPercentual(quarter.resultadoDocumentalTrimestral)}<br>Atingimento oficial documental: ${Calculations.formatarPercentual(quarter.desempenhoOficialDocumentalTrimestral)}<br>Fonte: ${escapeHtml(quarter.fonteDocumentalTrimestral || "-")}</small>`
+          : row.rule.tipoCalculo === "crescimento_comparado_base_2025" && quarter.baseReferencia2025Trimestre != null
             ? `<small>Base 2025: ${Calculations.formatarMoedaBR(quarter.baseReferencia2025Trimestre)}<br>Indice: ${Calculations.formatarPercentual(quarter.indiceTrimestral)}<br>Crescimento: ${Calculations.formatarPercentual(quarter.crescimentoTrimestral)}</small>`
           : ""}
         ${quarter.notaApresentacaoOficial ? `<small>${escapeHtml(quarter.notaApresentacaoOficial)}</small>` : ""}
@@ -174,7 +174,7 @@
       </td>
       <td>
         <span class="badge ${badgeClass(quarter.statusTrimestre)}">${escapeHtml(quarter.statusTrimestre)}</span>
-        <small>${quarter.mesesHomologados} de 3 homologados</small>
+        <small>${quarter.mesesHomologados} de ${quarter.mesesEsperados} homologados</small>
       </td>
     `).join("");
   }

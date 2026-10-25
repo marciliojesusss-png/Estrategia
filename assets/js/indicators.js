@@ -623,11 +623,8 @@
     const type = regra?.tipoCalculo || "";
     return {
       isEcossistemaScenario: type === "participacao_ecossistema_com_cenarios",
-      isRedeLotericaIncrement: type === "incremento_rede_loterica_base_2025",
-      isBase2025Growth: [
-        "crescimento_comparado_base_2025",
-        "crescimento_rede_loterica_base_2025"
-      ].includes(type)
+      isRedeLotericaIndex: type === "crescimento_rede_loterica_base_2025",
+      isBase2025Growth: type === "crescimento_comparado_base_2025"
     };
   }
 
@@ -1116,7 +1113,6 @@
     const isRedeLoterica = Number(indicador.id) === 23;
     const growthTrackingModes = resolveGrowthTrackingModes(regra);
     const isEcossistema = growthTrackingModes.isEcossistemaScenario;
-    const isRedeLotericaIncremento = growthTrackingModes.isRedeLotericaIncrement;
     const isBase2025Growth = growthTrackingModes.isBase2025Growth;
     const isGgrFormula = regra?.tipoCalculo === "ggr_formula";
     const isIeoInverse = Number(indicador.id) === 6;
@@ -1367,14 +1363,15 @@
       <th>Situacao</th>
       <th>Status</th>
       <th>Acao</th>
-    ` : isRedeLotericaIncremento ? `
+    ` : isRedeLoterica ? `
       <th>Competencia</th>
-      <th>Base 2025 equivalente</th>
-      <th>Arrecadacao Rede Loterica 2026</th>
-      <th>Meta de incremento</th>
-      <th>Indice 2026/2025</th>
-      <th>Incremento</th>
-      <th>% atingido</th>
+      <th>Meta em índice</th>
+      <th>Resultado técnico em índice</th>
+      <th>Crescimento equivalente</th>
+      <th>Atingimento técnico</th>
+      <th>Resultado documental</th>
+      <th>Atingimento oficial documental</th>
+      <th>Fonte documental</th>
       <th>Situacao</th>
       <th>Status</th>
       <th>Acao</th>
@@ -1820,28 +1817,24 @@
           </tr>
         `;
       }
-      if (isRedeLotericaIncremento) {
-        const calculationScope = launches.filter((item) => Number(item.mes) <= month && item.status === "Homologado");
-        const calculated = launch && launch.status === "Homologado"
+      if (isRedeLoterica) {
+        const calculationScope = launches.filter((item) => Number(item.mes) <= month);
+        const hasDocumentedClosing = launch?.camposEntrada?.tipoPosicaoRedeLoterica === "fechamento_trimestral";
+        const calculated = launch && (launch.status === "Homologado" || hasDocumentedClosing)
           ? calculateIndicatorForDisplay(indicador, regra, launch, calculationScope)
           : null;
-        const base2025 = calculated?.arrecadacaoRedeLoterica2025 ??
-          launch?.camposEntrada?.arrecadacaoRedeLoterica2025 ??
-          launch?.camposEntrada?.arrecadacaoRedeLoterica2025PeriodoEquivalente;
-        const realizado2026 = calculated?.arrecadacaoRedeLoterica2026 ??
-          launch?.camposEntrada?.arrecadacaoRedeLoterica2026 ??
-          launch?.camposEntrada?.arrecadacaoRedeLotericaMes2026;
-        const percent = calculated?.percentualAtingidoMensal ?? calculated?.percentualAtingidoAnual ?? null;
+        const percent = calculated?.percentualAtingidoTecnico ?? calculated?.percentualAtingidoMensal ?? null;
         const situation = calculated?.situacao || (calculated?.erro ? "Dados insuficientes" : Calculations.calcularStatusDesempenho(percent));
         return `
           <tr>
             <td>${name}/2026</td>
-            <td>${Calculations.formatarValor(base2025, "moeda")}</td>
-            <td>${Calculations.formatarValor(realizado2026, "moeda")}</td>
-            <td>${Calculations.formatarPercentual(calculated?.metaTrimestral ?? launch?.metaMensal)}</td>
-            <td>${Calculations.formatarPercentual(calculated?.indiceRedeLoterica)}</td>
-            <td>${Calculations.formatarPercentual(calculated?.incrementoRedeLoterica ?? calculated?.resultadoMensal ?? launch?.resultadoMensal)}</td>
+            <td>${Calculations.formatarPercentual(calculated?.metaIndiceCrescimento ?? launch?.metaMensal)}</td>
+            <td>${Calculations.formatarPercentual(calculated?.indiceEmRelacaoA2025)}</td>
+            <td>${Calculations.formatarPercentual(calculated?.crescimentoVs2025)}</td>
             <td>${Calculations.formatarPercentual(percent)}</td>
+            <td>${Calculations.formatarPercentual(calculated?.resultadoDocumentalRedeLoterica)}</td>
+            <td>${Calculations.formatarPercentual(calculated?.percentualAtingidoOficialRedeLoterica)}</td>
+            <td>${escapeHtml(calculated?.fonteResultadoRedeLoterica || "-")}</td>
             <td>${escapeHtml(situation)}</td>
             <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologação" ? "warn" : "info"}">${escapeHtml(launch?.status || "Não iniciado")}</span></td>
             <td>${monthlyAction(launch)}</td>
@@ -1853,18 +1846,10 @@
         const calculated = launch && launch.status === "Homologado"
           ? calculateIndicatorForDisplay(indicador, regra, launch, calculationScope)
           : null;
-        const base2025Field = isRedeLoterica
-          ? "arrecadacaoRedeLoterica2025PeriodoEquivalente"
-          : "arrecadacaoEcossistema2025PeriodoEquivalente";
-        const legacyBase2025Field = isRedeLoterica
-          ? "arrecadacaoRedeLotericaMes2025"
-          : "arrecadacaoEcossistema2025";
-        const realized2026Field = isRedeLoterica
-          ? "arrecadacaoRedeLotericaMes2026"
-          : "arrecadacaoEcossistemaMes2026";
-        const legacyRealized2026Field = isRedeLoterica
-          ? "arrecadacaoRedeLoterica2026PeriodoAtual"
-          : "arrecadacaoEcossistemaMes";
+        const base2025Field = "arrecadacaoEcossistema2025PeriodoEquivalente";
+        const legacyBase2025Field = "arrecadacaoEcossistema2025";
+        const realized2026Field = "arrecadacaoEcossistemaMes2026";
+        const legacyRealized2026Field = "arrecadacaoEcossistemaMes";
         const base2025 = calculated?.baseReferencia2025Periodo ??
           launch?.camposEntrada?.[base2025Field] ??
           launch?.camposEntrada?.[legacyBase2025Field];
@@ -1969,8 +1954,8 @@
                 ? `<small class="quarter-message">Resultado: ${Calculations.formatarPercentual(quarter.dadosCalculados.resultadoPercentualVisibilidade)}</small>`
               : isEcossistema && quarter.dadosCalculados
                 ? `<small class="quarter-message">Cenário: ${escapeHtml(quarter.cenarioEcossistemaLabel || "-")}<br>Referência 2025: ${Calculations.formatarPercentual(quarter.referencia2025EcossistemaTrimestre)}<br>Via ecossistema: ${Calculations.formatarMoedaBR(quarter.arrecadacaoViaEcossistemaTrimestre)}<br>Total: ${Calculations.formatarMoedaBR(quarter.arrecadacaoTotalEcossistemaTrimestre)}</small>`
-              : isRedeLotericaIncremento && quarter.dadosCalculados
-                ? `<small class="quarter-message">Base 2025: ${Calculations.formatarMoedaBR(quarter.baseReferenciaRedeLotericaTrimestre)}<br>Rede 2026: ${Calculations.formatarMoedaBR(quarter.arrecadacaoRedeLoterica2026Trimestre)}<br>Índice: ${Calculations.formatarPercentual(quarter.indiceRedeLotericaTrimestre)}</small>`
+              : isRedeLoterica && quarter.resultadoTecnicoTrimestral != null
+                ? `<small class="quarter-message">Índice técnico: ${Calculations.formatarPercentual(quarter.resultadoTecnicoTrimestral)}<br>Crescimento equivalente: ${Calculations.formatarPercentual(quarter.crescimentoTrimestral)}<br>Atingimento técnico: ${Calculations.formatarPercentual(quarter.desempenhoTecnicoTrimestral)}<br>Resultado documental: ${Calculations.formatarPercentual(quarter.resultadoDocumentalTrimestral)}<br>Atingimento oficial documental: ${Calculations.formatarPercentual(quarter.desempenhoOficialDocumentalTrimestral)}<br>Fonte: ${escapeHtml(quarter.fonteDocumentalTrimestral || "-")}</small>`
               : isBase2025Growth && quarter.baseReferencia2025Trimestre != null
                 ? `<small class="quarter-message">Base 2025: ${Calculations.formatarMoedaBR(quarter.baseReferencia2025Trimestre)}<br>Indice: ${Calculations.formatarPercentual(quarter.indiceTrimestral)}<br>Crescimento: ${Calculations.formatarPercentual(quarter.crescimentoTrimestral)}</small>`
               : ""}

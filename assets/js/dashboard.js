@@ -212,19 +212,22 @@
       const metaPontosPercentuais = regra?.parametrosCalculo?.curvasCenarios?.[scenario]?.[quarterKey]?.meta2026;
       return metaPontosPercentuais === undefined ? null : metaPontosPercentuais / 100;
     }
-    if (regra?.tipoCalculo === "incremento_rede_loterica_base_2025") {
-      const quarterMatch = String(lancamento?.trimestre || `${Math.ceil(Number(lancamento?.mes || 1) / 3)}TRI/${lancamento?.ano || 2026}`).match(/([1-4])\s*TRI/i);
-      const quarterKey = quarterMatch ? `${quarterMatch[1]}TRI` : "1TRI";
-      const metaPontosPercentuais = regra?.parametrosCalculo?.curvaIncrementoTrimestral?.[quarterKey]?.metaIncremento;
-      return metaPontosPercentuais === undefined ? null : metaPontosPercentuais / 100;
-    }
     if (["baseline_com_meta_anual", "baseline_com_meta_anual_corrigida", "meta_absoluta_por_competencia"].includes(regra?.parametrosCalculo?.metaTipo)) {
       const key = lancamento?.competencia || `${lancamento?.ano}-${String(lancamento?.mes).padStart(2, "0")}`;
       const referencias = regra.parametrosCalculo.referenciasPorCompetencia || {};
       if (Object.prototype.hasOwnProperty.call(referencias, key)) return toFiniteNumber(referencias[key]);
       return toFiniteNumber(regra.parametrosCalculo.metaAnualMetodologica ?? regra.metaAnualValor);
     }
-    if (["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(regra?.tipoCalculo)) {
+    if (regra?.tipoCalculo === "crescimento_rede_loterica_base_2025") {
+      const key = lancamento?.competencia || `${lancamento?.ano}-${String(lancamento?.mes).padStart(2, "0")}`;
+      return toFiniteNumber(
+        resultado?.metaIndiceCrescimento ??
+        lancamento?.metaReferencia ?? lancamento?.metaMensal ??
+        regra?.parametrosCalculo?.metasPorCompetencia?.[key] ??
+        regra?.parametrosCalculo?.metaIndice ?? regra?.metaAnualValor
+      );
+    }
+    if (regra?.tipoCalculo === "crescimento_comparado_base_2025") {
       const metaIndice = toFiniteNumber(resultado?.metaIndiceCrescimento ?? regra?.parametrosCalculo?.metaIndice);
       if (metaIndice !== null) return metaIndice;
       const crescimentoMeta = toFiniteNumber(regra?.parametrosCalculo?.metaCrescimento);

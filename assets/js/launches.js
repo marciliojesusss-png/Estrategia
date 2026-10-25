@@ -5,7 +5,9 @@
     "resultadoOficialPix",
     "percentualAtingidoOficialPix",
     "resultadoAcumuladoDocumentalCanaisDigitais",
-    "percentualAtingidoOficialCanaisDigitais"
+    "percentualAtingidoOficialCanaisDigitais",
+    "resultadoDocumentalRedeLoterica",
+    "percentualAtingidoOficialRedeLoterica"
   ]);
 
   let state = {
@@ -451,9 +453,8 @@
     if (regra?.tipoCalculo === "melhorias_acumuladas") return "Meta acumulada do período";
     if (regra?.parametrosCalculo?.metaTipo === "meta_oficial_trimestral_projeto") return "Meta oficial do período";
     if (regra?.tipoCalculo === "participacao_ecossistema_com_cenarios") return "Meta trimestral 2026";
-    if (regra?.tipoCalculo === "incremento_rede_loterica_base_2025") return "Meta trimestral de incremento";
     if (regra?.tipoCalculo === "crescimento_comparado_base_2025") return "Meta em indice (110% da base 2025)";
-    if (regra?.tipoCalculo === "crescimento_rede_loterica_base_2025") return "Meta em indice (102% da base 2025)";
+    if (regra?.tipoCalculo === "crescimento_rede_loterica_base_2025") return "Meta em índice";
     if (isIeoRule(regra)) return "Meta de referência da competência";
     if (regra?.tipoCalculo === "lucro_recorrente_mensal") return "Meta da competência";
     if (regra?.parametrosCalculo?.metaTipo === "curva_acumulada_por_competencia") {
@@ -506,10 +507,6 @@
     if (regra?.tipoCalculo === "participacao_ecossistema_com_cenarios") {
       const curve = getEcossistemaCurveForLaunch(regra, lancamento, lancamento?.camposEntrada?.cenarioApuracaoEcossistema);
       return curve ? curve.meta2026 / 100 : lancamento.metaMensal ?? regra?.metaAnualValor;
-    }
-    if (regra?.tipoCalculo === "incremento_rede_loterica_base_2025") {
-      const curve = getRedeLotericaCurveForLaunch(regra, lancamento);
-      return curve ? curve.metaIncremento / 100 : lancamento.metaMensal ?? regra?.metaAnualValor;
     }
     if (regra?.tipoCalculo === "lucro_recorrente_mensal") {
       const key = lancamento?.competencia || `${lancamento?.ano}-${String(lancamento?.mes).padStart(2, "0")}`;
@@ -578,11 +575,6 @@
     return quarter ? regra?.parametrosCalculo?.curvasCenarios?.[scenario]?.[quarter] || null : null;
   }
 
-  function getRedeLotericaCurveForLaunch(regra, lancamento) {
-    const quarter = getQuarterKey(lancamento);
-    return quarter ? regra?.parametrosCalculo?.curvaIncrementoTrimestral?.[quarter] || null : null;
-  }
-
   function getEntryValuesFromLaunch(lancamento, regra) {
     const saved = lancamento.camposEntrada || {};
     const values = Object.fromEntries((regra.camposEntrada || []).map((field) => {
@@ -597,10 +589,6 @@
         values.referencia2025Trimestre = curve.referencia2025;
         values.metaTrimestral2026 = curve.meta2026;
       }
-    }
-    if (regra?.tipoCalculo === "incremento_rede_loterica_base_2025") {
-      const curve = getRedeLotericaCurveForLaunch(regra, lancamento);
-      if (curve) values.metaTrimestral = curve.metaIncremento;
     }
     if (regra?.tipoCalculo === "cobertura_capacitacao") {
       values.tipoPosicaoCapacitacao = IndicatorFormulas.resolverTipoPosicaoCapacitacao(lancamento) || "";
@@ -882,7 +870,6 @@
   function shouldHideGoalAchievementFields(indicador, regra) {
     if (isIeoRule(regra)) return false;
     if (regra?.tipoCalculo === "participacao_ecossistema_com_cenarios") return false;
-    if (regra?.tipoCalculo === "incremento_rede_loterica_base_2025") return false;
     if (["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(regra?.tipoCalculo)) return false;
     if (isOfertasPersonalizadasIndicator(indicador, regra)) return false;
     if (regra?.tipoCalculo === "melhorias_acumuladas") return false;
@@ -1077,19 +1064,15 @@
         ? "Resultado acumulado"
       : regra?.parametrosCalculo?.metaTipo === "meta_oficial_trimestral_projeto"
         ? "Evolução oficial do projeto"
-      : regra?.tipoCalculo === "incremento_rede_loterica_base_2025"
-        ? "Incremento percentual"
       : ["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(regra?.tipoCalculo)
-        ? "Indice 2026/2025"
+        ? "Índice 2026/2025"
       : "Resultado da competência";
     document.getElementById("launchPercentualCalculadoLabel").textContent = regra?.tipoCalculo === "marco_projeto_percentual"
       ? "Atingimento oficial"
       : isIeoRule(regra)
       ? "% atingido"
-      : regra?.tipoCalculo === "incremento_rede_loterica_base_2025"
-        ? "% atingido"
       : ["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(regra?.tipoCalculo)
-        ? "% atingido da meta"
+        ? "Atingimento técnico"
       : "% da meta atingida";
     document.getElementById("launchResultadoAcumuladoLabel").textContent = isIeoRule(regra)
       ? "Posição acumulada até a competência"
@@ -1097,10 +1080,8 @@
         ? "Resultado acumulado no ano"
       : regra?.tipoCalculo === "plano_acao_por_elementos"
         ? "Resultado acumulado no ano"
-      : regra?.tipoCalculo === "incremento_rede_loterica_base_2025"
-        ? "Incremento oficial do indicador"
       : ["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(regra?.tipoCalculo)
-        ? "Indice acumulado 2026/2025"
+        ? "Índice acumulado 2026/2025"
       : isOfertasPersonalizadasIndicator(indicador, regra)
         ? "Resultado oficial do indicador"
       : "Resultado oficial anual";
@@ -1206,7 +1187,6 @@
     updateNpsPositionFields(regra, lancamento);
     updateSocioambientalInitiativeFields(regra);
     updateEcossistemaCurveFields(regra, lancamento);
-    updateRedeLotericaCurveFields(regra, lancamento);
   }
 
   function updateCapacitacaoPositionFields(regra, lancamento) {
@@ -1407,15 +1387,6 @@
     if (metaInput && curve) metaInput.value = Calculations.formatarValor(curve.meta2026 / 100, regra.unidadeMedida);
   }
 
-  function updateRedeLotericaCurveFields(regra, lancamento) {
-    if (regra?.tipoCalculo !== "incremento_rede_loterica_base_2025") return;
-    const targetInput = document.querySelector('[data-entry-field="metaTrimestral"]');
-    const curve = getRedeLotericaCurveForLaunch(regra, lancamento);
-    if (targetInput) targetInput.value = curve?.metaIncremento ?? "";
-    const metaInput = document.getElementById("launchMeta");
-    if (metaInput && curve) metaInput.value = Calculations.formatarValor(curve.metaIncremento / 100, regra.unidadeMedida);
-  }
-
   function updateIeoOptionalVisibility() {
     const toggle = document.getElementById("ieoDirectToggle");
     const wrapper = document.getElementById("ieoDirectFieldWrapper");
@@ -1450,9 +1421,7 @@
     }
 
     const unit = resultado.metaTrimestralUnidadeMedida || resultado.unidadeMedida || regra?.unidadeMedida || "numero";
-    const label = regra?.tipoCalculo === "incremento_rede_loterica_base_2025"
-      ? "Meta trimestral de incremento"
-      : "Meta trimestral";
+    const label = "Meta trimestral";
     const formatted = unit === "percentual"
       ? Calculations.formatarPercentual(value)
       : Calculations.formatarValor(value, unit);
@@ -1467,6 +1436,9 @@
 
     if (regra?.tipoCalculo === "razao_canais_digitais") {
       indicator08CalculatedDetails(resultado).forEach((detail) => details.push(detail));
+    }
+    if (regra?.tipoCalculo === "crescimento_rede_loterica_base_2025") {
+      indicator23CalculatedDetails(resultado).forEach((detail) => details.push(detail));
     }
 
     if (regra?.tipoCalculo === "marco_projeto_percentual") {
@@ -1622,21 +1594,21 @@
       details.push(["% da meta atingida", Calculations.formatarPercentual(resultado.percentualAtingidoMensal)]);
       details.push(["Situação", resultado.situacao || "-"]);
     }
-    if (resultado.baseReferencia2025Periodo !== undefined) {
+    if (regra?.tipoCalculo !== "crescimento_rede_loterica_base_2025" && resultado.baseReferencia2025Periodo !== undefined) {
       details.push(["Base 2025 equivalente", Calculations.formatarValor(resultado.baseReferencia2025Periodo, "moeda")]);
     } else if (resultado.resultadoReferencia2025 !== undefined) {
       details.push(["Resultado referência 2025", Calculations.formatarPercentual(resultado.resultadoReferencia2025)]);
     }
-    if (resultado.realizado2026Periodo !== undefined) {
+    if (regra?.tipoCalculo !== "crescimento_rede_loterica_base_2025" && resultado.realizado2026Periodo !== undefined) {
       details.push(["Arrecadação 2026 no período", Calculations.formatarValor(resultado.realizado2026Periodo, "moeda")]);
     }
     if (resultado.metaCalculada2026 !== undefined) {
       details.push(["Meta calculada 2026", Calculations.formatarValor(resultado.metaCalculada2026, resultado.metaCalculadaUnidadeMedida || "percentual")]);
     }
-    if (resultado.indiceEmRelacaoA2025 !== undefined) {
+    if (regra?.tipoCalculo !== "crescimento_rede_loterica_base_2025" && resultado.indiceEmRelacaoA2025 !== undefined) {
       details.push(["Índice 2026/2025", Calculations.formatarPercentual(resultado.indiceEmRelacaoA2025)]);
     }
-    if (resultado.crescimentoVs2025 !== undefined) {
+    if (regra?.tipoCalculo !== "crescimento_rede_loterica_base_2025" && resultado.crescimentoVs2025 !== undefined) {
       details.push(["Crescimento em relação a 2025", Calculations.formatarPercentual(resultado.crescimentoVs2025)]);
     }
 
@@ -1727,6 +1699,25 @@
       ["Atingimento técnico", Calculations.formatarPercentual(technicalPerformance, 2, 2)],
       ["Resultado acumulado documental", documentedResult === null ? "-" : Calculations.formatarPercentual(documentedResult, 2, 2)],
       ["Atingimento oficial documental", documentedPerformance === null ? "-" : Calculations.formatarPercentual(documentedPerformance, 2, 2)]
+    ];
+  }
+
+  function indicator23CalculatedDetails(resultado) {
+    const metaIndice = toNumberOrNull(resultado?.metaIndiceCrescimento);
+    const resultadoIndice = toNumberOrNull(resultado?.indiceEmRelacaoA2025);
+    const crescimento = toNumberOrNull(resultado?.crescimentoVs2025);
+    const atingimentoTecnico = toNumberOrNull(resultado?.percentualAtingidoTecnico ?? resultado?.percentualAtingidoAcumulado);
+    const resultadoDocumental = toNumberOrNull(resultado?.resultadoDocumentalRedeLoterica);
+    const atingimentoOficial = toNumberOrNull(resultado?.percentualAtingidoOficialRedeLoterica);
+    return [
+      ["Meta em índice", metaIndice === null ? "-" : Calculations.formatarPercentual(metaIndice, 2, 2)],
+      ["Resultado técnico em índice", resultadoIndice === null ? "-" : Calculations.formatarPercentual(resultadoIndice, 2, 2)],
+      ["Crescimento equivalente", crescimento === null ? "-" : Calculations.formatarPercentual(crescimento, 2, 2)],
+      ["Atingimento técnico", atingimentoTecnico === null ? "-" : Calculations.formatarPercentual(atingimentoTecnico, 2, 2)],
+      ["Resultado documental", resultadoDocumental === null ? "-" : Calculations.formatarPercentual(resultadoDocumental, 2, 2)],
+      ["Atingimento oficial documental", atingimentoOficial === null ? "-" : Calculations.formatarPercentual(atingimentoOficial, 2, 2)],
+      ["Fonte documental", resultado?.fonteResultadoRedeLoterica || "-"],
+      ["Situação", resultado?.situacao || "-"]
     ];
   }
 
@@ -2394,7 +2385,6 @@
           if (socioambientalValidationActive) validateSocioambientalRequiredFields(regra);
         }
         updateEcossistemaCurveFields(regra, lancamento);
-        updateRedeLotericaCurveFields(regra, lancamento);
       }
       updateCalculatedPreview();
     });
@@ -2465,6 +2455,7 @@
     isCanaisDigitaisDocumentalField,
     renderEntryInput,
     indicator08CalculatedDetails,
+    indicator23CalculatedDetails,
     socioambientalRequiredFieldState,
     normalizeRgfKey,
     rgfRowsFromLaunch,

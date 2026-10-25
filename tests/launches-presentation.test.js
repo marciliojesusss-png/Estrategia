@@ -38,11 +38,34 @@ assert.deepEqual(
 );
 assert.deepEqual(
   JSON.parse(JSON.stringify(internals.quarterlyMetaDetail(
-    { metaTrimestral: 0.01, unidadeMedida: "percentual" },
-    { tipoCalculo: "incremento_rede_loterica_base_2025", unidadeMedida: "percentual" },
+    { metaTrimestral: 1.01, unidadeMedida: "percentual" },
+    { tipoCalculo: "crescimento_rede_loterica_base_2025", unidadeMedida: "percentual" },
     { mes: 6 }
   ))),
-  ["Meta trimestral de incremento", "1%"]
+  ["Meta trimestral", "101%"]
+);
+
+assert.deepEqual(
+  JSON.parse(JSON.stringify(internals.indicator23CalculatedDetails({
+    metaIndiceCrescimento: 1.005,
+    indiceEmRelacaoA2025: 1.0057,
+    crescimentoVs2025: 0.0057,
+    percentualAtingidoTecnico: 1.0057 / 1.005,
+    resultadoDocumentalRedeLoterica: 0.0057,
+    percentualAtingidoOficialRedeLoterica: 1.1386,
+    fonteResultadoRedeLoterica: "Informe 0029",
+    situacao: "Atingido"
+  }))),
+  [
+    ["Meta em índice", "100.49999999999999%"],
+    ["Resultado técnico em índice", "100.57000000000001%"],
+    ["Crescimento equivalente", "0.5700000000000001%"],
+    ["Atingimento técnico", `${(1.0057 / 1.005) * 100}%`],
+    ["Resultado documental", "0.5700000000000001%"],
+    ["Atingimento oficial documental", "113.86%"],
+    ["Fonte documental", "Informe 0029"],
+    ["Situação", "Atingido"]
+  ]
 );
 assert.deepEqual(
   JSON.parse(JSON.stringify(internals.quarterlyMetaDetail(

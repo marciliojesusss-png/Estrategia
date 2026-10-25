@@ -1436,74 +1436,63 @@ const redeLotericaQuarter = consolidarTrimestre(
     parametrosCalculo: {
       campoValor2026Mes: "arrecadacaoRedeLotericaMes2026",
       campoBase2025PeriodoEquivalente: "arrecadacaoRedeLoterica2025PeriodoEquivalente",
-      metaCrescimento: 0.02,
       metaIndice: 1.02,
-      mensagemBaseInsuficiente: "Dados insuficientes: informe a arrecadação da Rede Lotérica em 2025 para o período equivalente."
+      mesesFechamentoTrimestral: [3, 6, 9, 12]
     },
     camposEntrada: [
-      { nome: "arrecadacaoRedeLoterica2025PeriodoEquivalente", obrigatorio: true },
-      { nome: "arrecadacaoRedeLotericaMes2026", obrigatorio: true },
-      { nome: "arrecadacaoRedeLotericaAcumulada2026", obrigatorio: false },
-      { nome: "arrecadacaoRedeLoterica2026PeriodoAtual", obrigatorio: false },
-      { nome: "arrecadacaoTotalLoteriasPeriodo", obrigatorio: false },
-      { nome: "fonteEvidenciaRedeLoterica", obrigatorio: false },
-      { nome: "observacaoArea", obrigatorio: false }
+      { nome: "arrecadacaoRedeLoterica2025PeriodoEquivalente", obrigatorio: false },
+      { nome: "arrecadacaoRedeLotericaMes2026", obrigatorio: false }
     ]
   },
   [
     { ano: 2026, mes: 1, status: "Homologado", competencia: "2026-01", trimestre: "1TRI/2026", camposEntrada: { arrecadacaoRedeLoterica2025PeriodoEquivalente: 1000000000, arrecadacaoRedeLotericaMes2026: 1030000000 } },
     { ano: 2026, mes: 2, status: "Homologado", competencia: "2026-02", trimestre: "1TRI/2026", camposEntrada: { arrecadacaoRedeLoterica2025PeriodoEquivalente: 950000000, arrecadacaoRedeLotericaMes2026: 980000000 } },
-    { ano: 2026, mes: 3, status: "Homologado", competencia: "2026-03", trimestre: "1TRI/2026", camposEntrada: { arrecadacaoRedeLoterica2025PeriodoEquivalente: 1050000000, arrecadacaoRedeLotericaMes2026: 1080000000 } }
+    { ano: 2026, mes: 3, status: "Homologado", metaMensal: 1.005, competencia: "2026-03", trimestre: "1TRI/2026", camposEntrada: { arrecadacaoRedeLoterica2025PeriodoEquivalente: 1050000000, arrecadacaoRedeLotericaMes2026: 1080000000 } }
   ],
   "1TRI/2026"
 );
 assert.equal(redeLotericaQuarter.statusTrimestre, "Fechado");
-assert.equal(redeLotericaQuarter.metaTrimestral, 3060000000);
-assert.equal(redeLotericaQuarter.resultadoTrimestral, 3090000000);
-assert.ok(Math.abs(redeLotericaQuarter.desempenhoTrimestral - (3090000000 / 3060000000)) < 0.000001);
+assert.equal(redeLotericaQuarter.metaTrimestral, 1.005);
+assert.equal(redeLotericaQuarter.resultadoTrimestral, 1.03);
+assert.ok(Math.abs(redeLotericaQuarter.desempenhoTrimestral - (1.03 / 1.005)) < 0.000001);
 assert.equal(redeLotericaQuarter.baseReferencia2025Trimestre, 3000000000);
 assert.ok(Math.abs(redeLotericaQuarter.indiceTrimestral - 1.03) < 0.000001);
 assert.ok(Math.abs(redeLotericaQuarter.crescimentoTrimestral - 0.03) < 0.000001);
 assert.equal(redeLotericaQuarter.situacaoTrimestral, "Atingido");
 
-const redeLotericaIncrementoQuarter = consolidarTrimestre(
+const redeLotericaDocumentalQuarter = consolidarTrimestre(
   { id: 23, indicador: "Participação da Rede Lotérica nos Negócios da CAIXA Loterias", unidadeMedida: "percentual" },
   {
     indicadorId: 23,
-    tipoCalculo: "incremento_rede_loterica_base_2025",
-    tipoConsolidacao: "ultima_posicao",
+    tipoCalculo: "crescimento_rede_loterica_base_2025",
+    tipoConsolidacao: "acumulado_periodo_equivalente",
     unidadeMedida: "percentual",
-    metaAnualValor: 0.02,
+    metaAnualValor: 1.02,
     parametrosCalculo: {
-      campoValor2026: "arrecadacaoRedeLoterica2026",
-      campoBase2025: "arrecadacaoRedeLoterica2025",
-      metaTipo: "curva_trimestral_incremento",
-      curvaIncrementoTrimestral: {
-        "1TRI": { metaIncremento: 0.50 },
-        "2TRI": { metaIncremento: 1.00 },
-        "3TRI": { metaIncremento: 1.50 },
-        "4TRI": { metaIncremento: 2.00 }
-      }
+      metaIndice: 1.02,
+      mesesFechamentoTrimestral: [3, 6, 9, 12]
     },
-    camposEntrada: [
-      { nome: "arrecadacaoRedeLoterica2025", obrigatorio: true },
-      { nome: "arrecadacaoRedeLoterica2026", obrigatorio: true }
-    ]
+    camposEntrada: []
   },
   [
-    { ano: 2026, mes: 1, status: "Homologado", competencia: "2026-01", trimestre: "1TRI/2026", camposEntrada: { arrecadacaoRedeLoterica2025: 1000000000, arrecadacaoRedeLoterica2026: 1005693000 } },
-    { ano: 2026, mes: 2, status: "Homologado", competencia: "2026-02", trimestre: "1TRI/2026", camposEntrada: { arrecadacaoRedeLoterica2025: 1000000000, arrecadacaoRedeLoterica2026: 1005693000 } },
-    { ano: 2026, mes: 3, status: "Homologado", competencia: "2026-03", trimestre: "1TRI/2026", camposEntrada: { arrecadacaoRedeLoterica2025: 1000000000, arrecadacaoRedeLoterica2026: 1005693000 } }
+    { ano: 2026, mes: 3, status: "Em preenchimento", metaMensal: 1.005, competencia: "2026-03", trimestre: "1TRI/2026", camposEntrada: {
+      resultadoDocumentalRedeLoterica: 0.0057,
+      percentualAtingidoOficialRedeLoterica: 1.1386,
+      tipoPosicaoRedeLoterica: "fechamento_trimestral",
+      fonteResultadoRedeLoterica: "Informe 0029",
+      escalaResultadoDocumentalRedeLoterica: "incremento"
+    } }
   ],
   "1TRI/2026"
 );
-assert.equal(redeLotericaIncrementoQuarter.statusTrimestre, "Fechado");
-assert.ok(Math.abs(redeLotericaIncrementoQuarter.metaTrimestral - 0.005) < 0.000001);
-assert.ok(Math.abs(redeLotericaIncrementoQuarter.resultadoTrimestral - 0.005693) < 0.000001);
-assert.ok(Math.abs(redeLotericaIncrementoQuarter.desempenhoTrimestral - 1.1386) < 0.000001);
-assert.ok(Math.abs(redeLotericaIncrementoQuarter.indiceRedeLotericaTrimestre - 1.005693) < 0.000001);
-assert.ok(Math.abs(redeLotericaIncrementoQuarter.incrementoRedeLotericaTrimestre - 0.005693) < 0.000001);
-assert.equal(redeLotericaIncrementoQuarter.situacaoTrimestral, "Atingido");
+assert.equal(redeLotericaDocumentalQuarter.statusTrimestre, "Parcial");
+assert.ok(Math.abs(redeLotericaDocumentalQuarter.metaTrimestral - 1.005) < 0.000001);
+assert.ok(Math.abs(redeLotericaDocumentalQuarter.resultadoTrimestral - 1.0057) < 0.000001);
+assert.ok(Math.abs(redeLotericaDocumentalQuarter.desempenhoTecnicoTrimestral - (1.0057 / 1.005)) < 0.000001);
+assert.ok(Math.abs(redeLotericaDocumentalQuarter.resultadoDocumentalTrimestral - 0.0057) < 0.000001);
+assert.ok(Math.abs(redeLotericaDocumentalQuarter.desempenhoOficialDocumentalTrimestral - 1.1386) < 0.000001);
+assert.equal(redeLotericaDocumentalQuarter.fonteDocumentalTrimestral, "Informe 0029");
+assert.equal(redeLotericaDocumentalQuarter.situacaoTrimestral, "Atingido");
 
 const indicadorGestoresDiversidade = {
   id: 14,

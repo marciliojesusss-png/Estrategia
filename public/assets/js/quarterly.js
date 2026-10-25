@@ -168,11 +168,6 @@
       const metaPontosPercentuais = params.curvasCenarios?.[scenario]?.[quarterKey]?.meta2026;
       return metaPontosPercentuais === undefined ? null : metaPontosPercentuais / 100;
     }
-    if (rule?.tipoCalculo === "incremento_rede_loterica_base_2025") {
-      const quarterKey = quarterNumberValue ? `${quarterNumberValue}TRI` : String(quarterLabel || "").match(/([1-4])\s*TRI/i)?.[0];
-      const metaPontosPercentuais = params.curvaIncrementoTrimestral?.[quarterKey]?.metaIncremento;
-      return metaPontosPercentuais === undefined ? null : metaPontosPercentuais / 100;
-    }
     if (rule?.tipoCalculo === "ggr_formula" && quarterNumberValue && quarterLabel) {
       const year = getYear(quarterLabel);
       const quarterEnd = QUARTERS.find((item) => item.number === quarterNumberValue)?.months.at(-1);
@@ -348,15 +343,20 @@
           toNumber(item?.camposEntrada?.[regra?.parametrosCalculo?.campoResultadoAcumuladoDocumental || "resultadoAcumuladoDocumentalCanaisDigitais"]) !== null
         )
       ));
+    const redeLotericaEmFechamento = regra?.tipoCalculo === "crescimento_rede_loterica_base_2025" &&
+      officialQuarterLaunches.some((item) => (
+        [STATUS_LANCAMENTO.EM_PREENCHIMENTO, "Reaberto", "Retificado"].includes(item.status) &&
+        item?.camposEntrada?.tipoPosicaoRedeLoterica === "fechamento_trimestral"
+      ));
     let quarterStatus = homologatedCount === 0
-      ? (capacidadeTicEmFechamento || aprimoramentoEmFechamento || ggrEmFechamento || canaisDigitaisEmFechamento ? "Parcial" : "Sem dados")
+      ? (capacidadeTicEmFechamento || aprimoramentoEmFechamento || ggrEmFechamento || canaisDigitaisEmFechamento || redeLotericaEmFechamento ? "Parcial" : "Sem dados")
       : homologatedCount === expectedCount ? "Fechado" : "Parcial";
     const homologatedNames = monthlyComposition
       .filter((item) => item.status === STATUS_LANCAMENTO.HOMOLOGADO)
       .map((item) => item.nomeMes);
     let meta = getReferenceMeta(regra, quarterLaunches, number, label);
 
-    if (!number || !months.length || (homologatedCount === 0 && !capacidadeTicEmFechamento && !aprimoramentoEmFechamento && !ggrEmFechamento && !canaisDigitaisEmFechamento)) {
+    if (!number || !months.length || (homologatedCount === 0 && !capacidadeTicEmFechamento && !aprimoramentoEmFechamento && !ggrEmFechamento && !canaisDigitaisEmFechamento && !redeLotericaEmFechamento)) {
       const hasQualitativeAnnualResearchPosition = officialQuarterLaunches.some((item) => (
         isQualitativeAnnualResearchPosition(regra, item)
       ));
@@ -386,6 +386,16 @@
     let calculationScope = capacidadeTicEmFechamento
       ? officialQuarterLaunches
       : getCalculationScope(regra, lancamentosDoIndicador || [], months, year, months.at(-1));
+    if (redeLotericaEmFechamento) {
+      calculationScope = (lancamentosDoIndicador || []).filter((item) => {
+        if (Number(item.ano) !== year || Number(item.mes) > months.at(-1)) return false;
+        if ([STATUS_LANCAMENTO.CANCELADO, STATUS_LANCAMENTO.SUBSTITUIDO, STATUS_LANCAMENTO.NAO_INICIADO].includes(item.status)) return false;
+        const fields = item.camposEntrada || {};
+        return toNumber(fields.arrecadacaoRedeLoterica2025PeriodoEquivalente) !== null ||
+          toNumber(fields.arrecadacaoRedeLotericaMes2026) !== null ||
+          fields.tipoPosicaoRedeLoterica === "fechamento_trimestral";
+      });
+    }
     if (aprimoramentoEmFechamento) {
       calculationScope = (lancamentosDoIndicador || []).filter((item) => (
         Number(item.ano) === year &&
@@ -475,12 +485,19 @@
         (officialPresentedResult !== null && meta ? officialPresentedResult / meta : null);
     }
 
-    if (["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(regra?.tipoCalculo) && validCalculation) {
+    if (regra?.tipoCalculo === "crescimento_comparado_base_2025" && validCalculation) {
       meta = toNumber(validCalculation.metaCalculada2026);
       calculatedQuarterResult = toNumber(validCalculation.realizado2026Periodo);
       officialPresentedResult = calculatedQuarterResult;
       result = calculatedQuarterResult;
       performance = toNumber(validCalculation.percentualAtingidoAnual ?? validCalculation.percentualAtingidoMensal);
+    }
+    if (regra?.tipoCalculo === "crescimento_rede_loterica_base_2025" && validCalculation) {
+      meta = toNumber(validCalculation.metaIndiceCrescimento);
+      calculatedQuarterResult = toNumber(validCalculation.indiceEmRelacaoA2025);
+      officialPresentedResult = calculatedQuarterResult;
+      result = calculatedQuarterResult;
+      performance = toNumber(validCalculation.percentualAtingidoTecnico ?? validCalculation.percentualAtingidoMensal);
     }
 
     if (
@@ -512,7 +529,7 @@
       : null;
     const technicalSituation = getSituation(validCalculation, technicalPerformance);
     const officialPresentation = root.IndicatorFormulas?.obterApresentacaoOficialTrimestre?.(regra, label) || null;
-    if (officialPresentation) {
+    if (officialPresentation && regra?.tipoCalculo !== "crescimento_rede_loterica_base_2025") {
       const reportedMeta = toNumber(officialPresentation.metaOficialReportada);
       const reportedResult = toNumber(officialPresentation.resultadoOficialReportado);
       const reportedPerformance = toNumber(officialPresentation.percentualAtingidoOficialReportado);
@@ -523,7 +540,17 @@
       }
       if (reportedPerformance !== null) performance = reportedPerformance;
     }
-    const officialSituation = officialPresentation?.situacaoOficial || technicalSituation;
+    const officialSituation = officialPresentation?.situacaoOficial || officialPresentation?.situacao || technicalSituation;
+    const redeLotericaDocumental = regra?.tipoCalculo === "crescimento_rede_loterica_base_2025";
+    const resultadoDocumentalTrimestral = redeLotericaDocumental
+      ? toNumber(validCalculation?.resultadoDocumentalRedeLoterica ?? officialPresentation?.resultadoOficialReportado)
+      : null;
+    const desempenhoOficialDocumentalTrimestral = redeLotericaDocumental
+      ? toNumber(validCalculation?.percentualAtingidoOficialRedeLoterica ?? officialPresentation?.percentualAtingidoOficialReportado ?? officialPresentation?.percentualAtingidoOficial)
+      : null;
+    const fonteDocumentalTrimestral = redeLotericaDocumental
+      ? validCalculation?.fonteResultadoRedeLoterica ?? officialPresentation?.fonte ?? null
+      : null;
 
     return {
       indicador,
@@ -547,13 +574,12 @@
       referencia2025EcossistemaTrimestre: regra?.tipoCalculo === "participacao_ecossistema_com_cenarios" ? validCalculation?.referencia2025Trimestre ?? null : null,
       arrecadacaoViaEcossistemaTrimestre: regra?.tipoCalculo === "participacao_ecossistema_com_cenarios" ? validCalculation?.arrecadacaoViaEcossistema ?? null : null,
       arrecadacaoTotalEcossistemaTrimestre: regra?.tipoCalculo === "participacao_ecossistema_com_cenarios" ? validCalculation?.arrecadacaoTotal ?? null : null,
-      baseReferenciaRedeLotericaTrimestre: regra?.tipoCalculo === "incremento_rede_loterica_base_2025" ? validCalculation?.arrecadacaoRedeLoterica2025 ?? null : null,
-      arrecadacaoRedeLoterica2026Trimestre: regra?.tipoCalculo === "incremento_rede_loterica_base_2025" ? validCalculation?.arrecadacaoRedeLoterica2026 ?? null : null,
-      indiceRedeLotericaTrimestre: regra?.tipoCalculo === "incremento_rede_loterica_base_2025" ? validCalculation?.indiceRedeLoterica ?? null : null,
-      incrementoRedeLotericaTrimestre: regra?.tipoCalculo === "incremento_rede_loterica_base_2025" ? validCalculation?.incrementoRedeLoterica ?? null : null,
       baseReferencia2025Trimestre: ["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(regra?.tipoCalculo) ? validCalculation?.baseReferencia2025Periodo ?? null : null,
       indiceTrimestral: ["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(regra?.tipoCalculo) ? validCalculation?.indiceEmRelacaoA2025 ?? null : null,
       crescimentoTrimestral: ["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(regra?.tipoCalculo) ? validCalculation?.crescimentoVs2025 ?? null : null,
+      resultadoDocumentalTrimestral,
+      desempenhoOficialDocumentalTrimestral,
+      fonteDocumentalTrimestral,
       desempenhoTrimestral: performance,
       metaTrimestral: meta,
       situacaoTrimestral: officialSituation,

@@ -262,8 +262,8 @@ assert.equal(ecosystemGrowth.isEcossistemaScenario, false);
 const lotteryNetworkGrowth = resolveGrowthTrackingModes({
   tipoCalculo: "crescimento_rede_loterica_base_2025"
 });
-assert.equal(lotteryNetworkGrowth.isBase2025Growth, true);
-assert.equal(lotteryNetworkGrowth.isRedeLotericaIncrement, false);
+assert.equal(lotteryNetworkGrowth.isBase2025Growth, false);
+assert.equal(lotteryNetworkGrowth.isRedeLotericaIndex, true);
 
 const legacyScenario = resolveGrowthTrackingModes({
   tipoCalculo: "participacao_ecossistema_com_cenarios"

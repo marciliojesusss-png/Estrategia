@@ -25,7 +25,7 @@ const expectedDocumentationFields = {
   20: ["evidenciaVisibilidade", "observacaoArea"],
   21: ["fonteEvidenciaJR", "observacaoArea"],
   22: ["fonteEvidenciaEcossistema", "observacaoArea"],
-  23: ["fonteEvidenciaRedeLoterica", "observacaoArea"]
+  23: ["observacaoArea"]
 };
 
 test("inventário global usa uma lista explícita e remove somente campos documentais", () => {

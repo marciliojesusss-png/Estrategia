@@ -67,12 +67,24 @@
     { value: "lotex", label: "Lotex" },
     { value: "lotex_marketplace", label: "Lotex + Marketplace" }
   ];
-  const REDE_LOTERICA_CURVA_INCREMENTO_2026 = {
-    "1TRI": { metaIncremento: 0.50 },
-    "2TRI": { metaIncremento: 1.00 },
-    "3TRI": { metaIncremento: 1.50 },
-    "4TRI": { metaIncremento: 2.00 }
+  const REDE_LOTERICA_CURVA_INDICE_2026 = {
+    "1TRI": { metaIndice: 1.005 },
+    "2TRI": { metaIndice: 1.010 },
+    "3TRI": { metaIndice: 1.015 },
+    "4TRI": { metaIndice: 1.020 }
   };
+  const REDE_LOTERICA_METAS_INDICE_2026 = Object.freeze({
+    "2026-01": 1.005, "2026-02": 1.005, "2026-03": 1.005,
+    "2026-04": 1.010, "2026-05": 1.010, "2026-06": 1.010,
+    "2026-07": 1.015, "2026-08": 1.015, "2026-09": 1.015,
+    "2026-10": 1.020, "2026-11": 1.020, "2026-12": 1.020
+  });
+  const REDE_LOTERICA_APRESENTACOES_2026 = Object.freeze({
+    "1TRI": { metaTecnicaIndice: 1.005, resultadoTecnicoIndice: 1.0057, metaOficialReportada: 0.005, resultadoOficialReportado: 0.0057, percentualAtingidoOficialReportado: 1.1386, escalaResultadoDocumental: "incremento", situacao: "Atingido", fonte: "Informe DILOT/GERIN nº 0029/2026" },
+    "2TRI": { metaTecnicaIndice: 1.010, resultadoTecnicoIndice: 0.9880, resultadoOficialReportado: 0.9880, percentualAtingidoOficialReportado: 0.9784, escalaResultadoDocumental: "indice", situacao: "Abaixo da meta", fonte: "Informe DILOT/GERIN nº 0056/2026" },
+    "3TRI": { metaTecnicaIndice: 1.015, resultadoTecnicoIndice: 0.9816, resultadoOficialReportado: 0.9816, percentualAtingidoOficialReportado: 0.9671, escalaResultadoDocumental: "indice", situacao: "Abaixo da meta", fonte: "Informe DILOT/GERIN nº 0078/2026" },
+    "4TRI": { metaTecnicaIndice: 1.020, resultadoTecnicoIndice: null, resultadoOficialReportado: null, percentualAtingidoOficialReportado: null, escalaResultadoDocumental: "indice", situacao: null, fonte: null }
+  });
   const APRIMORAMENTO_CURVA_TRIMESTRAL_2026 = {
     "1TRI/2026": { metaPercentual: 0.0454, metaQuantidadeAcumulada: 1 },
     "2TRI/2026": { metaPercentual: 0.1364, metaQuantidadeAcumulada: 3 },
@@ -797,10 +809,10 @@
     return metaPontosPercentuais === undefined ? null : metaPontosPercentuais / 100;
   }
 
-  function getRedeLotericaMetaIncrementoTrimestral(ano, mes) {
+  function getRedeLotericaMetaIndiceTrimestral(ano, mes) {
+    if (Number(ano) !== 2026) return null;
     const trimestre = `${Math.ceil(Number(mes) / 3)}TRI`;
-    const metaPontosPercentuais = REDE_LOTERICA_CURVA_INCREMENTO_2026[trimestre]?.metaIncremento;
-    return metaPontosPercentuais === undefined ? null : metaPontosPercentuais / 100;
+    return REDE_LOTERICA_CURVA_INDICE_2026[trimestre]?.metaIndice ?? null;
   }
 
   function migrarCampoGgrLegado(launch) {
@@ -1177,7 +1189,7 @@
     if (id === 20) return getVisibilidadeRepassesMetaTrimestral(ano, mes);
     if (id === 21) return getJogoResponsavelCapacitacaoMetaTrimestral(ano, mes);
     if (id === 22) return getEcossistemaMetaTrimestral(ano, mes);
-    if (id === 23) return getRedeLotericaMetaIncrementoTrimestral(ano, mes);
+    if (id === 23) return getRedeLotericaMetaIndiceTrimestral(ano, mes);
     return null;
   }
 
@@ -1195,6 +1207,7 @@
   function resolveMeta(indicadorId, ano, mes, metas = cache.metas || [], persistedValue = null) {
     if (Number(indicadorId) === 11 && !isCapacidadeTicFechamento(mes)) return null;
     if (Number(indicadorId) === 8 && Number(ano) === 2026) return getCanaisDigitaisMeta(ano, mes);
+    if (Number(indicadorId) === 23 && Number(ano) === 2026) return getRedeLotericaMetaIndiceTrimestral(ano, mes);
     const official = configuredMeta(indicadorId, ano, mes, metas);
     if (official !== null && Number.isFinite(official)) return official;
     if (persistedValue !== null && persistedValue !== undefined && persistedValue !== "") {
@@ -1212,10 +1225,11 @@
       meta.metaMensal !== undefined && meta.metaMensal !== ""
     ));
     if (!official.length) return rule;
-    const perCompetence = Object.fromEntries(official.map((meta) => [
-      `${Number(meta.ano)}-${String(Number(meta.mes)).padStart(2, "0")}`,
-      Number(meta.metaMensal)
-    ]));
+    const perCompetence = Object.fromEntries(official.map((meta) => {
+      const value = Number(meta.metaMensal);
+      const canonicalValue = indicatorId === 23 && value > 0 && value < 1 ? 1 + value : value;
+      return [`${Number(meta.ano)}-${String(Number(meta.mes)).padStart(2, "0")}`, canonicalValue];
+    }));
     const monthly = { ...(rule.parametrosCalculo?.metasMensaisPorCompetencia || {}), ...perCompetence };
     const accumulated = indicatorId === 7
       ? Object.keys(monthly).sort().reduce((curve, key) => {
@@ -1583,12 +1597,13 @@
           return {
             ...normalized,
             indicador: INDICATOR_NAMES[22],
-            tipoCalculo: "incremento_rede_loterica_base_2025",
+            tipoCalculo: "crescimento_rede_loterica_base_2025",
+            tipoConsolidacao: "acumulado_periodo_equivalente",
             unidadeMedida: "percentual",
-            metaAnualDescricao: "Meta anual: 2,00% de incremento",
-            metrica: "Fórmula oficial: Arrecadação Rede Lotérica 2026 / Arrecadação Rede Lotérica 2025 × 100. Resultado exibido: incremento percentual (índice 2026/2025 menos 100).",
+            metaAnualDescricao: "Índice anual ≥ 102,00% da base 2025 equivalente",
+            metrica: "Arrecadação acumulada da Rede Lotérica em 2026 / arrecadação acumulada de 2025 no período equivalente.",
             conceito: "Este indicador tem o objetivo de mensurar o crescimento da arrecadação de loterias na Rede Lotérica.",
-            observacaoMetodologica: "Embora a fórmula oficial calcule a razão entre a arrecadação de 2026 e a arrecadação de 2025, a apresentação do indicador deve considerar o incremento percentual, ou seja, o índice 2026/2025 menos 100."
+            observacaoMetodologica: "A camada técnica utiliza índice. O crescimento equivalente é apresentado separadamente como índice menos 1."
           };
         }
         return Number(indicator.id) === 9 ? {
@@ -2141,37 +2156,38 @@
           return {
             ...rule,
             nome: INDICATOR_NAMES[22],
-            tipoCalculo: "incremento_rede_loterica_base_2025",
-            tipoConsolidacao: "ultima_posicao",
+            tipoCalculo: "crescimento_rede_loterica_base_2025",
+            tipoConsolidacao: "acumulado_periodo_equivalente",
             unidadeMedida: "percentual",
-            metaAnualValor: 0.02,
+            metaAnualValor: 1.02,
             parametrosCalculo: {
-              campoValor2026: "arrecadacaoRedeLoterica2026",
+              ...(rule.parametrosCalculo || {}),
               campoValor2026Mes: "arrecadacaoRedeLotericaMes2026",
               campoValor2026Acumulado: "arrecadacaoRedeLotericaAcumulada2026",
-              campoValor2026PeriodoAtual: "arrecadacaoRedeLoterica2026PeriodoAtual",
-              campoBase2025: "arrecadacaoRedeLoterica2025",
               campoBase2025PeriodoEquivalente: "arrecadacaoRedeLoterica2025PeriodoEquivalente",
               campoBase2025Acumulada: "arrecadacaoRedeLoterica2025Acumulada",
-              campoBase2025PeriodoAtual: "arrecadacaoRedeLoterica2025PeriodoEquivalente",
-              campoNumerador: "arrecadacaoRedeLoterica2026",
-              campoNumeradorLegado: "arrecadacaoRedeLotericaMes2026",
-              campoNumerador2025: "arrecadacaoRedeLoterica2025",
-              campoNumerador2025Legado: "arrecadacaoRedeLotericaMes2025",
-              metaTipo: "curva_trimestral_incremento",
-              curvaIncrementoTrimestral: REDE_LOTERICA_CURVA_INCREMENTO_2026,
-              metaIncrementoAnual: 0.02,
-              indiceAnualEquivalente: 1.02,
+              metaTipo: "curva_indice_periodo_equivalente",
+              metaIndice: 1.02,
               sentidoMeta: "quanto_maior_melhor",
-              mensagemBaseInsuficiente: "Dados insuficientes: informe a arrecadação da Rede Lotérica em 2025 para o período equivalente.",
-              mensagemRealizadoInsuficiente: "Arrecadação da Rede Lotérica 2026 deve ser informada e não pode ser negativa."
+              mesesFechamentoTrimestral: [3, 6, 9, 12],
+              metasPorCompetencia: { ...REDE_LOTERICA_METAS_INDICE_2026 },
+              apresentacoesOficiaisTrimestrais: { ...REDE_LOTERICA_APRESENTACOES_2026 },
+              campoResultadoDocumental: "resultadoDocumentalRedeLoterica",
+              campoPercentualAtingidoOficial: "percentualAtingidoOficialRedeLoterica",
+              campoTipoPosicao: "tipoPosicaoRedeLoterica",
+              campoFonteResultado: "fonteResultadoRedeLoterica",
+              campoEscalaResultadoDocumental: "escalaResultadoDocumentalRedeLoterica"
             },
             camposEntrada: [
-              { nome: "arrecadacaoRedeLoterica2025", rotulo: "Arrecadação da Rede Lotérica em 2025 no período equivalente", tipo: "moeda", obrigatorio: true },
-              { nome: "arrecadacaoRedeLoterica2026", rotulo: "Arrecadação da Rede Lotérica em 2026 no período", tipo: "moeda", obrigatorio: true },
-              { nome: "metaTrimestral", rotulo: "Meta trimestral de incremento (%)", tipo: "numero", obrigatorio: false, somenteLeitura: true }
+              { nome: "arrecadacaoRedeLoterica2025PeriodoEquivalente", rotulo: "Arrecadação Rede Lotérica 2025 no mês equivalente", tipo: "moeda", obrigatorio: false },
+              { nome: "arrecadacaoRedeLotericaMes2026", rotulo: "Arrecadação Rede Lotérica 2026 no mês", tipo: "moeda", obrigatorio: false },
+              { nome: "resultadoDocumentalRedeLoterica", rotulo: "Resultado documental", tipo: "percentual", obrigatorio: false, escalaPercentual: "decimal" },
+              { nome: "percentualAtingidoOficialRedeLoterica", rotulo: "Atingimento oficial documental", tipo: "percentual", obrigatorio: false, escalaPercentual: "decimal" },
+              { nome: "tipoPosicaoRedeLoterica", rotulo: "Natureza da posição", tipo: "selecao", obrigatorio: false, opcoes: [{ value: "", label: "Selecione..." }, { value: "fechamento_trimestral", label: "Fechamento trimestral" }] },
+              { nome: "fonteResultadoRedeLoterica", rotulo: "Fonte documental", tipo: "texto", obrigatorio: false },
+              { nome: "escalaResultadoDocumentalRedeLoterica", rotulo: "Escala do resultado documental", tipo: "selecao", obrigatorio: false, opcoes: [{ value: "indice", label: "Índice" }, { value: "incremento", label: "Incremento" }] }
             ],
-            campoResultadoPrincipal: "incrementoRedeLoterica",
+            campoResultadoPrincipal: "indiceEmRelacaoA2025",
             campoPercentualAtingido: "percentualAtingidoMensal",
             resultadoOficial: "ultima_posicao_homologada"
           };
@@ -2460,8 +2476,8 @@
           metaAnualDescricao: "Ano 2026: ≥ 10% em relação ao exercício de 2025"
         } : {}),
         ...(Number(launch.indicadorId) === 23 ? {
-          metaMensal: getRedeLotericaMetaIncrementoTrimestral(launch.ano, launch.mes),
-          metaAnualDescricao: "Meta anual: 2,00% de incremento"
+          metaMensal: getRedeLotericaMetaIndiceTrimestral(launch.ano, launch.mes),
+          metaAnualDescricao: "Índice anual ≥ 102,00% da base 2025 equivalente"
         } : {}),
         ...(Number(launch.indicadorId) === 8 ? {
           unidadeApuradora: "SUCOL",
