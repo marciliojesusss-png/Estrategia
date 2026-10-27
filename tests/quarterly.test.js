@@ -155,9 +155,13 @@ const npsRule = {
     metaVigenteNPS2026: 60,
     referenciasPorCompetencia: {
       "2026-01": 55, "2026-02": 55, "2026-03": 55,
-      "2026-04": 58, "2026-05": 58, "2026-06": 58,
+      "2026-04": 58, "2026-05": 58,
+      "2026-06": 60,
       "2026-07": 60, "2026-08": 60, "2026-09": 60,
       "2026-10": 60, "2026-11": 60, "2026-12": 60
+    },
+    apresentacoesOficiaisTrimestrais: {
+      "2TRI/2026": { metaOficialReportada: 60, resultadoOficialReportado: 59.2, percentualAtingidoOficialReportado: 0.9866, situacaoOficial: "Abaixo da meta", fonte: "Informe DILOT/GERIN nº 0056/2026" }
     },
     sentidoMeta: "quanto_maior_melhor"
   },
@@ -190,10 +194,11 @@ const npsSecondQuarter = consolidarTrimestre(
   ],
   "2TRI/2026"
 );
-assert.equal(npsSecondQuarter.metaTrimestral, 58);
+assert.equal(npsSecondQuarter.metaTrimestral, 60);
 assert.ok(Math.abs(npsSecondQuarter.resultadoTrimestral - 59.2) < 0.000001);
-assert.ok(Math.abs(npsSecondQuarter.desempenhoTrimestral - (59.2 / 58)) < 0.000001);
-assert.equal(npsSecondQuarter.situacaoTrimestral, "Atingido");
+assert.equal(npsSecondQuarter.desempenhoTrimestral, 0.9866);
+assert.ok(Math.abs(npsSecondQuarter.desempenhoTecnicoTrimestral - (59.2 / 60)) < 0.000001);
+assert.equal(npsSecondQuarter.situacaoTrimestral, "Abaixo da meta");
 
 const npsThirdQuarterTracking = consolidarTrimestre(
   npsIndicator,

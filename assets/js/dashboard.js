@@ -279,10 +279,14 @@
       const campoNps = regra.parametrosCalculo?.campoNps || "npsApurado";
       const campoPromotores = regra.parametrosCalculo?.campoPromotores || "percentualPromotores";
       const campoDetratores = regra.parametrosCalculo?.campoDetratores || "percentualDetratores";
+      const campoResultadoDocumental = regra.parametrosCalculo?.campoResultadoDocumental || "resultadoDocumentalNPS";
       const hasPromoters = toFiniteNumber(lancamento?.camposEntrada?.[campoPromotores]) !== null;
       const hasDetractors = toFiniteNumber(lancamento?.camposEntrada?.[campoDetratores]) !== null;
       if (hasPromoters || hasDetractors) return hasPromoters && hasDetractors;
-      return toFiniteNumber(lancamento?.camposEntrada?.[campoNps]) !== null;
+      return [
+        lancamento?.camposEntrada?.[campoNps],
+        lancamento?.camposEntrada?.[campoResultadoDocumental]
+      ].some((value) => toFiniteNumber(value) !== null);
     }
     return true;
   }
@@ -303,9 +307,29 @@
     return `Resultado oficial reportado no ${quarter}`;
   }
 
-  function resolveLatestQuantitativePosition(indicador, regra, lancamentosDoIndicador) {
+  function parseGovernancePayload(value) {
+    if (!value) return null;
+    if (typeof value === "object") return value;
+    try { return JSON.parse(value); } catch (_) { return null; }
+  }
+
+  function hasCurrentTransactionalHomologation(lancamento, governance = {}) {
+    if (!lancamento) return false;
+    const launchId = String(lancamento.id);
+    const currentVersion = Number(lancamento.versaoAtual ?? lancamento.versao ?? 1);
+    const currentPositions = governance.governancaHomologacaoAtual || [];
+    return currentPositions.some((item) => (
+      String(item.lancamentoId ?? item.lancamento_id) === launchId &&
+      Number(item.versao ?? item.versao_lancamento) === currentVersion
+    ));
+  }
+
+  function resolveLatestQuantitativePosition(indicador, regra, lancamentosDoIndicador, governance = {}) {
     const source = lancamentosDoIndicador || [];
-    const officialSource = source.filter((item) => item.status === "Homologado");
+    const officialSource = source.filter((item) => (
+      item.status === "Homologado" &&
+      (regra?.exigirHomologacaoTransacionalVersaoAtual !== true || hasCurrentTransactionalHomologation(item, governance))
+    ));
     const allHistoricalLaunches = source
       .filter(hasValidLaunchData)
       .sort(sortByOfficialCompetence);
@@ -373,10 +397,10 @@
     });
   }
 
-  function obterResultadoDashboard(indicador, regra, lancamentosDoIndicador) {
+  function obterResultadoDashboard(indicador, regra, lancamentosDoIndicador, governance = {}) {
     const positionBased = ["nota_pesquisa_nps", "nota_pesquisa_anual", "melhorias_acumuladas", "projeto_marco_entrega"].includes(regra?.tipoCalculo);
     const researchBased = ["nota_pesquisa_nps", "nota_pesquisa_anual"].includes(regra?.tipoCalculo);
-    const positions = resolveLatestQuantitativePosition(indicador, regra, lancamentosDoIndicador);
+    const positions = resolveLatestQuantitativePosition(indicador, regra, lancamentosDoIndicador, governance);
     const lancamentosHistoricosValidos = positions.historicalLaunches;
     const lancamentosOperacionaisValidos = positions.operationalLaunches;
     const lancamentosValidos = positions.quantitativeLaunches;
@@ -511,13 +535,13 @@
     };
   }
 
-  function calcularResultadosOficiais(indicadores, lancamentos, regras) {
+  function calcularResultadosOficiais(indicadores, lancamentos, regras, governance = {}) {
     return indicadores.map((indicador) => {
       const regra = getRule(indicador, regras);
       const lancamentosDoIndicador = lancamentos.filter(
         (item) => Number(item.indicadorId) === Number(indicador.id)
       );
-      return obterResultadoDashboard(indicador, regra, lancamentosDoIndicador);
+      return obterResultadoDashboard(indicador, regra, lancamentosDoIndicador, governance);
     });
   }
 
@@ -525,8 +549,8 @@
     return item && toFiniteNumber(item.percentualAtingido) !== null;
   }
 
-  function calcularDashboard({ indicadores, lancamentos, regras }) {
-    const resultadosOficiais = calcularResultadosOficiais(indicadores, lancamentos, regras);
+  function calcularDashboard({ indicadores, lancamentos, regras, homologacoes = [], historico = [], auditoria = [], governancaHomologacaoAtual = [] }) {
+    const resultadosOficiais = calcularResultadosOficiais(indicadores, lancamentos, regras, { homologacoes, historico, auditoria, governancaHomologacaoAtual });
     const indicadoresComAtingimento = resultadosOficiais.filter(hasOfficialPercent);
     return {
       totalIndicadores: indicadores.length,
@@ -964,7 +988,10 @@
       const preliminary = calcularDashboard({
         indicadores: filteredIndicators,
         lancamentos: competenceLaunches,
-        regras: state.regras
+        regras: state.regras,
+        homologacoes: state.homologacoes,
+        historico: state.historico,
+        governancaHomologacaoAtual: state.governancaHomologacaoAtual
       });
       const statusIds = new Set(preliminary.resultadosOficiais
         .filter((item) => (item.status || item.lancamento?.status || "Sem dados") === values.status)
@@ -974,7 +1001,7 @@
 
     const visibleIds = new Set(visibleIndicators.map((item) => item.id));
     const filteredLaunches = competenceLaunches.filter((item) => visibleIds.has(item.indicadorId));
-    const resumo = calcularDashboard({ indicadores: visibleIndicators, lancamentos: filteredLaunches, regras: state.regras });
+    const resumo = calcularDashboard({ indicadores: visibleIndicators, lancamentos: filteredLaunches, regras: state.regras, homologacoes: state.homologacoes, historico: state.historico, governancaHomologacaoAtual: state.governancaHomologacaoAtual });
     renderCards(resumo);
     renderCharts(visibleIndicators, filteredLaunches, resumo);
     renderStrategicPerformance(resumo.resultadosOficiais, values.ano || "2026");
@@ -983,6 +1010,9 @@
   async function init({ data, user }) {
     state = {
       regras: data.regrasIndicadores || [],
+      homologacoes: data.homologacoes || [],
+      historico: data.historico || data.auditoria || [],
+      governancaHomologacaoAtual: data.governancaHomologacaoAtual || [],
       user
     };
     const indicadores = Auth.filterIndicatorsByUser(data.indicadores, user);
@@ -1002,6 +1032,7 @@
     calcularDashboard,
     calcularResultadosOficiais,
     resolveLatestQuantitativePosition,
+    hasCurrentTransactionalHomologation,
     officialSituation,
     formatOfficialResult,
     formatOfficialMeta,

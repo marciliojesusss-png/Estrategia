@@ -30,6 +30,7 @@ final class ResumoExecutivoDadosService
         return array(
             'indicadores' => $indicadores,
             'lancamentos' => $lancamentos,
+            'governancaHomologacaoAtual' => $this->governancaHomologacaoAtual($lancamentos),
             'regrasIndicadores' => $this->configuracoes->get('regrasIndicadores', array()),
             'frequenciasCobrancaOperacional' => $this->frequenciasCobrancaOperacional($indicadores),
             'prazos' => $this->prazos->all(),
@@ -39,6 +40,76 @@ final class ResumoExecutivoDadosService
                 'banco' => defined('SQLSERVER_DATABASE') ? SQLSERVER_DATABASE : '',
             ),
         );
+    }
+
+    private function governancaHomologacaoAtual(array $lancamentos): array
+    {
+        $visible = array();
+        foreach ($lancamentos as $lancamento) $visible[(string)($lancamento['id'] ?? '')] = true;
+        if (!$visible) return array();
+        $sql = $this->governancaHomologacaoAtualSql();
+        $rows = $this->db->query($sql)->fetchAll();
+        $result = array();
+        foreach ($rows as $row) {
+            if (!isset($visible[(string)$row['lancamento_id']])) continue;
+            $result[] = array('lancamentoId' => $row['lancamento_id'], 'versao' => (int)$row['versao_lancamento']);
+        }
+        return $result;
+    }
+
+    private function governancaHomologacaoAtualSql(
+        $lancamentosTable = 'dbo.lancamentos',
+        $auditoriaTable = 'dbo.auditoria',
+        $homologacoesTable = 'dbo.homologacoes',
+        $retificacoesTable = 'dbo.retificacoes'
+    ): string {
+        return "SELECT l.id AS lancamento_id,l.versao_atual AS versao_lancamento
+                FROM {$lancamentosTable} l
+                WHERE l.status=N'Homologado'
+                  AND EXISTS(
+                    SELECT 1
+                    FROM {$homologacoesTable} h
+                    WHERE h.lancamento_id=l.id
+                      AND h.acao=N'homologacao_lancamento'
+                      AND h.status_novo=N'Homologado'
+                      AND h.id=(
+                        SELECT TOP 1 hx.id
+                        FROM {$homologacoesTable} hx
+                        WHERE hx.lancamento_id=l.id
+                          AND hx.acao IN (
+                            N'homologacao_lancamento',
+                            N'lancamento_reaberto',
+                            N'reabertura_excepcional_pos_fechamento_ca'
+                          )
+                        ORDER BY
+                          TRY_CONVERT(datetimeoffset(7),hx.data_acao,127) DESC,
+                          TRY_CONVERT(datetimeoffset(7),hx.created_at,127) DESC,
+                          hx.id DESC
+                      )
+                  )
+                  AND EXISTS(
+                    SELECT 1
+                    FROM {$auditoriaTable} a
+                    WHERE a.entidade=N'homologacoes'
+                      AND a.entidade_id=CONVERT(nvarchar(100),l.id)
+                      AND a.acao=N'homologacao_lancamento'
+                      AND (
+                        TRY_CONVERT(int,JSON_VALUE(a.dados_novos_json,'$.lancamento.versaoAtual'))=l.versao_atual
+                        OR (
+                          JSON_VALUE(a.dados_novos_json,'$.lancamento.versaoAtual') IS NULL
+                          AND l.versao_atual=1
+                        )
+                      )
+                      AND NOT EXISTS(
+                        SELECT 1
+                        FROM {$retificacoesTable} r
+                        WHERE r.lancamento_id=l.id
+                          AND r.versao_nova>COALESCE(
+                            TRY_CONVERT(int,JSON_VALUE(a.dados_novos_json,'$.lancamento.versaoAtual')),
+                            1
+                          )
+                      )
+                  )";
     }
 
     private function normalizarLancamento(array $lancamento): array

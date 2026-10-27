@@ -42,6 +42,16 @@
     return Number.isFinite(number) ? number : null;
   }
 
+  function hasCurrentTransactionalHomologation(launch, governance = {}) {
+    if (!launch) return false;
+    const launchId = String(launch.id);
+    const currentVersion = Number(launch.versaoAtual ?? launch.versao ?? 1);
+    return (governance.governancaHomologacaoAtual || []).some((item) => (
+      String(item.lancamentoId ?? item.lancamento_id) === launchId &&
+      Number(item.versao ?? item.versao_lancamento) === currentVersion
+    ));
+  }
+
   function quarterNumber(value) {
     if (typeof value === "number") return value >= 1 && value <= 4 ? value : null;
     const match = String(value || "").match(/([1-4])\s*TRI/i);
@@ -268,7 +278,10 @@
     const hasPromoters = toNumber(fields[params.campoPromotores || "percentualPromotores"]) !== null;
     const hasDetractors = toNumber(fields[params.campoDetratores || "percentualDetratores"]) !== null;
     if (hasPromoters || hasDetractors) return hasPromoters && hasDetractors;
-    return toNumber(fields[params.campoNps || "npsApurado"]) !== null;
+    return [
+      fields[params.campoNps || "npsApurado"],
+      fields[params.campoResultadoDocumental || "resultadoDocumentalNPS"]
+    ].some((value) => toNumber(value) !== null);
   }
 
   function isQuantitativeProjectLaunch(rule, launch) {
@@ -297,7 +310,7 @@
     return `Consolidado parcial calculado com ${count} de ${expectedCount} competências oficiais homologadas${months}.${returned}`;
   }
 
-  function consolidarTrimestre(indicador, regra, lancamentosDoIndicador, trimestre) {
+  function consolidarTrimestre(indicador, regra, lancamentosDoIndicador, trimestre, governance = {}) {
     const number = quarterNumber(trimestre);
     const months = obterMesesDoTrimestre(trimestre);
     const configuredClosingMonths = regra?.parametrosCalculo?.mesesFechamentoTrimestral;
@@ -318,7 +331,11 @@
       lancamento: byMonth[month] || null,
       status: byMonth[month]?.status || STATUS_LANCAMENTO.NAO_INICIADO
     }));
-    const homologatedInQuarter = officialQuarterLaunches.filter((item) => item.status === STATUS_LANCAMENTO.HOMOLOGADO);
+    const legacyHomologatedInQuarter = officialQuarterLaunches.filter((item) => item.status === STATUS_LANCAMENTO.HOMOLOGADO);
+    const requiresCurrentGovernance = regra?.exigirHomologacaoTransacionalVersaoAtual === true;
+    const homologatedInQuarter = legacyHomologatedInQuarter.filter((item) => (
+      !requiresCurrentGovernance || hasCurrentTransactionalHomologation(item, governance)
+    ));
     const homologatedCount = homologatedInQuarter.length;
     const expectedCount = expectedMonths.length;
     const hasReturned = officialQuarterLaunches.some((item) => item.status === STATUS_LANCAMENTO.DEVOLVIDO_AJUSTE);
@@ -348,15 +365,40 @@
         [STATUS_LANCAMENTO.EM_PREENCHIMENTO, "Reaberto", "Retificado"].includes(item.status) &&
         item?.camposEntrada?.tipoPosicaoRedeLoterica === "fechamento_trimestral"
       ));
+    const ofertasPersonalizadasEmFechamento = Number(regra?.indicadorId) === 1 &&
+      officialQuarterLaunches.some((item) => (
+        [STATUS_LANCAMENTO.HOMOLOGADO, STATUS_LANCAMENTO.EM_PREENCHIMENTO, "Reaberto", "Retificado"].includes(item.status) &&
+        (
+          toNumber(item?.camposEntrada?.clientesUnicosComOfertaPersonalizadaCompetencia) !== null ||
+          toNumber(item?.camposEntrada?.resultadoDocumentalOfertasPersonalizadas) !== null
+        )
+      ));
+    const npsEmFechamento = regra?.tipoCalculo === "nota_pesquisa_nps" &&
+      officialQuarterLaunches.some((item) => (
+        [STATUS_LANCAMENTO.HOMOLOGADO, STATUS_LANCAMENTO.EM_PREENCHIMENTO, "Reaberto", "Retificado"].includes(item.status) &&
+        isQuantitativeNpsLaunch(regra, item)
+      ));
+    const clientesAtivosEmFechamento = Number(regra?.indicadorId) === 3 &&
+      officialQuarterLaunches.some((item) => (
+        [STATUS_LANCAMENTO.HOMOLOGADO, STATUS_LANCAMENTO.EM_PREENCHIMENTO, "Reaberto", "Retificado"].includes(item.status) &&
+        (
+          toNumber(item?.camposEntrada?.qmaatu) !== null ||
+          toNumber(item?.camposEntrada?.resultadoDocumentalClientesAtivos) !== null
+        )
+      ));
+    const officialPresentation = root.IndicatorFormulas?.obterApresentacaoOficialTrimestre?.(regra, label) || null;
+    const documentaryPositionAvailable = toNumber(officialPresentation?.resultadoOficialReportado) !== null;
     let quarterStatus = homologatedCount === 0
-      ? (capacidadeTicEmFechamento || aprimoramentoEmFechamento || ggrEmFechamento || canaisDigitaisEmFechamento || redeLotericaEmFechamento ? "Parcial" : "Sem dados")
+      ? (documentaryPositionAvailable && requiresCurrentGovernance
+        ? "Documental"
+        : capacidadeTicEmFechamento || aprimoramentoEmFechamento || ggrEmFechamento || canaisDigitaisEmFechamento || redeLotericaEmFechamento || ofertasPersonalizadasEmFechamento || npsEmFechamento || clientesAtivosEmFechamento ? "Parcial" : "Sem dados")
       : homologatedCount === expectedCount ? "Fechado" : "Parcial";
     const homologatedNames = monthlyComposition
       .filter((item) => item.status === STATUS_LANCAMENTO.HOMOLOGADO)
       .map((item) => item.nomeMes);
     let meta = getReferenceMeta(regra, quarterLaunches, number, label);
 
-    if (!number || !months.length || (homologatedCount === 0 && !capacidadeTicEmFechamento && !aprimoramentoEmFechamento && !ggrEmFechamento && !canaisDigitaisEmFechamento && !redeLotericaEmFechamento)) {
+    if (!number || !months.length || (homologatedCount === 0 && !documentaryPositionAvailable && !capacidadeTicEmFechamento && !aprimoramentoEmFechamento && !ggrEmFechamento && !canaisDigitaisEmFechamento && !redeLotericaEmFechamento && !ofertasPersonalizadasEmFechamento && !npsEmFechamento && !clientesAtivosEmFechamento)) {
       const hasQualitativeAnnualResearchPosition = officialQuarterLaunches.some((item) => (
         isQualitativeAnnualResearchPosition(regra, item)
       ));
@@ -367,9 +409,18 @@
         trimestreNumero: number,
         ano: year,
         resultadoTrimestral: null,
+        resultadoCalculadoTrimestral: null,
+        resultadoOficialApresentado: null,
+        resultadoDocumentalTrimestral: null,
+        desempenhoOficialDocumentalTrimestral: null,
+        fonteDocumentalTrimestral: officialPresentation?.fonte || null,
         desempenhoTrimestral: null,
         metaTrimestral: meta,
         situacaoTrimestral: hasQualitativeAnnualResearchPosition ? "Em acompanhamento" : "Sem dados",
+        metaTecnicaTrimestral: meta,
+        resultadoTecnicoTrimestral: null,
+        desempenhoTecnicoTrimestral: null,
+        situacaoTecnicaTrimestral: "Sem dados",
         statusTrimestre: "Sem dados",
         mesesHomologados: 0,
         mesesEsperados: expectedCount,
@@ -379,13 +430,37 @@
         ultimoLancamentoHomologado: null,
         medicaoOficialPesquisa2026: regra?.tipoCalculo === "nota_pesquisa_anual" ? false : null,
         resultadoOficialReportado: false,
-        possuiPosicaoQualitativa: hasQualitativeAnnualResearchPosition
+        possuiPosicaoQualitativa: hasQualitativeAnnualResearchPosition,
+        possuiPosicaoOficialSistema: false,
+        possuiPosicaoDocumental: false,
+        statusGovernancaTrimestral: "Sem homologação transacional da versão atual",
+        mesesHomologadosLegados: legacyHomologatedInQuarter.length
       };
     }
 
     let calculationScope = capacidadeTicEmFechamento
       ? officialQuarterLaunches
       : getCalculationScope(regra, lancamentosDoIndicador || [], months, year, months.at(-1));
+    if (ofertasPersonalizadasEmFechamento) {
+      calculationScope = officialQuarterLaunches.filter((item) => (
+        ![STATUS_LANCAMENTO.CANCELADO, STATUS_LANCAMENTO.SUBSTITUIDO, STATUS_LANCAMENTO.NAO_INICIADO].includes(item.status)
+      ));
+    }
+    if (npsEmFechamento) {
+      calculationScope = officialQuarterLaunches.filter((item) => (
+        ![STATUS_LANCAMENTO.CANCELADO, STATUS_LANCAMENTO.SUBSTITUIDO, STATUS_LANCAMENTO.NAO_INICIADO].includes(item.status) &&
+        isQuantitativeNpsLaunch(regra, item)
+      ));
+    }
+    if (clientesAtivosEmFechamento) {
+      calculationScope = officialQuarterLaunches.filter((item) => (
+        ![STATUS_LANCAMENTO.CANCELADO, STATUS_LANCAMENTO.SUBSTITUIDO, STATUS_LANCAMENTO.NAO_INICIADO].includes(item.status) &&
+        (
+          toNumber(item?.camposEntrada?.qmaatu) !== null ||
+          toNumber(item?.camposEntrada?.resultadoDocumentalClientesAtivos) !== null
+        )
+      ));
+    }
     if (redeLotericaEmFechamento) {
       calculationScope = (lancamentosDoIndicador || []).filter((item) => {
         if (Number(item.ano) !== year || Number(item.mes) > months.at(-1)) return false;
@@ -509,11 +584,23 @@
       performance = result / meta;
     }
 
-    const technicalMeta = meta;
-    const technicalResult = regra?.tipoCalculo === "razao_pix" ? calculatedQuarterResult : result;
-    const technicalPerformance = regra?.tipoCalculo === "razao_pix" && calculatedQuarterResult !== null && meta
-      ? calculatedQuarterResult / meta
-      : performance;
+    const nps = regra?.tipoCalculo === "nota_pesquisa_nps";
+    const clientesAtivos = Number(regra?.indicadorId) === 3;
+    const technicalMeta = nps
+      ? toNumber(validCalculation?.metaTecnicaNPS ?? meta)
+      : clientesAtivos ? toNumber(validCalculation?.metaReferencia ?? meta) : meta;
+    const technicalResult = nps
+      ? toNumber(validCalculation?.resultadoTecnicoNPS ?? calculatedQuarterResult)
+      : clientesAtivos
+        ? toNumber(validCalculation?.resultadoTecnicoClientesAtivos)
+      : regra?.tipoCalculo === "razao_pix" ? calculatedQuarterResult : result;
+    const technicalPerformance = nps
+      ? toNumber(validCalculation?.percentualAtingidoTecnicoNPS ?? (technicalMeta ? technicalResult / technicalMeta : null))
+      : clientesAtivos
+        ? toNumber(validCalculation?.percentualAtingidoTecnicoClientesAtivos ?? (technicalMeta ? technicalResult / technicalMeta : null))
+      : regra?.tipoCalculo === "razao_pix" && calculatedQuarterResult !== null && meta
+        ? calculatedQuarterResult / meta
+        : performance;
     const incentivoSocioambiental = regra?.tipoCalculo === "investimento_socioambiental";
     const resultadoFinanceiroTrimestral = incentivoSocioambiental
       ? toNumber(validCalculation?.realizadoFinanceiro ?? technicalResult)
@@ -528,7 +615,6 @@
       ? toNumber(validCalculation?.metaPercentual)
       : null;
     const technicalSituation = getSituation(validCalculation, technicalPerformance);
-    const officialPresentation = root.IndicatorFormulas?.obterApresentacaoOficialTrimestre?.(regra, label) || null;
     if (officialPresentation && regra?.tipoCalculo !== "crescimento_rede_loterica_base_2025") {
       const reportedMeta = toNumber(officialPresentation.metaOficialReportada);
       const reportedResult = toNumber(officialPresentation.resultadoOficialReportado);
@@ -542,15 +628,26 @@
     }
     const officialSituation = officialPresentation?.situacaoOficial || officialPresentation?.situacao || technicalSituation;
     const redeLotericaDocumental = regra?.tipoCalculo === "crescimento_rede_loterica_base_2025";
+    const clientesAtivosDocumental = Number(regra?.indicadorId) === 3;
     const resultadoDocumentalTrimestral = redeLotericaDocumental
       ? toNumber(validCalculation?.resultadoDocumentalRedeLoterica ?? officialPresentation?.resultadoOficialReportado)
-      : null;
+      : clientesAtivosDocumental
+        ? toNumber(validCalculation?.resultadoDocumentalClientesAtivos ?? officialPresentation?.resultadoOficialReportado)
+        : null;
     const desempenhoOficialDocumentalTrimestral = redeLotericaDocumental
       ? toNumber(validCalculation?.percentualAtingidoOficialRedeLoterica ?? officialPresentation?.percentualAtingidoOficialReportado ?? officialPresentation?.percentualAtingidoOficial)
-      : null;
+      : clientesAtivosDocumental
+        ? toNumber(validCalculation?.percentualAtingidoOficialClientesAtivos ?? officialPresentation?.percentualAtingidoOficialReportado)
+        : null;
     const fonteDocumentalTrimestral = redeLotericaDocumental
       ? validCalculation?.fonteResultadoRedeLoterica ?? officialPresentation?.fonte ?? null
-      : null;
+      : Number(regra?.indicadorId) === 1
+        ? validCalculation?.fonteResultadoOfertasPersonalizadas ?? officialPresentation?.fonte ?? null
+        : nps
+          ? validCalculation?.fontePesquisaNPS ?? officialPresentation?.fonte ?? null
+          : clientesAtivosDocumental
+            ? validCalculation?.fonteResultadoClientesAtivos ?? officialPresentation?.fonte ?? null
+            : null;
 
     return {
       indicador,
@@ -587,6 +684,8 @@
       resultadoTecnicoTrimestral: technicalResult,
       desempenhoTecnicoTrimestral: technicalPerformance,
       situacaoTecnicaTrimestral: technicalSituation,
+      semNovaPesquisaNps: nps ? officialPresentation?.semNovaPesquisa === true : false,
+      proximaApuracaoNps: nps ? officialPresentation?.proximaApuracao ?? null : null,
       apresentacaoOficialDocumental: Boolean(officialPresentation),
       notaApresentacaoOficial: officialPresentation?.observacao || null,
       statusTrimestre: quarterStatus,
@@ -605,13 +704,19 @@
       possuiPosicaoQualitativa: regra?.tipoCalculo === "nota_pesquisa_anual"
         ? officialQuarterLaunches.some((item) => isQualitativeAnnualResearchPosition(regra, item))
         : false,
+      possuiPosicaoOficialSistema: homologatedCount > 0,
+      possuiPosicaoDocumental: documentaryPositionAvailable,
+      statusGovernancaTrimestral: homologatedCount > 0
+        ? "Homologado na versão atual"
+        : documentaryPositionAvailable ? "Somente documental" : "Sem homologação transacional da versão atual",
+      mesesHomologadosLegados: legacyHomologatedInQuarter.length,
       dadosCalculados: validCalculation
     };
   }
 
-  function consolidarAno(indicador, regra, lancamentosDoIndicador, ano = 2026) {
+  function consolidarAno(indicador, regra, lancamentosDoIndicador, ano = 2026, governance = {}) {
     return QUARTERS.map((quarter) => (
-      consolidarTrimestre(indicador, regra, lancamentosDoIndicador, `${quarter.label}/${ano}`)
+      consolidarTrimestre(indicador, regra, lancamentosDoIndicador, `${quarter.label}/${ano}`, governance)
     ));
   }
 

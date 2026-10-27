@@ -5,6 +5,7 @@ require_once __DIR__.'/../repositories/HomologacoesRepository.php';
 require_once __DIR__.'/../repositories/LancamentosRepository.php';
 require_once __DIR__.'/../repositories/IndicadoresRepository.php';
 require_once __DIR__.'/../repositories/EvidenciasRepository.php';
+require_once __DIR__.'/../repositories/ConfiguracoesRepository.php';
 require_once __DIR__.'/../repositories/AuditoriaRepository.php';
 require_once __DIR__.'/LancamentoStateMachine.php';
 require_once __DIR__.'/CompetenciaPeriodicidade.php';
@@ -17,6 +18,7 @@ final class HomologacaoService
     private $launches;
     private $indicators;
     private $evidence;
+    private $config;
     private $audit;
 
     public function __construct($db)
@@ -26,6 +28,7 @@ final class HomologacaoService
         $this->launches=new LancamentosRepository($db);
         $this->indicators=new IndicadoresRepository($db);
         $this->evidence=new EvidenciasRepository($db);
+        $this->config=new ConfiguracoesRepository($db);
         $this->audit=new AuditoriaRepository($db);
     }
 
@@ -97,6 +100,9 @@ final class HomologacaoService
             CompetenciaPeriodicidade::assertExpected($indicator,$before);
             $expected=LancamentoStateMachine::SUBMITTED;
             if(LancamentoStateMachine::normalize($before['status'])!==$expected) throw new LogicException('Homologacao ja processada ou indisponivel.');
+            if($action==='homologacao_lancamento'&&$this->requiresEvidence($indicator,$before)&&!$this->evidence->hasCurrent($id)) {
+                throw new DomainException('O fechamento exige evidencia da versao atual antes da homologacao.');
+            }
             GovernancaHomologacao::assertIndependentReviewer(
                 $before,
                 $this->repo->latestSubmissionUser($id),
@@ -127,5 +133,15 @@ final class HomologacaoService
             if($this->db->inTransaction()) $this->db->rollBack();
             throw $error;
         }
+    }
+
+    private function requiresEvidence(array $indicator,array $launch): bool
+    {
+        foreach($this->config->get('regrasIndicadores',array()) as $rule) {
+            if((string)($rule['indicadorId'] ?? '')===(string)$indicator['id']) {
+                return CompetenciaPeriodicidade::requiresEvidence($indicator,$rule,$launch);
+            }
+        }
+        return false;
     }
 }

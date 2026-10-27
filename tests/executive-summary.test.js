@@ -60,7 +60,7 @@ const results = context.window.StrategicResults.calcularDashboard({
 }).resultadosOficiais;
 
 assert.equal(results.length, 23);
-assert.equal(results.filter((item) => context.window.StrategicResults.officialSituation(item) === "Sem dados").length, 4);
+assert.equal(results.filter((item) => context.window.StrategicResults.officialSituation(item) === "Sem dados").length, 7);
 assert.equal(results.filter((item) => item.indicador.plano === "PEI").length, 11);
 assert.equal(results.filter((item) => item.indicador.plano === "PN").length, 12);
 assert.equal(new Set(results.map((item) => item.indicador.pilar)).size, 6);
@@ -71,23 +71,31 @@ assert.equal(canaisDigitaisSemPosicaoCorrente.status, null);
 assert.equal(canaisDigitaisSemPosicaoCorrente.competencia, null);
 assert.equal(canaisDigitaisSemPosicaoCorrente.resultado, null);
 
-const ofertasDashboardOficial = results.find((item) => item.indicador.id === 1);
-assert.equal(context.window.StrategicResults.officialSituation(ofertasDashboardOficial), "Atingido");
-assert.equal(ofertasDashboardOficial.competencia, "Março/2026");
-assert.ok(Math.abs(ofertasDashboardOficial.meta - 0.1) < 0.000001);
-assert.ok(Math.abs(ofertasDashboardOficial.resultado - (1241587 / 2773599)) < 0.000001);
-assert.ok(Math.abs(ofertasDashboardOficial.percentualAtingido - ((1241587 / 2773599) / 0.1)) < 0.000001);
+const ofertasSemHomologacaoTransacional = results.find((item) => item.indicador.id === 1);
+assert.equal(context.window.StrategicResults.officialSituation(ofertasSemHomologacaoTransacional), "Sem dados");
+assert.equal(ofertasSemHomologacaoTransacional.possuiPosicaoOficial, false);
 
-const npsDashboardOficial = results.find((item) => item.indicador.id === 2);
-assert.equal(context.window.StrategicResults.officialSituation(npsDashboardOficial), "Atingido");
-assert.equal(npsDashboardOficial.competencia, "Março/2026");
-assert.equal(npsDashboardOficial.meta, 55);
-assert.equal(npsDashboardOficial.resultado, 55);
-assert.equal(npsDashboardOficial.percentualAtingido, 1);
+const clientesAtivosSemHomologacaoTransacional = results.find((item) => item.indicador.id === 3);
+assert.equal(context.window.StrategicResults.officialSituation(clientesAtivosSemHomologacaoTransacional), "Sem dados");
+assert.equal(clientesAtivosSemHomologacaoTransacional.possuiPosicaoOficial, false);
+assert.equal(ofertasSemHomologacaoTransacional.competencia, null);
+assert.equal(ofertasSemHomologacaoTransacional.resultado, null);
+assert.equal(ofertasSemHomologacaoTransacional.percentualAtingido, null);
+
+const npsSemHomologacaoTransacional = results.find((item) => item.indicador.id === 2);
+assert.equal(context.window.StrategicResults.officialSituation(npsSemHomologacaoTransacional), "Sem dados");
+assert.equal(npsSemHomologacaoTransacional.possuiPosicaoOficial, false);
+assert.equal(npsSemHomologacaoTransacional.competencia, null);
+assert.equal(npsSemHomologacaoTransacional.resultado, null);
+assert.equal(npsSemHomologacaoTransacional.percentualAtingido, null);
 
 const npsBoundaryDashboard = context.window.StrategicResults.calcularDashboard({
   indicadores: [indicators.find((item) => item.id === 2)],
   regras: [rules.find((item) => item.indicadorId === 2)],
+  governancaHomologacaoAtual: [
+    { lancamentoId: "nps-junho-historico", versao: 1 },
+    { lancamentoId: "nps-julho-acompanhamento", versao: 1 }
+  ],
   lancamentos: [
     {
       id: "nps-junho-historico",
@@ -97,8 +105,8 @@ const npsBoundaryDashboard = context.window.StrategicResults.calcularDashboard({
       competencia: "2026-06",
       nomeMes: "Junho",
       status: "Homologado",
-      metaMensal: 58,
-      camposEntrada: { tipoPosicaoNPS: "Pesquisa oficial", metaReferenciaCompetenciaNPS: 58, percentualPromotores: 0.7263, percentualDetratores: 0.1343, npsApurado: 61 }
+      metaMensal: 60,
+      camposEntrada: { tipoPosicaoNPS: "Pesquisa oficial", metaReferenciaCompetenciaNPS: 60, percentualPromotores: 0.7263, percentualDetratores: 0.1343, npsApurado: 61 }
     },
     {
       id: "nps-julho-acompanhamento",
@@ -113,13 +121,15 @@ const npsBoundaryDashboard = context.window.StrategicResults.calcularDashboard({
     }
   ]
 }).resultadosOficiais[0];
-assert.equal(npsBoundaryDashboard.competenciaAtual, "Julho/2026");
+assert.equal(npsBoundaryDashboard.competenciaAtual, "Junho/2026");
 assert.equal(npsBoundaryDashboard.competenciaMedicao, "Junho/2026");
 assert.equal(npsBoundaryDashboard.competenciaMedicaoCurta, "Jun/2026");
 assert.ok(Math.abs(npsBoundaryDashboard.resultado - 59.2) < 0.000001);
-assert.equal(npsBoundaryDashboard.meta, 58);
-assert.ok(Math.abs(npsBoundaryDashboard.percentualAtingido - (59.2 / 58)) < 0.000001);
-assert.equal(context.window.StrategicResults.officialSituation(npsBoundaryDashboard), "Em acompanhamento");
+assert.equal(npsBoundaryDashboard.meta, 60);
+assert.equal(npsBoundaryDashboard.percentualAtingido, 0.9866);
+assert.equal(npsBoundaryDashboard.metaTecnica, 60);
+assert.ok(Math.abs(npsBoundaryDashboard.percentualAtingidoTecnico - (59.2 / 60)) < 0.000001);
+assert.equal(context.window.StrategicResults.officialSituation(npsBoundaryDashboard), "Abaixo da meta");
 
 const climaDashboardOficial = results.find((item) => item.indicador.id === 12);
 assert.equal(context.window.StrategicResults.officialSituation(climaDashboardOficial), "Em acompanhamento");

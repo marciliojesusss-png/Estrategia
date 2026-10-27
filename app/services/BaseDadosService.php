@@ -357,13 +357,13 @@ final class BaseDadosService
 
     private function validateRequiredEvidenceTransitions(array $items): void
     {
-        $required = array();
+        $rules = array();
         $indicators = array();
         foreach ($this->indicadores->all() as $indicator) {
             $indicators[(string)($indicator['id'] ?? '')] = $indicator;
         }
         foreach ($this->configuracoes->get('regrasIndicadores', array()) as $rule) {
-            if (!empty($rule['exigeEvidencia'])) $required[(string)($rule['indicadorId'] ?? '')] = true;
+            $rules[(string)($rule['indicadorId'] ?? '')] = $rule;
         }
         foreach ($items as $item) {
             $id = (string)($item['id'] ?? '');
@@ -378,7 +378,8 @@ final class BaseDadosService
             if (!CompetenciaPeriodicidade::isExpected($indicators[$indicatorId], $item)) {
                 throw new InvalidArgumentException('A competência informada não pertence ao ciclo oficial do indicador.');
             }
-            if (empty($required[$indicatorId])) continue;
+            $rule = $rules[$indicatorId] ?? array();
+            if (!CompetenciaPeriodicidade::requiresEvidence($indicators[$indicatorId], $rule, $item)) continue;
             if (!$this->evidencias->hasCurrent($id)) {
                 throw new InvalidArgumentException('Anexe pelo menos um arquivo da versao atual antes de enviar para homologacao.');
             }

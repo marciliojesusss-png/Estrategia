@@ -1925,7 +1925,9 @@
     }).join("");
     applyMonthlyTableLayout();
 
-    const quarters = QuarterlyConsolidation.consolidarAno(indicador, regra, launches, 2026);
+    const quarters = QuarterlyConsolidation.consolidarAno(indicador, regra, launches, 2026, {
+      governancaHomologacaoAtual: state.data?.governancaHomologacaoAtual || []
+    });
     const quarterlyUnit = isBase2025Growth ? "moeda" : isVisibilidadeRepasses ? "quantidade" : regra.unidadeMedida;
     document.getElementById("indicatorQuarterlyComposition").innerHTML = quarters.map((quarter) => `
       <tr>

@@ -53,7 +53,7 @@
       pilar: ["Todos", ...PILLAR_ORDER.filter((pillar) => state.indicators.some((item) => item.pilar === pillar))],
       unidade: ["Todos", ...unique(state.indicators.map((item) => item.unidadeApuradora)).sort()],
       diretoria: ["Todos", ...unique(state.indicators.map((item) => item.diretoriaResponsavel)).sort()],
-      status: ["Todos", "Sem dados", "Parcial", "Fechado"]
+      status: ["Todos", "Sem dados", "Documental", "Parcial", "Fechado"]
     };
     document.querySelectorAll("[data-quarter-filter]").forEach((select) => {
       fillSelect(select, values[select.dataset.quarterFilter]);
@@ -83,7 +83,9 @@
       const rule = ruleFor(indicator);
       const launches = state.launches.filter((item) => item.indicadorId === indicator.id);
       const quarters = quarterNumbers.map((number) => (
-        QuarterlyConsolidation.consolidarTrimestre(indicator, rule, launches, `${number}TRI/${selected.ano}`)
+        QuarterlyConsolidation.consolidarTrimestre(indicator, rule, launches, `${number}TRI/${selected.ano}`, {
+          governancaHomologacaoAtual: state.governancaHomologacaoAtual
+        })
       ));
       return { indicator, rule, quarters };
     }).filter((row) => (
@@ -97,6 +99,7 @@
     const cards = [
       ["Indicadores", rows.length],
       ["Trimestres fechados", quarters.filter((item) => item.statusTrimestre === "Fechado").length],
+      ["Posições somente documentais", quarters.filter((item) => item.statusTrimestre === "Documental").length],
       ["Trimestres parciais", quarters.filter((item) => item.statusTrimestre === "Parcial").length],
       ["Consolidados sem dados", quarters.filter((item) => item.statusTrimestre === "Sem dados").length]
     ];
@@ -162,6 +165,12 @@
             ? `<small>Índice técnico: ${Calculations.formatarPercentual(quarter.resultadoTecnicoTrimestral)}<br>Crescimento equivalente: ${Calculations.formatarPercentual(quarter.crescimentoTrimestral)}<br>Atingimento técnico: ${Calculations.formatarPercentual(quarter.desempenhoTecnicoTrimestral)}<br>Resultado documental: ${Calculations.formatarPercentual(quarter.resultadoDocumentalTrimestral)}<br>Atingimento oficial documental: ${Calculations.formatarPercentual(quarter.desempenhoOficialDocumentalTrimestral)}<br>Fonte: ${escapeHtml(quarter.fonteDocumentalTrimestral || "-")}</small>`
           : row.rule.tipoCalculo === "crescimento_comparado_base_2025" && quarter.baseReferencia2025Trimestre != null
             ? `<small>Base 2025: ${Calculations.formatarMoedaBR(quarter.baseReferencia2025Trimestre)}<br>Indice: ${Calculations.formatarPercentual(quarter.indiceTrimestral)}<br>Crescimento: ${Calculations.formatarPercentual(quarter.crescimentoTrimestral)}</small>`
+          : row.rule.tipoCalculo === "nota_pesquisa_nps" && quarter.resultadoTecnicoTrimestral != null
+            ? `<small>Resultado NPS em pontos; atingimento apresentado em percentual.<br>Fonte: ${escapeHtml(quarter.fonteDocumentalTrimestral || "-")}${quarter.semNovaPesquisaNps ? "<br>Sem nova pesquisa no trimestre" : ""}${quarter.proximaApuracaoNps ? `<br>Próxima apuração: ${escapeHtml(quarter.proximaApuracaoNps)}` : ""}</small>`
+          : Number(row.rule.indicadorId) === 3 && quarter.possuiPosicaoDocumental
+            ? `<small>Resultado técnico: ${Calculations.formatarPercentual(quarter.resultadoTecnicoTrimestral)}<br>Atingimento técnico: ${Calculations.formatarPercentual(quarter.desempenhoTecnicoTrimestral)}<br>Resultado documental: ${Calculations.formatarPercentual(quarter.resultadoDocumentalTrimestral)}<br>Atingimento oficial documental: ${Calculations.formatarPercentual(quarter.desempenhoOficialDocumentalTrimestral)}<br>Fonte: ${escapeHtml(quarter.fonteDocumentalTrimestral || "-")}</small>`
+          : Number(row.rule.indicadorId) === 1 && quarter.fonteDocumentalTrimestral
+            ? `<small>Fonte: ${escapeHtml(quarter.fonteDocumentalTrimestral)}</small>`
           : ""}
         ${quarter.notaApresentacaoOficial ? `<small>${escapeHtml(quarter.notaApresentacaoOficial)}</small>` : ""}
       </td>
@@ -175,6 +184,7 @@
       <td>
         <span class="badge ${badgeClass(quarter.statusTrimestre)}">${escapeHtml(quarter.statusTrimestre)}</span>
         <small>${quarter.mesesHomologados} de ${quarter.mesesEsperados} homologados</small>
+        ${quarter.statusGovernancaTrimestral ? `<small>Governança: ${escapeHtml(quarter.statusGovernancaTrimestral)}</small>` : ""}
       </td>
     `).join("");
   }
@@ -252,7 +262,8 @@
       user,
       indicators: Auth.filterIndicatorsByUser(data.indicadores, user),
       launches: Auth.filterLaunchesByUser(data.lancamentos, data.indicadores, user),
-      rules: data.regrasIndicadores || []
+      rules: data.regrasIndicadores || [],
+      governancaHomologacaoAtual: data.governancaHomologacaoAtual || []
     };
     fillFilters();
     document.querySelectorAll("[data-quarter-filter]").forEach((select) => {

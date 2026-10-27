@@ -67,11 +67,14 @@ for (const module of [
     ["L8"]
   );
   assert.equal(internals.filterLaunches(lancamentos, { mes: "Maio", status: "Não iniciado", indicador: "8" }).length, 0);
+  const operationalLaunches = module.file === "approvals.js"
+    ? internals.homologationVisibleLaunches
+    : internals.officialOperationalLaunches;
   assert.deepEqual(
-    plain(internals.officialOperationalLaunches(
+    plain(operationalLaunches(
       [
-        { id: "L18APR", indicadorId: 18, mes: 4 },
-        { id: "L18JUN", indicadorId: 18, mes: 6 }
+        { id: "L18APR", indicadorId: 18, mes: 4, status: "Não iniciado" },
+        { id: "L18JUN", indicadorId: 18, mes: 6, status: "Não iniciado" }
       ],
       [{ id: 18, periodicidade: "Trimestral" }]
     )).map((item) => item.id),

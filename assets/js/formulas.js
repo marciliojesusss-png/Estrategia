@@ -356,6 +356,9 @@
   }
 
   function calcularPercentualDireto(indicador, regra, lancamentoAtual, lancamentosDoAno) {
+    if (Number(indicador?.id ?? regra?.indicadorId) === 1) {
+      return calcularOfertasPersonalizadas(regra, lancamentoAtual);
+    }
     const required = validarObrigatorios(regra, lancamentoAtual);
     if (required) return erro(required, regra.unidadeMedida);
 
@@ -400,6 +403,66 @@
 
     const percentual = resultadoMensal / meta;
     return ok(resultadoMensal, resultadoMensal, percentual, percentual, regra.unidadeMedida);
+  }
+
+  function calcularOfertasPersonalizadas(regra, lancamentoAtual) {
+    const params = regra.parametrosCalculo || {};
+    const numeratorField = params.numeradorCampo || "clientesUnicosComOfertaPersonalizadaCompetencia";
+    const denominatorField = params.denominadorCampo || "baseClientesAtivosCompetencia";
+    const documentedResultField = params.campoResultadoDocumental || "resultadoDocumentalOfertasPersonalizadas";
+    const documentedPerformanceField = params.campoPercentualAtingidoOficial || "percentualAtingidoOficialOfertasPersonalizadas";
+    const positionTypeField = params.campoTipoPosicao || "tipoPosicaoOfertasPersonalizadas";
+    const sourceField = params.campoFonteResultado || "fonteResultadoOfertasPersonalizadas";
+    const numerator = toNumber(raw(lancamentoAtual, numeratorField));
+    const denominator = toNumber(raw(lancamentoAtual, denominatorField));
+    const documentedResult = toNumber(raw(lancamentoAtual, documentedResultField));
+    const documentedPerformance = toNumber(raw(lancamentoAtual, documentedPerformanceField));
+    const meta = toNumber(lancamentoAtual.metaReferencia ?? lancamentoAtual.metaMensal ?? params.metaReferencia ?? regra.metaAnualValor);
+    const closingMonths = Array.isArray(params.mesesFechamentoTrimestral) ? params.mesesFechamentoTrimestral : [3, 6, 9, 12];
+    const isClosing = closingMonths.includes(Number(lancamentoAtual.mes));
+    const positionType = String(raw(lancamentoAtual, positionTypeField) || (isClosing ? "fechamento_trimestral" : "acompanhamento"));
+    const source = String(raw(lancamentoAtual, sourceField) || "").trim() || null;
+
+    if (meta === null || meta <= 0) return erro("Meta da competência deve ser maior que zero.", regra.unidadeMedida);
+    if ((numerator === null) !== (denominator === null)) {
+      return erro("Informe os dois componentes ou deixe ambos ausentes.", regra.unidadeMedida);
+    }
+    if (denominator !== null && denominator <= 0) return erro("A base de clientes ativos deve ser maior que zero.", regra.unidadeMedida);
+    if (numerator !== null && numerator < 0) return erro("Clientes alcançados não pode ser negativo.", regra.unidadeMedida);
+    if (documentedResult !== null && documentedResult < 0) return erro("Resultado documental não pode ser negativo.", regra.unidadeMedida);
+    if (documentedPerformance !== null && documentedPerformance < 0) return erro("Atingimento oficial documental não pode ser negativo.", regra.unidadeMedida);
+
+    const technicalResult = numerator === null ? null : numerator / denominator;
+    const technicalPerformance = technicalResult === null ? null : technicalResult / meta;
+    const officialResult = documentedResult ?? technicalResult;
+    const officialPerformance = documentedPerformance ?? (officialResult === null ? null : officialResult / meta);
+    if (officialResult === null) {
+      return pendente("Competência sem resultado informado.", regra.unidadeMedida, {
+        metaReferencia: meta,
+        resultadoTecnicoOfertasPersonalizadas: null,
+        percentualAtingidoTecnicoOfertasPersonalizadas: null,
+        resultadoDocumentalOfertasPersonalizadas: null,
+        percentualAtingidoOficialOfertasPersonalizadas: null,
+        tipoPosicaoOfertasPersonalizadas: positionType,
+        fonteResultadoOfertasPersonalizadas: source,
+        situacao: null
+      });
+    }
+
+    return ok(technicalResult, officialResult, technicalPerformance, officialPerformance, regra.unidadeMedida,
+      technicalResult === null
+        ? "Fechamento documental utilizado sem criação de componentes inexistentes."
+        : "Posição da competência calculada sem soma ou média de outros meses.", {
+        metaReferencia: meta,
+        resultadoCalculado: technicalResult,
+        resultadoTecnicoOfertasPersonalizadas: technicalResult,
+        percentualAtingidoTecnicoOfertasPersonalizadas: technicalPerformance,
+        resultadoDocumentalOfertasPersonalizadas: documentedResult,
+        percentualAtingidoOficialOfertasPersonalizadas: documentedPerformance,
+        tipoPosicaoOfertasPersonalizadas: positionType,
+        fonteResultadoOfertasPersonalizadas: source,
+        situacao: isClosing ? situacaoPorPercentual(officialPerformance) : "Em acompanhamento"
+      });
   }
 
   function calcularCoberturaCapacitacao(indicador, regra, lancamentoAtual) {
@@ -517,15 +580,112 @@
     return ok(valor, valor, percentual, percentual, regra.unidadeMedida);
   }
   function calcularCrescimentoMediaMensal(indicador, regra, lancamentoAtual, lancamentosDoAno) {
-    const required = validarObrigatorios(regra, lancamentoAtual);
-    if (required) return erro(required, regra.unidadeMedida);
-
+    const params = regra.parametrosCalculo || {};
     const qmaatuCampo = regra.parametrosCalculo?.qmaatuCampo ||
       ((regra.camposEntrada || []).some((item) => item.nome === "qmaatu") ? "qmaatu" : null);
     const qmaantCampo = regra.parametrosCalculo?.qmaantCampo ||
       ((regra.camposEntrada || []).some((item) => item.nome === "qmaant") ? "qmaant" : null);
-    const meta = requireMeta(metaLancamento(lancamentoAtual) ?? regra.parametrosCalculo?.metaCrescimento ?? regra.metaAnualValor, regra.unidadeMedida, "Meta de crescimento não configurada.");
+    const clientesAtivosDigitais = Number(regra?.indicadorId ?? indicador?.id) === 3 ||
+      Boolean(params.campoResultadoDocumental || params.campoFonteResultado || params.campoJanelaApuracao);
+    const key = competenciaKey(lancamentoAtual);
+    const metaCanonica = clientesAtivosDigitais
+      ? toNumber(params.metasCanonicasPorCompetencia?.[key])
+      : null;
+    const meta = requireMeta(metaCanonica ?? metaLancamento(lancamentoAtual) ?? params.metaCrescimento ?? regra.metaAnualValor, regra.unidadeMedida, "Meta de crescimento não configurada.");
     if (meta.erro) return meta;
+
+    if (clientesAtivosDigitais && qmaatuCampo && qmaantCampo) {
+      const qmaatuRaw = raw(lancamentoAtual, qmaatuCampo);
+      const qmaantRaw = raw(lancamentoAtual, qmaantCampo);
+      const possuiQmaatu = qmaatuRaw !== null && qmaatuRaw !== undefined && qmaatuRaw !== "";
+      const possuiQmaant = qmaantRaw !== null && qmaantRaw !== undefined && qmaantRaw !== "";
+      if (possuiQmaatu !== possuiQmaant) {
+        return erro("Informe QMAATU e QMAANT em conjunto ou deixe ambos ausentes.", regra.unidadeMedida);
+      }
+
+      const qmaatu = possuiQmaatu ? campo(lancamentoAtual, qmaatuCampo) : null;
+      const qmaant = possuiQmaant ? campo(lancamentoAtual, qmaantCampo) : null;
+      if (possuiQmaatu && (qmaatu === null || qmaatu <= 0 || !Number.isInteger(qmaatu))) {
+        return erro("QMAATU deve ser um número inteiro maior que zero.", regra.unidadeMedida);
+      }
+      if (possuiQmaant && (qmaant === null || qmaant <= 0)) {
+        return erro("QMAANT deve ser maior que zero para cálculo do indicador.", regra.unidadeMedida);
+      }
+      if (possuiQmaant && !Number.isInteger(qmaant)) {
+        return erro("QMAANT deve ser um número inteiro maior que zero.", regra.unidadeMedida);
+      }
+
+      const resultadoDocumentalCampo = params.campoResultadoDocumental || "resultadoDocumentalClientesAtivos";
+      const atingimentoDocumentalCampo = params.campoPercentualAtingidoOficial || "percentualAtingidoOficialClientesAtivos";
+      const fonteCampo = params.campoFonteResultado || "fonteResultadoClientesAtivos";
+      const tipoPosicaoCampo = params.campoTipoPosicao || "tipoPosicaoClientesAtivos";
+      const janelaCampo = params.campoJanelaApuracao || "janelaApuracaoClientesAtivos";
+      const resultadoDocumentalRaw = raw(lancamentoAtual, resultadoDocumentalCampo);
+      const atingimentoDocumentalRaw = raw(lancamentoAtual, atingimentoDocumentalCampo);
+      const possuiResultadoDocumental = resultadoDocumentalRaw !== null && resultadoDocumentalRaw !== undefined && resultadoDocumentalRaw !== "";
+      const possuiAtingimentoDocumental = atingimentoDocumentalRaw !== null && atingimentoDocumentalRaw !== undefined && atingimentoDocumentalRaw !== "";
+      // Estes campos já usam a escala decimal canônica do domínio (0.7441 = 74,41%
+      // e 2.6573 = 265,73%). Não aplicar a heurística de entrada humana que divide
+      // números maiores que 1 por 100, pois ela corromperia atingimentos acima de 100%.
+      const resultadoDocumental = possuiResultadoDocumental ? toNumber(resultadoDocumentalRaw) : null;
+      const atingimentoDocumental = possuiAtingimentoDocumental ? toNumber(atingimentoDocumentalRaw) : null;
+      const fonte = texto(lancamentoAtual, fonteCampo).trim();
+      const tipoPosicao = texto(lancamentoAtual, tipoPosicaoCampo).trim();
+      const janelaApuracao = texto(lancamentoAtual, janelaCampo).trim();
+
+      if (possuiResultadoDocumental && resultadoDocumental === null) {
+        return erro("Resultado documental deve ser numérico e finito.", regra.unidadeMedida);
+      }
+      if (possuiAtingimentoDocumental && atingimentoDocumental === null) {
+        return erro("Atingimento oficial documental deve ser numérico e finito.", regra.unidadeMedida);
+      }
+      if ((possuiResultadoDocumental || possuiAtingimentoDocumental) && (!fonte || !tipoPosicao)) {
+        return erro("Posição documental exige natureza da posição e fonte documental.", regra.unidadeMedida);
+      }
+
+      if (!possuiQmaatu && !possuiResultadoDocumental) {
+        return pendente("Informe QMAATU/QMAANT ou uma posição documental identificada e com fonte.", regra.unidadeMedida, {
+          metaReferencia: meta,
+          sentidoMeta: params.sentidoMeta || "quanto_maior_melhor",
+          resultadoTecnicoClientesAtivos: null,
+          percentualAtingidoTecnicoClientesAtivos: null,
+          resultadoDocumentalClientesAtivos: null,
+          percentualAtingidoOficialClientesAtivos: null,
+          origemResultadoClientesAtivos: "sem_dados"
+        });
+      }
+
+      const crescimento = possuiQmaatu ? qmaatu / qmaant - 1 : null;
+      const atingimentoTecnico = crescimento === null ? null : crescimento / meta;
+      const resultadoOficial = resultadoDocumental !== null ? resultadoDocumental : crescimento;
+      const atingimentoOficial = atingimentoDocumental !== null
+        ? atingimentoDocumental
+        : (resultadoOficial === null ? null : resultadoOficial / meta);
+      const origem = crescimento !== null
+        ? (resultadoDocumental !== null ? "componentes_e_documento" : "componentes")
+        : "documental_direta";
+      const situacao = atingimentoOficial === null ? null : (atingimentoOficial >= 1 ? "Atingido" : "Abaixo da meta");
+
+      return ok(crescimento, resultadoOficial, atingimentoTecnico, atingimentoOficial, regra.unidadeMedida,
+        crescimento === null
+          ? "Posição documental utilizada sem criação de componentes inexistentes."
+          : "Crescimento entre QMAATU e QMAANT calculado com precisão integral.", {
+          metaReferencia: meta,
+          sentidoMeta: params.sentidoMeta || "quanto_maior_melhor",
+          resultadoTecnicoClientesAtivos: crescimento,
+          percentualAtingidoTecnicoClientesAtivos: atingimentoTecnico,
+          resultadoDocumentalClientesAtivos: resultadoDocumental,
+          percentualAtingidoOficialClientesAtivos: atingimentoDocumental,
+          fonteResultadoClientesAtivos: fonte || null,
+          tipoPosicaoClientesAtivos: tipoPosicao || null,
+          janelaApuracaoClientesAtivos: janelaApuracao || null,
+          origemResultadoClientesAtivos: origem,
+          situacao
+        });
+    }
+
+    const required = validarObrigatorios(regra, lancamentoAtual);
+    if (required) return erro(required, regra.unidadeMedida);
 
     if (qmaatuCampo && qmaantCampo) {
       const qmaatu = campo(lancamentoAtual, qmaatuCampo);
@@ -1390,22 +1550,22 @@
     const ano = Number(lancamentoAtual?.ano || String(key).slice(0, 4));
     const mes = Number(lancamentoAtual?.mes || String(key).slice(5, 7));
     const referenciaVigente2026 = ano === 2026 && mes >= 1 && mes <= 12
-      ? mes <= 3 ? 55 : mes <= 6 ? 58 : 60
+      ? mes <= 3 ? 55 : mes <= 5 ? 58 : 60
       : null;
     const metaReferenciaInformada = campo(lancamentoAtual, params.campoMetaReferencia || "metaReferenciaCompetenciaNPS");
+    const metaNormalizadaSemOverwrite = toNumber(lancamentoAtual.metaTecnicaNps);
     const metaConfigurada = toNumber(lancamentoAtual.metaReferencia ?? lancamentoAtual.metaMensal);
-    const metaReferenciaPeriodo = metaConfigurada !== null
-      ? metaConfigurada
+    const metaReferenciaPeriodo = Object.prototype.hasOwnProperty.call(referencias, key)
+      ? toNumber(referencias[key])
       : referenciaVigente2026 !== null
       ? referenciaVigente2026
-      : Object.prototype.hasOwnProperty.call(referencias, key)
-      ? toNumber(referencias[key])
       : metaReferenciaInformada !== null
-        ? metaReferenciaInformada
-        : toNumber(params.metaVigenteNPS2026 ?? params.metaAnualMetodologica ?? regra.metaAnualValor);
-    if (metaReferenciaPeriodo === null || metaReferenciaPeriodo === 0) {
-      return erro("Meta de referência do NPS não configurada.", regra.unidadeMedida);
-    }
+      ? metaReferenciaInformada
+      : metaNormalizadaSemOverwrite !== null
+      ? metaNormalizadaSemOverwrite
+      : metaConfigurada !== null
+      ? metaConfigurada
+      : toNumber(params.metaVigenteNPS2026 ?? params.metaAnualMetodologica ?? regra.metaAnualValor);
     const tipoPosicao = texto(lancamentoAtual, params.campoTipoPosicao || "tipoPosicaoNPS");
     const metaVigente = ano === 2026
       ? 60
@@ -1422,9 +1582,15 @@
         situacao: "Em acompanhamento"
       });
     }
+    if (metaReferenciaPeriodo === null || metaReferenciaPeriodo <= 0) {
+      return erro("Meta de referência do NPS não configurada para posição avaliativa.", regra.unidadeMedida);
+    }
     const campoNps = params.campoNps || "npsApurado";
     const campoPromotores = params.campoPromotores || "percentualPromotores";
     const campoDetratores = params.campoDetratores || "percentualDetratores";
+    const campoResultadoDocumental = params.campoResultadoDocumental || "resultadoDocumentalNPS";
+    const campoMetaDocumental = params.campoMetaDocumental || "metaDocumentalNPS";
+    const campoAtingimentoDocumental = params.campoPercentualAtingidoOficial || "percentualAtingidoOficialNPS";
     const promotoresInformados = raw(lancamentoAtual, campoPromotores);
     const detratoresInformados = raw(lancamentoAtual, campoDetratores);
     const possuiPromotores = promotoresInformados !== null && promotoresInformados !== undefined && promotoresInformados !== "";
@@ -1457,25 +1623,84 @@
     } else {
       npsRealizado = campo(lancamentoAtual, campoNps);
     }
+    const resultadoDocumental = campo(lancamentoAtual, campoResultadoDocumental);
+    const metaDocumental = campo(lancamentoAtual, campoMetaDocumental);
+    const atingimentoDocumental = normalizarPercentual(raw(lancamentoAtual, campoAtingimentoDocumental));
+    if (npsRealizado === null && resultadoDocumental !== null) {
+      npsRealizado = resultadoDocumental;
+      origemNps = tipoPosicao === "ultima_pesquisa_disponivel"
+        ? "ultima_pesquisa_documental"
+        : "documental_direta";
+    }
     if (npsRealizado === null) {
       return pendente("Informe os percentuais de promotores e detratores para calcular o NPS.", regra.unidadeMedida);
     }
     if (npsRealizado < -100 || npsRealizado > 100) {
       return erro("NPS deve estar entre -100 e 100 pontos.", regra.unidadeMedida);
     }
+    if (resultadoDocumental !== null && (resultadoDocumental < -100 || resultadoDocumental > 100)) {
+      return erro("Resultado documental do NPS deve estar entre -100 e 100 pontos.", regra.unidadeMedida);
+    }
+    if (metaDocumental !== null && metaDocumental <= 0) {
+      return erro("Meta documental do NPS deve ser maior que zero.", regra.unidadeMedida);
+    }
+    if (atingimentoDocumental !== null && atingimentoDocumental < 0) {
+      return erro("Atingimento documental do NPS não pode ser negativo.", regra.unidadeMedida);
+    }
+
+    const sampleFields = [
+      "totalRespondentesNPS",
+      "quantidadePromotoresNPS",
+      "quantidadeNeutrosNPS",
+      "quantidadeDetratoresNPS"
+    ];
+    const sampleRaw = sampleFields.map((name) => raw(lancamentoAtual, name));
+    const sampleProvided = sampleRaw.filter((value) => value !== null && value !== undefined && value !== "").length;
+    const sampleValues = sampleRaw.map(toNumber);
+    if (sampleProvided > 0) {
+      if (sampleProvided !== sampleFields.length || sampleValues.some((value) => value === null || value < 0 || !Number.isInteger(value))) {
+        return erro("Informe a amostra NPS completa com quantidades inteiras não negativas.", regra.unidadeMedida);
+      }
+      if (sampleValues[0] !== sampleValues[1] + sampleValues[2] + sampleValues[3]) {
+        return erro("Total de respondentes diverge da soma de promotores, neutros e detratores.", regra.unidadeMedida);
+      }
+    }
+
     const metaAnual = metaVigente;
     const isFechamentoAnual = tipoPosicao === "Fechamento anual";
     const referenciaSituacao = isFechamentoAnual && metaAnual ? metaAnual : metaReferenciaPeriodo;
     const percentualAtingido = npsRealizado / metaReferenciaPeriodo;
-    const percentualAnual = isFechamentoAnual && metaAnual ? npsRealizado / metaAnual : percentualAtingido;
-    const situacao = npsRealizado >= referenciaSituacao ? "Atingido" : "Abaixo da meta";
-    return ok(npsRealizado, npsRealizado, percentualAtingido, percentualAtingido, regra.unidadeMedida, "NPS calculado por posição de pesquisa.", {
+    const resultadoOficial = resultadoDocumental ?? npsRealizado;
+    const metaOficial = metaDocumental ?? referenciaSituacao;
+    const percentualOficial = atingimentoDocumental ?? (resultadoOficial / metaOficial);
+    const percentualAnual = isFechamentoAnual && metaAnual ? resultadoOficial / metaAnual : percentualOficial;
+    const situacaoTecnica = npsRealizado >= referenciaSituacao ? "Atingido" : "Abaixo da meta";
+    const situacaoDocumental = percentualOficial >= 1 ? "Atingido" : "Abaixo da meta";
+    return ok(npsRealizado, resultadoOficial, percentualAtingido, percentualOficial, regra.unidadeMedida, origemNps === "ultima_pesquisa_documental"
+      ? "Última pesquisa documental disponível utilizada sem inventar novos componentes."
+      : "NPS calculado por posição de pesquisa.", {
       npsRealizado,
       npsCalculado: npsRealizado,
       origemNps,
       percentualPromotores: promotores,
       percentualDetratores: detratores,
       metaReferenciaPeriodo,
+      metaTecnicaNPS: metaReferenciaPeriodo,
+      resultadoTecnicoNPS: npsRealizado,
+      percentualAtingidoTecnicoNPS: percentualAtingido,
+      resultadoDocumentalNPS: resultadoDocumental,
+      metaDocumentalNPS: metaDocumental,
+      percentualAtingidoOficialNPS: atingimentoDocumental,
+      resultadoOficialNPS: resultadoOficial,
+      metaOficialNPS: metaOficial,
+      percentualOficialNPS: percentualOficial,
+      situacaoTecnicaNPS: situacaoTecnica,
+      situacaoDocumentalNPS: situacaoDocumental,
+      fontePesquisaNPS: texto(lancamentoAtual, params.campoFonte || "fontePesquisaNPS") || null,
+      totalRespondentesNPS: sampleValues[0],
+      quantidadePromotoresNPS: sampleValues[1],
+      quantidadeNeutrosNPS: sampleValues[2],
+      quantidadeDetratoresNPS: sampleValues[3],
       metaAnualCorretaNPS: metaAnual,
       metaVigenteNPS2026: metaVigente,
       desempenhoReferencia: percentualAtingido,
@@ -1483,7 +1708,7 @@
       baselineNPS: toNumber(params.baselineNPS),
       notaReferenciaNPS: toNumber(params.notaReferenciaNPS),
       percentualReducaoGap: toNumber(params.percentualReducaoGap),
-      situacao,
+      situacao: situacaoDocumental,
       ...(isFechamentoAnual ? { percentualAtingidoAnual: percentualAnual } : {})
     });
   }
@@ -2499,6 +2724,7 @@
     normalizarPercentual,
     calcularIndicador,
     calcularPercentualDireto,
+    calcularOfertasPersonalizadas,
     calcularReducaoGap,
     calcularCrescimentoMediaMensal,
     calcularPercentualAcumulado,

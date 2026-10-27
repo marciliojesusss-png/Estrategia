@@ -77,6 +77,38 @@ assert.deepEqual(
 );
 assert.equal(internals.quarterLabel({ mes: 12 }), "4TRI");
 
+assert.deepEqual(
+  JSON.parse(JSON.stringify(internals.indicator01CalculatedDetails({
+    metaReferencia: 0.10,
+    resultadoTecnicoOfertasPersonalizadas: 2371981 / 3018556,
+    percentualAtingidoTecnicoOfertasPersonalizadas: (2371981 / 3018556) / 0.10,
+    resultadoDocumentalOfertasPersonalizadas: 0.7858,
+    percentualAtingidoOficialOfertasPersonalizadas: 7.858,
+    fonteResultadoOfertasPersonalizadas: "Informe 0056/2026",
+    tipoPosicaoOfertasPersonalizadas: "fechamento_trimestral"
+  }))),
+  [
+    ["Meta", "10%"],
+    ["Resultado técnico", `${(2371981 / 3018556) * 100}%`],
+    ["Atingimento técnico", `${((2371981 / 3018556) / 0.10) * 100}%`],
+    ["Resultado oficial/documental", `${0.7858 * 100}%`],
+    ["Atingimento oficial documental", "785.8%"],
+    ["Fonte", "Informe 0056/2026"],
+    ["Natureza da posição", "Fechamento trimestral"]
+  ]
+);
+
+const indicator01MissingDocumentary = internals.indicator01CalculatedDetails({
+  metaReferencia: 0.10,
+  resultadoTecnicoOfertasPersonalizadas: null,
+  percentualAtingidoTecnicoOfertasPersonalizadas: null,
+  resultadoDocumentalOfertasPersonalizadas: null,
+  percentualAtingidoOficialOfertasPersonalizadas: null
+});
+assert.equal(indicator01MissingDocumentary[1][1], "-");
+assert.equal(indicator01MissingDocumentary[3][1], "-");
+assert.equal(indicator01MissingDocumentary[4][1], "-");
+
 const capacidadeTicRule = {
   indicadorId: 11,
   tipoCalculo: "marco_projeto_percentual",

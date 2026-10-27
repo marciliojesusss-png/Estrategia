@@ -6,6 +6,8 @@
     "percentualAtingidoOficialPix",
     "resultadoAcumuladoDocumentalCanaisDigitais",
     "percentualAtingidoOficialCanaisDigitais",
+    "resultadoDocumentalClientesAtivos",
+    "percentualAtingidoOficialClientesAtivos",
     "resultadoDocumentalRedeLoterica",
     "percentualAtingidoOficialRedeLoterica"
   ]);
@@ -65,8 +67,26 @@
     const byId = Object.fromEntries((indicators || []).map((indicator) => [String(indicator.id), indicator]));
     return (launches || []).filter((launch) => {
       const indicator = byId[String(launch.indicadorId)];
-      return !indicator || window.IndicatorPeriodicity?.isExpectedCompetence(indicator, launch) !== false;
+      return !indicator || window.IndicatorPeriodicity?.isTrackingMonth(indicator, launch) !== false;
     });
+  }
+
+  function launchRequiresEvidence(regra, lancamento, indicador = null) {
+    if (window.IndicatorPeriodicity?.requiresEvidence) {
+      return window.IndicatorPeriodicity.requiresEvidence(indicador || {}, regra || {}, lancamento || {});
+    }
+    return regra?.exigeEvidencia === true;
+  }
+
+  function evidenceRequirementLabel(regra, lancamento, indicador = null) {
+    if (!launchRequiresEvidence(regra, lancamento, indicador)) {
+      return regra?.exigeEvidenciaNosFechamentos === true
+        ? "Opcional nesta competência de acompanhamento mensal"
+        : "Opcional";
+    }
+    return regra?.exigeEvidenciaNosFechamentos === true
+      ? "Arquivo obrigatório para o fechamento trimestral"
+      : "Arquivo obrigatório para envio";
   }
 
   function escapeHtml(value) {
@@ -474,6 +494,11 @@
 
   function getDisplayMeta(regra, lancamento, metas = state.data?.metas || []) {
     const persistedMeta = lancamento?.metaReferencia ?? lancamento?.metaMensal ?? null;
+    if (Number(regra?.indicadorId) === 3) {
+      const key = lancamento?.competencia || `${lancamento?.ano}-${String(lancamento?.mes).padStart(2, "0")}`;
+      const canonical = regra?.parametrosCalculo?.metasCanonicasPorCompetencia || {};
+      if (Object.prototype.hasOwnProperty.call(canonical, key)) return canonical[key];
+    }
     if (regra?.tipoCalculo === "marco_projeto_percentual" && regra?.parametrosCalculo?.metaTipo === "curva_trimestral_percentual") {
       const trimestre = lancamento?.trimestre || `${Math.ceil(Number(lancamento?.mes) / 3)}TRI/${lancamento?.ano || 2026}`;
       return lancamento?.metaReferenciaTrimestre ??
@@ -536,6 +561,18 @@
       return {
         resultado: calculation?.resultadoAcumulado ?? calculation?.resultadoOficialAnual ?? lancamento?.resultadoAcumulado ?? lancamento?.resultadoOficialAnual ?? null,
         percentual: calculation?.percentualAtingidoAnual ?? calculation?.percentualAtingidoAcumulado ?? lancamento?.percentualAtingidoAnual ?? lancamento?.percentualAtingidoAcumulado ?? lancamento?.percentualAtingido ?? null
+      };
+    }
+    if (regra?.tipoCalculo === "nota_pesquisa_nps") {
+      return {
+        resultado: calculation?.resultadoOficialNPS ?? calculation?.resultadoMensal ?? lancamento?.resultadoOficialAnual ?? lancamento?.resultadoMensal ?? null,
+        percentual: calculation?.percentualAtingidoOficialNPS ?? calculation?.percentualOficialNPS ?? calculation?.percentualAtingidoAnual ?? lancamento?.percentualAtingido ?? null
+      };
+    }
+    if (Number(regra?.indicadorId) === 3) {
+      return {
+        resultado: calculation?.resultadoOficialAnual ?? calculation?.resultadoAcumulado ?? lancamento?.resultadoOficialAnual ?? lancamento?.resultadoAcumulado ?? null,
+        percentual: calculation?.percentualAtingidoAnual ?? calculation?.percentualAtingidoAcumulado ?? lancamento?.percentualAtingidoAnual ?? lancamento?.percentualAtingido ?? null
       };
     }
     return {
@@ -978,7 +1015,7 @@
       ["Diretoria responsável", indicador.diretoriaResponsavel || "Não informado"],
       ["Tipo de cálculo", regra.tipoCalculo],
       ["Consolidação anual", regra.tipoConsolidacao],
-      ["Exige evidência", regra.exigeEvidencia ? "Sim" : "Não"],
+      ["Exige evidência", regra.exigeEvidenciaNosFechamentos ? "Somente nos fechamentos trimestrais" : regra.exigeEvidencia ? "Sim" : "Não"],
       ["Meta anual", indicador.metaAnualDescricao, true],
       ...(metodologiaIeo ? [
         ["Metodologia vigente", metodologiaIeo.descricao, true],
@@ -1255,10 +1292,27 @@
     if (regra?.tipoCalculo !== "nota_pesquisa_nps") return;
     const type = String(document.querySelector('[data-entry-field="tipoPosicaoNPS"]')?.value || "");
     const tracking = type.startsWith("Acompanhamento") || type === "Revisão metodológica";
+    const carriedPosition = type === "ultima_pesquisa_disponivel";
     const visibleFields = new Set([
       "tipoPosicaoNPS",
       "metaReferenciaCompetenciaNPS",
-      ...(!tracking ? ["percentualPromotores", "percentualDetratores", "npsApurado", "dataBasePesquisaNPS"] : [])
+      ...(tracking ? [] : [
+        "resultadoDocumentalNPS",
+        "metaDocumentalNPS",
+        "percentualAtingidoOficialNPS"
+      ]),
+      ...(!tracking && !carriedPosition ? [
+        "percentualPromotores",
+        "percentualDetratores",
+        "totalRespondentesNPS",
+        "quantidadePromotoresNPS",
+        "quantidadeNeutrosNPS",
+        "quantidadeDetratoresNPS",
+        "npsApurado",
+        "dataBasePesquisaNPS"
+      ] : []),
+      "fontePesquisaNPS",
+      "observacaoArea"
     ]);
     document.querySelectorAll("[data-entry-wrapper]").forEach((wrapper) => {
       const fieldName = wrapper.dataset.entryWrapper;
@@ -1428,6 +1482,38 @@
     return [label, formatted];
   }
 
+  function indicator02CalculatedDetails(resultado, lancamento = {}) {
+    const memoria = lancamento?.camposEntrada || {};
+    const details = [];
+    const formatPoints = (value) => value === null || value === undefined
+      ? "-"
+      : `${Calculations.formatarValor(value, "numero")} pontos`;
+
+    details.push(["Natureza da posição", resultado.tipoPosicaoNPS || memoria.tipoPosicaoNPS || "-"]);
+    details.push(["Meta técnica/metodológica", formatPoints(resultado.metaTecnicaNPS)]);
+    details.push(["Resultado técnico", formatPoints(resultado.resultadoTecnicoNPS)]);
+    details.push(["Atingimento técnico", resultado.percentualAtingidoTecnicoNPS === null || resultado.percentualAtingidoTecnicoNPS === undefined
+      ? "-"
+      : Calculations.formatarPercentual(resultado.percentualAtingidoTecnicoNPS)]);
+    details.push(["Meta documental", resultado.metaDocumentalNPS === null || resultado.metaDocumentalNPS === undefined
+      ? "-"
+      : formatPoints(resultado.metaDocumentalNPS)]);
+    details.push(["Resultado documental", resultado.resultadoDocumentalNPS === null || resultado.resultadoDocumentalNPS === undefined
+      ? "-"
+      : formatPoints(resultado.resultadoDocumentalNPS)]);
+    details.push(["Atingimento oficial documental", resultado.percentualAtingidoOficialNPS === null || resultado.percentualAtingidoOficialNPS === undefined
+      ? "-"
+      : Calculations.formatarPercentual(resultado.percentualAtingidoOficialNPS)]);
+
+    if (resultado.totalRespondentesNPS !== null && resultado.totalRespondentesNPS !== undefined) {
+      details.push(["Amostra da pesquisa", `${resultado.totalRespondentesNPS} respondentes (${resultado.quantidadePromotoresNPS} promotores, ${resultado.quantidadeNeutrosNPS} neutros e ${resultado.quantidadeDetratoresNPS} detratores)`]);
+    }
+    if (resultado.fontePesquisaNPS || memoria.fontePesquisaNPS) {
+      details.push(["Fonte documental", resultado.fontePesquisaNPS || memoria.fontePesquisaNPS]);
+    }
+    return details;
+  }
+
   function renderFormulaDetails(resultado, regra, lancamento) {
     const wrapper = document.getElementById("formulaDetailsWrapper");
     const target = document.getElementById("formulaDetails");
@@ -1436,6 +1522,15 @@
 
     if (regra?.tipoCalculo === "razao_canais_digitais") {
       indicator08CalculatedDetails(resultado).forEach((detail) => details.push(detail));
+    }
+    if (Number(regra?.indicadorId) === 1) {
+      indicator01CalculatedDetails(resultado).forEach((detail) => details.push(detail));
+    }
+    if (Number(regra?.indicadorId) === 2 || regra?.tipoCalculo === "nota_pesquisa_nps") {
+      indicator02CalculatedDetails(resultado, lancamento).forEach((detail) => details.push(detail));
+    }
+    if (Number(regra?.indicadorId) === 3) {
+      indicator03CalculatedDetails(resultado, lancamento).forEach((detail) => details.push(detail));
     }
     if (regra?.tipoCalculo === "crescimento_rede_loterica_base_2025") {
       indicator23CalculatedDetails(resultado).forEach((detail) => details.push(detail));
@@ -1702,6 +1797,47 @@
     ];
   }
 
+  function indicator01CalculatedDetails(resultado) {
+    const meta = toNumberOrNull(resultado?.metaReferencia);
+    const technicalResult = toNumberOrNull(resultado?.resultadoTecnicoOfertasPersonalizadas);
+    const technicalPerformance = toNumberOrNull(resultado?.percentualAtingidoTecnicoOfertasPersonalizadas);
+    const documentedResult = toNumberOrNull(resultado?.resultadoDocumentalOfertasPersonalizadas);
+    const documentedPerformance = toNumberOrNull(resultado?.percentualAtingidoOficialOfertasPersonalizadas);
+    const positionType = resultado?.tipoPosicaoOfertasPersonalizadas === "fechamento_trimestral"
+      ? "Fechamento trimestral"
+      : resultado?.tipoPosicaoOfertasPersonalizadas === "acompanhamento" ? "Acompanhamento" : "-";
+    return [
+      ["Meta", meta === null ? "-" : Calculations.formatarPercentual(meta, 2, 2)],
+      ["Resultado técnico", technicalResult === null ? "-" : Calculations.formatarPercentual(technicalResult, 2, 2)],
+      ["Atingimento técnico", technicalPerformance === null ? "-" : Calculations.formatarPercentual(technicalPerformance, 2, 2)],
+      ["Resultado oficial/documental", documentedResult === null ? "-" : Calculations.formatarPercentual(documentedResult, 2, 2)],
+      ["Atingimento oficial documental", documentedPerformance === null ? "-" : Calculations.formatarPercentual(documentedPerformance, 2, 2)],
+      ["Fonte", resultado?.fonteResultadoOfertasPersonalizadas || "-"],
+      ["Natureza da posição", positionType]
+    ];
+  }
+
+  function indicator03CalculatedDetails(resultado, lancamento = {}) {
+    const memoria = lancamento?.camposEntrada || {};
+    const meta = toNumberOrNull(resultado?.metaReferencia);
+    const technicalResult = toNumberOrNull(resultado?.resultadoTecnicoClientesAtivos);
+    const technicalPerformance = toNumberOrNull(resultado?.percentualAtingidoTecnicoClientesAtivos);
+    const documentedResult = toNumberOrNull(resultado?.resultadoDocumentalClientesAtivos);
+    const documentedPerformance = toNumberOrNull(resultado?.percentualAtingidoOficialClientesAtivos);
+    const positionType = resultado?.tipoPosicaoClientesAtivos || memoria.tipoPosicaoClientesAtivos;
+    return [
+      ["Meta", meta === null ? "-" : Calculations.formatarPercentual(meta, 2, 2)],
+      ["Resultado técnico pelos componentes", technicalResult === null ? "-" : Calculations.formatarPercentual(technicalResult, 2, 2)],
+      ["Atingimento técnico", technicalPerformance === null ? "-" : Calculations.formatarPercentual(technicalPerformance, 2, 2)],
+      ["Resultado documental", documentedResult === null ? "-" : Calculations.formatarPercentual(documentedResult, 2, 2)],
+      ["Atingimento oficial documental", documentedPerformance === null ? "-" : Calculations.formatarPercentual(documentedPerformance, 2, 2)],
+      ["Origem do resultado", resultado?.origemResultadoClientesAtivos === "documental_direta" ? "Posição documental sem componentes" : resultado?.origemResultadoClientesAtivos === "componentes_e_documento" ? "Componentes integrais e apresentação documental" : "Componentes integrais"],
+      ["Natureza da posição", positionType === "fechamento_trimestral" ? "Fechamento trimestral" : positionType === "acompanhamento" ? "Acompanhamento mensal" : "-"],
+      ["Fonte documental", resultado?.fonteResultadoClientesAtivos || memoria.fonteResultadoClientesAtivos || "-"],
+      ["Natureza/janela da apuração", resultado?.janelaApuracaoClientesAtivos || memoria.janelaApuracaoClientesAtivos || "-"]
+    ];
+  }
+
   function indicator23CalculatedDetails(resultado) {
     const metaIndice = toNumberOrNull(resultado?.metaIndiceCrescimento);
     const resultadoIndice = toNumberOrNull(resultado?.indiceEmRelacaoA2025);
@@ -1756,9 +1892,7 @@
       ? window.IeoRecorrente?.getMetodologiaIeoPorCompetencia?.(lancamento)?.formula || indicador.metrica || ""
       : indicador.metrica || "";
     document.getElementById("manualPercentWrapper").hidden = !isManual(indicador);
-    document.getElementById("evidenceRequirementText").textContent = regra.exigeEvidencia
-      ? "Arquivo obrigatório para envio"
-      : "Opcional";
+    document.getElementById("evidenceRequirementText").textContent = evidenceRequirementLabel(regra, lancamento, indicador);
     const legacyJustification = document.getElementById("legacyLaunchJustification");
     const legacyText = String(lancamento.justificativa || "").trim();
     legacyJustification.hidden = !legacyText;
@@ -1923,9 +2057,14 @@
       document.getElementById("percentualAnualWrapper").hidden = true;
     }
     document.getElementById("launchResultadoMensal").value = result.resultado.resultadoMensalFormatado || Calculations.formatarValor(result.resultado.resultadoMensal, result.resultado.unidadeMedida);
-    document.getElementById("launchPercentualCalculado").value = isIeoRule(result.regra) && result.resultado.percentualAtingidoMensal === null
+    const percentualPrincipal = result.regra?.tipoCalculo === "nota_pesquisa_nps"
+      ? result.resultado.percentualAtingidoOficialNPS ?? result.resultado.percentualOficialNPS ?? result.resultado.percentualAtingidoMensal
+      : result.resultado.percentualAtingidoMensal;
+    document.getElementById("launchPercentualCalculado").value = isIeoRule(result.regra) && percentualPrincipal === null
       ? "Sem cálculo"
-      : result.resultado.percentualAtingidoMensalFormatado || Calculations.formatarPercentual(result.resultado.percentualAtingidoMensal);
+      : result.regra?.tipoCalculo === "nota_pesquisa_nps"
+        ? Calculations.formatarPercentual(percentualPrincipal)
+        : result.resultado.percentualAtingidoMensalFormatado || Calculations.formatarPercentual(percentualPrincipal);
     document.getElementById("launchResultadoAcumulado").value = result.resultado.resultadoOficialAnualFormatado || Calculations.formatarValor(result.resultado.resultadoOficialAnual, result.resultado.unidadeMedida);
     document.getElementById("launchPercentualAcumulado").value = result.resultado.percentualAtingidoAnualFormatado || Calculations.formatarPercentual(result.resultado.percentualAtingidoAnual);
     document.getElementById("launchSituacaoCalculada").value = Situations.normalizarSituacao(result.resultado.situacao || getCalculatedSituation(result.resultado.percentualAtingidoAnual ?? result.resultado.percentualAtingidoMensal));
@@ -2010,12 +2149,38 @@
     if (action === "send" && regra.tipoCalculo === "nota_pesquisa_nps") {
       const type = String(result.camposEntrada.tipoPosicaoNPS || "");
       const tracking = type.startsWith("Acompanhamento") || type === "Revisão metodológica";
+      const carriedPosition = type === "ultima_pesquisa_disponivel";
       if (!tracking && result.resultado.statusCalculo !== "calculado") {
         showMessage(result.resultado.mensagem || "Informe os percentuais de promotores e detratores para calcular o NPS.", "warning");
         return false;
       }
-      if (!tracking && !String(result.camposEntrada.dataBasePesquisaNPS || "").trim()) {
+      if (!tracking && !carriedPosition && !String(result.camposEntrada.dataBasePesquisaNPS || "").trim()) {
         showMessage("Informe a data-base da pesquisa antes de enviar para homologação.", "warning");
+        return false;
+      }
+      if (carriedPosition && !String(result.camposEntrada.fontePesquisaNPS || "").trim()) {
+        showMessage("Informe a fonte documental da última pesquisa disponível.", "warning");
+        return false;
+      }
+    }
+
+    if (action === "send" && Number(regra.indicadorId) === 3) {
+      const hasQmaatu = result.camposEntrada.qmaatu !== null && result.camposEntrada.qmaatu !== undefined && result.camposEntrada.qmaatu !== "";
+      const hasQmaant = result.camposEntrada.qmaant !== null && result.camposEntrada.qmaant !== undefined && result.camposEntrada.qmaant !== "";
+      const documentedField = regra.parametrosCalculo?.campoResultadoDocumental || "resultadoDocumentalClientesAtivos";
+      const sourceField = regra.parametrosCalculo?.campoFonteResultado || "fonteResultadoClientesAtivos";
+      const typeField = regra.parametrosCalculo?.campoTipoPosicao || "tipoPosicaoClientesAtivos";
+      const hasDocumentedResult = result.camposEntrada[documentedField] !== null && result.camposEntrada[documentedField] !== undefined && result.camposEntrada[documentedField] !== "";
+      if (hasQmaatu !== hasQmaant) {
+        showMessage("Informe QMAATU e QMAANT em conjunto ou deixe ambos ausentes.", "warning");
+        return false;
+      }
+      if (!hasQmaatu && !hasDocumentedResult) {
+        showMessage("Informe QMAATU/QMAANT ou uma posição documental identificada e com fonte.", "warning");
+        return false;
+      }
+      if (hasDocumentedResult && (!String(result.camposEntrada[sourceField] || "").trim() || !String(result.camposEntrada[typeField] || "").trim())) {
+        showMessage("A posição documental exige natureza da posição e fonte documental.", "warning");
         return false;
       }
     }
@@ -2084,7 +2249,7 @@
     }
 
     const pendingEvidenceAllowed = options.allowPendingEvidence && Boolean(pendingEvidenceFile());
-    if (action === "send" && regra.exigeEvidencia && !evidenceItems(getSelectedLaunch().id).length && !pendingEvidenceAllowed) {
+    if (action === "send" && launchRequiresEvidence(regra, getSelectedLaunch(), indicador) && !evidenceItems(getSelectedLaunch().id).length && !pendingEvidenceAllowed) {
       showMessage("Anexe pelo menos um arquivo antes de enviar para homologação.", "warning");
       return false;
     }
@@ -2455,12 +2620,17 @@
     isCanaisDigitaisDocumentalField,
     renderEntryInput,
     indicator08CalculatedDetails,
+    indicator01CalculatedDetails,
+    indicator02CalculatedDetails,
+    indicator03CalculatedDetails,
     indicator23CalculatedDetails,
     socioambientalRequiredFieldState,
     normalizeRgfKey,
     rgfRowsFromLaunch,
     latestReopenCycleAction,
     unresolvedReopenCycle,
-    requiresTransactionalPersistence
+    requiresTransactionalPersistence,
+    launchRequiresEvidence,
+    evidenceRequirementLabel
   };
 })();

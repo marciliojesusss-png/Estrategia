@@ -23,6 +23,15 @@ final class CompetenciaPeriodicidade
         return self::MONTHS[$frequency];
     }
 
+    public static function trackingMonths(array $indicator): array
+    {
+        if ((int)($indicator['id'] ?? $indicator['indicadorId'] ?? 0) === 1
+            || !empty($indicator['permiteAcompanhamentoMensal'])) {
+            return self::MONTHS['mensal'];
+        }
+        return self::expectedMonths($indicator);
+    }
+
     public static function monthOf($competenceOrLaunch): ?int
     {
         if (is_array($competenceOrLaunch)) {
@@ -47,6 +56,52 @@ final class CompetenciaPeriodicidade
     {
         if (!self::isExpected($indicator, $competenceOrLaunch)) {
             throw new DomainException('A competência informada não pertence ao ciclo oficial do indicador.');
+        }
+    }
+
+    public static function isTrackingAllowed(array $indicator, $competenceOrLaunch): bool
+    {
+        $month = self::monthOf($competenceOrLaunch);
+        return $month !== null && in_array($month, self::trackingMonths($indicator), true);
+    }
+
+    public static function closingMonths(array $indicator, array $rule = array()): array
+    {
+        $params = isset($rule['parametrosCalculo']) && is_array($rule['parametrosCalculo'])
+            ? $rule['parametrosCalculo']
+            : array();
+        $configured = $params['mesesFechamentoTrimestral'] ?? $rule['mesesFechamentoTrimestral'] ?? null;
+        if (is_array($configured)) {
+            $months = array_values(array_unique(array_filter(array_map('intval', $configured), function ($month) {
+                return $month >= 1 && $month <= 12;
+            })));
+            if ($months !== array()) return $months;
+        }
+        return self::expectedMonths($indicator);
+    }
+
+    public static function isClosingCompetence(array $indicator, array $rule, $competenceOrLaunch): bool
+    {
+        $month = self::monthOf($competenceOrLaunch);
+        return $month !== null && in_array($month, self::closingMonths($indicator, $rule), true);
+    }
+
+    public static function requiresEvidence(array $indicator, array $rule, $competenceOrLaunch): bool
+    {
+        if (empty($rule['exigeEvidencia'])) return false;
+        $params = isset($rule['parametrosCalculo']) && is_array($rule['parametrosCalculo'])
+            ? $rule['parametrosCalculo']
+            : array();
+        $legacyIndicator03Rule = (int)($indicator['id'] ?? $indicator['indicadorId'] ?? 0) === 3
+            && !empty($params['mesesFechamentoTrimestral']);
+        if (empty($rule['exigeEvidenciaNosFechamentos']) && !$legacyIndicator03Rule) return true;
+        return self::isClosingCompetence($indicator, $rule, $competenceOrLaunch);
+    }
+
+    public static function assertTrackingAllowed(array $indicator, $competenceOrLaunch): void
+    {
+        if (!self::isTrackingAllowed($indicator, $competenceOrLaunch)) {
+            throw new DomainException('A competência informada não pertence ao ciclo de acompanhamento do indicador.');
         }
     }
 }

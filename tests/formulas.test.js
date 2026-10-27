@@ -90,8 +90,8 @@ const ofertasSemBase = formulas.calcularIndicador(
   { mes: 1, camposEntrada: { baseClientesAtivosCompetencia: 0, clientesUnicosComOfertaPersonalizadaCompetencia: 100 } },
   [{ mes: 1, camposEntrada: { baseClientesAtivosCompetencia: 0, clientesUnicosComOfertaPersonalizadaCompetencia: 100 } }]
 );
-assert.equal(ofertasSemBase.statusCalculo, "aguardando_dados");
-assert.equal(ofertasSemBase.mensagem, "Dados insuficientes para cálculo.");
+assert.equal(ofertasSemBase.statusCalculo, "erro");
+assert.equal(ofertasSemBase.mensagem, "A base de clientes ativos deve ser maior que zero.");
 
 const regraMulheresGestoras = {
   indicadorId: 13,
@@ -236,7 +236,8 @@ const regraNps = {
     metaVigenteNPS2026: 60,
     referenciasPorCompetencia: {
       "2026-01": 55, "2026-02": 55, "2026-03": 55,
-      "2026-04": 58, "2026-05": 58, "2026-06": 58,
+      "2026-04": 58, "2026-05": 58,
+      "2026-06": 60,
       "2026-07": 60, "2026-08": 60, "2026-09": 60,
       "2026-10": 60, "2026-11": 60, "2026-12": 60
     },
@@ -278,10 +279,10 @@ const npsJunhoHistorico = formulas.calcularIndicador(
   { ano: 2026, mes: 6, competencia: "2026-06", camposEntrada: { tipoPosicaoNPS: "Pesquisa oficial", metaReferenciaCompetenciaNPS: 60, percentualPromotores: "72,63", percentualDetratores: "13,43", npsApurado: 61 } },
   []
 );
-assert.equal(npsJunhoHistorico.metaReferenciaPeriodo, 58);
+assert.equal(npsJunhoHistorico.metaReferenciaPeriodo, 60);
 closeTo(npsJunhoHistorico.resultadoMensal, 59.2);
-closeTo(npsJunhoHistorico.percentualAtingidoMensal, 59.2 / 58);
-assert.equal(npsJunhoHistorico.situacao, "Atingido");
+closeTo(npsJunhoHistorico.percentualAtingidoMensal, 59.2 / 60);
+assert.equal(npsJunhoHistorico.situacao, "Abaixo da meta");
 assert.equal(npsJunhoHistorico.origemNps, "componentes_formula");
 closeTo(npsJunhoHistorico.percentualPromotores, 0.7263);
 closeTo(npsJunhoHistorico.percentualDetratores, 0.1343);
@@ -301,9 +302,20 @@ const npsComConfiguracaoCentralAntiga = formulas.calcularIndicador(
   { ano: 2026, mes: 9, competencia: "2026-09", metaMensal: 58, camposEntrada: { tipoPosicaoNPS: "Pesquisa oficial", percentualPromotores: 0.72, percentualDetratores: 0.12 } },
   []
 );
-assert.equal(npsComConfiguracaoCentralAntiga.metaReferenciaPeriodo, 58, "a meta persistida da competência deve prevalecer");
+assert.equal(npsComConfiguracaoCentralAntiga.metaReferenciaPeriodo, 60, "a referência canônica do fechamento deve prevalecer sobre o legado 58");
 assert.equal(npsComConfiguracaoCentralAntiga.metaAnualCorretaNPS, 60);
-closeTo(npsComConfiguracaoCentralAntiga.percentualAtingidoMensal, 60 / 58);
+closeTo(npsComConfiguracaoCentralAntiga.percentualAtingidoMensal, 1);
+
+const npsAbrilAcompanhamento = formulas.calcularIndicador(
+  indicador(2, "Índice de Satisfação de Clientes - NPS"),
+  regraNps,
+  { ano: 2026, mes: 4, competencia: "2026-04", metaMensal: 58, camposEntrada: { tipoPosicaoNPS: "ultima_pesquisa_disponivel", metaReferenciaCompetenciaNPS: 58, resultadoDocumentalNPS: 55 } },
+  []
+);
+assert.equal(npsAbrilAcompanhamento.metaReferenciaPeriodo, 58);
+assert.equal(npsAbrilAcompanhamento.resultadoMensal, 55);
+closeTo(npsAbrilAcompanhamento.percentualAtingidoMensal, 55 / 58);
+assert.equal(npsAbrilAcompanhamento.situacao, "Abaixo da meta");
 
 const npsSetembroVigente = formulas.calcularIndicador(
   indicador(2, "Índice de Satisfação de Clientes - NPS"),
@@ -347,13 +359,13 @@ assert.match(npsParcial.mensagem, /detratores/);
 const npsJulhoAcompanhamento = formulas.calcularIndicador(
   indicador(2, "Índice de Satisfação de Clientes - NPS"),
   regraNps,
-  { ano: 2026, mes: 7, competencia: "2026-07", camposEntrada: { tipoPosicaoNPS: "Acompanhamento sem nova pesquisa", metaReferenciaCompetenciaNPS: 58 } },
+  { ano: 2026, mes: 7, competencia: "2026-07", camposEntrada: { tipoPosicaoNPS: "ultima_pesquisa_disponivel", metaReferenciaCompetenciaNPS: 60, resultadoDocumentalNPS: 59.2 } },
   []
 );
 assert.equal(npsJulhoAcompanhamento.metaReferenciaPeriodo, 60);
-assert.equal(npsJulhoAcompanhamento.resultadoMensal, null);
-assert.equal(npsJulhoAcompanhamento.percentualAtingidoMensal, null);
-assert.equal(npsJulhoAcompanhamento.situacao, "Em acompanhamento");
+assert.equal(npsJulhoAcompanhamento.resultadoMensal, 59.2);
+closeTo(npsJulhoAcompanhamento.percentualAtingidoMensal, 59.2 / 60);
+assert.equal(npsJulhoAcompanhamento.situacao, "Abaixo da meta");
 
 const regraClimaOrganizacional = {
   indicadorId: 12,

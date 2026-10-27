@@ -38,6 +38,14 @@
     return [...MONTHS_BY_FREQUENCY[frequencyOf(indicatorOrFrequency)]];
   }
 
+  function trackingMonths(indicatorOrFrequency) {
+    if (indicatorOrFrequency && typeof indicatorOrFrequency === "object" &&
+      (Number(indicatorOrFrequency.id ?? indicatorOrFrequency.indicadorId) === 1 || indicatorOrFrequency.permiteAcompanhamentoMensal === true)) {
+      return [...MONTHS_BY_FREQUENCY.mensal];
+    }
+    return expectedMonths(indicatorOrFrequency);
+  }
+
   function monthOf(competenceOrLaunch) {
     if (competenceOrLaunch && typeof competenceOrLaunch === "object") {
       const directMonth = Number(competenceOrLaunch.mes);
@@ -56,6 +64,33 @@
 
   function isExpectedCompetence(indicatorOrFrequency, competenceOrLaunch) {
     return isExpectedMonth(indicatorOrFrequency, monthOf(competenceOrLaunch));
+  }
+
+  function isTrackingMonth(indicatorOrFrequency, month) {
+    const numericMonth = monthOf(month);
+    return Number.isInteger(numericMonth) && trackingMonths(indicatorOrFrequency).includes(numericMonth);
+  }
+
+  function closingMonths(indicatorOrFrequency, rule = {}) {
+    const configured = rule?.parametrosCalculo?.mesesFechamentoTrimestral ?? rule?.mesesFechamentoTrimestral;
+    if (Array.isArray(configured)) {
+      const months = [...new Set(configured.map(Number).filter((month) => Number.isInteger(month) && month >= 1 && month <= 12))];
+      if (months.length) return months;
+    }
+    return expectedMonths(indicatorOrFrequency);
+  }
+
+  function isClosingCompetence(indicatorOrFrequency, rule, competenceOrLaunch) {
+    const month = monthOf(competenceOrLaunch);
+    return Number.isInteger(month) && closingMonths(indicatorOrFrequency, rule).includes(month);
+  }
+
+  function requiresEvidence(indicatorOrFrequency, rule, competenceOrLaunch) {
+    if (rule?.exigeEvidencia !== true) return false;
+    const legacyIndicator03Rule = Number(indicatorOrFrequency?.id ?? indicatorOrFrequency?.indicadorId) === 3 &&
+      Array.isArray(rule?.parametrosCalculo?.mesesFechamentoTrimestral);
+    if (rule?.exigeEvidenciaNosFechamentos !== true && !legacyIndicator03Rule) return true;
+    return isClosingCompetence(indicatorOrFrequency, rule, competenceOrLaunch);
   }
 
   function officialLaunches(indicator, launches) {
@@ -85,9 +120,14 @@
     normalize,
     frequencyOf,
     expectedMonths,
+    trackingMonths,
     monthOf,
     isExpectedMonth,
     isExpectedCompetence,
+    isTrackingMonth,
+    closingMonths,
+    isClosingCompetence,
+    requiresEvidence,
     officialLaunches,
     compositionLabel,
     competenceLabel

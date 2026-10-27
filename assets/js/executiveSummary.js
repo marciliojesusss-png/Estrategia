@@ -249,6 +249,7 @@
     state.indicators = collections.indicators;
     state.launches = collections.launches;
     state.rules = data?.regrasIndicadores || [];
+    state.governancaHomologacaoAtual = data?.governancaHomologacaoAtual || [];
     state.operationalFrequencies = (data?.frequenciasCobrancaOperacional || [])
       .filter((item) => visibleIds.has(Number(item.indicadorId)));
     state.prazos = data?.prazos || [];
@@ -807,7 +808,8 @@
     const summary = StrategicResults.calcularDashboard({
       indicadores: [result.indicador],
       lancamentos: previousLaunches,
-      regras: state.rules
+      regras: state.rules,
+      governancaHomologacaoAtual: state.governancaHomologacaoAtual
     });
     const previous = summary.resultadosOficiais[0] || null;
     if (!previous || !previous.lancamento || toFiniteNumber(previous.percentualAtingido) === null) return null;
@@ -921,7 +923,9 @@
   function quarterlyResult(indicator, quarterLabel) {
     const rule = IndicatorFormulas.obterRegra(indicator, state.rules);
     const launches = state.launches.filter((item) => item.indicadorId === indicator.id);
-    const quarter = QuarterlyConsolidation.consolidarTrimestre(indicator, rule, launches, quarterLabel);
+    const quarter = QuarterlyConsolidation.consolidarTrimestre(indicator, rule, launches, quarterLabel, {
+      governancaHomologacaoAtual: state.governancaHomologacaoAtual
+    });
     return {
       indicador: indicator,
       regra: rule,
@@ -971,7 +975,8 @@
     const summary = StrategicResults.calcularDashboard({
       indicadores: indicators,
       lancamentos: launches,
-      regras: state.rules
+      regras: state.rules,
+      governancaHomologacaoAtual: state.governancaHomologacaoAtual
     });
 
     return summary.resultadosOficiais.filter((result) => (
@@ -1513,6 +1518,7 @@
       indicators: [],
       launches: [],
       rules: [],
+      governancaHomologacaoAtual: [],
       operationalFrequencies: [],
       prazos: [],
       viewScope: initialScope,

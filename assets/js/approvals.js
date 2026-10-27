@@ -1,4 +1,5 @@
 (function () {
+  const CONSULTABLE_NON_OFFICIAL_STATUSES = new Set(["Homologado", "Retificado", "Reaberto"]);
   const ACTIONABLE_STATUS = "Enviado para homologação";
 
   let state = {
@@ -51,11 +52,20 @@
     return `Todos os indicadores (${count})`;
   }
 
-  function officialOperationalLaunches(launches, indicators) {
+  function isOfficialApprovalCompetence(launch, indicators = state.indicadores) {
     const byId = Object.fromEntries((indicators || []).map((indicator) => [String(indicator.id), indicator]));
+    const indicator = byId[String(launch?.indicadorId)];
+    return Boolean(indicator)
+      && window.IndicatorPeriodicity?.isExpectedCompetence(indicator, launch) !== false;
+  }
+
+  function isConsultableHistoricalLaunch(launch) {
+    return CONSULTABLE_NON_OFFICIAL_STATUSES.has(String(launch?.status || ""));
+  }
+
+  function homologationVisibleLaunches(launches, indicators) {
     return (launches || []).filter((launch) => {
-      const indicator = byId[String(launch.indicadorId)];
-      return !indicator || window.IndicatorPeriodicity?.isExpectedCompetence(indicator, launch) !== false;
+      return isOfficialApprovalCompetence(launch, indicators) || isConsultableHistoricalLaunch(launch);
     });
   }
 
@@ -247,6 +257,7 @@
   function canApproveOrReturn(lancamento) {
     return lancamento
       && lancamento.status === ACTIONABLE_STATUS
+      && isOfficialApprovalCompetence(lancamento)
       && ["Administrador", "Diretoria Homologadora", "Consultor da Diretoria"].includes(state.user?.perfil)
       && !isOwnLaunch(lancamento);
   }
@@ -910,7 +921,7 @@
       data,
       user,
       indicadores: Auth.filterIndicatorsByUser(data.indicadores, user),
-      lancamentos: officialOperationalLaunches(
+      lancamentos: homologationVisibleLaunches(
         Auth.filterLaunchesByUser(data.lancamentos, data.indicadores, user),
         data.indicadores
       ),
@@ -936,5 +947,12 @@
 
   window.PageModules = window.PageModules || {};
   window.PageModules.homologacao = { init };
-  window.__APPROVALS_FILTER_TEST_INTERNALS__ = { indicatorFilterOptions, allIndicatorFilterLabel, filterLaunches, officialOperationalLaunches };
+  window.__APPROVALS_FILTER_TEST_INTERNALS__ = {
+    indicatorFilterOptions,
+    allIndicatorFilterLabel,
+    filterLaunches,
+    homologationVisibleLaunches,
+    isOfficialApprovalCompetence,
+    isConsultableHistoricalLaunch
+  };
 })();

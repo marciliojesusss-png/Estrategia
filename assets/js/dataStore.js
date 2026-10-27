@@ -49,6 +49,15 @@
     "Atuação em Ecossistema"
   ];
   const PIX_OPERATIONAL_TARGETS_2026 = [0.63, 0.61, 0.61, 0.61, 0.61, 0.62, 0.63, 0.63, 0.63, 0.6342, 0.6383, 0.6543];
+  const CLIENTES_ATIVOS_DIGITAIS_METAS_2026 = Object.freeze(Object.fromEntries(
+    Array.from({ length: 12 }, (_, index) => [`2026-${String(index + 1).padStart(2, "0")}`, 0.28])
+  ));
+  const CLIENTES_ATIVOS_DIGITAIS_APRESENTACOES_2026 = Object.freeze({
+    "1TRI/2026": { metaOficialReportada: 0.28, resultadoOficialReportado: 0.7441, percentualAtingidoOficialReportado: 2.6573, situacaoOficial: "Atingido", fonte: "Informe DILOT/GERIN nº 0029/2026" },
+    "2TRI/2026": { metaOficialReportada: 0.28, resultadoOficialReportado: 0.6216, percentualAtingidoOficialReportado: 2.22, situacaoOficial: "Atingido", fonte: "Informe DILOT/GERIN nº 0056/2026" },
+    "3TRI/2026": { metaOficialReportada: 0.28, resultadoOficialReportado: 0.527, percentualAtingidoOficialReportado: 1.8821, situacaoOficial: "Atingido", fonte: "Informe DILOT/GERIN nº 0078/2026" },
+    "4TRI/2026": { metaOficialReportada: 0.28, resultadoOficialReportado: null, percentualAtingidoOficialReportado: null, situacaoOficial: null, fonte: null }
+  });
   const ECOSSISTEMA_CURVAS_2026 = {
     lotex: {
       "1TRI": { referencia2025: 0.90, meta2026: 0.99 },
@@ -427,7 +436,7 @@
     [12, "Dezembro"]
   ];
   function mesesEsperados(indicador) {
-    const expected = window.IndicatorPeriodicity?.expectedMonths(indicador) || MESES.map(([mes]) => mes);
+    const expected = window.IndicatorPeriodicity?.trackingMonths(indicador) || MESES.map(([mes]) => mes);
     const expectedSet = new Set(expected.map(Number));
     return MESES.filter(([mes]) => expectedSet.has(mes));
   }
@@ -437,7 +446,7 @@
     "2026-03": 55,
     "2026-04": 58,
     "2026-05": 58,
-    "2026-06": 58,
+    "2026-06": 60,
     "2026-07": 60,
     "2026-08": 60,
     "2026-09": 60,
@@ -449,6 +458,7 @@
     "Baseline",
     "Acompanhamento",
     "Pesquisa oficial",
+    { value: "ultima_pesquisa_disponivel", label: "Última pesquisa disponível" },
     "Revisão metodológica",
     "Fechamento anual"
   ];
@@ -675,6 +685,29 @@
     const key = `${ano}-${String(mes).padStart(2, "0")}`;
     if (Object.prototype.hasOwnProperty.call(NPS_REFERENCIAS_2026, key)) return NPS_REFERENCIAS_2026[key];
     return Number(ano) > 2026 ? 60 : null;
+  }
+
+  // Compatibilidade até a migration: preserva, sem regravar, os valores recebidos
+  // do SQL/JSON e expõe separadamente as referências canônicas de 2026.
+  // ABR/MAI ficam sem meta avaliativa; o 58 é apenas contexto metodológico histórico.
+  // Fora de 2026, JSON e coluna persistida continuam sendo os fallbacks vigentes.
+  function resolveNpsLaunchState(launch, persistedMeta) {
+    const inputMeta = Number(launch?.camposEntrada?.metaReferenciaCompetenciaNPS);
+    const persisted = Number(persistedMeta);
+    const hasInput = Number.isFinite(inputMeta) && inputMeta > 0;
+    const hasPersisted = Number.isFinite(persisted) && persisted > 0;
+    const fallback = getNpsMetaReferencia(launch?.ano, launch?.mes);
+    const canonical2026 = Number(launch?.ano) === 2026;
+    const technical = canonical2026 ? fallback : hasInput ? inputMeta : hasPersisted ? persisted : fallback;
+    return {
+      metaTecnicaNps: technical,
+      metaJsonNps: hasInput ? inputMeta : null,
+      metaPersistidaNps: hasPersisted ? persisted : null,
+      origemMetaTecnicaNps: canonical2026 ? "referencias_fechamento_2026_55_60" : hasInput ? "dados_entrada_json" : hasPersisted ? "sql_meta_referencia" : "fallback_codigo",
+      divergenciaMetaNps: [hasInput ? inputMeta : null, hasPersisted ? persisted : null]
+        .filter((value) => value !== null)
+        .some((value) => Math.abs(value - technical) > Number.EPSILON)
+    };
   }
 
   function getGgrMetaAcumulada(ano, mes) {
@@ -1230,6 +1263,34 @@
       const canonicalValue = indicatorId === 23 && value > 0 && value < 1 ? 1 + value : value;
       return [`${Number(meta.ano)}-${String(Number(meta.mes)).padStart(2, "0")}`, canonicalValue];
     }));
+    if (indicatorId === 2) {
+      const canonical = rule.parametrosCalculo?.referenciasPorCompetencia || NPS_REFERENCIAS_2026;
+      return {
+        ...rule,
+        parametrosCalculo: {
+          ...(rule.parametrosCalculo || {}),
+          referenciasPorCompetencia: { ...canonical },
+          metasPersistidasPorCompetencia: perCompetence,
+          divergenciasMetasPersistidas: Object.fromEntries(Object.entries(perCompetence)
+            .filter(([key, value]) => Number(canonical[key]) !== Number(value)))
+        }
+      };
+    }
+    if (indicatorId === 3) {
+      const canonical = rule.parametrosCalculo?.metasCanonicasPorCompetencia || CLIENTES_ATIVOS_DIGITAIS_METAS_2026;
+      const canonicalKeys = Object.keys(canonical);
+      return {
+        ...rule,
+        parametrosCalculo: {
+          ...(rule.parametrosCalculo || {}),
+          metasCanonicasPorCompetencia: { ...canonical },
+          metasPersistidasPorCompetencia: perCompetence,
+          lacunasMetasPersistidas: canonicalKeys.filter((key) => !Object.prototype.hasOwnProperty.call(perCompetence, key)),
+          divergenciasMetasPersistidas: Object.fromEntries(Object.entries(perCompetence)
+            .filter(([key, value]) => Number(canonical[key]) !== Number(value)))
+        }
+      };
+    }
     const monthly = { ...(rule.parametrosCalculo?.metasMensaisPorCompetencia || {}), ...perCompetence };
     const accumulated = indicatorId === 7
       ? Object.keys(monthly).sort().reduce((curve, key) => {
@@ -1423,7 +1484,9 @@
           return {
             ...normalized,
             tipoCalculo: "percentual_direto",
+            tipoConsolidacao: "ultima_posicao_trimestral",
             unidadeMedida: "percentual",
+            permiteAcompanhamentoMensal: true,
             metaAnualDescricao: "≥ 10%",
             metrica: "Clientes únicos com oferta personalizada / Base de clientes ativos identificáveis"
           };
@@ -1471,9 +1534,23 @@
           return {
             ...normalized,
             tipoCalculo: "nota_pesquisa_nps",
+            tipoConsolidacao: "resultado_pesquisa_ou_ultima_posicao",
             unidadeMedida: "pontos",
-            metaAnualDescricao: "Meta vigente: NPS 60 pontos a partir do 3TRI/2026.",
-            metrica: "NPS = % promotores - % detratores. Histórico 2026: 1TRI referência 55; 2TRI referência 58; a partir do 3TRI meta absoluta 60."
+            permiteAcompanhamentoMensal: true,
+            metaAnualDescricao: "Meta vigente nos fechamentos do 2TRI ao 4TRI/2026: NPS 60 pontos.",
+            metrica: "NPS = (% promotores - % detratores) × 100. Fechamentos 2026: 1TRI referência 55; 2TRI a 4TRI referência 60. O valor 58 é apenas contexto metodológico histórico não vigente."
+          };
+        }
+        if (Number(indicator.id) === 3) {
+          return {
+            ...normalized,
+            periodicidade: "Mensal",
+            tipoCalculo: "crescimento_media_mensal",
+            tipoConsolidacao: "ultima_posicao",
+            unidadeMedida: "percentual",
+            permiteAcompanhamentoMensal: true,
+            metaAnualDescricao: "Crescer 28% na quantidade média mensal de clientes ativos no ano",
+            metrica: "(QMAATU / QMAANT) - 1"
           };
         }
         if (Number(indicator.id) === 7) {
@@ -1630,7 +1707,7 @@
             ...rule,
             nome: INDICATOR_NAMES[0],
             tipoCalculo: "percentual_direto",
-            tipoConsolidacao: "acumulado_por_competencia",
+            tipoConsolidacao: "ultima_posicao_trimestral",
             unidadeMedida: "percentual",
             metaAnualValor: 0.10,
             parametrosCalculo: {
@@ -1639,15 +1716,32 @@
               metaReferencia: 0.10,
               metaTipo: "fixa",
               sentidoMeta: "quanto_maior_melhor",
-              validarNumeradorAteDenominador: false
+              validarNumeradorAteDenominador: false,
+              mesesFechamentoTrimestral: [3, 6, 9, 12],
+              permiteAcompanhamentoMensal: true,
+              campoResultadoDocumental: "resultadoDocumentalOfertasPersonalizadas",
+              campoPercentualAtingidoOficial: "percentualAtingidoOficialOfertasPersonalizadas",
+              campoTipoPosicao: "tipoPosicaoOfertasPersonalizadas",
+              campoFonteResultado: "fonteResultadoOfertasPersonalizadas",
+              apresentacoesOficiaisTrimestrais: {
+                "1TRI/2026": { metaOficialReportada: 0.10, resultadoOficialReportado: 0.4476, percentualAtingidoOficialReportado: 4.4764, situacaoOficial: "Atingido", fonte: "Informe DILOT/GERIN nº 0029/2026" },
+                "2TRI/2026": { metaOficialReportada: 0.10, resultadoOficialReportado: 0.7858, percentualAtingidoOficialReportado: 7.858, situacaoOficial: "Atingido", fonte: "Informe DILOT/GERIN nº 0056/2026" },
+                "3TRI/2026": { metaOficialReportada: 0.10, resultadoOficialReportado: 0.8379, percentualAtingidoOficialReportado: 8.379, situacaoOficial: "Atingido", fonte: "Informe DILOT/GERIN nº 0078/2026" },
+                "4TRI/2026": { metaOficialReportada: 0.10, resultadoOficialReportado: null, percentualAtingidoOficialReportado: null, situacaoOficial: null, fonte: null }
+              }
             },
             camposEntrada: [
-              { nome: "baseClientesAtivosCompetencia", rotulo: "Base de clientes ativos identificáveis da competência", tipo: "inteiro", obrigatorio: true },
-              { nome: "clientesUnicosComOfertaPersonalizadaCompetencia", rotulo: "Clientes únicos com oferta personalizada até a competência", tipo: "inteiro", obrigatorio: true }
+              { nome: "baseClientesAtivosCompetencia", rotulo: "Base de clientes ativos identificáveis da competência", tipo: "inteiro", obrigatorio: false },
+              { nome: "clientesUnicosComOfertaPersonalizadaCompetencia", rotulo: "Clientes únicos com oferta personalizada até a competência", tipo: "inteiro", obrigatorio: false },
+              { nome: "resultadoDocumentalOfertasPersonalizadas", rotulo: "Resultado oficial/documental", tipo: "percentual", obrigatorio: false, escalaPercentual: "decimal" },
+              { nome: "percentualAtingidoOficialOfertasPersonalizadas", rotulo: "Atingimento oficial documental", tipo: "percentual", obrigatorio: false, escalaPercentual: "decimal" },
+              { nome: "tipoPosicaoOfertasPersonalizadas", rotulo: "Natureza da posição", tipo: "selecao", obrigatorio: false, opcoes: [{ value: "", label: "Selecione..." }, { value: "acompanhamento", label: "Acompanhamento" }, { value: "fechamento_trimestral", label: "Fechamento trimestral" }] },
+              { nome: "fonteResultadoOfertasPersonalizadas", rotulo: "Fonte documental", tipo: "texto", obrigatorio: false }
             ],
             campoResultadoPrincipal: "resultadoMensal",
             campoPercentualAtingido: "percentualAtingidoMensal",
-            resultadoOficial: "ultima_posicao_homologada"
+            resultadoOficial: "ultima_posicao_fechamento_homologada",
+            exigirHomologacaoTransacionalVersaoAtual: true
           };
         }
         if (Number(rule.indicadorId) === 2) {
@@ -1659,6 +1753,7 @@
             unidadeMedida: "pontos",
             metaAnualValor: 60,
             parametrosCalculo: {
+              ...(rule.parametrosCalculo || {}),
               campoTipoPosicao: "tipoPosicaoNPS",
               campoMetaReferencia: "metaReferenciaCompetenciaNPS",
               campoNps: "npsApurado",
@@ -1666,6 +1761,9 @@
               campoDetratores: "percentualDetratores",
               campoDataBase: "dataBasePesquisaNPS",
               campoFonte: "fontePesquisaNPS",
+              campoResultadoDocumental: "resultadoDocumentalNPS",
+              campoMetaDocumental: "metaDocumentalNPS",
+              campoPercentualAtingidoOficial: "percentualAtingidoOficialNPS",
               metaTipo: "meta_absoluta_por_competencia",
               baselineNPS: 55,
               notaReferenciaNPS: 70,
@@ -1673,21 +1771,87 @@
               metaAnualMetodologica: 60,
               metaVigenteNPS2026: 60,
               referenciasPorCompetencia: NPS_REFERENCIAS_2026,
-              sentidoMeta: "quanto_maior_melhor"
+              contextoMetodologicoMeta58: {
+                valor: 58,
+                uso: "meta_de_acompanhamento_abr_mai_2026",
+                aplicaCompetencias: ["2026-04", "2026-05"]
+              },
+              sentidoMeta: "quanto_maior_melhor",
+              mesesFechamentoTrimestral: [3, 6, 9, 12],
+              permiteAcompanhamentoMensal: true,
+              aprovacaoMeta60: {
+                documento: "Proposição DILOT/GERIN nº 0050/2026",
+                data: "2026-08-06"
+              },
+              apresentacoesOficiaisTrimestrais: {
+                "1TRI/2026": { metaOficialReportada: 55, resultadoOficialReportado: 55, percentualAtingidoOficialReportado: 1, situacaoOficial: "Atingido", fonte: "Informe DILOT/GERIN nº 0029/2026" },
+                "2TRI/2026": { metaOficialReportada: 60, resultadoOficialReportado: 59.2, percentualAtingidoOficialReportado: 0.9866, situacaoOficial: "Abaixo da meta", fonte: "Informe DILOT/GERIN nº 0056/2026" },
+                "3TRI/2026": { metaOficialReportada: 60, resultadoOficialReportado: 59.2, percentualAtingidoOficialReportado: 0.9866, situacaoOficial: "Abaixo da meta", semNovaPesquisa: true, proximaApuracao: "2026-10", fonte: "Informe DILOT/GERIN nº 0078/2026" },
+                "4TRI/2026": { metaOficialReportada: 60, resultadoOficialReportado: null, percentualAtingidoOficialReportado: null, situacaoOficial: null, fonte: null }
+              }
             },
             camposEntrada: [
               { nome: "tipoPosicaoNPS", rotulo: "Tipo da posição", tipo: "selecao", obrigatorio: true, opcoes: TIPOS_POSICAO_NPS },
               { nome: "metaReferenciaCompetenciaNPS", rotulo: "Meta de referência da competência", tipo: "numero", obrigatorio: false, somenteLeitura: true },
               { nome: "percentualPromotores", rotulo: "Percentual de promotores", tipo: "percentual", obrigatorio: false, entradaPtBr: true },
               { nome: "percentualDetratores", rotulo: "Percentual de detratores", tipo: "percentual", obrigatorio: false, entradaPtBr: true },
+              { nome: "totalRespondentesNPS", rotulo: "Total de respondentes", tipo: "inteiro", obrigatorio: false },
+              { nome: "quantidadePromotoresNPS", rotulo: "Quantidade de promotores", tipo: "inteiro", obrigatorio: false },
+              { nome: "quantidadeNeutrosNPS", rotulo: "Quantidade de neutros", tipo: "inteiro", obrigatorio: false },
+              { nome: "quantidadeDetratoresNPS", rotulo: "Quantidade de detratores", tipo: "inteiro", obrigatorio: false },
               { nome: "npsApurado", rotulo: "NPS calculado", tipo: "numero", obrigatorio: false, somenteLeitura: true },
+              { nome: "resultadoDocumentalNPS", rotulo: "Resultado documental NPS", tipo: "numero", obrigatorio: false },
+              { nome: "metaDocumentalNPS", rotulo: "Meta documental NPS", tipo: "numero", obrigatorio: false },
+              { nome: "percentualAtingidoOficialNPS", rotulo: "Atingimento oficial documental", tipo: "percentual", obrigatorio: false, escalaPercentual: "decimal" },
               { nome: "dataBasePesquisaNPS", rotulo: "Data-base da pesquisa", tipo: "data", obrigatorio: false },
               { nome: "fontePesquisaNPS", rotulo: "Fonte/evidência da pesquisa", tipo: "texto", obrigatorio: false },
               { nome: "observacaoArea", rotulo: "Observação da área", tipo: "texto", obrigatorio: false }
             ],
             campoResultadoPrincipal: "npsApurado",
             campoPercentualAtingido: "percentualAtingidoMensal",
-            resultadoOficial: "resultado_pesquisa_ou_ultima_posicao_homologada"
+            resultadoOficial: "resultado_pesquisa_ou_ultima_posicao_homologada",
+            exigirHomologacaoTransacionalVersaoAtual: true
+          };
+        }
+        if (Number(rule.indicadorId) === 3) {
+          return {
+            ...rule,
+            nome: INDICATOR_NAMES[2],
+            tipoCalculo: "crescimento_media_mensal",
+            tipoConsolidacao: "ultima_posicao",
+            unidadeMedida: "percentual",
+            metaAnualValor: 0.28,
+            parametrosCalculo: {
+              ...(rule.parametrosCalculo || {}),
+              qmaatuCampo: "qmaatu",
+              qmaantCampo: "qmaant",
+              metaCrescimento: 0.28,
+              sentidoMeta: "quanto_maior_melhor",
+              mesesFechamentoTrimestral: [3, 6, 9, 12],
+              permiteAcompanhamentoMensal: true,
+              campoResultadoDocumental: "resultadoDocumentalClientesAtivos",
+              campoPercentualAtingidoOficial: "percentualAtingidoOficialClientesAtivos",
+              campoFonteResultado: "fonteResultadoClientesAtivos",
+              campoTipoPosicao: "tipoPosicaoClientesAtivos",
+              campoJanelaApuracao: "janelaApuracaoClientesAtivos",
+              metasCanonicasPorCompetencia: { ...CLIENTES_ATIVOS_DIGITAIS_METAS_2026 },
+              apresentacoesOficiaisTrimestrais: { ...CLIENTES_ATIVOS_DIGITAIS_APRESENTACOES_2026 }
+            },
+            camposEntrada: [
+              { nome: "qmaatu", rotulo: "QMAATU - Quantidade Média Mensal de Clientes Ativos no Ano nos canais digitais", tipo: "inteiro", obrigatorio: false },
+              { nome: "qmaant", rotulo: "QMAANT - Quantidade Média Mensal de Clientes Ativos do Ano anterior nos canais digitais", tipo: "inteiro", obrigatorio: false },
+              { nome: "dataBaseApuracao", rotulo: "Data-base da apuração", tipo: "data", obrigatorio: false },
+              { nome: "resultadoDocumentalClientesAtivos", rotulo: "Resultado documental", tipo: "percentual", obrigatorio: false, escalaPercentual: "decimal" },
+              { nome: "percentualAtingidoOficialClientesAtivos", rotulo: "Atingimento oficial documental", tipo: "percentual", obrigatorio: false, escalaPercentual: "decimal" },
+              { nome: "tipoPosicaoClientesAtivos", rotulo: "Natureza da posição", tipo: "selecao", obrigatorio: false, opcoes: [{ value: "", label: "Selecione..." }, { value: "acompanhamento", label: "Acompanhamento mensal" }, { value: "fechamento_trimestral", label: "Fechamento trimestral" }] },
+              { nome: "fonteResultadoClientesAtivos", rotulo: "Fonte documental", tipo: "texto", obrigatorio: false },
+              { nome: "janelaApuracaoClientesAtivos", rotulo: "Natureza/janela da apuração", tipo: "texto", obrigatorio: false }
+            ],
+            campoResultadoPrincipal: "resultadoMensal",
+            campoPercentualAtingido: "percentualAtingidoMensal",
+            exigeEvidenciaNosFechamentos: true,
+            resultadoOficial: "ultima_posicao_homologada",
+            exigirHomologacaoTransacionalVersaoAtual: true
           };
         }
         if (Number(rule.indicadorId) === 4) {
@@ -2400,12 +2564,8 @@
           metaAnualDescricao: "≥ 10%"
         } : {}),
         ...(Number(launch.indicadorId) === 2 ? {
-          metaMensal: getNpsMetaReferencia(launch.ano, launch.mes),
-          metaAnualDescricao: "Meta vigente: NPS 60 pontos a partir do 3TRI/2026.",
-          camposEntrada: {
-            ...(launch.camposEntrada || {}),
-            metaReferenciaCompetenciaNPS: getNpsMetaReferencia(launch.ano, launch.mes)
-          }
+          metaAnualDescricao: "Meta vigente nos fechamentos do 2TRI ao 4TRI/2026: NPS 60 pontos.",
+          ...resolveNpsLaunchState(launch, persistedMeta)
         } : {}),
         ...(Number(launch.indicadorId) === 4 ? {
           metaMensal: getAprimoramentoMetaTrimestral(launch.ano, launch.mes),
@@ -2641,6 +2801,7 @@
     getCapacidadeTicMetaOficialCompetencia,
     isCapacidadeTicFechamento,
     metasForRule,
+    resolveNpsLaunchState,
     getLucroRecorrenteMetaAcumuladaOficial,
     resetarDadosOperacionais,
     resetarLancamentosIniciais
