@@ -13,7 +13,7 @@
     homologacao: ["Administrador", "Diretoria Homologadora", "Consultor da Diretoria"],
     iniciativasHomologacao: ["Administrador", "Diretoria Homologadora", "Consultor da Diretoria"],
     iniciativasConsolidacao: ["Administrador"],
-    relatorios: ["Administrador"],
+    relatorios: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consultor da Diretoria"],
     administracao: ["Administrador"],
     auditoria: ["Administrador"]
   };

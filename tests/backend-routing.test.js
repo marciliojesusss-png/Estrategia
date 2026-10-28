@@ -25,8 +25,13 @@ assert.match(publicIndicators, /Auth::requirePagePermission\('indicadores', 'vis
 
 const publicReports = fs.readFileSync(path.join(root, 'public', 'relatorios.php'), 'utf8');
 const reportsApi = fs.readFileSync(path.join(root, 'api', 'relatorios.php'), 'utf8');
+const publicIndex = fs.readFileSync(path.join(root, 'public', 'index.php'), 'utf8');
+const consolidatedController = fs.readFileSync(path.join(root, 'app', 'controllers', 'RelatorioApiController.php'), 'utf8');
 assert.match(publicReports, /Auth::requirePagePermission\('relatorios', 'visualizar'\)/);
-assert.match(reportsApi, /Auth::requirePermission\('relatorios', 'visualizar', true\)/);
+assert.match(reportsApi, /Auth::requireApiProfiles\(array\('administrador'\)\)/);
+assert.match(publicIndex, /\$router->get\('\/api\/relatorios\/consolidado'/);
+assert.match(consolidatedController, /Auth::requirePermission\('relatorios', 'visualizar', true\)/);
+assert.match(consolidatedController, /Cache-Control: private, no-store/);
 
 function hash(file) { return crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex'); }
 for (const directory of ['css', 'js', 'img', 'vendor']) {

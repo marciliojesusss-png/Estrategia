@@ -195,6 +195,7 @@
     const centralExecutive = page === "resumoExecutivo";
     const independentInitiativeApproval = page === "iniciativasHomologacao";
     const independentAudit = page === "auditoria";
+    const independentReports = page === "relatorios";
     const storageInfo = independentInitiativeApproval ? null : await DataStore.getStorageInfo();
 
     if (page === "login") {
@@ -216,14 +217,14 @@
 
     const module = window.PageModules && window.PageModules[page];
     if (module) {
-      if (centralExecutive || independentInitiativeApproval || independentAudit) {
+      if (centralExecutive || independentInitiativeApproval || independentAudit || independentReports) {
         await module.init({ user });
       } else {
         const data = await DataStore.loadAll();
         await module.init({ data, user });
       }
     }
-    if (!centralExecutive && !independentInitiativeApproval && window.DataService?.initBaseValidacaoLocal) {
+    if (!centralExecutive && !independentInitiativeApproval && !independentReports && window.DataService?.initBaseValidacaoLocal) {
       window.DataService.initBaseValidacaoLocal();
     }
   }

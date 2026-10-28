@@ -18,7 +18,7 @@ final class AccessPolicy
             'visualizar' => array('administrador', 'homologador', 'consultor_diretoria', 'unidade_apuradora', 'usuario_companhia'),
             'decidir' => array('administrador', 'homologador', 'consultor_diretoria'),
         ),
-        'relatorios' => array('visualizar' => array('administrador')),
+        'relatorios' => array('visualizar' => array('administrador', 'homologador', 'consultor_diretoria', 'unidade_apuradora')),
         'administracao' => array('gerenciar' => array('administrador')),
         'auditoria' => array('visualizar' => array('administrador')),
         'configuracoes' => array('gerenciar' => array('administrador')),

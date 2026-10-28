@@ -54,7 +54,10 @@ assert.deepEqual(scopedLaunches.map((item) => item.id), [253]);
 
 assert.equal(context.window.Auth.canAccess("lancamentos", user), true);
 assert.equal(context.window.Auth.canAccess("relatorios", { perfil: "Administrador" }), true);
-for (const perfil of ["Unidade Apuradora", "Diretoria Homologadora", "Consulta/Gestao", "Consulta/Gestão"]) {
+for (const perfil of ["Unidade Apuradora", "Diretoria Homologadora", "Consultor da Diretoria"]) {
+  assert.equal(context.window.Auth.canAccess("relatorios", { perfil }), true, perfil);
+}
+for (const perfil of ["Consulta/Gestao", "Consulta/Gestão", "Usuario Companhia"]) {
   assert.equal(context.window.Auth.canAccess("relatorios", { perfil }), false, perfil);
 }
 
