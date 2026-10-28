@@ -142,6 +142,42 @@ final class HomologacoesRepository
         return $result;
     }
 
+    public function latestSubmissionMetadata(array $launchIds)
+    {
+        $launchIds = array_values(array_unique(array_filter(array_map('strval', $launchIds), function ($id) {
+            return trim($id) !== '';
+        })));
+        if (!$launchIds) return array();
+
+        $params = array();
+        $placeholders = array();
+        foreach ($launchIds as $index => $launchId) {
+            $placeholder = ':submission_' . $index;
+            $placeholders[] = $placeholder;
+            $params[$placeholder] = $launchId;
+        }
+        $sql = "WITH submissoes AS ("
+            . " SELECT h.id,h.lancamento_id,h.usuario,h.perfil_usuario,h.data_acao,"
+            . " ROW_NUMBER() OVER (PARTITION BY h.lancamento_id ORDER BY "
+            . " TRY_CONVERT(datetimeoffset(7),h.data_acao,127) DESC,"
+            . " TRY_CONVERT(datetimeoffset(7),h.created_at,127) DESC,h.id DESC) AS ordem"
+            . " FROM homologacoes h WHERE h.acao=N'submissao_lancamento'"
+            . " AND h.lancamento_id IN (" . implode(',', $placeholders) . ")"
+            . ") SELECT id,lancamento_id,usuario,perfil_usuario,data_acao FROM submissoes WHERE ordem=1";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        $result = array();
+        foreach ($stmt->fetchAll() as $row) {
+            $result[(string) $row['lancamento_id']] = array(
+                'id' => (string) $row['id'],
+                'usuario' => isset($row['usuario']) ? (string) $row['usuario'] : '',
+                'perfil' => isset($row['perfil_usuario']) ? (string) $row['perfil_usuario'] : '',
+                'data' => isset($row['data_acao']) ? (string) $row['data_acao'] : '',
+            );
+        }
+        return $result;
+    }
+
     public function replaceAll(array $items)
     {
         $update=$this->db->prepare('UPDATE homologacoes SET lancamento_id=:lancamento,acao=:acao,status_anterior=:anterior,status_novo=:novo,justificativa=:justificativa,usuario=:usuario,perfil_usuario=:perfil,data_acao=:data,created_at=:created WHERE id=:id');

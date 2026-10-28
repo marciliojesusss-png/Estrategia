@@ -150,6 +150,7 @@ $dashboardApi=new DashboardApiController();
 $router->get('/api/dashboard/{action}',array($dashboardApi,'handle'));
 $relatorioApi=new RelatorioApiController();
 $router->get('/api/relatorios/consolidado',array($relatorioApi,'consolidado'));
+$router->get('/api/relatorios/indicador/{id}',array($relatorioApi,'indicador'));
 $adminApi=new AdministracaoApiController();
 $router->any('/api/administracao/{resource}',array($adminApi,'handle'));
 $router->any('/api/administracao/{resource}/{id}',array($adminApi,'handle'));

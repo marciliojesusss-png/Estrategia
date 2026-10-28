@@ -408,6 +408,18 @@
       : `/api/relatorios/consolidado?${new URLSearchParams(params).toString()}`;
   }
 
+  function detailedApiUrl(indicatorId, year) {
+    return window.appUrl
+      ? window.appUrl(`api/relatorios/indicador/${encodeURIComponent(indicatorId)}`, { ano: year })
+      : `/api/relatorios/indicador/${encodeURIComponent(indicatorId)}?ano=${encodeURIComponent(year)}`;
+  }
+
+  function detailedReportUrl(indicatorId) {
+    return window.appUrl
+      ? window.appUrl("relatorios", { tipo: "detalhado", indicador: indicatorId })
+      : `/relatorios?tipo=detalhado&indicador=${encodeURIComponent(indicatorId)}`;
+  }
+
   function isActiveAdministrator(user) {
     return user?.perfilCodigo === "administrador" && user?.perfilOriginalCodigo === "administrador";
   }
@@ -538,7 +550,7 @@
       const source = row.fonteDocumental || "—";
       const observation = row.observacaoOficialDisponivel ? '<small class="report-document-note">Observação oficial disponível</small>' : "";
       return `<tr>
-        <td>${String(row.codigo).padStart(2, "0")}</td><td class="report-indicator-name">${escapeHtml(row.indicador)}</td><td>${escapeHtml(row.plano || "—")}</td>
+        <td>${String(row.codigo).padStart(2, "0")}</td><td class="report-indicator-name"><a class="report-detail-link" href="${escapeHtml(detailedReportUrl(row.indicadorId))}">${escapeHtml(row.indicador)}</a><small class="report-document-note no-print">Ver detalhes</small></td><td>${escapeHtml(row.plano || "—")}</td>
         <td>${escapeHtml(row.diretoria || "—")}</td><td>${escapeHtml(row.unidade || "—")}</td><td>${escapeHtml(row.competencia || "—")}</td>
         <td class="report-number">${escapeHtml(formatMeasure(row.metaOficial, row.unidadeMedida))}</td><td class="report-number">${escapeHtml(formatMeasure(row.resultadoOficial, row.unidadeMedida))}</td>
         <td class="report-number">${row.atingimento === null ? "—" : escapeHtml(Calculations.formatarPercentual(row.atingimento))}</td>
@@ -604,8 +616,173 @@
     notice.textContent = error.message;
   }
 
+  function detailedMode() {
+    const params = new URLSearchParams(String(window.location?.search || ""));
+    return params.get("tipo") === "detalhado" && Boolean(params.get("indicador"))
+      ? { indicatorId: params.get("indicador"), year: params.get("ano") || "2026" }
+      : null;
+  }
+
+  function polaridadeLabel(value) {
+    const labels = {
+      quanto_maior_melhor: "Quanto maior, melhor",
+      quanto_menor_melhor: "Quanto menor, melhor",
+      meta_exata: "Meta exata"
+    };
+    return labels[value] || value || "—";
+  }
+
+  function detailedIdentification(payload) {
+    const indicator = payload.indicador || {};
+    const items = [
+      ["Código", String(indicator.codigo || "").padStart(2, "0")], ["Indicador", indicator.nome],
+      ["Plano", indicator.plano], ["Pilar", indicator.pilar], ["Diretoria", indicator.diretoria],
+      ["Unidade apuradora", indicator.unidade], ["Descrição", indicator.descricao], ["Fórmula", indicator.formula],
+      ["Polaridade", polaridadeLabel(indicator.polaridade)], ["Periodicidade", indicator.periodicidade],
+      ["Meta anual", indicator.metaAnual], ["Unidade de medida", indicator.unidadeMedida]
+    ];
+    document.getElementById("detailedReportTitle").textContent = `Relatório Detalhado — Indicador ${String(indicator.codigo || "").padStart(2, "0")} — ${indicator.nome || ""}`;
+    document.getElementById("detailedIndicatorIdentification").innerHTML = items.map(([label, value]) => (
+      `<div><span>${escapeHtml(label)}</span><strong>${escapeHtml(value === null || value === undefined || value === "" ? "—" : value)}</strong></div>`
+    )).join("");
+  }
+
+  function detailedValue(value, payload) {
+    return formatMeasure(value, payload.indicador?.unidadeMedida);
+  }
+
+  function detailedTrajectory(payload) {
+    const body = document.getElementById("detailedTrajectoryTable");
+    body.innerHTML = (payload.trajetoria || []).map((row) => {
+      const situation = situationLabel(row.situacao);
+      return `<tr><td>${escapeHtml(referenceCompetence(row.competencia))}</td>
+        <td class="report-number">${escapeHtml(detailedValue(row.meta, payload))}</td>
+        <td class="report-number">${escapeHtml(detailedValue(row.resultado, payload))}</td>
+        <td class="report-number">${row.atingimento === null ? "—" : escapeHtml(Calculations.formatarPercentual(row.atingimento))}</td>
+        <td><span class="badge ${badgeClass(situation)}">${escapeHtml(situation)}</span></td>
+        <td>${escapeHtml(governanceLabel(row.governanca))}</td><td>${row.versao ?? "—"}</td></tr>`;
+    }).join("");
+  }
+
+  function referenceCompetence(value) {
+    const match = String(value || "").match(/^(\d{4})-(\d{2})$/);
+    if (!match) return value || "—";
+    const month = MONTHS.find(([number]) => number === Number(match[2]));
+    return `${month ? month[1] : match[2]}/${match[1]}`;
+  }
+
+  function detailedQuarterly(payload) {
+    const body = document.getElementById("detailedQuarterTable");
+    body.innerHTML = (payload.fechamentosTrimestrais || []).map((row) => {
+      const situation = situationLabel(row.situacao);
+      return `<tr><td>${escapeHtml(row.trimestre)}</td><td>${escapeHtml(referenceCompetence(row.competencia))}</td>
+        <td class="report-number">${escapeHtml(detailedValue(row.meta, payload))}</td>
+        <td class="report-number">${escapeHtml(detailedValue(row.resultado, payload))}</td>
+        <td class="report-number">${row.atingimento === null ? "—" : escapeHtml(Calculations.formatarPercentual(row.atingimento))}</td>
+        <td><span class="badge ${badgeClass(situation)}">${escapeHtml(situation)}</span></td>
+        <td>${escapeHtml(governanceLabel(row.governanca))}</td><td>${row.versao ?? "—"}</td><td>${escapeHtml(row.fonteDocumental || "—")}</td></tr>`;
+    }).join("");
+  }
+
+  function detailedObservations(payload) {
+    const target = document.getElementById("detailedObservations");
+    const observations = payload.observacoesOficiais || [];
+    if (!observations.length) {
+      target.innerHTML = '<p class="empty-state">Nenhuma observação oficial disponível para o exercício.</p>';
+      return;
+    }
+    target.innerHTML = observations.map((item) => `<article class="detailed-document-card">
+      <header><strong>${escapeHtml(item.trimestre)}</strong><span>${escapeHtml(referenceCompetence(item.competencia))}</span></header>
+      <p>${escapeHtml(item.observacao)}</p><dl><dt>Fonte</dt><dd>${escapeHtml(item.fonte || "—")}</dd>
+      <dt>Páginas</dt><dd>${escapeHtml(item.paginas || "—")}</dd><dt>Tipo</dt><dd>${escapeHtml(item.tipo || "—")}</dd>
+      <dt>Carregado em</dt><dd>${escapeHtml(formatApprovalDate(item.carregadoEm))}</dd></dl></article>`).join("");
+  }
+
+  function evidenceDownloadUrl(id) {
+    return window.appUrl
+      ? window.appUrl(`evidencias/${encodeURIComponent(id)}/download`)
+      : `/evidencias/${encodeURIComponent(id)}/download`;
+  }
+
+  function renderEvidenceRows(targetId, items) {
+    const target = document.getElementById(targetId);
+    if (!items.length) {
+      target.innerHTML = '<tr><td colspan="6">Nenhuma evidência disponível.</td></tr>';
+      return;
+    }
+    target.innerHTML = items.map((item) => `<tr><td>${escapeHtml(referenceCompetence(item.competencia))}</td><td>${item.versao}</td>
+      <td>${escapeHtml(item.nomeArquivo || "—")}${item.descricao ? `<small class="report-document-note">${escapeHtml(item.descricao)}</small>` : ""}</td>
+      <td>${escapeHtml(formatApprovalDate(item.dataUpload))}</td><td>${escapeHtml(item.usuario || "—")}</td>
+      <td class="no-print">${item.podeBaixar ? `<a class="secondary-action table-action" href="${escapeHtml(evidenceDownloadUrl(item.id))}">Baixar</a>` : "—"}</td></tr>`).join("");
+  }
+
+  function detailedEvidence(payload) {
+    const evidence = payload.evidencias || {};
+    renderEvidenceRows("detailedCurrentEvidenceTable", evidence.versaoAtual || []);
+    renderEvidenceRows("detailedHistoricalEvidenceTable", evidence.versoesAnteriores || []);
+  }
+
+  function detailedVersionHistory(payload) {
+    const target = document.getElementById("detailedVersionHistoryTable");
+    const items = payload.historicoVersoes || [];
+    if (!items.length) {
+      target.innerHTML = '<tr><td colspan="9">Nenhuma versão anterior registrada.</td></tr>';
+      return;
+    }
+    target.innerHTML = items.map((item) => `<tr><td>${escapeHtml(referenceCompetence(item.competencia))}</td><td>${item.versao}</td>
+      <td>${escapeHtml(item.status || "—")}</td><td>${escapeHtml(detailedValue(item.meta, payload))}</td>
+      <td>${escapeHtml(detailedValue(item.resultado, payload))}</td><td>${item.atingimento === null ? "—" : escapeHtml(Calculations.formatarPercentual(item.atingimento))}</td>
+      <td>${escapeHtml(situationLabel(item.situacao))}</td><td>${escapeHtml(formatApprovalDate(item.retificadoEm))}</td><td>${escapeHtml(item.retificadoPor || "—")}</td></tr>`).join("");
+  }
+
+  function detailedGovernance(payload) {
+    const target = document.getElementById("detailedGovernanceTable");
+    const items = payload.governancaResumida || [];
+    if (!items.length) {
+      target.innerHTML = '<tr><td colspan="7">Nenhuma posição homologada no exercício.</td></tr>';
+      return;
+    }
+    target.innerHTML = items.map((item) => `<tr><td>${escapeHtml(referenceCompetence(item.competencia))}</td><td>${item.versao}</td>
+      <td>${escapeHtml(governanceLabel(item.governanca))}</td><td>${escapeHtml(formatApprovalDate(item.submetidoEm))}</td>
+      <td>${escapeHtml(item.submetidoPor || "—")}</td><td>${escapeHtml(formatApprovalDate(item.homologadoEm))}</td><td>${escapeHtml(item.homologadoPor || "—")}</td></tr>`).join("");
+  }
+
+  function detailedContext(payload) {
+    const generatedAt = formatApprovalDate(payload.geradoEm);
+    const generatedBy = [payload.geradoPor?.nome, payload.geradoPor?.matricula].filter(Boolean).join(" — ") || "—";
+    document.getElementById("detailedContextYear").textContent = payload.ano;
+    document.getElementById("detailedContextScope").textContent = payload.escopo;
+    document.getElementById("detailedContextGeneratedAt").textContent = generatedAt;
+    document.getElementById("detailedContextGeneratedBy").textContent = generatedBy;
+    document.getElementById("detailedReportFooterGeneration").textContent = `Gerado por ${generatedBy} em ${generatedAt}`;
+  }
+
+  async function loadDetailedReport(mode) {
+    const response = await fetch(detailedApiUrl(mode.indicatorId, mode.year), { cache: "no-store", headers: { Accept: "application/json" } });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok || body.sucesso === false) throw new Error(body.mensagem || "Não foi possível carregar o relatório detalhado.");
+    const payload = body.dados || body;
+    detailedContext(payload); detailedIdentification(payload); detailedTrajectory(payload);
+    detailedQuarterly(payload); detailedObservations(payload); detailedEvidence(payload);
+    detailedVersionHistory(payload); detailedGovernance(payload);
+  }
+
+  function showDetailedError(error) {
+    const notice = document.getElementById("detailedReportNotice");
+    notice.hidden = false;
+    notice.textContent = error.message;
+  }
+
   async function init({ user }) {
     officialState.user = user;
+    const mode = detailedMode();
+    if (mode) {
+      document.getElementById("officialConsolidatedReport").hidden = true;
+      document.getElementById("detailedIndicatorReport").hidden = false;
+      document.getElementById("printDetailedReport")?.addEventListener("click", () => window.print());
+      await loadDetailedReport(mode).catch(showDetailedError);
+      return;
+    }
     updatePositionFilters();
     bindOfficialEvents();
     await loadOfficialReport();
@@ -622,6 +799,7 @@
   window.PageModules = window.PageModules || {};
   window.PageModules.relatorios = { init };
   window.__REPORTS_TEST_INTERNALS__ = {
-    governanceLabel, situationLabel, formatMeasure, formatApprovalDate, isActiveAdministrator
+    governanceLabel, situationLabel, formatMeasure, formatApprovalDate, isActiveAdministrator,
+    detailedMode, referenceCompetence, polaridadeLabel, detailedApiUrl, detailedReportUrl, evidenceDownloadUrl
   };
 })();

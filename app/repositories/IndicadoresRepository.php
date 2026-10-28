@@ -112,6 +112,11 @@ final class IndicadoresRepository
     {
         $conditions = array();
         $params = array();
+        $indicatorId = isset($filters['indicadorId']) ? trim((string) $filters['indicadorId']) : (isset($filters['id']) ? trim((string) $filters['id']) : '');
+        if ($indicatorId !== '') {
+            $conditions[] = 'id = :indicador_id';
+            $params[':indicador_id'] = $indicatorId;
+        }
         $allowed = array('plano', 'pilar', 'unidade_apuradora', 'diretoria_responsavel');
         foreach ($allowed as $column) {
             $value = isset($filters[$column]) ? trim((string) $filters[$column]) : '';

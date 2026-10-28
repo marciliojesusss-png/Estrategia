@@ -30,8 +30,12 @@ const consolidatedController = fs.readFileSync(path.join(root, 'app', 'controlle
 assert.match(publicReports, /Auth::requirePagePermission\('relatorios', 'visualizar'\)/);
 assert.match(reportsApi, /Auth::requireApiProfiles\(array\('administrador'\)\)/);
 assert.match(publicIndex, /\$router->get\('\/api\/relatorios\/consolidado'/);
+assert.match(publicIndex, /\$router->get\('\/api\/relatorios\/indicador\/\{id\}'/);
 assert.match(consolidatedController, /Auth::requirePermission\('relatorios', 'visualizar', true\)/);
 assert.match(consolidatedController, /Cache-Control: private, no-store/);
+assert.match(consolidatedController, /function indicador\(\$id\)/);
+assert.match(consolidatedController, /RelatorioIndicadorService/);
+assert.match(consolidatedController, /UnexpectedValueException[\s\S]*403/);
 
 function hash(file) { return crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex'); }
 for (const directory of ['css', 'js', 'img', 'vendor']) {

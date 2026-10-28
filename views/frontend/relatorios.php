@@ -16,7 +16,7 @@
   <script src="<?= APP_BASE_PATH ?>/assets/js/dataService.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/auth.js?v=GOVERNANCA-CA-001" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/calculations.js?v=PLATAFORMA-JOGOS-001" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/reports.js?v=RELATORIO-CONSOLIDADO-001" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/reports.js?v=RELATORIO-DETALHADO-001" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/app.js?v=APP-VERSION-001" defer></script>
 </head>
 <body data-page="relatorios">
@@ -58,6 +58,45 @@
           </table>
         </div>
         <footer class="official-report-footer"><span>Sistema Estratégia — CAIXA Loterias</span><span id="officialReportFooterGeneration">—</span></footer>
+      </article>
+
+      <article id="detailedIndicatorReport" class="official-report detailed-indicator-report" aria-labelledby="detailedReportTitle" hidden>
+        <header class="official-report-header">
+          <div><p class="official-report-system">Sistema Estratégia</p><h2 id="detailedReportTitle">Relatório Detalhado do Indicador</h2></div>
+          <div class="row-actions no-print"><a id="backToConsolidatedReport" class="secondary-action" href="<?= APP_BASE_PATH ?>/relatorios">Voltar ao Consolidado</a><button id="printDetailedReport" class="primary-action" type="button">Imprimir relatório detalhado</button></div>
+        </header>
+        <section class="official-report-context" aria-label="Identificação da geração do relatório detalhado">
+          <div><span>Exercício</span><strong id="detailedContextYear">—</strong></div><div><span>Escopo</span><strong id="detailedContextScope">—</strong></div>
+          <div><span>Gerado em</span><strong id="detailedContextGeneratedAt">—</strong></div><div><span>Gerado por</span><strong id="detailedContextGeneratedBy">—</strong></div>
+        </section>
+        <div id="detailedReportNotice" class="notice warning no-print" hidden></div>
+
+        <section class="detailed-report-section" aria-labelledby="detailedIdentificationTitle">
+          <h3 id="detailedIdentificationTitle">Identificação</h3><div id="detailedIndicatorIdentification" class="detail-grid detailed-identification-grid"></div>
+        </section>
+        <section class="detailed-report-section" aria-labelledby="detailedTrajectoryTitle">
+          <h3 id="detailedTrajectoryTitle">Evolução JAN–DEZ</h3><p class="help-text">Somente posições homologadas vigentes são apresentadas como oficiais.</p>
+          <div class="table-wrap"><table class="detailed-report-table"><thead><tr><th>Competência</th><th>Meta</th><th>Resultado</th><th>Atingimento</th><th>Situação</th><th>Governança</th><th>Versão</th></tr></thead><tbody id="detailedTrajectoryTable"></tbody></table></div>
+        </section>
+        <section class="detailed-report-section" aria-labelledby="detailedQuarterTitle">
+          <h3 id="detailedQuarterTitle">Fechamentos trimestrais</h3>
+          <div class="table-wrap"><table class="detailed-report-table"><thead><tr><th>Trimestre</th><th>Competência</th><th>Meta</th><th>Resultado</th><th>Atingimento</th><th>Situação</th><th>Governança</th><th>Versão</th><th>Fonte documental</th></tr></thead><tbody id="detailedQuarterTable"></tbody></table></div>
+        </section>
+        <section class="detailed-report-section" aria-labelledby="detailedObservationsTitle">
+          <h3 id="detailedObservationsTitle">Observação oficial da área</h3><div id="detailedObservations" class="detailed-document-grid"></div>
+        </section>
+        <section class="detailed-report-section" aria-labelledby="detailedEvidenceTitle">
+          <h3 id="detailedEvidenceTitle">Evidências</h3><h4>Evidência da versão atual</h4>
+          <div class="table-wrap"><table class="detailed-report-table"><thead><tr><th>Competência</th><th>Versão</th><th>Arquivo</th><th>Data do upload</th><th>Usuário</th><th class="no-print">Ação</th></tr></thead><tbody id="detailedCurrentEvidenceTable"></tbody></table></div>
+          <details id="detailedHistoricalEvidence" class="detailed-collapsible no-print-closed"><summary>Evidências de versões anteriores</summary><div class="table-wrap"><table class="detailed-report-table"><thead><tr><th>Competência</th><th>Versão</th><th>Arquivo</th><th>Data do upload</th><th>Usuário</th><th class="no-print">Ação</th></tr></thead><tbody id="detailedHistoricalEvidenceTable"></tbody></table></div></details>
+        </section>
+        <section class="detailed-report-section" aria-labelledby="detailedVersionTitle">
+          <h3 id="detailedVersionTitle">Histórico de versões</h3><details id="detailedVersionHistory" class="detailed-collapsible no-print-closed"><summary>Ver histórico de versões</summary><div class="table-wrap"><table class="detailed-report-table"><thead><tr><th>Competência</th><th>Versão</th><th>Status</th><th>Meta</th><th>Resultado</th><th>Atingimento</th><th>Situação</th><th>Retificado em</th><th>Retificado por</th></tr></thead><tbody id="detailedVersionHistoryTable"></tbody></table></div></details>
+        </section>
+        <section class="detailed-report-section" aria-labelledby="detailedGovernanceTitle">
+          <h3 id="detailedGovernanceTitle">Governança resumida</h3><div class="table-wrap"><table class="detailed-report-table"><thead><tr><th>Competência</th><th>Versão</th><th>Governança</th><th>Submetido em</th><th>Submetido por</th><th>Homologado em</th><th>Homologado por</th></tr></thead><tbody id="detailedGovernanceTable"></tbody></table></div>
+        </section>
+        <footer class="official-report-footer"><span>Sistema Estratégia — CAIXA Loterias</span><span id="detailedReportFooterGeneration">—</span></footer>
       </article>
 
       <section id="operationalReportsSection" class="operational-report-section no-print" hidden>
