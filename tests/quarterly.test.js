@@ -1393,42 +1393,35 @@ const ecossistemaCenariosQuarter = consolidarTrimestre(
   { id: 22, indicador: "Arrecadação Gerada com o Ecossistema", unidadeMedida: "percentual" },
   {
     indicadorId: 22,
-    tipoCalculo: "participacao_ecossistema_com_cenarios",
-    tipoConsolidacao: "ultima_posicao",
+    tipoCalculo: "participacao_ecossistema_lotex",
+    tipoConsolidacao: "ultima_posicao_acumulada",
     unidadeMedida: "percentual",
-    metaAnualValor: 0.10,
+    metaAnualValor: 1.10,
     parametrosCalculo: {
-      campoCenario: "cenarioApuracaoEcossistema",
-      campoNumerador: "arrecadacaoViaEcossistema",
-      campoDenominador: "arrecadacaoTotal",
-      cenarioOficialResumoExecutivo: "lotex_marketplace",
-      curvasCenarios: {
-        lotex: { "1TRI": { referencia2025: 0.90, meta2026: 0.99 } },
-        lotex_marketplace: { "1TRI": { referencia2025: 3.42, meta2026: 3.76 } }
-      },
-      cenarios: [
-        { value: "lotex", label: "Lotex" },
-        { value: "lotex_marketplace", label: "Lotex + Marketplace" }
-      ]
+      mesesFechamentoTrimestral: [3, 6, 9, 12],
+      apresentacoesOficiaisTrimestrais: {
+        "1TRI": { metaOficialReportada: 0.0099, resultadoOficialReportado: 0.0067, percentualAtingidoOficialReportado: 0.6712, situacaoOficial: "Abaixo da meta", fonte: "Informe DILOT/GERIN nº 0029/2026" }
+      }
     },
     camposEntrada: [
-      { nome: "cenarioApuracaoEcossistema", obrigatorio: true },
-      { nome: "arrecadacaoViaEcossistema", obrigatorio: true },
-      { nome: "arrecadacaoTotal", obrigatorio: true }
+      { nome: "arrTotal2025", obrigatorio: true },
+      { nome: "arrEcoLotex2025", obrigatorio: true },
+      { nome: "arrTotal2026", obrigatorio: false },
+      { nome: "arrEcoLotex2026", obrigatorio: false }
     ]
   },
   [
-    { ano: 2026, mes: 3, status: "Homologado", competencia: "2026-03", trimestre: "1TRI/2026", camposEntrada: { cenarioApuracaoEcossistema: "lotex_marketplace", arrecadacaoViaEcossistema: 242300000, arrecadacaoTotal: 5966900000 } }
+    { ano: 2026, mes: 3, status: "Homologado", metaMensal: 0.0099, competencia: "2026-03", trimestre: "1TRI/2026", camposEntrada: { arrTotal2025: 5504494123.70, arrEcoLotex2025: 49752400, arrEcoMarketplace2025: 138489885.56, arrTotal2026: 5966912490.55, arrEcoLotex2026: 39819048.75, arrEcoMarketplace2026: 202465482.39, tipoPosicaoEcossistema: "fechamento_trimestral", metaDocumentalEcossistema: 0.0099, resultadoDocumentalEcossistema: 0.0067, percentualAtingidoOficialEcossistema: 0.6712, fonteResultadoEcossistema: "Informe DILOT/GERIN nº 0029/2026" } }
   ],
   "1TRI/2026"
 );
-assert.equal(ecossistemaCenariosQuarter.statusTrimestre, "Parcial");
-assert.ok(Math.abs(ecossistemaCenariosQuarter.metaTrimestral - 0.0376) < 0.000001);
-assert.ok(Math.abs(ecossistemaCenariosQuarter.resultadoTrimestral - (242300000 / 5966900000)) < 0.000001);
-assert.ok(Math.abs(ecossistemaCenariosQuarter.desempenhoTrimestral - ((242300000 / 5966900000) / 0.0376)) < 0.000001);
-assert.equal(ecossistemaCenariosQuarter.cenarioEcossistemaLabel, "Lotex + Marketplace");
-assert.ok(Math.abs(ecossistemaCenariosQuarter.referencia2025EcossistemaTrimestre - 0.0342) < 0.000001);
-assert.equal(ecossistemaCenariosQuarter.situacaoTrimestral, "Atingido");
+assert.equal(ecossistemaCenariosQuarter.statusTrimestre, "Fechado");
+assert.equal(ecossistemaCenariosQuarter.metaTrimestral, 0.0099);
+assert.equal(ecossistemaCenariosQuarter.resultadoTrimestral, 0.0067);
+assert.equal(ecossistemaCenariosQuarter.desempenhoTrimestral, 0.6712);
+assert.equal(ecossistemaCenariosQuarter.cenarioEcossistemaLabel, "Lotex");
+assert.ok(Math.abs(ecossistemaCenariosQuarter.referencia2025EcossistemaTrimestre - (49752400 / 5504494123.70)) < 0.000001);
+assert.equal(ecossistemaCenariosQuarter.situacaoTrimestral, "Abaixo da meta");
 
 const redeLotericaQuarter = consolidarTrimestre(
   { id: 23, indicador: "Participação da Rede Lotérica nos Negócios", unidadeMedida: "percentual" },

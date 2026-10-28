@@ -63,6 +63,153 @@
     return launch?.nomeMes || monthName(launch?.mes);
   }
 
+  function isIndicator22Rule(regra) {
+    return regra?.tipoCalculo === "participacao_ecossistema_lotex" || Number(regra?.indicadorId) === 22;
+  }
+
+  function indicator22IsClosure(lancamento) {
+    return [3, 6, 9, 12].includes(Number(lancamento?.mes));
+  }
+
+  function indicator22AnnualGoalText(lancamento) {
+    return Number(lancamento?.mes) <= 7
+      ? "Meta 2026: crescimento mínimo de 10% sobre o resultado de 2025."
+      : "Meta 2026: crescimento mínimo de 1% sobre o resultado de 2025.";
+  }
+
+  function indicator22FormatPercent(value, minimumFractionDigits = 2, maximumFractionDigits = 2) {
+    const number = toNumberOrNull(value);
+    return number === null ? "—" : Calculations.formatarPercentual(number, minimumFractionDigits, maximumFractionDigits);
+  }
+
+  function indicator22FormatCurrency(value) {
+    const number = toNumberOrNull(value);
+    return number === null ? "—" : Calculations.formatarValor(number, "moeda");
+  }
+
+  function indicator22OfficialPresentation(regra, lancamento, resultado = {}) {
+    const visible = indicator22IsClosure(lancamento);
+    const quarterKey = `${Math.ceil(Number(lancamento?.mes) / 3)}TRI`;
+    const configured = regra?.parametrosCalculo?.apresentacoesOficiaisTrimestrais?.[quarterKey] || {};
+    const memory = lancamento?.camposEntrada || {};
+    return {
+      visible,
+      meta: toNumberOrNull(resultado.metaOficialDocumental ?? memory.metaDocumentalEcossistema ?? configured.metaOficialReportada),
+      result: toNumberOrNull(resultado.resultadoOficialDocumental ?? memory.resultadoDocumentalEcossistema ?? configured.resultadoOficialReportado),
+      performance: toNumberOrNull(resultado.percentualAtingidoOficialDocumental ?? memory.percentualAtingidoOficialEcossistema ?? configured.percentualAtingidoOficialReportado),
+      source: resultado.fonteResultadoEcossistema || memory.fonteResultadoEcossistema || configured.fonte || null
+    };
+  }
+
+  function indicator22PresentationModel(resultado, regra, lancamento) {
+    const memory = lancamento?.camposEntrada || {};
+    const official = indicator22OfficialPresentation(regra, lancamento, resultado);
+    const history = regra?.parametrosCalculo?.historicoRevisao;
+    const factor = toNumberOrNull(resultado.fatorMetaVigente);
+    const memoryDetails = [
+      ["ARR Total 2025", indicator22FormatCurrency(resultado.arrTotal2025 ?? memory.arrTotal2025)],
+      ["ARR Lotex 2025", indicator22FormatCurrency(resultado.arrEcoLotex2025 ?? memory.arrEcoLotex2025)],
+      ["ARR Marketplace 2025 — auxiliar", indicator22FormatCurrency(resultado.arrEcoMarketplace2025 ?? memory.arrEcoMarketplace2025)],
+      ["Referência Lotex 2025", indicator22FormatPercent(resultado.referenciaLotex2025, 6, 8)],
+      ["Fator estratégico vigente", factor === null ? "—" : `Referência × ${factor.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
+      ["Meta técnica completa", indicator22FormatPercent(resultado.metaTecnica2026, 6, 8)],
+      ["ARR Marketplace 2026 — auxiliar", indicator22FormatCurrency(resultado.arrEcoMarketplace2026 ?? memory.arrEcoMarketplace2026)],
+      ["Resultado técnico Lotex", indicator22FormatPercent(resultado.resultadoTecnicoLotex, 6, 8)],
+      ["Atingimento técnico", indicator22FormatPercent(resultado.atingimentoTecnicoLotex, 6, 8)],
+      ["Cenário oficial", "Lotex"],
+      ["Marketplace participa do cálculo oficial", "Não"]
+    ];
+    if (history?.metasRetrospectivas) {
+      memoryDetails.push([
+        "Histórico da revisão — não aplicado ao cálculo",
+        `1TRI ${indicator22FormatPercent(history.metasRetrospectivas["1TRI"])} · 2TRI ${indicator22FormatPercent(history.metasRetrospectivas["2TRI"])}`
+      ]);
+    }
+    return {
+      summary: [
+        ["Meta da competência", indicator22FormatPercent(resultado.metaTecnica2026)],
+        ["Resultado Lotex", indicator22FormatPercent(resultado.resultadoTecnicoLotex)],
+        ["Atingimento da meta", indicator22FormatPercent(resultado.atingimentoTecnicoLotex)],
+        ["Situação", resultado.situacao || "—"]
+      ],
+      official,
+      memoryDetails,
+      annualGoal: indicator22AnnualGoalText(lancamento),
+      source: memory.fonteResultadoEcossistema || (official.visible ? official.source : null) || "Tabela mensal de acompanhamento"
+    };
+  }
+
+  function renderIndicator22Experience(resultado, regra, lancamento) {
+    const summarySection = document.getElementById("indicator22SummarySection");
+    const officialSection = document.getElementById("indicator22OfficialSection");
+    const memorySection = document.getElementById("indicator22MemorySection");
+    if (!summarySection || !officialSection || !memorySection) return;
+
+    const active = isIndicator22Rule(regra);
+    summarySection.hidden = !active;
+    memorySection.hidden = !active;
+    if (!active) {
+      officialSection.hidden = true;
+      return;
+    }
+
+    const model = indicator22PresentationModel(resultado, regra, lancamento);
+    document.getElementById("indicator22SummaryGrid").innerHTML = model.summary.map(([label, value], index) => `
+      <article class="indicator22-summary-card${index === 3 ? " indicator22-summary-status" : ""}">
+        <span>${escapeHtml(label)}</span>
+        <strong>${escapeHtml(value)}</strong>
+      </article>
+    `).join("");
+
+    officialSection.hidden = !model.official.visible;
+    document.getElementById("indicator22OfficialGrid").innerHTML = model.official.visible
+      ? [
+        ["Meta oficial", indicator22FormatPercent(model.official.meta)],
+        ["Resultado oficial", indicator22FormatPercent(model.official.result)],
+        ["Atingimento oficial", indicator22FormatPercent(model.official.performance)],
+        ["Fonte", model.official.source || "—"]
+      ].map(([label, value]) => `
+        <article class="indicator22-official-item">
+          <span>${escapeHtml(label)}</span>
+          <strong>${escapeHtml(value)}</strong>
+        </article>
+      `).join("")
+      : "";
+
+    document.getElementById("indicator22MemoryGrid").innerHTML = model.memoryDetails.map(([label, value]) => `
+      <article class="indicator22-memory-item">
+        <span>${escapeHtml(label)}</span>
+        <strong>${escapeHtml(value)}</strong>
+      </article>
+    `).join("");
+  }
+
+  function applyIndicator22Layout(regra) {
+    const active = isIndicator22Rule(regra);
+    const form = document.getElementById("launchForm");
+    form?.classList.toggle("indicator22-editor", active);
+
+    const genericElements = [
+      document.getElementById("launchMeta")?.closest("label"),
+      document.getElementById("launchResultadoMensal")?.closest("label"),
+      document.getElementById("percentualMensalWrapper"),
+      document.getElementById("resultadoAnualWrapper"),
+      document.getElementById("percentualAnualWrapper"),
+      document.getElementById("situacaoCalculadaWrapper"),
+      document.getElementById("formulaDetailsWrapper")
+    ];
+    if (active) genericElements.forEach((element) => { if (element) element.hidden = true; });
+
+    if (!active) {
+      const summarySection = document.getElementById("indicator22SummarySection");
+      const officialSection = document.getElementById("indicator22OfficialSection");
+      const memorySection = document.getElementById("indicator22MemorySection");
+      if (summarySection) summarySection.hidden = true;
+      if (officialSection) officialSection.hidden = true;
+      if (memorySection) memorySection.hidden = true;
+    }
+  }
+
   function officialOperationalLaunches(launches, indicators) {
     const byId = Object.fromEntries((indicators || []).map((indicator) => [String(indicator.id), indicator]));
     return (launches || []).filter((launch) => {
@@ -472,7 +619,7 @@
     }
     if (regra?.tipoCalculo === "melhorias_acumuladas") return "Meta acumulada do período";
     if (regra?.parametrosCalculo?.metaTipo === "meta_oficial_trimestral_projeto") return "Meta oficial do período";
-    if (regra?.tipoCalculo === "participacao_ecossistema_com_cenarios") return "Meta trimestral 2026";
+    if (["participacao_ecossistema_lotex", "participacao_ecossistema_com_cenarios"].includes(regra?.tipoCalculo)) return "Meta de participação Lotex 2026";
     if (regra?.tipoCalculo === "crescimento_comparado_base_2025") return "Meta em indice (110% da base 2025)";
     if (regra?.tipoCalculo === "crescimento_rede_loterica_base_2025") return "Meta em índice";
     if (isIeoRule(regra)) return "Meta de referência da competência";
@@ -528,6 +675,9 @@
     if (regra?.tipoCalculo === "melhorias_acumuladas") {
       const trimestre = lancamento?.trimestre || `${Math.ceil(Number(lancamento?.mes) / 3)}TRI/${lancamento?.ano || 2026}`;
       return regra?.parametrosCalculo?.curvaTrimestralAcumulada?.[trimestre]?.metaPercentual ?? null;
+    }
+    if (regra?.tipoCalculo === "participacao_ecossistema_lotex") {
+      return lancamento?.metaReferencia ?? lancamento?.metaMensal ?? regra?.parametrosCalculo?.metasTecnicasPorCompetencia?.[lancamento?.competencia] ?? null;
     }
     if (regra?.tipoCalculo === "participacao_ecossistema_com_cenarios") {
       const curve = getEcossistemaCurveForLaunch(regra, lancamento, lancamento?.camposEntrada?.cenarioApuracaoEcossistema);
@@ -593,7 +743,7 @@
   }
 
   function normalizeEcossistemaScenario(value, regra) {
-    const fallback = regra?.parametrosCalculo?.cenarioOficialResumoExecutivo || "lotex_marketplace";
+    const fallback = "lotex";
     const text = String(value || fallback)
       .toLocaleLowerCase("pt-BR")
       .normalize("NFD")
@@ -602,7 +752,7 @@
       .replace(/\+/g, "_")
       .replace(/_+/g, "_");
     if (text === "lotex") return "lotex";
-    if (["lotex_marketplace", "lotex_e_marketplace"].includes(text)) return "lotex_marketplace";
+    if (["lotex_marketplace", "lotex_e_marketplace"].includes(text)) return "lotex";
     return fallback;
   }
 
@@ -906,7 +1056,7 @@
 
   function shouldHideGoalAchievementFields(indicador, regra) {
     if (isIeoRule(regra)) return false;
-    if (regra?.tipoCalculo === "participacao_ecossistema_com_cenarios") return false;
+    if (["participacao_ecossistema_lotex", "participacao_ecossistema_com_cenarios"].includes(regra?.tipoCalculo)) return false;
     if (["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(regra?.tipoCalculo)) return false;
     if (isOfertasPersonalizadasIndicator(indicador, regra)) return false;
     if (regra?.tipoCalculo === "melhorias_acumuladas") return false;
@@ -1016,7 +1166,7 @@
       ["Tipo de cálculo", regra.tipoCalculo],
       ["Consolidação anual", regra.tipoConsolidacao],
       ["Exige evidência", regra.exigeEvidenciaNosFechamentos ? "Somente nos fechamentos trimestrais" : regra.exigeEvidencia ? "Sim" : "Não"],
-      ["Meta anual", indicador.metaAnualDescricao, true],
+      ["Meta anual", Number(indicador.id) === 22 ? indicator22AnnualGoalText(lancamento) : indicador.metaAnualDescricao, true],
       ...(metodologiaIeo ? [
         ["Metodologia vigente", metodologiaIeo.descricao, true],
         ["Fórmula vigente", metodologiaIeo.formula, true]
@@ -1103,6 +1253,8 @@
         ? "Evolução oficial do projeto"
       : ["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(regra?.tipoCalculo)
         ? "Índice 2026/2025"
+      : regra?.tipoCalculo === "participacao_ecossistema_lotex"
+        ? "Resultado Lotex da competência"
       : "Resultado da competência";
     document.getElementById("launchPercentualCalculadoLabel").textContent = regra?.tipoCalculo === "marco_projeto_percentual"
       ? "Atingimento oficial"
@@ -1110,6 +1262,8 @@
       ? "% atingido"
       : ["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(regra?.tipoCalculo)
         ? "Atingimento técnico"
+      : regra?.tipoCalculo === "participacao_ecossistema_lotex"
+        ? "Atingimento técnico da meta"
       : "% da meta atingida";
     document.getElementById("launchResultadoAcumuladoLabel").textContent = isIeoRule(regra)
       ? "Posição acumulada até a competência"
@@ -1121,6 +1275,8 @@
         ? "Índice acumulado 2026/2025"
       : isOfertasPersonalizadasIndicator(indicador, regra)
         ? "Resultado oficial do indicador"
+      : regra?.tipoCalculo === "participacao_ecossistema_lotex"
+        ? "Última posição anual disponível"
       : "Resultado oficial anual";
     document.getElementById("launchPercentualAcumuladoLabel").textContent = regra?.tipoCalculo === "lucro_recorrente_mensal"
       ? "% da meta acumulada"
@@ -1149,6 +1305,7 @@
     updateCapacitacaoPositionFields(regra, getSelectedLaunch());
     updateAprimoramentoPositionFields(regra, getSelectedLaunch());
     updateNpsPositionFields(regra, getSelectedLaunch());
+    applyIndicator22Layout(regra);
   }
 
   function getCalculatedSituation(percentualAtingido) {
@@ -1168,6 +1325,37 @@
     const regraCompetencia = camposIeo ? { ...regra, camposEntrada: camposIeo } : regra;
     const values = getEntryValuesFromLaunch(lancamento, regraCompetencia);
     document.getElementById("realizadoWrapper").hidden = hasSpecificInputRule(regra);
+    if (isIndicator22Rule(regra)) {
+      const fields = Object.fromEntries((regra.camposEntrada || []).map((field) => [field.nome, field]));
+      const totalField = {
+        ...(fields.arrTotal2026 || { nome: "arrTotal2026", tipo: "moeda" }),
+        rotulo: "Arrecadação Total 2026"
+      };
+      const lotexField = {
+        ...(fields.arrEcoLotex2026 || { nome: "arrEcoLotex2026", tipo: "moeda" }),
+        rotulo: "Arrecadação Lotex 2026"
+      };
+      const sourceValue = values.fonteResultadoEcossistema || "";
+      const sourceMarkup = indicator22IsClosure(lancamento)
+        ? renderEntryInput({
+          ...(fields.fonteResultadoEcossistema || { nome: "fonteResultadoEcossistema", tipo: "texto" }),
+          rotulo: "Fonte"
+        }, sourceValue)
+        : `<label>Fonte
+            <input class="indicator22-source-display" type="text" value="${escapeHtml(sourceValue || "Tabela mensal de acompanhamento")}" readonly>
+          </label>`;
+      document.getElementById("dynamicInputFields").innerHTML = `
+        <div class="indicator22-input-help full-span">
+          <strong>Dados que compõem o resultado Lotex</strong>
+          <span>Informe os valores acumulados da competência. Os demais componentes ficam disponíveis na memória de cálculo.</span>
+        </div>
+        ${renderEntryInput(totalField, values.arrTotal2026 ?? "")}
+        ${renderEntryInput(lotexField, values.arrEcoLotex2026 ?? "")}
+        ${sourceMarkup}
+      `;
+      updateEcossistemaCurveFields(regra, lancamento);
+      return;
+    }
     if (isIeoRule(regra)) {
       const metodologiaCa = metodologiaIeo?.codigo === "ca_agosto_2026";
       const mainFields = camposIeo.filter((field) => field.nome !== "ieoApuradoInformado");
@@ -1430,6 +1618,26 @@
   }
 
   function updateEcossistemaCurveFields(regra, lancamento) {
+    if (regra?.tipoCalculo === "participacao_ecossistema_lotex") {
+      const total2025 = CurrencyBR.parseMoedaBR(document.querySelector('[data-entry-field="arrTotal2025"]')?.value || "");
+      const lotex2025 = CurrencyBR.parseMoedaBR(document.querySelector('[data-entry-field="arrEcoLotex2025"]')?.value || "");
+      const reference = total2025 > 0 && lotex2025 !== null ? lotex2025 / total2025 : null;
+      const factor = Number(lancamento?.mes) <= 7 ? 1.10 : 1.01;
+      const target = reference === null ? null : reference * factor;
+      const values = {
+        referenciaLotex2025: reference,
+        fatorMetaVigente: factor,
+        metaParticipacao2026: target
+      };
+      Object.entries(values).forEach(([fieldName, value]) => {
+        const input = document.querySelector(`[data-entry-field="${fieldName}"]`);
+        if (input) input.value = value === null ? "" : `${(value * 100).toLocaleString("pt-BR", { maximumFractionDigits: 12 })}%`;
+      });
+      const metaInput = document.getElementById("launchMeta");
+      const officialTarget = lancamento?.metaReferencia ?? lancamento?.metaMensal ?? target;
+      if (metaInput) metaInput.value = Calculations.formatarValor(officialTarget, regra.unidadeMedida);
+      return;
+    }
     if (regra?.tipoCalculo !== "participacao_ecossistema_com_cenarios") return;
     const scenarioInput = document.querySelector('[data-entry-field="cenarioApuracaoEcossistema"]');
     const referenceInput = document.querySelector('[data-entry-field="referencia2025Trimestre"]');
@@ -1874,6 +2082,8 @@
     document.getElementById("launchStatusBadge").className = `badge ${badgeClass(lancamento.status)}`;
     renderReference(indicador, lancamento, regra);
     renderDynamicFields(lancamento, regra);
+    const indicator22Memory = document.getElementById("indicator22MemorySection");
+    if (indicator22Memory) indicator22Memory.open = false;
 
     document.getElementById("launchId").value = lancamento.id;
     document.getElementById("launchMetaLabel").textContent = getMetaLabel(regra);
@@ -1886,11 +2096,19 @@
         observation: lancamento.observacaoArea || "",
         reference: lancamento.referenciaEvidencia || lancamento.linkEvidencia || ""
       };
-    document.getElementById("launchObservacaoArea").value = documentation.observation;
+    const observationField = document.getElementById("launchObservacaoArea");
+    observationField.value = documentation.observation;
+    observationField.readOnly = Boolean(documentation.readOnly);
+    const documentaryInformation = document.getElementById("launchDocumentaryObservation");
+    documentaryInformation.hidden = !documentation.isDocumentaryOfficial;
+    document.getElementById("launchDocumentaryObservationNotice").textContent = documentation.documentaryNotice || "";
+    document.getElementById("launchDocumentaryObservationSource").textContent = documentation.documentarySource || "-";
     document.getElementById("launchEvidenceReference").value = documentation.reference;
     document.getElementById("launchMetrica").value = isIeoRule(regra)
       ? window.IeoRecorrente?.getMetodologiaIeoPorCompetencia?.(lancamento)?.formula || indicador.metrica || ""
-      : indicador.metrica || "";
+      : isIndicator22Rule(regra)
+        ? "(Arrecadação Eco Lotex / Arrecadação Total) × 100\nAtingimento = Resultado Lotex / Meta da competência × 100"
+        : indicador.metrica || "";
     document.getElementById("manualPercentWrapper").hidden = !isManual(indicador);
     document.getElementById("evidenceRequirementText").textContent = evidenceRequirementLabel(regra, lancamento, indicador);
     const legacyJustification = document.getElementById("legacyLaunchJustification");
@@ -1904,6 +2122,7 @@
     updateCalculatedPreview();
     const disabled = !isEditable(lancamento);
     setFormDisabled(disabled);
+    observationField.readOnly = Boolean(documentation.readOnly);
     enforceRuleFieldState(indicador, regra, disabled);
     document.getElementById("sendApprovalButton").textContent =
       lancamento.status === "Devolvido para ajuste" ? "Reenviar para homologação" : "Enviar para homologação";
@@ -2051,6 +2270,10 @@
           : Calculations.formatarInteiroBR(result.resultado.melhoriasImplementadasAcumuladas);
       }
     }
+    if (result.regra?.tipoCalculo === "participacao_ecossistema_lotex") {
+      document.getElementById("resultadoAnualWrapper").hidden = true;
+      document.getElementById("percentualAnualWrapper").hidden = true;
+    }
     if (result.regra?.parametrosCalculo?.metaTipo === "meta_oficial_trimestral_projeto") {
       document.getElementById("percentualMensalWrapper").hidden = false;
       document.getElementById("resultadoAnualWrapper").hidden = true;
@@ -2078,6 +2301,8 @@
         : "Sem cálculo";
     }
     renderFormulaDetails(result.resultado, result.regra, lancamento);
+    renderIndicator22Experience(result.resultado, result.regra, lancamento);
+    applyIndicator22Layout(result.regra);
     return result;
   }
 
@@ -2323,6 +2548,7 @@
     const calculation = updateCalculatedPreview();
     const canaisDigitais = calculation.regra?.tipoCalculo === "razao_canais_digitais";
     const now = new Date().toISOString();
+    const hasDocumentaryObservation = Boolean(lancamento.observacaoDocumental?.observacao);
     const updated = {
       ...lancamento,
       camposEntrada: calculation.camposEntrada,
@@ -2351,7 +2577,9 @@
       } : {}),
       situacaoCalculada: Situations.normalizarSituacao(calculation.resultado.situacao || getCalculatedSituation(calculation.resultado.percentualAtingidoAnual ?? calculation.resultado.percentualAtingidoMensal)),
       status: action === "send" ? "Enviado para homologação" : "Em preenchimento",
-      observacaoArea: document.getElementById("launchObservacaoArea").value.trim(),
+      observacaoArea: hasDocumentaryObservation
+        ? (lancamento.observacaoArea ?? "")
+        : document.getElementById("launchObservacaoArea").value.trim(),
       referenciaEvidencia: document.getElementById("launchEvidenceReference").value.trim(),
       preenchidoPor: state.user.matricula,
       usuarioResponsavel: state.user.matricula,
@@ -2605,6 +2833,11 @@
   window.PageModules = window.PageModules || {};
   window.PageModules.lancamentos = { init };
   window.__LAUNCHES_FILTER_TEST_INTERNALS__ = {
+    isIndicator22Rule,
+    indicator22IsClosure,
+    indicator22AnnualGoalText,
+    indicator22OfficialPresentation,
+    indicator22PresentationModel,
     indicatorFilterOptions,
     filterLaunches,
     officialOperationalLaunches,

@@ -5,6 +5,7 @@ require_once __DIR__ . '/../core/Database.php';
 require_once __DIR__ . '/../repositories/ConfiguracoesRepository.php';
 require_once __DIR__ . '/../repositories/IndicadoresRepository.php';
 require_once __DIR__ . '/../repositories/LancamentosRepository.php';
+require_once __DIR__ . '/../repositories/LancamentosObservacoesDocumentaisRepository.php';
 require_once __DIR__ . '/../repositories/EvidenciasRepository.php';
 require_once __DIR__ . '/../repositories/HomologacoesRepository.php';
 require_once __DIR__ . '/../repositories/AuditoriaRepository.php';
@@ -20,6 +21,7 @@ final class BaseDadosService
     private $configuracoes;
     private $indicadores;
     private $lancamentos;
+    private $observacoesDocumentais;
     private $evidencias;
     private $homologacoes;
     private $auditoria;
@@ -32,6 +34,7 @@ final class BaseDadosService
         $this->configuracoes = new ConfiguracoesRepository($this->db);
         $this->indicadores = new IndicadoresRepository($this->db);
         $this->lancamentos = new LancamentosRepository($this->db);
+        $this->observacoesDocumentais = new LancamentosObservacoesDocumentaisRepository($this->db);
         $this->evidencias = new EvidenciasRepository($this->db);
         $this->homologacoes = new HomologacoesRepository($this->db);
         $this->auditoria = new AuditoriaRepository($this->db);
@@ -44,7 +47,7 @@ final class BaseDadosService
         if ($key === 'usuarios') return $this->usuarios->all();
         if (in_array($key, array('planos', 'pilares', 'unidades', 'diretorias', 'metas', 'regrasIndicadores', GovernancaHomologacao::CLOSURES_KEY), true)) return $this->configuracoes->get($key, array());
         if ($key === 'indicadores') return $this->indicadores->all($filters);
-        if ($key === 'lancamentos') return $this->lancamentos->all($filters);
+        if ($key === 'lancamentos') return $this->observacoesDocumentais->decorate($this->lancamentos->all($filters));
         if ($key === 'homologacoes') return $this->homologacoes->all($filters);
         if ($key === 'solicitacoesReabertura') return $this->solicitacoesReabertura->all($filters);
         if ($key === 'historico') return $this->auditoria->all();

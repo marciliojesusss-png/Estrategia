@@ -54,7 +54,8 @@ function governance_throws($class, $callback, $message)
 
 $consultant = array('perfil' => 'consultor_diretoria', 'matricula' => 'C200002', 'diretoria_responsavel' => 'DIFIR');
 $director = array('perfil' => 'homologador', 'matricula' => 'C300003', 'diretoria_responsavel' => 'DIFIR');
-$admin = array('perfil' => 'administrador', 'matricula' => 'C100001', 'diretoria_responsavel' => '');
+$admin = array('perfil' => 'administrador', 'perfil_original' => 'administrador', 'matricula' => 'C100001', 'diretoria_responsavel' => '');
+$adminAsReviewer = array('perfil' => 'homologador', 'perfil_original' => 'administrador', 'matricula' => 'C118119', 'diretoria_responsavel' => 'DIFIR');
 $unit = array('perfil' => 'unidade_apuradora', 'matricula' => 'C400004', 'unidade_apuradora' => 'SUCOL');
 $launch = array(
     'id' => 'lancamento-1', 'indicadorId' => 7, 'competencia' => '2026-09',
@@ -71,6 +72,8 @@ governance_ok(Auth::normalizeProfile('Consultor da Diretoria') === 'consultor_di
 governance_ok(AccessPolicy::allows('consultor_diretoria', 'homologacoes', 'decidir'), 'consultor deve decidir homologacao');
 governance_ok(!AccessPolicy::allows('consultor_diretoria', 'lancamentos', 'gerenciar'), 'consultor nao deve preencher lancamento');
 governance_ok(!AccessPolicy::allows('consultor_diretoria', 'administracao', 'gerenciar'), 'consultor nao deve administrar');
+governance_ok(AccessPolicy::allows('administrador', 'lancamentos', 'gerenciar'), 'administrador original deve preencher e submeter');
+governance_ok(AccessPolicy::allows('administrador', 'homologacoes', 'decidir'), 'administrador original deve decidir homologacao');
 governance_ok(AccessPolicy::scopeAllows($consultant, $launch), 'consultor DIFIR deve acessar DIFIR');
 governance_ok(!AccessPolicy::scopeAllows($consultant, array_merge($launch, array('diretoriaResponsavel' => 'DICOT'))), 'consultor DIFIR nao deve acessar DICOT');
 
@@ -87,9 +90,22 @@ governance_throws('UnexpectedValueException', function () use ($launch, $directo
 governance_throws('UnexpectedValueException', function () use ($launch, $consultant) {
     GovernancaHomologacao::assertIndependentReviewer($launch, 'C200002', $consultant);
 }, 'troca posterior para consultor nao remove autoria do envio');
-governance_throws('UnexpectedValueException', function () use ($launch, $admin) {
-    GovernancaHomologacao::assertIndependentReviewer(array_merge($launch, array('usuarioResponsavel' => 'C100001')), '', $admin);
-}, 'administrador tambem deve respeitar segregacao');
+GovernancaHomologacao::assertIndependentReviewer(array_merge($launch, array('usuarioResponsavel' => 'C100001')), 'C100001', $admin, array('C100001'));
+GovernancaHomologacao::assertIndependentReviewer($launch, 'C400004', $admin);
+$reference152 = array_merge($launch, array(
+    'id' => '152', 'indicadorId' => 13, 'competencia' => '2026-08', 'versaoAtual' => 1,
+    'status' => LancamentoStateMachine::SUBMITTED, 'usuarioResponsavel' => 'C118119',
+));
+GovernancaHomologacao::assertIndependentReviewer($reference152, 'C118119', $adminAsReviewer, array('C118119'));
+$reference152Version2 = array_merge($reference152, array('versaoAtual' => 2, 'status' => LancamentoStateMachine::SUBMITTED));
+GovernancaHomologacao::assertIndependentReviewer($reference152Version2, 'C118119', $adminAsReviewer, array('C118119'));
+governance_throws('UnexpectedValueException', function () use ($launch, $unit) {
+    GovernancaHomologacao::assertIndependentReviewer(array_merge($launch, array('usuarioResponsavel' => 'C400004')), 'C400004', $unit, array('C400004'));
+}, 'unidade participante deve continuar bloqueada pela independencia');
+$forgedContextualAdmin = array('perfil' => 'administrador', 'perfil_original' => 'homologador', 'matricula' => 'C300003');
+governance_throws('UnexpectedValueException', function () use ($launch, $forgedContextualAdmin) {
+    GovernancaHomologacao::assertIndependentReviewer(array_merge($launch, array('usuarioResponsavel' => 'C300003')), '', $forgedContextualAdmin);
+}, 'perfil contextual administrador nao pode fabricar bypass sem perfil original administrador');
 
 // Participacao historica permanece vinculada a matricula depois da troca de perfil.
 $historicalLaunch = array_merge($launch, array('usuarioResponsavel' => 'C300003'));
@@ -145,6 +161,7 @@ governance_throws('DomainException', function () use ($closures) {
 
 $launchService = file_get_contents(__DIR__ . '/../app/services/LancamentoService.php');
 $homologationService = file_get_contents(__DIR__ . '/../app/services/HomologacaoService.php');
+$authService = file_get_contents(__DIR__ . '/../app/auth/Auth.php');
 $homologationRepository = file_get_contents(__DIR__ . '/../app/repositories/HomologacoesRepository.php');
 $baseService = file_get_contents(__DIR__ . '/../app/services/BaseDadosService.php');
 $legacyRequests = file_get_contents(__DIR__ . '/../api/solicitacoes-reabertura.php');
@@ -159,6 +176,8 @@ governance_ok(strpos($launchService, '$ownsTransaction=!$this->db->inTransaction
 governance_ok(strpos($launchService, 'assertMutable($before)') !== false && strpos($launchService, 'assertMutable($x)') !== false, 'update e submit devem aplicar congelamento central');
 governance_ok(strpos($baseService, 'assertLaunchMutable($before)') !== false, 'fluxo central legado deve aplicar congelamento');
 governance_ok(strpos($homologationService, 'productionParticipantUsers') !== false, 'decisao deve consultar participantes historicos');
+governance_ok(strpos($homologationService, 'GovernancaHomologacao::assertIndependentReviewer') !== false, 'backend de decisao deve aplicar a regra central de independencia com bypass administrativo');
+governance_ok(strpos($authService, "'perfil_original' => \$originalProfile") !== false, 'perfil original deve vir da sessao autenticada no servidor');
 governance_ok(strpos($homologationRepository, 'lancamento_criado') === false, 'acoes de producao devem permanecer centralizadas na governanca');
 governance_ok(strpos($legacyRequests, '$lancamentoService->reopen(') !== false, 'solicitacao antiga aprovada deve usar reabertura central');
 governance_ok(strpos($legacyRequests, "updateStatus(") === false, 'solicitacao antiga nao pode alterar status diretamente');

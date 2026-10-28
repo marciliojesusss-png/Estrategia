@@ -58,24 +58,41 @@
     "3TRI/2026": { metaOficialReportada: 0.28, resultadoOficialReportado: 0.527, percentualAtingidoOficialReportado: 1.8821, situacaoOficial: "Atingido", fonte: "Informe DILOT/GERIN nº 0078/2026" },
     "4TRI/2026": { metaOficialReportada: 0.28, resultadoOficialReportado: null, percentualAtingidoOficialReportado: null, situacaoOficial: null, fonte: null }
   });
-  const ECOSSISTEMA_CURVAS_2026 = {
-    lotex: {
-      "1TRI": { referencia2025: 0.90, meta2026: 0.99 },
-      "2TRI": { referencia2025: 0.78, meta2026: 0.86 },
-      "3TRI": { referencia2025: 0.74, meta2026: 0.81 },
-      "4TRI": { referencia2025: 0.65, meta2026: 0.72 }
-    },
-    lotex_marketplace: {
-      "1TRI": { referencia2025: 3.42, meta2026: 3.76 },
-      "2TRI": { referencia2025: 3.27, meta2026: 3.60 },
-      "3TRI": { referencia2025: 3.32, meta2026: 3.65 },
-      "4TRI": { referencia2025: 3.46, meta2026: 3.80 }
-    }
-  };
-  const ECOSSISTEMA_CENARIOS = [
-    { value: "lotex", label: "Lotex" },
-    { value: "lotex_marketplace", label: "Lotex + Marketplace" }
-  ];
+  const ECOSSISTEMA_COMPONENTES_2025 = Object.freeze({
+    "2026-01": { arrTotal2025: 1683348694.70, arrEcoMarketplace2025: 44669058.91, arrEcoLotex2025: 18372000.00 },
+    "2026-02": { arrTotal2025: 3825271538.60, arrEcoMarketplace2025: 102809429.06, arrEcoLotex2025: 41002000.00 },
+    "2026-03": { arrTotal2025: 5504494123.70, arrEcoMarketplace2025: 138489885.56, arrEcoLotex2025: 49752400.00 },
+    "2026-04": { arrTotal2025: 7311446900.40, arrEcoMarketplace2025: 181863299.30, arrEcoLotex2025: 64680800.00 },
+    "2026-05": { arrTotal2025: 9239173439.20, arrEcoMarketplace2025: 221211168.37, arrEcoLotex2025: 77936800.00 },
+    "2026-06": { arrTotal2025: 11569679632.60, arrEcoMarketplace2025: 288625494.59, arrEcoLotex2025: 89935200.00 },
+    "2026-07": { arrTotal2025: 13555540052.00, arrEcoMarketplace2025: 334933864.05, arrEcoLotex2025: 105266400.00 },
+    "2026-08": { arrTotal2025: 15436581916.40, arrEcoMarketplace2025: 376653655.87, arrEcoLotex2025: 119416800.00 },
+    "2026-09": { arrTotal2025: 17998386148.80, arrEcoMarketplace2025: 463811538.74, arrEcoLotex2025: 133276716.00 },
+    "2026-10": { arrTotal2025: 20122961323.00, arrEcoMarketplace2025: 523039091.53, arrEcoLotex2025: 148573820.75 },
+    "2026-11": { arrTotal2025: 21913607953.15, arrEcoMarketplace2025: 571706233.81, arrEcoLotex2025: 162745531.00 },
+    "2026-12": { arrTotal2025: 26612476457.00, arrEcoMarketplace2025: 746339639.03, arrEcoLotex2025: 173831435.50 }
+  });
+  const ECOSSISTEMA_COMPONENTES_2026 = Object.freeze({
+    "2026-01": { arrTotal2026: 2030288935.15, arrEcoMarketplace2026: 77531427.39, arrEcoLotex2026: 13719322.25 },
+    "2026-02": { arrTotal2026: 3984905576.50, arrEcoMarketplace2026: 143041561.04, arrEcoLotex2026: 26620128.00 },
+    "2026-03": { arrTotal2026: 5966912490.55, arrEcoMarketplace2026: 202465482.39, arrEcoLotex2026: 39819048.75 },
+    "2026-04": { arrTotal2026: 8003703396.75, arrEcoMarketplace2026: 270736084.49, arrEcoLotex2026: 51968448.25 },
+    "2026-05": { arrTotal2026: 10133231872.35, arrEcoMarketplace2026: 348500290.44, arrEcoLotex2026: 63966773.50 },
+    "2026-06": { arrTotal2026: 12191958306.55, arrEcoMarketplace2026: 439830252.32, arrEcoLotex2026: 74144913.25 },
+    "2026-07": { arrTotal2026: 14157139768.80, arrEcoMarketplace2026: 512915099.64, arrEcoLotex2026: 87677530.50 },
+    "2026-08": { arrTotal2026: 16122321231.05, arrEcoMarketplace2026: 595072496.25, arrEcoLotex2026: 101554152.00 }
+  });
+  const ECOSSISTEMA_APRESENTACOES_2026 = Object.freeze({
+    "1TRI": { metaOficialReportada: 0.0099, resultadoOficialReportado: 0.0067, percentualAtingidoOficialReportado: 0.6712, situacaoOficial: "Abaixo da meta", fonte: "Informe DILOT/GERIN nº 0029/2026" },
+    "2TRI": { metaOficialReportada: 0.0086, resultadoOficialReportado: 0.0061, percentualAtingidoOficialReportado: 0.7112, situacaoOficial: "Abaixo da meta", fonte: "Informe DILOT/GERIN nº 0056/2026" },
+    "3TRI": { metaOficialReportada: 0.0075, resultadoOficialReportado: 0.0060, percentualAtingidoOficialReportado: 0.80, situacaoOficial: "Abaixo da meta", fonte: "Informe DILOT/GERIN nº 0078/2026" },
+    "4TRI": { metaOficialReportada: 0.0066, resultadoOficialReportado: null, percentualAtingidoOficialReportado: null, situacaoOficial: null, fonte: null }
+  });
+  const ECOSSISTEMA_HISTORICO_REVISAO_2026 = Object.freeze({
+    aplicaAoCalculo: false,
+    fonte: "Informe DILOT/GERIN nº 0078/2026",
+    metasRetrospectivas: { "1TRI": 0.0091, "2TRI": 0.0079 }
+  });
   const REDE_LOTERICA_CURVA_INDICE_2026 = {
     "1TRI": { metaIndice: 1.005 },
     "2TRI": { metaIndice: 1.010 },
@@ -836,10 +853,69 @@
     return VISIBILIDADE_REPASSES_CURVA_2026[trimestre]?.metaAcoesRealizadasAcumuladas ?? null;
   }
 
-  function getEcossistemaMetaTrimestral(ano, mes, cenario = "lotex_marketplace") {
-    const trimestre = `${Math.ceil(Number(mes) / 3)}TRI`;
-    const metaPontosPercentuais = ECOSSISTEMA_CURVAS_2026[cenario]?.[trimestre]?.meta2026;
-    return metaPontosPercentuais === undefined ? null : metaPontosPercentuais / 100;
+  function getEcossistemaCompetencia(ano, mes) {
+    return `${Number(ano)}-${String(Number(mes)).padStart(2, "0")}`;
+  }
+
+  function getEcossistemaFatorMeta(ano, mes) {
+    if (Number(ano) !== 2026) return null;
+    return Number(mes) <= 7 ? 1.10 : 1.01;
+  }
+
+  function getEcossistemaReferenciaLotex2025(ano, mes) {
+    const component = ECOSSISTEMA_COMPONENTES_2025[getEcossistemaCompetencia(ano, mes)];
+    return component?.arrTotal2025 > 0 ? component.arrEcoLotex2025 / component.arrTotal2025 : null;
+  }
+
+  function getEcossistemaMetaTecnica(ano, mes) {
+    const reference = getEcossistemaReferenciaLotex2025(ano, mes);
+    const factor = getEcossistemaFatorMeta(ano, mes);
+    return reference === null || factor === null ? null : reference * factor;
+  }
+
+  function getEcossistemaApresentacaoOficial(ano, mes) {
+    if (Number(ano) !== 2026 || ![3, 6, 9, 12].includes(Number(mes))) return null;
+    return ECOSSISTEMA_APRESENTACOES_2026[`${Math.ceil(Number(mes) / 3)}TRI`] || null;
+  }
+
+  function getEcossistemaMetaCompetencia(ano, mes) {
+    return getEcossistemaMetaTecnica(ano, mes);
+  }
+
+  function getEcossistemaMetaAnualDescricao(ano, mes) {
+    if (Number(ano) === 2026 && Number(mes) >= 8) return "Ano 2026: ≥ 1% em relação ao exercício de 2025";
+    return "Ano 2026: ≥ 10% em relação ao exercício de 2025";
+  }
+
+  function getEcossistemaCamposCanonicos(launch, currentFields = {}) {
+    const key = getEcossistemaCompetencia(launch?.ano, launch?.mes);
+    const base2025 = ECOSSISTEMA_COMPONENTES_2025[key] || {};
+    const base2026 = ECOSSISTEMA_COMPONENTES_2026[key] || {};
+    const presentation = getEcossistemaApresentacaoOficial(launch?.ano, launch?.mes);
+    const reference = getEcossistemaReferenciaLotex2025(launch?.ano, launch?.mes);
+    const factor = getEcossistemaFatorMeta(launch?.ano, launch?.mes);
+    const technicalTarget = getEcossistemaMetaTecnica(launch?.ano, launch?.mes);
+    const documentary = presentation && presentation.resultadoOficialReportado !== null ? {
+      tipoPosicaoEcossistema: "fechamento_trimestral",
+      metaDocumentalEcossistema: presentation.metaOficialReportada,
+      resultadoDocumentalEcossistema: presentation.resultadoOficialReportado,
+      percentualAtingidoOficialEcossistema: presentation.percentualAtingidoOficialReportado,
+      fonteResultadoEcossistema: presentation.fonte
+    } : {};
+    return {
+      cenarioApuracaoEcossistema: "lotex",
+      marketplaceAplicaAoCalculo: false,
+      ...base2025,
+      ...base2026,
+      referenciaLotex2025: reference,
+      fatorMetaVigente: factor,
+      metaParticipacao2026: technicalTarget,
+      tipoPosicaoEcossistema: [3, 6, 9, 12].includes(Number(launch?.mes)) ? "fechamento_trimestral" : "acompanhamento",
+      ...documentary,
+      ...currentFields,
+      cenarioApuracaoEcossistema: "lotex",
+      marketplaceAplicaAoCalculo: false
+    };
   }
 
   function getRedeLotericaMetaIndiceTrimestral(ano, mes) {
@@ -877,11 +953,15 @@
       camposEntrada.arrecadacaoEcossistemaMesMigrado = camposEntrada.arrecadacaoEcossistemaMes;
       delete camposEntrada.arrecadacaoEcossistemaMes;
     }
-    if (camposEntrada.arrecadacaoViaEcossistema === undefined && camposEntrada.arrecadacaoEcossistemaMes2026 !== undefined) {
-      camposEntrada.arrecadacaoViaEcossistema = camposEntrada.arrecadacaoEcossistemaMes2026;
-    }
-    if (camposEntrada.cenarioApuracaoEcossistema === undefined) {
-      camposEntrada.cenarioApuracaoEcossistema = "lotex_marketplace";
+    const legacyScenario = camposEntrada.cenarioApuracaoEcossistema;
+    if (legacyScenario && legacyScenario !== "lotex") {
+      camposEntrada.cenarioApuracaoEcossistemaHistorico = legacyScenario;
+      camposEntrada.cenarioHistoricoAplicaAoCalculo = false;
+      if (camposEntrada.arrecadacaoViaEcossistema !== undefined) {
+        camposEntrada.arrecadacaoCombinadaHistorica = camposEntrada.arrecadacaoViaEcossistema;
+      }
+    } else if (camposEntrada.arrEcoLotex2026 === undefined && camposEntrada.arrecadacaoViaEcossistema !== undefined) {
+      camposEntrada.arrEcoLotex2026 = camposEntrada.arrecadacaoViaEcossistema;
     }
     if (camposEntrada.arrecadacaoEcossistema2025 !== undefined && camposEntrada.arrecadacaoEcossistema2025PeriodoEquivalente === undefined) {
       camposEntrada.arrecadacaoEcossistema2025PeriodoEquivalente = camposEntrada.arrecadacaoEcossistema2025;
@@ -893,7 +973,7 @@
       camposEntrada.arrecadacaoEcossistema2026PeriodoAtualMigrado = camposEntrada.arrecadacaoEcossistema2026PeriodoAtual;
       delete camposEntrada.arrecadacaoEcossistema2026PeriodoAtual;
     }
-    return { ...launch, camposEntrada };
+    return { ...launch, camposEntrada: getEcossistemaCamposCanonicos(launch, camposEntrada) };
   }
 
   function migrarCampoRedeLotericaLegado(launch) {
@@ -1221,7 +1301,7 @@
     if (id === 19) return getIncentivoSocioambientalMetaTrimestral(ano, mes);
     if (id === 20) return getVisibilidadeRepassesMetaTrimestral(ano, mes);
     if (id === 21) return getJogoResponsavelCapacitacaoMetaTrimestral(ano, mes);
-    if (id === 22) return getEcossistemaMetaTrimestral(ano, mes);
+    if (id === 22) return getEcossistemaMetaCompetencia(ano, mes);
     if (id === 23) return getRedeLotericaMetaIndiceTrimestral(ano, mes);
     return null;
   }
@@ -1659,15 +1739,18 @@
           };
         }
         if (Number(indicator.id) === 22) {
+          const legacyTypes = ["crescimento_comparado_base_2025", "participacao_ecossistema_com_cenarios", null, undefined, ""];
           return {
             ...normalized,
-            tipoCalculo: "participacao_ecossistema_com_cenarios",
+            periodicidade: "Mensal",
+            tipoCalculo: legacyTypes.includes(normalized.tipoCalculo) ? "participacao_ecossistema_lotex" : normalized.tipoCalculo,
+            tipoConsolidacao: normalized.tipoConsolidacao || "ultima_posicao_acumulada",
             unidadeMedida: "percentual",
-            metaAnualDescricao: "Ano 2026: ≥ 10% em relação ao exercício de 2025",
-            metrica: "(Arrecadação via ecossistema / Arrecadação total) × 100",
+            metaAnualDescricao: "Meta por vigência: JAN–JUL ≥ 10%; AGO–DEZ ≥ 1% em relação ao exercício de 2025",
+            metrica: "(ARR ECO LOTEX / ARR TOTAL) × 100",
             conceito: "Este indicador mede a proporção da arrecadação total obtida por meio de soluções ou produtos desenvolvidos e/ou distribuídos através de plataformas contratadas, parcerias estratégicas, parcerias do mercado, parcerias com empresas do Conglomerado, startups, CPSI, novos canais de distribuição e demais iniciativas aderentes ao pilar Atuação em Ecossistema.",
-            observacaoMetodologica: "A projeção de 2026 considerou inicialmente a parceria para comercialização da Lotex e inclui Apostas de Quota Fixa a partir de 2026. O informe do 1TRI26 também apresenta cenário complementar com a ferramenta Marketplace, aderente ao pilar Atuação em Ecossistema.",
-            cenarioOficialResumoExecutivo: "lotex_marketplace"
+            observacaoMetodologica: "O resultado oficial utiliza exclusivamente Lotex. Marketplace e cenários combinados são memória auxiliar, com aplicaAoCalculo=false. A meta é prospectiva por competência: fator 1,10 até JUL/2026 e 1,01 a partir de AGO/2026.",
+            cenarioOficialResumoExecutivo: "lotex"
           };
         }
         if (Number(indicator.id) === 23) {
@@ -2289,27 +2372,64 @@
           return {
             ...rule,
             nome: INDICATOR_NAMES[21],
-            tipoCalculo: "participacao_ecossistema_com_cenarios",
-            tipoConsolidacao: "ultima_posicao",
+            tipoCalculo: "participacao_ecossistema_lotex",
+            tipoConsolidacao: "ultima_posicao_acumulada",
             unidadeMedida: "percentual",
-            metaAnualValor: 0.10,
+            metaAnualValor: 1.10,
             parametrosCalculo: {
-              campoCenario: "cenarioApuracaoEcossistema",
-              campoNumerador: "arrecadacaoViaEcossistema",
-              campoNumeradorLegado: "arrecadacaoEcossistemaMes2026",
-              campoDenominador: "arrecadacaoTotal",
-              metaTipo: "curva_trimestral_cenario",
+              ...(rule.parametrosCalculo || {}),
+              campoArrTotal2025: "arrTotal2025",
+              campoArrLotex2025: "arrEcoLotex2025",
+              campoArrMarketplace2025: "arrEcoMarketplace2025",
+              campoArrTotal2026: "arrTotal2026",
+              campoArrLotex2026: "arrEcoLotex2026",
+              campoArrMarketplace2026: "arrEcoMarketplace2026",
+              campoResultadoDocumental: "resultadoDocumentalEcossistema",
+              campoPercentualAtingidoOficial: "percentualAtingidoOficialEcossistema",
+              campoMetaDocumental: "metaDocumentalEcossistema",
+              campoTipoPosicao: "tipoPosicaoEcossistema",
+              campoFonteResultado: "fonteResultadoEcossistema",
+              metaTipo: "referencia_lotex_2025_por_vigencia",
               sentidoMeta: "quanto_maior_melhor",
-              cenarioOficialResumoExecutivo: "lotex_marketplace",
-              cenarios: ECOSSISTEMA_CENARIOS,
-              curvasCenarios: ECOSSISTEMA_CURVAS_2026
+              cenarioOficialResumoExecutivo: "lotex",
+              marketplaceAplicaAoCalculo: false,
+              acompanhamentoMensal: true,
+              mesesFechamentoTrimestral: [3, 6, 9, 12],
+              vigenciasMeta: [
+                { inicio: "2026-01", fim: "2026-07", fator: 1.10, descricao: "≥ 10% em relação ao exercício de 2025" },
+                { inicio: "2026-08", fim: "2026-12", fator: 1.01, descricao: "≥ 1% em relação ao exercício de 2025" }
+              ],
+              componentes2025PorCompetencia: { ...ECOSSISTEMA_COMPONENTES_2025 },
+              componentes2026PorCompetencia: { ...ECOSSISTEMA_COMPONENTES_2026 },
+              referenciasLotex2025PorCompetencia: Object.fromEntries(Object.keys(ECOSSISTEMA_COMPONENTES_2025).map((key) => [key, ECOSSISTEMA_COMPONENTES_2025[key].arrEcoLotex2025 / ECOSSISTEMA_COMPONENTES_2025[key].arrTotal2025])),
+              metasTecnicasPorCompetencia: Object.fromEntries(Object.keys(ECOSSISTEMA_COMPONENTES_2025).map((key) => {
+                const month = Number(key.slice(5, 7));
+                const reference = ECOSSISTEMA_COMPONENTES_2025[key].arrEcoLotex2025 / ECOSSISTEMA_COMPONENTES_2025[key].arrTotal2025;
+                return [key, reference * (month <= 7 ? 1.10 : 1.01)];
+              })),
+              apresentacoesOficiaisTrimestrais: { ...ECOSSISTEMA_APRESENTACOES_2026 },
+              historicoRevisao: { ...ECOSSISTEMA_HISTORICO_REVISAO_2026 },
+              cenariosHistoricos: [
+                { value: "lotex_marketplace", label: "Lotex + Marketplace", aplicaAoCalculo: false }
+              ]
             },
             camposEntrada: [
-              { nome: "cenarioApuracaoEcossistema", rotulo: "Cenário de apuração", tipo: "selecao", obrigatorio: true, opcoes: ECOSSISTEMA_CENARIOS },
-              { nome: "arrecadacaoViaEcossistema", rotulo: "Arrecadação via ecossistema no período", tipo: "moeda", obrigatorio: true },
-              { nome: "arrecadacaoTotal", rotulo: "Arrecadação total no período", tipo: "moeda", obrigatorio: true },
-              { nome: "referencia2025Trimestre", rotulo: "Referência 2025 do trimestre (%)", tipo: "numero", obrigatorio: false, somenteLeitura: true },
-              { nome: "metaTrimestral2026", rotulo: "Meta trimestral 2026 (%)", tipo: "numero", obrigatorio: false, somenteLeitura: true }
+              { nome: "arrTotal2025", rotulo: "ARR Total 2025", tipo: "moeda", obrigatorio: true, somenteLeitura: true },
+              { nome: "arrEcoLotex2025", rotulo: "ARR Eco Lotex 2025", tipo: "moeda", obrigatorio: true, somenteLeitura: true },
+              { nome: "arrEcoMarketplace2025", rotulo: "ARR Eco Marketplace 2025 — auxiliar", tipo: "moeda", obrigatorio: false, somenteLeitura: true, aplicaAoCalculo: false },
+              { nome: "referenciaLotex2025", rotulo: "Referência Lotex 2025", tipo: "percentual", obrigatorio: false, somenteLeitura: true, escalaPercentual: "decimal" },
+              { nome: "fatorMetaVigente", rotulo: "Fator estratégico vigente", tipo: "percentual", obrigatorio: false, somenteLeitura: true, escalaPercentual: "decimal" },
+              { nome: "metaParticipacao2026", rotulo: "Meta técnica de participação 2026", tipo: "percentual", obrigatorio: false, somenteLeitura: true, escalaPercentual: "decimal" },
+              { nome: "arrTotal2026", rotulo: "ARR Total 2026", tipo: "moeda", obrigatorio: false },
+              { nome: "arrEcoLotex2026", rotulo: "ARR Eco Lotex 2026", tipo: "moeda", obrigatorio: false },
+              { nome: "arrEcoMarketplace2026", rotulo: "ARR Eco Marketplace 2026 — auxiliar", tipo: "moeda", obrigatorio: false, aplicaAoCalculo: false },
+              { nome: "resultadoDocumentalEcossistema", rotulo: "Resultado Lotex documental", tipo: "percentual", obrigatorio: false, escalaPercentual: "decimal" },
+              { nome: "metaDocumentalEcossistema", rotulo: "Meta documental do fechamento", tipo: "percentual", obrigatorio: false, escalaPercentual: "decimal" },
+              { nome: "percentualAtingidoOficialEcossistema", rotulo: "Atingimento oficial documental", tipo: "percentual", obrigatorio: false, escalaPercentual: "decimal" },
+              { nome: "tipoPosicaoEcossistema", rotulo: "Natureza da posição", tipo: "selecao", obrigatorio: false, opcoes: [{ value: "acompanhamento", label: "Acompanhamento mensal" }, { value: "fechamento_trimestral", label: "Fechamento trimestral" }] },
+              { nome: "fonteResultadoEcossistema", rotulo: "Fonte documental", tipo: "texto", obrigatorio: false },
+              { nome: "fonteEvidenciaEcossistema", rotulo: "Referência da evidência", tipo: "texto", obrigatorio: false },
+              { nome: "observacaoArea", rotulo: "Observação da área", tipo: "texto", obrigatorio: false }
             ],
             campoResultadoPrincipal: "resultadoCalculado",
             campoPercentualAtingido: "percentualAtingidoMensal",
@@ -2632,8 +2752,13 @@
           metaAnualDescricao: "≥ 90% do público-alvo capacitado em pelo menos 2 iniciativas de Jogo Responsável"
         } : {}),
         ...(Number(launch.indicadorId) === 22 ? {
-          metaMensal: getEcossistemaMetaTrimestral(launch.ano, launch.mes),
-          metaAnualDescricao: "Ano 2026: ≥ 10% em relação ao exercício de 2025"
+          metaMensal: (launch.camposEntrada?.arrTotal2025 !== undefined && persistedMeta !== null)
+            ? persistedMeta
+            : getEcossistemaMetaCompetencia(launch.ano, launch.mes),
+          metaReferencia: (launch.camposEntrada?.arrTotal2025 !== undefined && persistedMeta !== null)
+            ? persistedMeta
+            : getEcossistemaMetaCompetencia(launch.ano, launch.mes),
+          metaAnualDescricao: getEcossistemaMetaAnualDescricao(launch.ano, launch.mes)
         } : {}),
         ...(Number(launch.indicadorId) === 23 ? {
           metaMensal: getRedeLotericaMetaIndiceTrimestral(launch.ano, launch.mes),

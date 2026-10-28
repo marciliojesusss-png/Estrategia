@@ -1,6 +1,7 @@
 (function () {
   const CONSULTABLE_NON_OFFICIAL_STATUSES = new Set(["Homologado", "Retificado", "Reaberto"]);
-  const ACTIONABLE_STATUS = "Enviado para homologação";
+  const ACTIONABLE_STATUS = "Enviado para homologacao";
+  const ACTIONABLE_STATUS_LABEL = "Enviado para homologação";
 
   let state = {
     data: null,
@@ -63,6 +64,19 @@
     return CONSULTABLE_NON_OFFICIAL_STATUSES.has(String(launch?.status || ""));
   }
 
+  function normalizeApprovalStatus(status) {
+    const value = String(status || "").trim();
+    return value === ACTIONABLE_STATUS_LABEL ? ACTIONABLE_STATUS : value;
+  }
+
+  function isActionableStatus(status) {
+    return normalizeApprovalStatus(status) === ACTIONABLE_STATUS;
+  }
+
+  function approvalStatusLabel(status) {
+    return isActionableStatus(status) ? ACTIONABLE_STATUS_LABEL : String(status || "");
+  }
+
   function homologationVisibleLaunches(launches, indicators) {
     return (launches || []).filter((launch) => {
       return isOfficialApprovalCompetence(launch, indicators) || isConsultableHistoricalLaunch(launch);
@@ -89,7 +103,7 @@
   function badgeClass(status) {
     if (status === "Homologado") return "ok";
     if (status === "Devolvido para ajuste") return "danger";
-    if (status === ACTIONABLE_STATUS) return "warn";
+    if (isActionableStatus(status)) return "warn";
     return "info";
   }
 
@@ -245,21 +259,29 @@
     return ["Diretoria Homologadora", "Consultor da Diretoria"].includes(state.user?.perfil);
   }
 
+  function isOriginalAdministrator(user = state.user) {
+    return String(user?.perfilOriginalCodigo || "").trim().toLowerCase() === "administrador";
+  }
+
   function normalizeIdentity(value) {
     return String(value || "").trim().toUpperCase().split(/[\\/]/).pop();
   }
 
-  function isOwnLaunch(lancamento) {
-    const current = normalizeIdentity(state.user?.matricula || state.user?.id);
+  function isOwnLaunch(lancamento, user = state.user) {
+    const current = normalizeIdentity(user?.matricula || user?.id);
     return Boolean(current) && current === normalizeIdentity(lancamento?.usuarioResponsavel || lancamento?.preenchidoPor);
   }
 
-  function canApproveOrReturn(lancamento) {
+  function independentReviewAllowed(lancamento, user = state.user) {
+    return isOriginalAdministrator(user) || !isOwnLaunch(lancamento, user);
+  }
+
+  function canApproveOrReturn(lancamento, user = state.user, indicators = state.indicadores) {
     return lancamento
-      && lancamento.status === ACTIONABLE_STATUS
-      && isOfficialApprovalCompetence(lancamento)
-      && ["Administrador", "Diretoria Homologadora", "Consultor da Diretoria"].includes(state.user?.perfil)
-      && !isOwnLaunch(lancamento);
+      && isActionableStatus(lancamento.status)
+      && isOfficialApprovalCompetence(lancamento, indicators)
+      && ["Administrador", "Diretoria Homologadora", "Consultor da Diretoria"].includes(user?.perfil)
+      && independentReviewAllowed(lancamento, user);
   }
 
   function canAct(lancamento) {
@@ -311,7 +333,7 @@
     const indicatorOptions = indicatorFilterOptions(lancamentos);
     const options = {
       mes: ["Todos", ...unique(lancamentos.map((item) => item.nomeMes))].map((value) => ({ value, label: value })),
-      status: ["Todos", ...unique(lancamentos.map((item) => item.status))].map((value) => ({ value, label: value })),
+      status: ["Todos", ...unique(lancamentos.map((item) => item.status))].map((value) => ({ value, label: approvalStatusLabel(value) })),
       indicador: [
         { value: "", label: allIndicatorFilterLabel(state.user, indicatorOptions.length) },
         ...indicatorOptions
@@ -366,7 +388,7 @@
           <td>${escapeHtml(item.nomeMes)}/${escapeHtml(item.ano)}</td>
           <td>${Calculations.formatarValor(displayItem.resultadoMensal ?? displayItem.realizadoMensal, regra && regra.unidadeMedida)}</td>
           <td>${Calculations.formatarPercentual(displayItem.percentualAtingido)}</td>
-          <td><span class="badge ${badgeClass(item.status)}">${escapeHtml(item.status)}</span></td>
+          <td><span class="badge ${badgeClass(item.status)}">${escapeHtml(approvalStatusLabel(item.status))}</span></td>
           <td><button class="secondary-action table-action" type="button" data-id="${item.id}">${canAct(item) ? "Analisar" : "Consultar"}</button></td>
         </tr>
       `;
@@ -566,7 +588,7 @@
     panel.hidden = false;
     document.getElementById("approvalTitle").textContent = `${indicador.indicador} - ${lancamento.nomeMes}/${lancamento.ano}`;
     const badge = document.getElementById("approvalStatusBadge");
-    badge.textContent = lancamento.status;
+    badge.textContent = approvalStatusLabel(lancamento.status);
     badge.className = `badge ${badgeClass(lancamento.status)}`;
     document.getElementById("approvalLaunchId").value = lancamento.id;
     const documentation = launchDocumentation(regra, lancamento);
@@ -588,10 +610,10 @@
         policy?.mensagem || "Verificando a janela de reabertura no servidor...",
         policy?.permitida && !policy?.excepcional ? "info" : "warning"
       );
-    } else if (!options.suppressGeneralNotice && isOwnLaunch(lancamento) && lancamento.status === ACTIONABLE_STATUS) {
+    } else if (!options.suppressGeneralNotice && !isOriginalAdministrator() && isOwnLaunch(lancamento) && isActionableStatus(lancamento.status)) {
       showMessage("Homologação não permitida. Você participou do preenchimento ou envio deste lançamento e ele deve ser analisado por outro usuário autorizado.", "warning");
     } else if (!options.suppressGeneralNotice && !canAct(lancamento)) {
-      showMessage(`Lançamento com status "${lancamento.status}" está disponível apenas para consulta.`, "warning");
+      showMessage(`Lançamento com status "${approvalStatusLabel(lancamento.status)}" está disponível apenas para consulta.`, "warning");
     }
   }
 
@@ -953,6 +975,13 @@
     filterLaunches,
     homologationVisibleLaunches,
     isOfficialApprovalCompetence,
-    isConsultableHistoricalLaunch
+    isConsultableHistoricalLaunch,
+    normalizeApprovalStatus,
+    isActionableStatus,
+    approvalStatusLabel,
+    isOriginalAdministrator,
+    isOwnLaunch,
+    independentReviewAllowed,
+    canApproveOrReturn
   };
 })();

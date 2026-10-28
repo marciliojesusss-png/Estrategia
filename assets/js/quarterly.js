@@ -148,6 +148,13 @@
     const configuredPixQuarterTarget = toNumber(params.metasTrimestrais?.[quarterLabel] ?? PIX_QUARTER_TARGETS[quarterLabel]);
     if (rule?.tipoCalculo === "razao_pix" && configuredPixQuarterTarget !== null) return configuredPixQuarterTarget;
     const referenceLaunch = lastByMonth((quarterLaunches || []).filter((item) => item.status === STATUS_LANCAMENTO.HOMOLOGADO)) || lastByMonth(quarterLaunches || []);
+    if (rule?.tipoCalculo === "participacao_ecossistema_lotex") {
+      const quarterKey = quarterNumberValue ? `${quarterNumberValue}TRI` : String(quarterLabel || "").match(/([1-4])\s*TRI/i)?.[0]?.replace(/\s/g, "");
+      const officialTarget = params.apresentacoesOficiaisTrimestrais?.[quarterKey]?.metaOficialReportada;
+      if (toNumber(officialTarget) !== null) return toNumber(officialTarget);
+      const competence = referenceLaunch?.competencia || (referenceLaunch ? `${referenceLaunch.ano}-${String(referenceLaunch.mes).padStart(2, "0")}` : null);
+      return competence ? toNumber(params.metasTecnicasPorCompetencia?.[competence]) : null;
+    }
     if (rule?.tipoCalculo === "lucro_recorrente_mensal") {
       const year = getYear(quarterLabel);
       const quarterEnd = QUARTERS.find((item) => item.number === quarterNumberValue)?.months.at(-1);
@@ -169,11 +176,11 @@
     if (metaCompetencia !== null) return metaCompetencia;
     if (rule?.tipoCalculo === "participacao_ecossistema_com_cenarios") {
       const referenceLaunch = lastByMonth((quarterLaunches || []).filter((item) => item.status === STATUS_LANCAMENTO.HOMOLOGADO)) || lastByMonth(quarterLaunches || []);
-      const rawScenario = referenceLaunch?.camposEntrada?.cenarioApuracaoEcossistema || params.cenarioOficialResumoExecutivo || "lotex_marketplace";
+      const rawScenario = "lotex";
       const normalizedScenario = String(rawScenario).toLocaleLowerCase("pt-BR");
       const scenario = normalizedScenario.includes("lotex") && normalizedScenario.includes("marketplace")
         ? "lotex_marketplace"
-        : normalizedScenario === "lotex" ? "lotex" : params.cenarioOficialResumoExecutivo || "lotex_marketplace";
+        : "lotex";
       const quarterKey = quarterNumberValue ? `${quarterNumberValue}TRI` : String(quarterLabel || "").match(/([1-4])\s*TRI/i)?.[0];
       const metaPontosPercentuais = params.curvasCenarios?.[scenario]?.[quarterKey]?.meta2026;
       return metaPontosPercentuais === undefined ? null : metaPontosPercentuais / 100;
@@ -628,20 +635,27 @@
     }
     const officialSituation = officialPresentation?.situacaoOficial || officialPresentation?.situacao || technicalSituation;
     const redeLotericaDocumental = regra?.tipoCalculo === "crescimento_rede_loterica_base_2025";
+    const ecossistemaLotexDocumental = regra?.tipoCalculo === "participacao_ecossistema_lotex";
     const clientesAtivosDocumental = Number(regra?.indicadorId) === 3;
     const resultadoDocumentalTrimestral = redeLotericaDocumental
       ? toNumber(validCalculation?.resultadoDocumentalRedeLoterica ?? officialPresentation?.resultadoOficialReportado)
+      : ecossistemaLotexDocumental
+        ? toNumber(validCalculation?.resultadoOficialDocumental ?? officialPresentation?.resultadoOficialReportado)
       : clientesAtivosDocumental
         ? toNumber(validCalculation?.resultadoDocumentalClientesAtivos ?? officialPresentation?.resultadoOficialReportado)
         : null;
     const desempenhoOficialDocumentalTrimestral = redeLotericaDocumental
       ? toNumber(validCalculation?.percentualAtingidoOficialRedeLoterica ?? officialPresentation?.percentualAtingidoOficialReportado ?? officialPresentation?.percentualAtingidoOficial)
+      : ecossistemaLotexDocumental
+        ? toNumber(validCalculation?.percentualAtingidoOficialDocumental ?? officialPresentation?.percentualAtingidoOficialReportado)
       : clientesAtivosDocumental
         ? toNumber(validCalculation?.percentualAtingidoOficialClientesAtivos ?? officialPresentation?.percentualAtingidoOficialReportado)
         : null;
     const fonteDocumentalTrimestral = redeLotericaDocumental
       ? validCalculation?.fonteResultadoRedeLoterica ?? officialPresentation?.fonte ?? null
-      : Number(regra?.indicadorId) === 1
+        : ecossistemaLotexDocumental
+          ? validCalculation?.fonteResultadoEcossistema ?? officialPresentation?.fonte ?? null
+        : Number(regra?.indicadorId) === 1
         ? validCalculation?.fonteResultadoOfertasPersonalizadas ?? officialPresentation?.fonte ?? null
         : nps
           ? validCalculation?.fontePesquisaNPS ?? officialPresentation?.fonte ?? null
@@ -666,11 +680,12 @@
       canaisAcumuladoTrimestre: regra?.tipoCalculo === "razao_pix" ? validCalculation?.canaisEletronicosAcumulado ?? null : null,
       canaisDigitaisAcumuladoTrimestre: regra?.tipoCalculo === "razao_canais_digitais" ? validCalculation?.canaisEletronicosAcumulado ?? null : null,
       produtosLoteriasAcumuladoTrimestre: regra?.tipoCalculo === "razao_canais_digitais" ? validCalculation?.produtosLoteriasAcumulado ?? null : null,
-      cenarioEcossistema: regra?.tipoCalculo === "participacao_ecossistema_com_cenarios" ? validCalculation?.cenarioApuracaoEcossistema ?? null : null,
-      cenarioEcossistemaLabel: regra?.tipoCalculo === "participacao_ecossistema_com_cenarios" ? validCalculation?.cenarioApuracaoEcossistemaLabel ?? null : null,
-      referencia2025EcossistemaTrimestre: regra?.tipoCalculo === "participacao_ecossistema_com_cenarios" ? validCalculation?.referencia2025Trimestre ?? null : null,
-      arrecadacaoViaEcossistemaTrimestre: regra?.tipoCalculo === "participacao_ecossistema_com_cenarios" ? validCalculation?.arrecadacaoViaEcossistema ?? null : null,
-      arrecadacaoTotalEcossistemaTrimestre: regra?.tipoCalculo === "participacao_ecossistema_com_cenarios" ? validCalculation?.arrecadacaoTotal ?? null : null,
+      cenarioEcossistema: ["participacao_ecossistema_lotex", "participacao_ecossistema_com_cenarios"].includes(regra?.tipoCalculo) ? validCalculation?.cenarioApuracaoEcossistema ?? "lotex" : null,
+      cenarioEcossistemaLabel: ["participacao_ecossistema_lotex", "participacao_ecossistema_com_cenarios"].includes(regra?.tipoCalculo) ? validCalculation?.cenarioApuracaoEcossistemaLabel ?? "Lotex" : null,
+      referencia2025EcossistemaTrimestre: regra?.tipoCalculo === "participacao_ecossistema_lotex" ? validCalculation?.referenciaLotex2025 ?? null : regra?.tipoCalculo === "participacao_ecossistema_com_cenarios" ? validCalculation?.referencia2025Trimestre ?? null : null,
+      arrecadacaoViaEcossistemaTrimestre: regra?.tipoCalculo === "participacao_ecossistema_lotex" ? validCalculation?.arrEcoLotex2026 ?? null : regra?.tipoCalculo === "participacao_ecossistema_com_cenarios" ? validCalculation?.arrecadacaoViaEcossistema ?? null : null,
+      arrecadacaoMarketplaceEcossistemaTrimestre: regra?.tipoCalculo === "participacao_ecossistema_lotex" ? validCalculation?.arrEcoMarketplace2026 ?? null : null,
+      arrecadacaoTotalEcossistemaTrimestre: regra?.tipoCalculo === "participacao_ecossistema_lotex" ? validCalculation?.arrTotal2026 ?? null : regra?.tipoCalculo === "participacao_ecossistema_com_cenarios" ? validCalculation?.arrecadacaoTotal ?? null : null,
       baseReferencia2025Trimestre: ["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(regra?.tipoCalculo) ? validCalculation?.baseReferencia2025Periodo ?? null : null,
       indiceTrimestral: ["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(regra?.tipoCalculo) ? validCalculation?.indiceEmRelacaoA2025 ?? null : null,
       crescimentoTrimestral: ["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(regra?.tipoCalculo) ? validCalculation?.crescimentoVs2025 ?? null : null,

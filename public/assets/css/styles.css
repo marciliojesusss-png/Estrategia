@@ -5097,6 +5097,198 @@ select:disabled {
   justify-content: center;
 }
 
+/* Indicador 22 — hierarquia operacional e memória técnica */
+.indicator22-section,
+.indicator22-memory {
+  border: 1px solid rgba(41, 169, 239, 0.35);
+  border-radius: 10px;
+  background: rgba(6, 42, 79, 0.46);
+}
+
+.indicator22-section {
+  padding: 20px;
+}
+
+.indicator22-section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 16px;
+}
+
+.indicator22-section-heading h3,
+.indicator22-section-heading p {
+  margin: 0;
+}
+
+.indicator22-section-heading > p {
+  max-width: 560px;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.indicator22-summary-grid,
+.indicator22-official-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.indicator22-summary-card,
+.indicator22-official-item {
+  display: grid;
+  align-content: center;
+  min-width: 0;
+  min-height: 100px;
+  gap: 8px;
+  padding: 16px 18px;
+  border: 1px solid rgba(96, 184, 241, 0.28);
+  border-radius: 8px;
+  background: rgba(8, 54, 96, 0.72);
+}
+
+.indicator22-summary-card span,
+.indicator22-official-item span,
+.indicator22-memory-item span {
+  color: var(--text-muted);
+  font-size: 0.77rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.indicator22-summary-card strong {
+  overflow-wrap: anywhere;
+  color: var(--text-main);
+  font-size: clamp(1.25rem, 2.4vw, 1.8rem);
+  line-height: 1.15;
+}
+
+.indicator22-summary-status strong {
+  font-size: clamp(1.08rem, 2vw, 1.45rem);
+}
+
+.indicator22-official-section {
+  border-color: rgba(249, 192, 38, 0.5);
+  background: rgba(40, 49, 55, 0.32);
+}
+
+.indicator22-official-item {
+  min-height: 84px;
+  border-color: rgba(249, 192, 38, 0.26);
+}
+
+.indicator22-official-item strong {
+  overflow-wrap: anywhere;
+  color: var(--text-main);
+  font-size: 1.08rem;
+  line-height: 1.35;
+}
+
+.indicator22-input-help {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border-left: 3px solid var(--accent-cyan);
+  color: var(--text-muted);
+  background: rgba(41, 169, 239, 0.08);
+  font-size: 0.87rem;
+  line-height: 1.45;
+}
+
+.indicator22-input-help strong {
+  color: var(--text-main);
+}
+
+.indicator22-memory {
+  overflow: hidden;
+}
+
+.indicator22-memory summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  color: var(--text-main);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.indicator22-memory summary small {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.indicator22-memory[open] summary {
+  border-bottom: 1px solid rgba(41, 169, 239, 0.24);
+}
+
+.indicator22-memory-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  padding: 1px;
+  background: rgba(41, 169, 239, 0.16);
+}
+
+.indicator22-memory-item {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+  padding: 14px 16px;
+  background: var(--surface);
+}
+
+.indicator22-memory-item strong {
+  overflow-wrap: anywhere;
+  color: var(--text-main);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.indicator22-editor #dynamicInputSection {
+  padding: 18px;
+  border: 1px solid rgba(41, 169, 239, 0.24);
+  border-radius: 10px;
+  background: rgba(6, 42, 79, 0.25);
+}
+
+@media (max-width: 900px) {
+  .indicator22-summary-grid,
+  .indicator22-official-grid,
+  .indicator22-memory-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .indicator22-section {
+    padding: 14px;
+  }
+
+  .indicator22-section-heading,
+  .indicator22-memory summary {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .indicator22-summary-grid,
+  .indicator22-official-grid,
+  .indicator22-memory-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .indicator22-summary-card,
+  .indicator22-official-item {
+    min-height: 78px;
+  }
+}
+
 @media (max-width: 1100px) {
   .audit-filters {
     grid-template-columns: repeat(2, minmax(180px, 1fr));

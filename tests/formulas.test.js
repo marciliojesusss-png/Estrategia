@@ -1301,12 +1301,8 @@ const ecossistemaMarketplace1Tri = formulas.calcularIndicador(
   { ano: 2026, mes: 3, trimestre: "1TRI/2026", camposEntrada: { cenarioApuracaoEcossistema: "lotex_marketplace", arrecadacaoViaEcossistema: 242300000, arrecadacaoTotal: 5966900000 } },
   []
 );
-closeTo(ecossistemaMarketplace1Tri.referencia2025Trimestre, 0.0342);
-closeTo(ecossistemaMarketplace1Tri.metaTrimestral2026, 0.0376);
-closeTo(ecossistemaMarketplace1Tri.resultadoCalculado, 242300000 / 5966900000);
-closeTo(ecossistemaMarketplace1Tri.percentualAtingidoMensal, (242300000 / 5966900000) / 0.0376);
-assert.equal(ecossistemaMarketplace1Tri.cenarioApuracaoEcossistemaLabel, "Lotex + Marketplace");
-assert.equal(ecossistemaMarketplace1Tri.situacao, "Atingido");
+assert.equal(ecossistemaMarketplace1Tri.erro, true);
+assert.match(ecossistemaMarketplace1Tri.mensagem, /cenário combinado é apenas histórico/i);
 
 const regraRedeLoterica = {
   indicadorId: 23,
@@ -2408,7 +2404,7 @@ const amostras = {
   19: { nomeProjetoIncentivoSocioambiental: "Projeto apoiado", statusProjetoIncentivoSocioambiental: "Investimento realizado", valorInvestidoAcumuladoCompetencia: 4307900, evidenciaIncentivoSocioambiental: "Documento" },
   20: { acaoPropostaVisibilidade: "campanha_repasses_sociais", statusAcaoVisibilidade: "Publicada/realizada" },
   21: { publicoAlvoElegivelJR: 1000, empregadosCapacitadosJR: 900, quantidadeMinimaIniciativasJR: 2, iniciativasConsideradasJR: "Duas iniciativas concluídas" },
-  22: { arrecadacaoEcossistema2025PeriodoEquivalente: 10000000, arrecadacaoEcossistemaMes2026: 12000000 },
+  22: { arrTotal2025: 26612476457, arrEcoLotex2025: 173831435.50, arrEcoMarketplace2025: 746339639.03, arrTotal2026: 27000000000, arrEcoLotex2026: 180000000, arrEcoMarketplace2026: 750000000, tipoPosicaoEcossistema: "fechamento_trimestral" },
   23: { arrecadacaoRedeLoterica2025Acumulada: 1000000000, arrecadacaoRedeLotericaAcumulada2026: 1030000000 }
 };
 

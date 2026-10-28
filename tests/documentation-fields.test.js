@@ -88,6 +88,69 @@ test("registro histórico do indicador 12 abre a documentação legada nos campo
   assert.equal(resolved.observation, "Contexto histórico da área");
 });
 
+test("observação documental oficial tem prioridade e permanece somente leitura", () => {
+  const resolved = DocumentationFields.resolve(rulesByIndicator[3] || { indicadorId: 3 }, {
+    indicadorId: 3,
+    referenciaEvidencia: "Referência operacional preservada",
+    observacaoArea: "Observação física do lançamento",
+    camposEntrada: { observacaoArea: "Observação legada no JSON" },
+    observacaoDocumental: {
+      observacao: "Observação literal do Informe",
+      fonteDocumental: "Informe DILOT/GERIN nº 0029/2026",
+      somenteLeitura: true
+    }
+  });
+
+  assert.equal(resolved.observation, "Observação literal do Informe");
+  assert.equal(resolved.reference, "Referência operacional preservada");
+  assert.equal(resolved.isDocumentaryOfficial, true);
+  assert.equal(resolved.readOnly, true);
+  assert.equal(resolved.documentarySource, "Informe DILOT/GERIN nº 0029/2026");
+  assert.match(resolved.documentaryNotice, /Observação registrada no Informe/);
+});
+
+test("ausência de observação documental mantém fallback físico e legado", () => {
+  const physical = DocumentationFields.resolve({ indicadorId: 3 }, {
+    indicadorId: 3,
+    observacaoArea: "Observação física",
+    camposEntrada: { observacaoArea: "Observação legada" }
+  });
+  assert.equal(physical.observation, "Observação física");
+  assert.equal(physical.readOnly, undefined);
+
+  const legacy = DocumentationFields.resolve({ indicadorId: 3 }, {
+    indicadorId: 3,
+    observacaoDocumental: { observacao: "  " },
+    camposEntrada: { observacaoArea: "Observação legada" }
+  });
+  assert.equal(legacy.observation, "Observação legada");
+});
+
+test("JAN, FEV e competência não trimestral não herdam a observação documental de MAR", () => {
+  const rule = rulesByIndicator[22];
+  const jan = DocumentationFields.resolve(rule, {
+    indicadorId: 22,
+    competencia: "2026-01",
+    observacaoArea: "Acompanhamento JAN"
+  });
+  const fev = DocumentationFields.resolve(rule, {
+    indicadorId: 22,
+    competencia: "2026-02",
+    camposEntrada: { observacaoArea: "Acompanhamento FEV legado" }
+  });
+  const abril = DocumentationFields.resolve({ indicadorId: 99 }, {
+    indicadorId: 99,
+    competencia: "2026-04",
+    observacaoArea: "Competência não trimestral"
+  });
+
+  assert.equal(jan.observation, "Acompanhamento JAN");
+  assert.equal(fev.observation, "Acompanhamento FEV legado");
+  assert.equal(abril.observation, "Competência não trimestral");
+  assert.equal(jan.isDocumentaryOfficial, undefined);
+  assert.equal(fev.isDocumentaryOfficial, undefined);
+});
+
 test("indicadores 20 e 21 não exibem duplicatas e continuam com os campos operacionais", () => {
   assert.deepEqual(
     DocumentationFields.visibleInputFields(rulesByIndicator[20]).map((field) => field.nome),
@@ -124,8 +187,8 @@ test("campos operacionais somente leitura de 15, 22 e 23 permanecem visíveis", 
     {
       indicadorId: 22,
       camposEntrada: [
-        { nome: "referencia2025Trimestre", somenteLeitura: true },
-        { nome: "metaTrimestral2026", somenteLeitura: true },
+        { nome: "referenciaLotex2025", somenteLeitura: true },
+        { nome: "metaParticipacao2026", somenteLeitura: true },
         { nome: "fonteEvidenciaEcossistema" },
         { nome: "observacaoArea" }
       ]
@@ -141,7 +204,7 @@ test("campos operacionais somente leitura de 15, 22 e 23 permanecem visíveis", 
   ];
 
   assert.deepEqual(DocumentationFields.visibleInputFields(rules[0]).map((field) => field.nome), ["quantidadeCursosMinimaCapacitacao"]);
-  assert.deepEqual(DocumentationFields.visibleInputFields(rules[1]).map((field) => field.nome), ["referencia2025Trimestre", "metaTrimestral2026"]);
+  assert.deepEqual(DocumentationFields.visibleInputFields(rules[1]).map((field) => field.nome), ["referenciaLotex2025", "metaParticipacao2026"]);
   assert.deepEqual(DocumentationFields.visibleInputFields(rules[2]).map((field) => field.nome), ["metaTrimestral"]);
 });
 
@@ -149,10 +212,25 @@ test("integração usa o fallback central sem alterar regra de evidência", () =
   const launches = fs.readFileSync(path.join(root, "assets", "js", "launches.js"), "utf8");
   const indicators = fs.readFileSync(path.join(root, "assets", "js", "indicators.js"), "utf8");
   const approvals = fs.readFileSync(path.join(root, "assets", "js", "approvals.js"), "utf8");
+  const view = fs.readFileSync(path.join(root, "views", "frontend", "lancamentos.php"), "utf8");
 
   assert.match(launches, /DocumentationFields\.visibleInputFields\(regra\)/);
   assert.match(launches, /DocumentationFields\.preserveLegacyFields\(regra, lancamento, collectedFields\)/);
   assert.match(launches, /regra\.exigeEvidencia/);
   assert.match(indicators, /DocumentationFields\.resolve\(regra, lancamento\)/);
   assert.match(approvals, /DocumentationFields\.resolve\(regra, lancamento\)/);
+  assert.match(launches, /hasDocumentaryObservation[\s\S]*lancamento\.observacaoArea \?\? ""/);
+  assert.match(launches, /observationField\.readOnly = Boolean\(documentation\.readOnly\)/);
+  assert.match(view, /id="launchDocumentaryObservation"/);
+  assert.match(view, /Fonte documental:/);
+});
+
+test("espelhos da apresentação documental permanecem byte a byte idênticos", () => {
+  for (const file of ["documentation-fields.js", "launches.js"]) {
+    assert.equal(
+      fs.readFileSync(path.join(root, "assets", "js", file), "utf8"),
+      fs.readFileSync(path.join(root, "public", "assets", "js", file), "utf8"),
+      file
+    );
+  }
 });

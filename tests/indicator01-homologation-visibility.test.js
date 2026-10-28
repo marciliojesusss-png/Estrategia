@@ -78,7 +78,7 @@ for (const month of [1, 2, 4, 5, 7, 8, 10, 11]) {
 const approvalsSource = fs.readFileSync(path.join(root, "assets/js/approvals.js"), "utf8");
 const homologationService = fs.readFileSync(path.join(root, "app/services/HomologacaoService.php"), "utf8");
 const launchService = fs.readFileSync(path.join(root, "app/services/LancamentoService.php"), "utf8");
-assert.match(approvalsSource, /isOfficialApprovalCompetence\(lancamento\)/);
+assert.match(approvalsSource, /isOfficialApprovalCompetence\(lancamento(?:, indicators)?\)/);
 assert.match(approvalsSource, /api\/lancamentos\/\$\{encodeURIComponent\(id\)\}\/reabertura/);
 assert.match(approvalsSource, /api\/lancamentos\/\$\{encodeURIComponent\(lancamento\.id\)\}\/reabrir/);
 assert.match(homologationService, /CompetenciaPeriodicidade::assertExpected\(\$indicator,\$before\)/);

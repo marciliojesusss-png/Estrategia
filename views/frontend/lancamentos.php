@@ -17,9 +17,9 @@
   <script src="/assets/js/auth.js?v=GOVERNANCA-CA-001" defer></script>
   <script src="/assets/js/calculations.js?v=PLATAFORMA-JOGOS-001" defer></script>
   <script src="/assets/js/formulas.js?v=METAS-OFICIAIS-002" defer></script>
-  <script src="/assets/js/documentation-fields.js?v=DOCUMENTACAO-CENTRAL-001" defer></script>
+  <script src="/assets/js/documentation-fields.js?v=DOCUMENTACAO-COMPLEMENTAR-1TRI-001" defer></script>
   <script src="/assets/js/action-feedback.js?v=ACTION-FEEDBACK-001" defer></script>
-  <script src="/assets/js/launches.js?v=GOVERNANCA-CA-002" defer></script>
+  <script src="/assets/js/launches.js?v=OBSERVACOES-DOCUMENTAIS-1TRI-001" defer></script>
   <script src="/assets/js/app.js?v=APP-VERSION-001" defer></script>
 </head>
 <body data-page="lancamentos">
@@ -74,6 +74,17 @@
         <form id="launchForm" class="editor-form">
           <input type="hidden" id="launchId">
 
+          <section id="indicator22SummarySection" class="indicator22-section indicator22-summary-section full-span" aria-labelledby="indicator22SummaryTitle" hidden>
+            <div class="indicator22-section-heading">
+              <div>
+                <p class="eyebrow">Acompanhamento mensal</p>
+                <h3 id="indicator22SummaryTitle">Resumo da competência</h3>
+              </div>
+              <p>A meta da competência aplica o crescimento previsto sobre a referência do mesmo período de 2025.</p>
+            </div>
+            <div id="indicator22SummaryGrid" class="indicator22-summary-grid"></div>
+          </section>
+
           <label><span id="launchMetaLabel">Meta de referência mensal</span>
             <input id="launchMeta" type="text" readonly>
           </label>
@@ -87,6 +98,25 @@
             <div id="launchValidationFeedback" class="action-feedback launch-validation-feedback" role="alert" aria-live="assertive" hidden></div>
             <div id="dynamicInputFields" class="editor-form"></div>
           </div>
+
+          <section id="indicator22OfficialSection" class="indicator22-section indicator22-official-section full-span" aria-labelledby="indicator22OfficialTitle" hidden>
+            <div class="indicator22-section-heading">
+              <div>
+                <p class="eyebrow">Posição documental</p>
+                <h3 id="indicator22OfficialTitle">Fechamento oficial</h3>
+              </div>
+              <p>Apresentação literal do Informe do trimestre, separada do acompanhamento técnico mensal.</p>
+            </div>
+            <div id="indicator22OfficialGrid" class="indicator22-official-grid"></div>
+          </section>
+
+          <details id="indicator22MemorySection" class="indicator22-memory full-span" hidden>
+            <summary>
+              <span>Memória de cálculo</span>
+              <small>Auditoria, conferência e rastreabilidade</small>
+            </summary>
+            <div id="indicator22MemoryGrid" class="indicator22-memory-grid"></div>
+          </details>
 
           <label id="manualPercentWrapper" hidden>Percentual manual
             <input id="launchPercentualManual" type="number" step="any" placeholder="Ex.: 0.85 para 85%">
@@ -120,6 +150,11 @@
           <label class="full-span">Observação da área
             <textarea id="launchObservacaoArea" rows="3" placeholder="Informe contexto, explicação do resultado ou informação complementar sobre esta competência."></textarea>
           </label>
+
+          <aside id="launchDocumentaryObservation" class="legacy-information full-span" hidden>
+            <strong id="launchDocumentaryObservationNotice"></strong>
+            <p>Fonte documental: <span id="launchDocumentaryObservationSource"></span></p>
+          </aside>
 
           <aside id="legacyLaunchJustification" class="legacy-information full-span" hidden>
             <strong>Justificativa legada (somente leitura)</strong>

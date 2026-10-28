@@ -622,7 +622,7 @@
   function resolveGrowthTrackingModes(regra) {
     const type = regra?.tipoCalculo || "";
     return {
-      isEcossistemaScenario: type === "participacao_ecossistema_com_cenarios",
+      isEcossistemaScenario: ["participacao_ecossistema_lotex", "participacao_ecossistema_com_cenarios"].includes(type),
       isRedeLotericaIndex: type === "crescimento_rede_loterica_base_2025",
       isBase2025Growth: type === "crescimento_comparado_base_2025"
     };
@@ -1794,22 +1794,22 @@
       }
       if (isEcossistema) {
         const calculationScope = launches.filter((item) => Number(item.mes) <= month && item.status === "Homologado");
-        const calculated = launch && launch.status === "Homologado"
+        const hasDocumentedClosing = launch?.camposEntrada?.tipoPosicaoEcossistema === "fechamento_trimestral";
+        const calculated = launch && (launch.status === "Homologado" || hasDocumentedClosing)
           ? calculateIndicatorForDisplay(indicador, regra, launch, calculationScope)
           : null;
-        const percent = calculated?.percentualAtingidoMensal ?? calculated?.percentualAtingidoAnual ?? launch?.percentualAtingidoMensal ?? null;
+        const percent = calculated?.percentualAtingidoOficialDocumental ?? calculated?.atingimentoTecnicoLotex ?? calculated?.percentualAtingidoMensal ?? launch?.percentualAtingidoMensal ?? null;
         const situation = calculated?.situacao || launch?.situacaoCalculada || (calculated?.erro ? "Dados insuficientes" : Calculations.calcularStatusDesempenho(percent));
-        const scenario = calculated?.cenarioApuracaoEcossistemaLabel ||
-          (launch?.camposEntrada?.cenarioApuracaoEcossistema === "lotex" ? "Lotex" : launch?.camposEntrada?.cenarioApuracaoEcossistema ? "Lotex + Marketplace" : "-");
+        const scenario = "Lotex";
         return `
           <tr>
             <td>${name}/2026</td>
             <td>${escapeHtml(scenario)}</td>
-            <td>${Calculations.formatarPercentual(calculated?.referencia2025Trimestre)}</td>
-            <td>${Calculations.formatarPercentual(calculated?.metaTrimestral2026 ?? launch?.metaMensal)}</td>
-            <td>${Calculations.formatarValor(calculated?.arrecadacaoViaEcossistema ?? launch?.camposEntrada?.arrecadacaoViaEcossistema, "moeda")}</td>
-            <td>${Calculations.formatarValor(calculated?.arrecadacaoTotal ?? launch?.camposEntrada?.arrecadacaoTotal, "moeda")}</td>
-            <td>${Calculations.formatarValor(calculated?.resultadoCalculado ?? calculated?.resultadoMensal ?? launch?.resultadoMensal, "percentual")}</td>
+            <td>${Calculations.formatarPercentual(calculated?.referenciaLotex2025 ?? launch?.camposEntrada?.referenciaLotex2025)}</td>
+            <td>${Calculations.formatarPercentual(calculated?.metaOficialDocumental ?? calculated?.metaTecnica2026 ?? launch?.metaMensal)}</td>
+            <td>${Calculations.formatarValor(calculated?.arrEcoLotex2026 ?? launch?.camposEntrada?.arrEcoLotex2026, "moeda")}</td>
+            <td>${Calculations.formatarValor(calculated?.arrTotal2026 ?? launch?.camposEntrada?.arrTotal2026, "moeda")}</td>
+            <td>${Calculations.formatarValor(calculated?.resultadoOficialDocumental ?? calculated?.resultadoTecnicoLotex ?? launch?.resultadoMensal, "percentual")}</td>
             <td>${Calculations.formatarPercentual(percent)}</td>
             <td>${escapeHtml(situation)}</td>
             <td><span class="badge ${launch?.status === "Homologado" ? "ok" : launch?.status === "Devolvido para ajuste" ? "danger" : launch?.status === "Enviado para homologação" ? "warn" : "info"}">${escapeHtml(launch?.status || "Não iniciado")}</span></td>
@@ -1955,7 +1955,7 @@
               : isVisibilidadeRepasses && quarter.dadosCalculados?.resultadoPercentualVisibilidade != null
                 ? `<small class="quarter-message">Resultado: ${Calculations.formatarPercentual(quarter.dadosCalculados.resultadoPercentualVisibilidade)}</small>`
               : isEcossistema && quarter.dadosCalculados
-                ? `<small class="quarter-message">Cenário: ${escapeHtml(quarter.cenarioEcossistemaLabel || "-")}<br>Referência 2025: ${Calculations.formatarPercentual(quarter.referencia2025EcossistemaTrimestre)}<br>Via ecossistema: ${Calculations.formatarMoedaBR(quarter.arrecadacaoViaEcossistemaTrimestre)}<br>Total: ${Calculations.formatarMoedaBR(quarter.arrecadacaoTotalEcossistemaTrimestre)}</small>`
+                ? `<small class="quarter-message">Cenário oficial: Lotex<br>Referência Lotex 2025: ${Calculations.formatarPercentual(quarter.referencia2025EcossistemaTrimestre)}<br>ARR Eco Lotex: ${Calculations.formatarMoedaBR(quarter.arrecadacaoViaEcossistemaTrimestre)}<br>ARR Marketplace (auxiliar): ${Calculations.formatarMoedaBR(quarter.arrecadacaoMarketplaceEcossistemaTrimestre)}<br>ARR Total: ${Calculations.formatarMoedaBR(quarter.arrecadacaoTotalEcossistemaTrimestre)}</small>`
               : isRedeLoterica && quarter.resultadoTecnicoTrimestral != null
                 ? `<small class="quarter-message">Índice técnico: ${Calculations.formatarPercentual(quarter.resultadoTecnicoTrimestral)}<br>Crescimento equivalente: ${Calculations.formatarPercentual(quarter.crescimentoTrimestral)}<br>Atingimento técnico: ${Calculations.formatarPercentual(quarter.desempenhoTecnicoTrimestral)}<br>Resultado documental: ${Calculations.formatarPercentual(quarter.resultadoDocumentalTrimestral)}<br>Atingimento oficial documental: ${Calculations.formatarPercentual(quarter.desempenhoOficialDocumentalTrimestral)}<br>Fonte: ${escapeHtml(quarter.fonteDocumentalTrimestral || "-")}</small>`
               : isBase2025Growth && quarter.baseReferencia2025Trimestre != null

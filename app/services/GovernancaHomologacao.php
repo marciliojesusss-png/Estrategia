@@ -61,6 +61,9 @@ final class GovernancaHomologacao
 
     public static function assertIndependentReviewer(array $launch, $submissionUser, array $user, array $participantUsers = array())
     {
+        if (isset($user['perfil_original']) && self::normalizeProfile($user['perfil_original']) === 'administrador') {
+            return true;
+        }
         return self::assertIndependentParticipant($launch, $submissionUser, $user, $participantUsers, 'lançamento');
     }
 

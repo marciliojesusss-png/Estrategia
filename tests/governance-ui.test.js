@@ -60,8 +60,8 @@ assert.match(databaseService, /api\/lancamentos\/\$\{encodeURIComponent\(id\)\}\
 assert.doesNotMatch(databaseService, /status: "Reaberto"/);
 
 assert.match(read("views", "frontend", "administracao.php"), /admin\.js\?v=GOVERNANCA-CA-002/);
-assert.match(read("views", "frontend", "homologacao.php"), /approvals\.js\?v=GOVERNANCA-CA-002/);
-assert.match(read("views", "frontend", "lancamentos.php"), /launches\.js\?v=GOVERNANCA-CA-002/);
+assert.match(read("views", "frontend", "homologacao.php"), /approvals\.js\?v=STATUS-HOMOLOGACAO-001/);
+assert.match(read("views", "frontend", "lancamentos.php"), /launches\.js\?v=OBSERVACOES-DOCUMENTAIS-1TRI-001/);
 
 for (const view of ["administracao.php", "homologacao.php", "indicadores.php", "lancamentos.php", "login.php", "relatorios.php", "resumo-executivo.php", "visao-trimestral.php"]) {
   const source = read("views", "frontend", view);

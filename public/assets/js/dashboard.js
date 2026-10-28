@@ -201,14 +201,22 @@
       const trimestre = lancamento?.trimestre || `${Math.ceil(Number(lancamento?.mes) / 3)}TRI/${lancamento?.ano || 2026}`;
       return toFiniteNumber(regra.parametrosCalculo.curvaJogoResponsavel2026?.[trimestre]?.metaCobertura ?? regra.parametrosCalculo.metaCobertura ?? regra.metaAnualValor);
     }
+    if (regra?.tipoCalculo === "participacao_ecossistema_lotex") {
+      const quarterMatch = String(lancamento?.trimestre || `${Math.ceil(Number(lancamento?.mes || 1) / 3)}TRI/${lancamento?.ano || 2026}`).match(/([1-4])\s*TRI/i);
+      const quarterKey = quarterMatch ? `${quarterMatch[1]}TRI` : null;
+      const officialTarget = quarterKey ? regra?.parametrosCalculo?.apresentacoesOficiaisTrimestrais?.[quarterKey]?.metaOficialReportada : null;
+      if (toFiniteNumber(officialTarget) !== null) return toFiniteNumber(officialTarget);
+      const competence = lancamento?.competencia || `${lancamento?.ano}-${String(lancamento?.mes).padStart(2, "0")}`;
+      return toFiniteNumber(regra?.parametrosCalculo?.metasTecnicasPorCompetencia?.[competence] ?? lancamento?.metaReferencia ?? lancamento?.metaMensal);
+    }
     if (regra?.tipoCalculo === "participacao_ecossistema_com_cenarios") {
       const quarterMatch = String(lancamento?.trimestre || `${Math.ceil(Number(lancamento?.mes || 1) / 3)}TRI/${lancamento?.ano || 2026}`).match(/([1-4])\s*TRI/i);
       const quarterKey = quarterMatch ? `${quarterMatch[1]}TRI` : "1TRI";
-      const rawScenario = lancamento?.camposEntrada?.cenarioApuracaoEcossistema || regra?.parametrosCalculo?.cenarioOficialResumoExecutivo || "lotex_marketplace";
+      const rawScenario = "lotex";
       const scenarioText = String(rawScenario).toLocaleLowerCase("pt-BR");
       const scenario = scenarioText.includes("lotex") && scenarioText.includes("marketplace")
         ? "lotex_marketplace"
-        : scenarioText === "lotex" ? "lotex" : regra?.parametrosCalculo?.cenarioOficialResumoExecutivo || "lotex_marketplace";
+        : "lotex";
       const metaPontosPercentuais = regra?.parametrosCalculo?.curvasCenarios?.[scenario]?.[quarterKey]?.meta2026;
       return metaPontosPercentuais === undefined ? null : metaPontosPercentuais / 100;
     }

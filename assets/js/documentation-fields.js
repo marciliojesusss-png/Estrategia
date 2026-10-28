@@ -62,6 +62,22 @@
   function resolve(regra, lancamento) {
     const camposEntrada = lancamento?.camposEntrada || {};
     const legacyReference = meaningfulValue(camposEntrada, referenceKeys(regra, lancamento));
+    const documentary = lancamento?.observacaoDocumental || null;
+    const documentaryObservation = meaningfulValue(documentary, ["observacao"]);
+    if (documentaryObservation) {
+      const documentarySource = meaningfulValue(documentary, ["fonteDocumental", "documentoReferencia"]);
+      return {
+        reference: meaningfulValue(lancamento, ["referenciaEvidencia"]) || legacyReference || meaningfulValue(lancamento, ["linkEvidencia"]),
+        observation: documentaryObservation,
+        legacyReference,
+        isDocumentaryOfficial: true,
+        readOnly: true,
+        documentarySource,
+        documentaryNotice: documentarySource
+          ? `Observação registrada no ${documentarySource}`
+          : "Observação documental oficial (somente leitura)"
+      };
+    }
     return {
       reference: meaningfulValue(lancamento, ["referenciaEvidencia"]) || legacyReference || meaningfulValue(lancamento, ["linkEvidencia"]),
       observation: meaningfulValue(lancamento, ["observacaoArea"]) || meaningfulValue(camposEntrada, ["observacaoArea"]),

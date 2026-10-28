@@ -60,8 +60,12 @@
   }
 
   function ok(resultadoMensal, resultadoAcumulado, percentualMensal, percentualAcumulado, unidadeMedida, mensagem, extra = {}) {
-    const resultadoOficial = extra.resultadoOficialAnual ?? resultadoAcumulado;
-    const percentualAnual = extra.percentualAtingidoAnual ?? percentualAcumulado;
+    const resultadoOficial = Object.prototype.hasOwnProperty.call(extra, "resultadoOficialAnual")
+      ? extra.resultadoOficialAnual
+      : resultadoAcumulado;
+    const percentualAnual = Object.prototype.hasOwnProperty.call(extra, "percentualAtingidoAnual")
+      ? extra.percentualAtingidoAnual
+      : percentualAcumulado;
     return {
       resultadoMensal,
       resultadoMensalFormatado: formatarValor(resultadoMensal, unidadeMedida),
@@ -2369,7 +2373,7 @@
   }
 
   function normalizarCenarioEcossistema(value, params = {}) {
-    const rawValue = valorTextoOuId(value || params.cenarioOficialResumoExecutivo || "lotex_marketplace")
+    const rawValue = valorTextoOuId(value || params.cenarioOficialResumoExecutivo || "lotex")
       .toLocaleLowerCase("pt-BR")
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
@@ -2378,7 +2382,7 @@
       .replace(/_+/g, "_");
     if (rawValue === "lotex") return "lotex";
     if (["lotex_marketplace", "lotex_e_marketplace", "lotex_marketplace_de_boloes"].includes(rawValue)) return "lotex_marketplace";
-    return params.cenarioOficialResumoExecutivo || "lotex_marketplace";
+    return params.cenarioOficialResumoExecutivo || "lotex";
   }
 
   function labelCenarioEcossistema(cenario, params = {}) {
@@ -2398,11 +2402,114 @@
     return number === null ? null : number / 100;
   }
 
+  function valorFoiInformado(value) {
+    return value !== null && value !== undefined && value !== "";
+  }
+
+  function fatorMetaEcossistema(mes) {
+    return Number(mes) <= 7 ? 1.10 : 1.01;
+  }
+
+  function calcularParticipacaoEcossistemaLotex(indicador, regra, lancamentoAtual) {
+    const params = regra.parametrosCalculo || {};
+    const fields = {
+      total2025: params.campoArrTotal2025 || "arrTotal2025",
+      lotex2025: params.campoArrLotex2025 || "arrEcoLotex2025",
+      marketplace2025: params.campoArrMarketplace2025 || "arrEcoMarketplace2025",
+      total2026: params.campoArrTotal2026 || "arrTotal2026",
+      lotex2026: params.campoArrLotex2026 || "arrEcoLotex2026",
+      marketplace2026: params.campoArrMarketplace2026 || "arrEcoMarketplace2026",
+      resultadoDocumental: params.campoResultadoDocumental || "resultadoDocumentalEcossistema",
+      atingimentoDocumental: params.campoPercentualAtingidoOficial || "percentualAtingidoOficialEcossistema",
+      metaDocumental: params.campoMetaDocumental || "metaDocumentalEcossistema",
+      tipoPosicao: params.campoTipoPosicao || "tipoPosicaoEcossistema",
+      fonte: params.campoFonteResultado || "fonteResultadoEcossistema"
+    };
+    const rawValues = Object.fromEntries(Object.entries(fields).map(([key, field]) => [key, raw(lancamentoAtual, field)]));
+    const values = Object.fromEntries(Object.entries(fields).map(([key, field]) => [key, campo(lancamentoAtual, field)]));
+
+    const has2025Total = valorFoiInformado(rawValues.total2025);
+    const has2025Lotex = valorFoiInformado(rawValues.lotex2025);
+    const has2026Total = valorFoiInformado(rawValues.total2026);
+    const has2026Lotex = valorFoiInformado(rawValues.lotex2026);
+    if (has2025Total !== has2025Lotex) return erro("Informe ARR Total 2025 e ARR Eco Lotex 2025 em conjunto.", regra.unidadeMedida);
+    if (has2026Total !== has2026Lotex) return erro("Informe ARR Total 2026 e ARR Eco Lotex 2026 em conjunto.", regra.unidadeMedida);
+    if (has2025Total && (values.total2025 === null || values.total2025 <= 0)) return erro("ARR Total 2025 deve ser maior que zero.", regra.unidadeMedida);
+    if (has2026Total && (values.total2026 === null || values.total2026 <= 0)) return erro("ARR Total 2026 deve ser maior que zero.", regra.unidadeMedida);
+    if (has2025Lotex && (values.lotex2025 === null || values.lotex2025 < 0)) return erro("ARR Eco Lotex 2025 não pode ser negativo.", regra.unidadeMedida);
+    if (has2026Lotex && (values.lotex2026 === null || values.lotex2026 < 0)) return erro("ARR Eco Lotex 2026 não pode ser negativo.", regra.unidadeMedida);
+    if (valorFoiInformado(rawValues.marketplace2025) && (values.marketplace2025 === null || values.marketplace2025 < 0)) return erro("ARR Eco Marketplace 2025 não pode ser negativo.", regra.unidadeMedida);
+    if (valorFoiInformado(rawValues.marketplace2026) && (values.marketplace2026 === null || values.marketplace2026 < 0)) return erro("ARR Eco Marketplace 2026 não pode ser negativo.", regra.unidadeMedida);
+
+    const mes = Number(lancamentoAtual?.mes);
+    const referenciaLotex2025 = has2025Total ? values.lotex2025 / values.total2025 : null;
+    const fatorMetaVigente = fatorMetaEcossistema(mes);
+    const metaTecnica2026 = referenciaLotex2025 === null ? null : referenciaLotex2025 * fatorMetaVigente;
+    const resultadoTecnico = has2026Total ? values.lotex2026 / values.total2026 : null;
+    const atingimentoTecnico = resultadoTecnico !== null && metaTecnica2026 > 0
+      ? resultadoTecnico / metaTecnica2026
+      : null;
+
+    const tipoPosicao = String(rawValues.tipoPosicao || "").trim();
+    const fonte = String(rawValues.fonte || "").trim();
+    const hasDocument = valorFoiInformado(rawValues.resultadoDocumental)
+      || valorFoiInformado(rawValues.atingimentoDocumental)
+      || valorFoiInformado(rawValues.metaDocumental)
+      || fonte !== "";
+    if (hasDocument) {
+      if (tipoPosicao !== "fechamento_trimestral" || ![3, 6, 9, 12].includes(mes)) {
+        return erro("Posição documental do Indicador 22 permitida apenas no fechamento trimestral.", regra.unidadeMedida);
+      }
+      if (values.resultadoDocumental === null || values.atingimentoDocumental === null || values.metaDocumental === null || !fonte) {
+        return erro("Fechamento documental requer meta, resultado, atingimento e fonte.", regra.unidadeMedida);
+      }
+    }
+
+    const resultadoOficialDocumental = hasDocument ? values.resultadoDocumental : null;
+    const percentualAtingidoOficialDocumental = hasDocument ? values.atingimentoDocumental : null;
+    const desempenho = percentualAtingidoOficialDocumental ?? atingimentoTecnico;
+    const situacao = desempenho === null ? null : situacaoPorPercentual(desempenho);
+
+    return ok(resultadoTecnico, resultadoTecnico, atingimentoTecnico, atingimentoTecnico, regra.unidadeMedida, "Participação oficial calculada exclusivamente com ARR Eco Lotex.", {
+      resultadoOficialAnual: null,
+      percentualAtingidoAnual: null,
+      cenarioApuracaoEcossistema: "lotex",
+      cenarioApuracaoEcossistemaLabel: "Lotex",
+      marketplaceAplicaAoCalculo: false,
+      referenciaLotex2025,
+      fatorMetaVigente,
+      fatorMetaVigentePercentual: fatorMetaVigente,
+      metaTecnica2026,
+      metaReferencia: metaTecnica2026,
+      resultadoTecnicoLotex: resultadoTecnico,
+      atingimentoTecnicoLotex: atingimentoTecnico,
+      resultadoOficialDocumental,
+      percentualAtingidoOficialDocumental,
+      metaOficialDocumental: hasDocument ? values.metaDocumental : null,
+      tipoPosicaoEcossistema: tipoPosicao || "acompanhamento",
+      fonteResultadoEcossistema: fonte || null,
+      arrTotal2025: values.total2025,
+      arrEcoLotex2025: values.lotex2025,
+      arrEcoMarketplace2025: values.marketplace2025,
+      arrTotal2026: values.total2026,
+      arrEcoLotex2026: values.lotex2026,
+      arrEcoMarketplace2026: values.marketplace2026,
+      situacao
+    });
+  }
+
   function calcularParticipacaoEcossistemaComCenarios(indicador, regra, lancamentoAtual) {
+    const params = regra.parametrosCalculo || {};
+    const scenario = normalizarCenarioEcossistema(raw(lancamentoAtual, params.campoCenario || "cenarioApuracaoEcossistema"), params);
+    if (scenario !== "lotex") {
+      return erro("O cenário combinado é apenas histórico e não pode alimentar o cálculo oficial do Indicador 22.", regra.unidadeMedida);
+    }
+    if (valorFoiInformado(raw(lancamentoAtual, "arrTotal2025")) || valorFoiInformado(raw(lancamentoAtual, "arrEcoLotex2025"))) {
+      return calcularParticipacaoEcossistemaLotex(indicador, regra, lancamentoAtual);
+    }
     const required = validarObrigatorios(regra, lancamentoAtual);
     if (required) return erro(required, regra.unidadeMedida);
 
-    const params = regra.parametrosCalculo || {};
     const campoCenario = params.campoCenario || "cenarioApuracaoEcossistema";
     const campoNumerador = params.campoNumerador || "arrecadacaoViaEcossistema";
     const campoNumeradorLegado = params.campoNumeradorLegado || "arrecadacaoEcossistemaMes2026";
@@ -2688,6 +2795,8 @@
         return calcularPercentualExecucaoPlanoAcao(indicador, regra, lancamentoAtual, lancamentosDoAno);
       case "participacao_ecossistema_com_cenarios":
         return calcularParticipacaoEcossistemaComCenarios(indicador, regra, lancamentoAtual, lancamentosDoAno);
+      case "participacao_ecossistema_lotex":
+        return calcularParticipacaoEcossistemaLotex(indicador, regra, lancamentoAtual, lancamentosDoAno);
       case "crescimento_relativo_participacao":
       case "crescimento_comparado_base_2025":
         return calcularCrescimentoRelativoParticipacao(indicador, regra, lancamentoAtual, lancamentosDoAno);
@@ -2741,6 +2850,7 @@
     calcularInvestimentoPercentualLucro,
     calcularExecucaoAcoesPropostas,
     calcularPercentualExecucaoPlanoAcao,
+    calcularParticipacaoEcossistemaLotex,
     calcularParticipacaoEcossistemaComCenarios,
     calcularCrescimentoRedeLotericaBase2025,
     calcularCrescimentoRelativoParticipacao,

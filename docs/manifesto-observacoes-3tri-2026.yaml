@@ -1,0 +1,614 @@
+manifesto:
+  titulo: "Observações/Evidências — 3TRI/2026"
+  competencia: "SET/2026"
+  ano: 2026
+  mes: 9
+  fonte: "Informe DILOT/GERIN nº 0078/2026"
+  posicaoDocumental: "30 SET 2026"
+  arquivoFonte: "C:/Users/jonat/Downloads/sistema/00.Informe DILOT_GERIN_0078_2026_Monitoramento_PEI_PNI 3TR.pdf"
+  hashDeclaradoPaginaAssinaturas: "6f97de83e610071190017d2942609c25501eb21c0e86896436c5c143b1c1c9aa"
+  hashFisicoArquivoSha256: "0acadd32b423c73c54589d78db3b1056cb86116282d95ffd792ef89ed5643367"
+  observacaoSobreHashes: "O hash declarado na página de assinaturas identifica o documento assinado; o hash físico identifica o arquivo PDF efetivamente utilizado nesta transcrição, incluindo a página de assinaturas."
+  normalizacao: "Unicode NFC; CRLF/CR para LF; remoção apenas de cabeçalho, rodapé, número de página, aviso geral de confidencialidade e quebras tipográficas que interrompem frases."
+  tipoFuturo: "OBSERVACAO_AREA_INFORME_TRIMESTRAL"
+  totalIndicadores: 23
+  totalObservacoesEfetivas: 23
+  totalSegmentosConferidos: 122
+  composicaoSegmentos: "122 segmentos textuais não vazios derivados dos 23 blocos Observações/Evidências, incluindo as notas de rodapé 1 e 4; as notas 2 e 3 foram excluídas por pertencerem à meta e à fórmula."
+  divergenciasTextuais: 0
+
+entradas:
+  - indicadorId: 1
+    nome: "Índice de Ofertas Personalizadas aos Clientes Ativos"
+    lancamentoId: 9
+    versaoLancamento: 1
+    statusLancamento: "Em preenchimento"
+    competencia: "SET/2026"
+    ano: 2026
+    mes: 9
+    paginasInforme: [6]
+    notasExternasIncorporadas: []
+    notasExternasExcluidas: []
+    fonte: "Informe DILOT/GERIN nº 0078/2026"
+    tipo: "OBSERVACAO_AREA_INFORME_TRIMESTRAL"
+    tamanhoCaracteres: 775
+    tamanhoUtf8Bytes: 815
+    sha256: "68edb59fa5ee54b415ff993dfc7858edd5ee9b49ae31d0f04fc7f1f5c431385c"
+    observacaoLiteral: |-
+      ▪ O resultado permanece positivo, demonstrando a evolução de ações no que se referem a qualificação da base de clientes.
+
+      ▪ No período, foram realizadas campanhas via push voltadas à divulgação dos produtos de loterias, promoção do Jogo Responsável e comunicação de concursos especiais.
+
+      ▪ A Lotofácil da Independência foi o principal destaque, concentrando 11 campanhas, número superior ao dos demais impulsionamentos realizados no período. A maior recorrência de comunicações contribuiu para que o concurso especial apresentasse também maior alcance entre as campanhas realizadas.
+
+      ▪ As ações reforçam a utilização do canal push como instrumento de ativação e relacionamento com a base de clientes, especialmente em períodos estratégicos associados aos concursos especiais.
+
+  - indicadorId: 2
+    nome: "Índice de Satisfação de Clientes — NPS"
+    lancamentoId: 21
+    versaoLancamento: 1
+    statusLancamento: "Em preenchimento"
+    competencia: "SET/2026"
+    ano: 2026
+    mes: 9
+    paginasInforme: [7]
+    notasExternasIncorporadas: []
+    notasExternasExcluidas: []
+    fonte: "Informe DILOT/GERIN nº 0078/2026"
+    tipo: "OBSERVACAO_AREA_INFORME_TRIMESTRAL"
+    tamanhoCaracteres: 228
+    tamanhoUtf8Bytes: 237
+    sha256: "4d5229f4d87afa4991f3c4357b9fe6a35e781d5f0c21362a941bbaa1e03fb845"
+    observacaoLiteral: |-
+      ▪ A CAIXA Loterias elevou o NPS de 55,0 para 59,2 pontos (+7,64%), ampliando a implementação das melhorias demandadas pelos clientes, consolidando a evolução da experiência e a voz do cliente. Nova apuração prevista para OUT/26.
+
+  - indicadorId: 3
+    nome: "Índice de Clientes Ativos em Canais Digitais"
+    lancamentoId: 33
+    versaoLancamento: 1
+    statusLancamento: "Em preenchimento"
+    competencia: "SET/2026"
+    ano: 2026
+    mes: 9
+    paginasInforme: [7]
+    notasExternasIncorporadas: []
+    notasExternasExcluidas: []
+    fonte: "Informe DILOT/GERIN nº 0078/2026"
+    tipo: "OBSERVACAO_AREA_INFORME_TRIMESTRAL"
+    tamanhoCaracteres: 341
+    tamanhoUtf8Bytes: 360
+    sha256: "ac24b6f1604f85fe864175bfe381f591a349a104366ca113bd2ce8b313b6db11"
+    observacaoLiteral: |-
+      ▪ O resultado do indicador ratifica o sucesso das ações de aquisição, reativação e engajamento de clientes, além do impacto positivo das iniciativas de digitalização e personalização da jornada.
+
+      ▪ A média de clientes ativos de JAN a SET de 2026 foi de 3.079.049, um aumento de 52,70% em relação ao mesmo período do ano anterior (2.016.416).
+
+  - indicadorId: 4
+    nome: "Aprimoramento da Experiência do Cliente"
+    lancamentoId: 45
+    versaoLancamento: 1
+    statusLancamento: "Em preenchimento"
+    competencia: "SET/2026"
+    ano: 2026
+    mes: 9
+    paginasInforme: [8, 9]
+    notasExternasIncorporadas: [1]
+    notasExternasExcluidas: []
+    fonte: "Informe DILOT/GERIN nº 0078/2026"
+    tipo: "OBSERVACAO_AREA_INFORME_TRIMESTRAL"
+    tamanhoCaracteres: 1765
+    tamanhoUtf8Bytes: 1811
+    sha256: "b0afbab02cb9c78f4ee1475ced2e1de992a90c1367ffb211e41746de5b2fb585"
+    observacaoLiteral: |-
+      ▪ A partir da realização da pesquisa NPS de baseline de 2025, foram definidas 22 melhorias como plano de trabalho ao longo do ano de 2026, em que para atingimento da meta anual do indicador para o ano é necessária a entrega de ao menos 06 melhorias, representando assim a meta de 25% das ocorrências apontadas.
+
+      ▪ As melhorias mapeadas demandam implantação junto à área de TI da CAIXA.
+
+      ▪ Nesse sentido, convém relembrar que a curva definida para o ano foi estruturada trimestralmente da seguinte forma:
+
+      ▪ 1TRI26: 4,54% - entrega de 01 melhoria do plano de trabalho de 2026;
+      ▪ 2TRI26: 13,64% - entrega de 03 melhorias (acumuladas) do plano de trabalho de 2026;
+      ▪ 3TRI26: 18,18% - entrega de 04 melhorias (acumuladas) do plano de trabalho de 2026;
+      ▪ 4TRI26: 251% - entrega de 06 melhorias (acumuladas) do plano de trabalho de 2026.
+
+      ▪ Foram realizadas 6 entregas (acumuladas) no 3TRI/2026.
+
+      ▪ Durante o período do 3TRI2026, foram implementadas 02 melhorias, quais sejam:
+
+      i) Login simplificado no Portal Loterias:
+      A melhoria simplifica o processo de login no Portal Loterias Online, tornando o acesso do cliente mais direto e fluido.
+      A atualização reduz etapas na jornada de entrada e facilita o acesso às funcionalidades disponíveis no Portal.
+
+      ii) Tela de Aviso de Instabilidade:
+      A melhoria apresenta uma comunicação específica ao cliente quando houver indisponibilidade ou instabilidade que impeça o acesso normal aos serviços.
+      A tela mantém o cliente informado sobre a situação, com uma mensagem clara e adequada ao contexto apresentado.
+
+      1 O plano de trabalho previsto para atendimento desse indicador considera o escopo de 22 melhorias mapeadas posteriormente à definição da meta do presente indicador, conforme data da aprovação do PN 2026 da CAIXA Loterias.
+
+  - indicadorId: 5
+    nome: "Gross Gaming Revenue (GGR)"
+    lancamentoId: 57
+    versaoLancamento: 1
+    statusLancamento: "Em preenchimento"
+    competencia: "SET/2026"
+    ano: 2026
+    mes: 9
+    paginasInforme: [9]
+    notasExternasIncorporadas: []
+    notasExternasExcluidas: []
+    fonte: "Informe DILOT/GERIN nº 0078/2026"
+    tipo: "OBSERVACAO_AREA_INFORME_TRIMESTRAL"
+    tamanhoCaracteres: 287
+    tamanhoUtf8Bytes: 300
+    sha256: "2f8a184a3470f80068dade33f78c5c956bd974833b2765101ae7c0267b07acaa"
+    observacaoLiteral: |-
+      ▪ O desempenho vem mantendo o patamar mensal de arrecadação próximo ao orçado, em que ações comerciais e de engajamento de clientes vem sendo desenvolvidas para incremento dos resultados nos próximos períodos, como o concurso especial Lotofácil da Independência e estratégias comerciais.
+
+  - indicadorId: 6
+    nome: "IEO Recorrente (Índice de Eficiência Operacional Recorrente)"
+    lancamentoId: 69
+    versaoLancamento: 1
+    statusLancamento: "Em preenchimento"
+    competencia: "SET/2026"
+    ano: 2026
+    mes: 9
+    paginasInforme: [10]
+    notasExternasIncorporadas: []
+    notasExternasExcluidas: []
+    fonte: "Informe DILOT/GERIN nº 0078/2026"
+    tipo: "OBSERVACAO_AREA_INFORME_TRIMESTRAL"
+    tamanhoCaracteres: 536
+    tamanhoUtf8Bytes: 552
+    sha256: "6c4f0ccbe65515fa3661400daafeaf5ad7b1987ca1d4028d63e70f706025effb"
+    observacaoLiteral: |-
+      ▪ Fórmula – percentual atingido:
+
+      Uma vez que um valor mais baixo indica maior eficiência, o percentual de atingimento é calculado considerando a seguinte fórmula:
+
+      % Atingido = 1- ((realizado – meta) / (VRM – meta))
+
+      VRM (Valor de Referência Mínimo): No caso do IEO, o VRM é igual a 100%.
+
+      Setembro / 2026
+
+      Despesas Gerais e Administrativas:   207.600.617,97
+      Despesas com serviços de Pagamentos:   60.460.075,58
+      Outras Despesas Operacionais:   321.534,28
+      Receitas Operacionais:   1.850.907.955,34
+      Despesas de Tributos:   201.813.909,75
+
+  - indicadorId: 7
+    nome: "Lucro Líquido Recorrente"
+    lancamentoId: 81
+    versaoLancamento: 1
+    statusLancamento: "Em preenchimento"
+    competencia: "SET/2026"
+    ano: 2026
+    mes: 9
+    paginasInforme: [11]
+    notasExternasIncorporadas: []
+    notasExternasExcluidas: []
+    fonte: "Informe DILOT/GERIN nº 0078/2026"
+    tipo: "OBSERVACAO_AREA_INFORME_TRIMESTRAL"
+    tamanhoCaracteres: 424
+    tamanhoUtf8Bytes: 442
+    sha256: "fe3d6ea34a3e74b95943811e0f9f9a2e137cd96cd0aa1486e341b8696c65e8ff"
+    observacaoLiteral: |-
+      ▪ Em julho/2026 a companhia obteve lucro líquido de R$ 780,6 milhões, receita total de R$ 1.545,8 milhões e despesas de R$ 765,2 milhões.
+
+      ▪ Em agosto/2026 a companhia obteve lucro líquido de R$ 900,8 milhões, receita total de R$ 1.781,8 milhões e despesas de R$ 881,0 milhões.
+
+      ▪ Em setembro/2026 a companhia obteve lucro líquido de R$ 1.040,09 milhões, receita total de R$ 2.060,4 milhões e despesas de R$ 1.019,4 milhões.
+
+  - indicadorId: 8
+    nome: "Vendas Provenientes de Canais Digitais"
+    lancamentoId: 93
+    versaoLancamento: 1
+    statusLancamento: "Em preenchimento"
+    competencia: "SET/2026"
+    ano: 2026
+    mes: 9
+    paginasInforme: [11, 12]
+    notasExternasIncorporadas: []
+    notasExternasExcluidas: [2]
+    fonte: "Informe DILOT/GERIN nº 0078/2026"
+    tipo: "OBSERVACAO_AREA_INFORME_TRIMESTRAL"
+    tamanhoCaracteres: 535
+    tamanhoUtf8Bytes: 556
+    sha256: "e5bb6962ade9727af3adbbdd3105e31ef0cc865edd5ae4fa913adbb068488968"
+    observacaoLiteral: |-
+      ▪ O desempenho dos canais digitais apresentou crescimento acima do esperado, quando comparado com o mesmo período do ano de 2025, registrando ao final do 3TRI2026 realizado de 29,17%, que corresponde a arrecadação de R$ 5,455 bilhões, e alcance da meta em 102,82%. Em 2025, no mesmo período foi registrada arrecadação de R$ 4,205 bilhões no Canal Eletrônico.
+
+      ▪ O resultado reforça a maturidade das iniciativas digitais, a maior adesão dos clientes aos canais eletrônicos e a efetividade das estratégias de estímulo à migração digital.
+
+  - indicadorId: 9
+    nome: "Vendas com Meio de Pagamento PIX"
+    lancamentoId: 105
+    versaoLancamento: 1
+    statusLancamento: "Em preenchimento"
+    competencia: "SET/2026"
+    ano: 2026
+    mes: 9
+    paginasInforme: [12]
+    notasExternasIncorporadas: []
+    notasExternasExcluidas: [3]
+    fonte: "Informe DILOT/GERIN nº 0078/2026"
+    tipo: "OBSERVACAO_AREA_INFORME_TRIMESTRAL"
+    tamanhoCaracteres: 843
+    tamanhoUtf8Bytes: 880
+    sha256: "19eb82398790d1aa27acf89a67781fd00f4d6f448e34af01659fe7dbd3407b75"
+    observacaoLiteral: |-
+      Cabe relembrar que a seguinte curva de meta foi definida para 2026:
+      ▪ 1TRI26: 61%;
+      ▪ 2TRI26: 62%;
+      ▪ 3TRI26: 63%;
+      ▪ 4TRI26: 65%.
+
+      ▪ Com R$ 3,538 bilhões acumulados até setembro de 2026, o indicador segue apresentando desempenho superior ao previsto para o exercício. A evolução observada ao longo do ano demonstra a continuidade da ampliação do uso do Pix nos canais eletrônicos, contribuindo para a sustentação dos resultados do período.
+
+      ▪ Com nove meses de execução, o desempenho do indicador demonstra estabilidade e consistência, evidenciando a manutenção da preferência dos clientes pelo pagamento via Pix nas compras realizadas pelos canais digitais. A evolução acumulada reforça a contribuição desse meio de pagamento para o aumento da eficiência operacional e para os resultados comerciais dos canais eletrônicos ao longo do exercício.
+
+  - indicadorId: 10
+    nome: "Share da Plataforma de Jogos"
+    lancamentoId: 117
+    versaoLancamento: 1
+    statusLancamento: "Em preenchimento"
+    competencia: "SET/2026"
+    ano: 2026
+    mes: 9
+    paginasInforme: [13, 14]
+    notasExternasIncorporadas: []
+    notasExternasExcluidas: []
+    fonte: "Informe DILOT/GERIN nº 0078/2026"
+    tipo: "OBSERVACAO_AREA_INFORME_TRIMESTRAL"
+    tamanhoCaracteres: 2177
+    tamanhoUtf8Bytes: 2250
+    sha256: "18e088154a2b5f73daa0c5e7127f0feb692f89cadd7a5d69d9ec4018fce1701d"
+    observacaoLiteral: |-
+      ▪ No 2TR/26 e 3TRI/26, foram concluídas as funcionalidades que permitem ao gestor criar e parametrizar produtos lotéricos em conformidade com a legislação aplicável, contemplando regras de rateio da arrecadação, cronograma de concursos, cadastro de produtos, tipos de apostas, concursos e tipos de concursos. Também evoluíram as funcionalidades relacionadas à distribuição da arrecadação (repasses, premiação e despesas de custeio e manutenção) e ao registro de apostas.
+
+      ▪ Ao longo do trimestre, o projeto atingiu maior maturidade no detalhamento dos requisitos e na consolidação do escopo do MVP (Mínimo Produto Viável), estimado em aproximadamente 264 histórias de usuário. Esse refinamento permitiu aprimorar a mensuração da evolução da plataforma e estabelecer uma visão mais precisa do desenvolvimento efetivamente realizado.
+
+      ▪ Considerando que as funcionalidades previstas para a plataforma possuem diferentes níveis de complexidade e esforço de implementação, a evolução do projeto não ocorre de forma linear entre os trimestres. Dessa forma, o acompanhamento do indicador passou a refletir a evolução acumulada do escopo efetivamente desenvolvido para o MVP, proporcionando uma avaliação mais aderente ao estágio atual do projeto.
+
+      ▪ Nesse contexto, a evolução do desenvolvimento passou de aproximadamente 10% no início do trimestre para 37,9% ao final do 3TRI/26, representando avanço significativo na construção da plataforma. O resultado reflete tanto a conclusão de funcionalidades estruturantes quanto o aumento da capacidade de execução do projeto, com a incorporação, em agosto de 2026, de dois novos squads de desenvolvimento atuando em paralelo nas frentes de trabalho.
+
+      ▪ Dessa forma, o acompanhamento do indicador passa a refletir a evolução acumulada do escopo efetivamente desenvolvido para o MVP, proporcionando uma visão mais aderente ao estágio atual do projeto e à complexidade da construção da nova plataforma.
+
+      ▪ Embora o desafio de conclusão do MVP permaneça relevante, o projeto encontra-se estruturado, com escopo mapeado, metodologia de acompanhamento definida e capacidade de desenvolvimento ampliada para suportar a continuidade das entregas.
+
+  - indicadorId: 11
+    nome: "Ampliar a Capacidade de Desenvolvimento de Soluções de TIC"
+    lancamentoId: 129
+    versaoLancamento: 1
+    statusLancamento: "Em preenchimento"
+    competencia: "SET/2026"
+    ano: 2026
+    mes: 9
+    paginasInforme: [14]
+    notasExternasIncorporadas: []
+    notasExternasExcluidas: []
+    fonte: "Informe DILOT/GERIN nº 0078/2026"
+    tipo: "OBSERVACAO_AREA_INFORME_TRIMESTRAL"
+    tamanhoCaracteres: 810
+    tamanhoUtf8Bytes: 851
+    sha256: "768231a83888dd5f14eda81a18ce6ffa022dce5a5f0bcc77f2285d3288b48ae1"
+    observacaoLiteral: |-
+      A seguinte curva de meta foi definida para 2026 com relação ao presente indicador:
+      ▪ 1TRI26: 35% - Realização de Consulta Pública de Informações – RFI (Request for Information);
+      ▪ 2TRI26: 70% - Realização de Consulta Pública de Propostas – RFP (Request for Proposal);
+      ▪ 3TRI26: 85% - Iniciação da Fase Seleção;
+      ▪ 4TRI26: 100% - Contrato assinado com fornecedor.
+
+      ▪ Em 10/06/2026 foi aberta a OS (Ordem de Serviço), em parceria entre CAIXA Loterias e CAIXA, 25173021, para contratação adicional de 18 profissionais de tecnologia, através da Fábrica de Software Spassu, com o objetivo de ampliar a capacidade de desenvolvimento de soluções de Tecnologia da Informação e Comunicação do projeto da Nova Plataforma (SIPLX), a qual foi concluída em 14/08/2026, concluindo o atingimento do indicador para o exercício.
+
+  - indicadorId: 12
+    nome: "Clima Organizacional (Pesquisa GPTW)"
+    lancamentoId: 141
+    versaoLancamento: 1
+    statusLancamento: "Em preenchimento"
+    competencia: "SET/2026"
+    ano: 2026
+    mes: 9
+    paginasInforme: [15]
+    notasExternasIncorporadas: []
+    notasExternasExcluidas: []
+    fonte: "Informe DILOT/GERIN nº 0078/2026"
+    tipo: "OBSERVACAO_AREA_INFORME_TRIMESTRAL"
+    tamanhoCaracteres: 199
+    tamanhoUtf8Bytes: 205
+    sha256: "a9ed0973910002c2d80a87f344d152cef65cf66af41ec3ebf2c15b20bb5e26ce"
+    observacaoLiteral: |-
+      As iniciativas previstas no Plano de Ação seguem em andamento em toda a CAIXA Loterias. A pesquisa GPTW está programada para novembro de 2026.
+
+      Houve a contratação da empresa que efetuará a pesquisa.
+
+  - indicadorId: 13
+    nome: "Mulheres Chefes de Unidade e Gestoras"
+    lancamentoId: 153
+    versaoLancamento: 1
+    statusLancamento: "Em preenchimento"
+    competencia: "SET/2026"
+    ano: 2026
+    mes: 9
+    paginasInforme: [15, 16]
+    notasExternasIncorporadas: []
+    notasExternasExcluidas: []
+    fonte: "Informe DILOT/GERIN nº 0078/2026"
+    tipo: "OBSERVACAO_AREA_INFORME_TRIMESTRAL"
+    tamanhoCaracteres: 139
+    tamanhoUtf8Bytes: 145
+    sha256: "293847d25f30bc3cd0ba10c1ca58b7b1fadb51b33200907276717d45d8570d31"
+    observacaoLiteral: |-
+      ▪ jun/26:  19 mulheres de 46 Gestores | 41,30%
+      ▪ ago/26: 20 mulheres de 46 Gestores | 43,48%
+      ▪ set/26:  20 mulheres de 46 Gestores | 43,48%
+
+  - indicadorId: 14
+    nome: "Gestores Negros, Amarelos, Pardos ou Indígenas e/ou PcD"
+    lancamentoId: 165
+    versaoLancamento: 1
+    statusLancamento: "Em preenchimento"
+    competencia: "SET/2026"
+    ano: 2026
+    mes: 9
+    paginasInforme: [16]
+    notasExternasIncorporadas: []
+    notasExternasExcluidas: []
+    fonte: "Informe DILOT/GERIN nº 0078/2026"
+    tipo: "OBSERVACAO_AREA_INFORME_TRIMESTRAL"
+    tamanhoCaracteres: 116
+    tamanhoUtf8Bytes: 122
+    sha256: "760ac55d0fa76f8bdf6818266a8400dc80efdbfd4ed70e04039cda6ba0bfbb60"
+    observacaoLiteral: |-
+      ▪ jul/26:   12 de 46 Gestores  | 26,09%
+      ▪ ago/26: 12 de 46 Gestores  | 26,09%
+      ▪ set/26:  12 de 46 Gestores  | 26,09%
+
+  - indicadorId: 15
+    nome: "Capacitação dos Empregados da CAIXA Loterias"
+    lancamentoId: 177
+    versaoLancamento: 1
+    statusLancamento: "Em preenchimento"
+    competencia: "SET/2026"
+    ano: 2026
+    mes: 9
+    paginasInforme: [17]
+    notasExternasIncorporadas: []
+    notasExternasExcluidas: []
+    fonte: "Informe DILOT/GERIN nº 0078/2026"
+    tipo: "OBSERVACAO_AREA_INFORME_TRIMESTRAL"
+    tamanhoCaracteres: 380
+    tamanhoUtf8Bytes: 387
+    sha256: "a6c2f0ee93dd1ec55a4b120a612ab8f91f36b13ac62c3686942c590306fcee2e"
+    observacaoLiteral: |-
+      ▪ Meta estipulada em 90% para que os empregados realizem os dois cursos propostos na trilha de desenvolvimento, quais sejam: Customer Experience e Ecossistema Negocial.
+
+      ▪ Até 30/09/2026, 163 empregados no total de 171 empregados realizaram o curso de Customer Experience e 154 empregados do total de 171 empregados elegíveis no período realizaram o curso de Ecossistema Negocial.
+
+  - indicadorId: 16
+    nome: "Apoio ao Desenvolvimento Socioambiental"
+    lancamentoId: 189
+    versaoLancamento: 1
+    statusLancamento: "Em preenchimento"
+    competencia: "SET/2026"
+    ano: 2026
+    mes: 9
+    paginasInforme: [17, 18]
+    notasExternasIncorporadas: []
+    notasExternasExcluidas: []
+    fonte: "Informe DILOT/GERIN nº 0078/2026"
+    tipo: "OBSERVACAO_AREA_INFORME_TRIMESTRAL"
+    tamanhoCaracteres: 1658
+    tamanhoUtf8Bytes: 1722
+    sha256: "7b712477c85a02b0620237222349f56568e79176aa4926937109305084552ce1"
+    observacaoLiteral: |-
+      ▪ A seguinte curva de meta foi definida para 2026 com relação ao presente indicador:
+      ▪ 1TRI26: 0%;
+      ▪ 2TRI26: 50% - 1ª iniciativa realizada;
+      ▪ 3TRI26: 50% (acumulado de 50% considerando apenas a meta do 2TRI26);
+      ▪ 4TRI26: 100% - 2ª iniciativa realizada.
+
+      ▪ Patrocínio da edição 2026 da Brasil Ladies Cup:
+
+      ▪ Entre 09 e 12/07/2026 foi realizado patrocínio ao Projeto Brasil Ladies Cup, com a Federação Internacional de Football Soccer Society (FIFOS), na cidade de Campinas/SP, com valor de investimento total de R$ 190.000,00 (cento e noventa mil reais), originados da reserva especial do Fundo para Desenvolvimento das Loterias (FDL), conforme aprovação pela alçada competente, conforme MN ZL026.
+
+      ▪ Na edição 2026 da Brasil Ladies Cup, foram identificadas as seguintes entregas aderentes ao indicador:
+
+      ▪ Acesso gratuito ao esporte: os ingressos de todos os jogos foram cedidos gratuitamente e disponibilizados por resgate em virtual, com público acumulado superior a 3 mil pessoas.
+
+      ▪ Atendimento direto à comunidade: mais de 200 jovens da ONG Vaso do Oleiro, de Campinas/SP, visitaram o Estádio Brinco de Ouro, assistiram à final e participaram de conversa sobre futebol feminino. A organização informa ter custeado logística e alimentação.
+
+      ▪ Formação e disseminação de conhecimento: foram realizados dois dias de palestras e workshops gratuitos, com mais de 60 inscrições presenciais e mais de 600 acompanhamentos on-line.
+
+      ▪ Conteúdo formativo: as atividades abordaram futebol feminino, análise de desempenho e dados, formação e carreira de atletas, saúde e preparação física, universidade e ciência, scout, liderança e cultura e Copa do Mundo de 2027.
+
+  - indicadorId: 17
+    nome: "Repasse Social"
+    lancamentoId: 201
+    versaoLancamento: 1
+    statusLancamento: "Em preenchimento"
+    competencia: "SET/2026"
+    ano: 2026
+    mes: 9
+    paginasInforme: [18, 19]
+    notasExternasIncorporadas: []
+    notasExternasExcluidas: []
+    fonte: "Informe DILOT/GERIN nº 0078/2026"
+    tipo: "OBSERVACAO_AREA_INFORME_TRIMESTRAL"
+    tamanhoCaracteres: 693
+    tamanhoUtf8Bytes: 727
+    sha256: "4c796ca2defeabacc681c6359997f707a2f6b6728bc81feade160ddbe48c0360"
+    observacaoLiteral: |-
+      ▪ A meta estabelecida para o período considerou a projeção orçamentária prevista no Plano de Dispêndios Globais da Companhia de 2026.
+
+      ▪ Cabe relembrar a seguinte curva de meta definida para 2026 com relação ao presente indicador:
+
+      ▪ 1TRI26: R$ 2.143,0 milhões;
+      ▪ 2TRI26: R$ 4.545,1 milhões;
+      ▪ 3TRI26: R$ 7.165,1 milhões;
+      ▪ 4TRI26: R$ 10.452,8 milhões.
+
+      Em setembro/2026, o valor acumulado de repasses descontando o IR sobre prêmios pagos foi de R$ 7,095 bilhões.
+
+      O repasse social atingiu 99% da meta para o período em função da distribuição realizada entre as modalidades, com maior e menor percentual de repasse, e considerando a sazonalidade dos repasses ao FIES por prescrição de prêmios.
+
+  - indicadorId: 18
+    nome: "Princípios de Jogo Responsável (WLA)"
+    lancamentoId: 213
+    versaoLancamento: 1
+    statusLancamento: "Em preenchimento"
+    competencia: "SET/2026"
+    ano: 2026
+    mes: 9
+    paginasInforme: [20]
+    notasExternasIncorporadas: []
+    notasExternasExcluidas: []
+    fonte: "Informe DILOT/GERIN nº 0078/2026"
+    tipo: "OBSERVACAO_AREA_INFORME_TRIMESTRAL"
+    tamanhoCaracteres: 960
+    tamanhoUtf8Bytes: 1004
+    sha256: "dae506294c0abd9a7ee91d1e171caa3b8148bf65076bffaf0c4b4753d8f03d85"
+    observacaoLiteral: |-
+      ▪ Em setembro de 2026 foi realizada a inclusão das informações relativas à submissão ao RGF (Responsible Gaming Framework – RGF) desenvolvidos pela World Lottery Association (WLA) Nível 3 na plataforma DigitalRG.
+
+      ▪ Ao final do 3º trimestre, o Programa manteve o atendimento de 8 dos 10 elementos previstos para o exercício, contemplando os Elementos 1, 2, 3, 4, 5, 8, 9 e 10 e superando o quantitativo mínimo de 5 elementos esperado para o período.
+
+      ▪ As ações referentes aos elementos faltantes, elementos 6 – Publicidade e Comunicações e 7 – Educação do Jogador, serão atendidas com a realização da Semana de Jogo Responsável 2026, prevista para novembro, completando os 10 elementos no período planejado.
+
+      ▪ Dessa forma, o resultado acumulado cumpre o esperado para setembro e mantém a trajetória de evolução prevista para o exercício, com 8 elementos já atendidos no encerramento do 3º trimestre e previsão de atendimento dos 10 elementos no 4º trimestre.
+
+  - indicadorId: 19
+    nome: "Incentivo Socioambiental"
+    lancamentoId: 225
+    versaoLancamento: 1
+    statusLancamento: "Em preenchimento"
+    competencia: "SET/2026"
+    ano: 2026
+    mes: 9
+    paginasInforme: [20, 21]
+    notasExternasIncorporadas: [4]
+    notasExternasExcluidas: []
+    fonte: "Informe DILOT/GERIN nº 0078/2026"
+    tipo: "OBSERVACAO_AREA_INFORME_TRIMESTRAL"
+    tamanhoCaracteres: 851
+    tamanhoUtf8Bytes: 880
+    sha256: "671f0a468bb98f4fe7f4a0ac4998826db5bab7fb1ee023756479a0b4ac491629"
+    observacaoLiteral: |-
+      ▪ A seguinte curva de meta foi definida para 2026 com relação ao presente indicador:
+
+      ▪ 1TRI26: 0%;
+      ▪ 2TRI26: 0,05%; (R$ 652,7 mil);
+      ▪ 3TRI26: 0,10% (R$ 1.305,4 mil - valor acumulado, considerando o realizado do 2TRI26 e 3TRI26).
+      ▪ 4TRI26: 0,33% (R$ 4.307,9 mil4 - valor acumulado, considerando o realizado do 2TRI26, 3TRI26 e 4TRI26).
+
+      ▪ Patrocínio da edição 2026 da Brasil Ladies Cup:
+
+      ▪ Entre 09 e 12/07/2026 foi realizado patrocínio ao Projeto Brasil Ladies Cup, com a Federação Internacional de Football Soccer Society (FIFOS), na cidade de Campinas/SP, com valor de investimento total de R$ 190.000,00 (cento e noventa mil reais), originados da reserva especial do Fundo para Desenvolvimento das Loterias (FDL), conforme aprovação pela alçada competente.
+
+      4 Valor projetado conforme orçamento 2026, que prevê Lucro Líquido em R$ 1.305,4 milhões.
+
+  - indicadorId: 20
+    nome: "Visibilidade dos Repasses Sociais das Loterias CAIXA"
+    lancamentoId: 237
+    versaoLancamento: 1
+    statusLancamento: "Em preenchimento"
+    competencia: "SET/2026"
+    ano: 2026
+    mes: 9
+    paginasInforme: [21]
+    notasExternasIncorporadas: []
+    notasExternasExcluidas: []
+    fonte: "Informe DILOT/GERIN nº 0078/2026"
+    tipo: "OBSERVACAO_AREA_INFORME_TRIMESTRAL"
+    tamanhoCaracteres: 472
+    tamanhoUtf8Bytes: 485
+    sha256: "4ea0f2341f493ca002ef17d342bb526d5911f01d53292aa08522e11dc8c82616"
+    observacaoLiteral: |-
+      ▪ O resultado do 3TRI26 refere-se ao acumulado no ano, com a publicação do relatório institucional "A Sorte em Números - 2025" realizada em junho/2026. Para o período do 3TRI26, não houve meta estabelecida, segundo curva estabelecida considerando o acumulado de 50% da meta do 2TR26).
+
+      ▪ Para o 4TRI26 está prevista campanha publicitária exclusiva com foco no repasse social das Loterias CAIXA, a ser veiculada nos canais oficiais da Companhia e demais meios estratégicos.
+
+  - indicadorId: 21
+    nome: "Jogo Responsável 2026 (Capacitação e Disseminação)"
+    lancamentoId: 249
+    versaoLancamento: 1
+    statusLancamento: "Em preenchimento"
+    competencia: "SET/2026"
+    ano: 2026
+    mes: 9
+    paginasInforme: [22]
+    notasExternasIncorporadas: []
+    notasExternasExcluidas: []
+    fonte: "Informe DILOT/GERIN nº 0078/2026"
+    tipo: "OBSERVACAO_AREA_INFORME_TRIMESTRAL"
+    tamanhoCaracteres: 666
+    tamanhoUtf8Bytes: 697
+    sha256: "eb0a72f9bc682c31f77340eafb2fb4f2ada94f4c965f2ea3f2da274f8fbdcbe9"
+    observacaoLiteral: |-
+      ▪ Foi apurado que 99 funcionários, de 171 empregados, realizaram/participaram de ao menos 2 ações de disseminação de JR até 30/09/2026.
+
+      Curso na Universidade CAIXA;
+
+      - Capacitação em Jogo Responsável, realizada em maio/2026 na Universidade CAIXA;
+
+      - Capacitação em Design de Jogos - GamGard - realizado em junho/2026 na Universidade CAIXA.
+
+      ▪ Em setembro, novas conclusões do curso na Universidade CAIXA ampliaram o quantitativo de empregados que cumpriram o requisito de participação em pelo menos duas ações. As demais capacitações mantiveram seus quantitativos de participação.
+
+      ▪ Outras ações referentes ao Jogo Responsável serão realizadas até o final de 2026.
+
+  - indicadorId: 22
+    nome: "Arrecadação Gerada com o Ecossistema"
+    lancamentoId: 261
+    versaoLancamento: 1
+    statusLancamento: "Em preenchimento"
+    competencia: "SET/2026"
+    ano: 2026
+    mes: 9
+    paginasInforme: [23]
+    notasExternasIncorporadas: []
+    notasExternasExcluidas: []
+    fonte: "Informe DILOT/GERIN nº 0078/2026"
+    tipo: "OBSERVACAO_AREA_INFORME_TRIMESTRAL"
+    tamanhoCaracteres: 872
+    tamanhoUtf8Bytes: 900
+    sha256: "59d36a9129d652239abd81754263ad360e63198ad7d4749be207a20c53f3d6ba"
+    observacaoLiteral: |-
+      ▪ A seguinte curva de meta foi definida para 2026 com relação ao presente indicador:
+
+      META Realizado 2025 Meta 2026
+      1TRI 0,90% 0,91%
+      2TRI 0,78% 0,79%
+      3TRI 0,74% 0,75%
+      4TRI 0,65% 0,66%
+
+      No mês de referência, o desempenho de vendas registrou realizado em 0,60%, com alcance da meta em 80 %, já ajustada conforme recente alteração aprovada pelo extrato de ata da reunião do Conselho de Administração, de 27/08/2026 (Anexo III).
+
+      Ao longo do 3TRI/2026 foram lançados os programas Compre Aqui e Afiliados Instantânea CAIXA Digital, iniciativas as quais têm como objetivo fortalecer a atuação da Rede Lotérica, ampliar a oferta aos clientes à modalidade, além de criar oportunidade de geração de receitas para os parceiros lotéricos. As iniciativas ainda não tiveram o resultado esperado, e são planejadas novas ações para o 4º trimestre com o objetivo de impulsionar as vendas.
+
+  - indicadorId: 23
+    nome: "Participação da Rede Lotérica nos Negócios da CAIXA Loterias"
+    lancamentoId: 273
+    versaoLancamento: 1
+    statusLancamento: "Em preenchimento"
+    competencia: "SET/2026"
+    ano: 2026
+    mes: 9
+    paginasInforme: [24]
+    notasExternasIncorporadas: []
+    notasExternasExcluidas: []
+    fonte: "Informe DILOT/GERIN nº 0078/2026"
+    tipo: "OBSERVACAO_AREA_INFORME_TRIMESTRAL"
+    tamanhoCaracteres: 527
+    tamanhoUtf8Bytes: 555
+    sha256: "cad0e69fbd36c14031b68f867f10239fa22dfc7d018f636baacbe190333d3e51"
+    observacaoLiteral: |-
+      A seguinte curva de meta foi definida para 2026, considerando o comportamento de dados do realizado de arrecadação em 2025:
+
+      ▪ 1TRI26: 100,50%;
+      ▪ 2TRI26: 101,00%;
+      ▪ 3TRI26: 101,50%;
+      ▪ 4TRI26: 102,00%.
+
+      No mês de referência, a arrecadação da Rede Lotérica atingiu 98,16%, com alcance da meta 96,71%. As iniciativas do período reforçaram a atuação da Rede Lotérica via balcão presencial e plataforma de comercialização de bolão online, Marketplace, fatores que contribuíram para o resultado apurado na prestação de contas do mês.

@@ -271,6 +271,12 @@ const legacyScenario = resolveGrowthTrackingModes({
 assert.equal(legacyScenario.isEcossistemaScenario, true);
 assert.equal(legacyScenario.isBase2025Growth, false);
 
+const canonicalLotex = resolveGrowthTrackingModes({
+  tipoCalculo: "participacao_ecossistema_lotex"
+});
+assert.equal(canonicalLotex.isEcossistemaScenario, true);
+assert.equal(canonicalLotex.isBase2025Growth, false);
+
 assert.equal(usesAccumulatedGoalCurve({
   tipoCalculo: "valor_financeiro_acumulado",
   parametrosCalculo: {}

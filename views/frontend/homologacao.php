@@ -19,7 +19,7 @@
   <script src="/assets/js/formulas.js?v=METAS-OFICIAIS-002" defer></script>
   <script src="/assets/js/documentation-fields.js?v=DOCUMENTACAO-CENTRAL-001" defer></script>
   <script src="/assets/js/action-feedback.js?v=ACTION-FEEDBACK-001" defer></script>
-  <script src="/assets/js/approvals.js?v=GOVERNANCA-CA-002" defer></script>
+  <script src="/assets/js/approvals.js?v=STATUS-HOMOLOGACAO-001" defer></script>
   <script src="/assets/js/app.js?v=APP-VERSION-001" defer></script>
 </head>
 <body data-page="homologacao">
