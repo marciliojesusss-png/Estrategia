@@ -147,5 +147,9 @@ foreach (array(
 ) as $case) detalhe_ok(AccessPolicy::scopeAllows($case[0], $case[1]) === $case[2], 'escopo detalhado/IDOR divergente');
 detalhe_ok(AccessPolicy::scopeAllows($administrator, array('diretoriaResponsavel' => 'DILOT')), 'administrador ativo deve acessar qualquer indicador');
 detalhe_ok(!AccessPolicy::allows('usuario_companhia', 'relatorios', 'visualizar'), 'usuario companhia deve permanecer bloqueado');
+detalhe_ok(!AccessPolicy::allowsPage('usuario_companhia', 'relatorios', 'visualizar'), 'pagina de relatorios deve permanecer bloqueada para usuario companhia');
+foreach (array('administrador', 'homologador', 'consultor_diretoria', 'unidade_apuradora') as $allowedProfile) {
+    detalhe_ok(AccessPolicy::allows($allowedProfile, 'relatorios', 'visualizar'), $allowedProfile . ' deve permanecer autorizado em Relatorios');
+}
 
 echo 'Relatorio detalhado: Indicadores 03/22, oficial, legado, zero, ausencia, versoes, evidencias e IDOR validados.' . PHP_EOL;

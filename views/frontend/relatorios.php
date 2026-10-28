@@ -16,7 +16,7 @@
   <script src="<?= APP_BASE_PATH ?>/assets/js/dataService.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/auth.js?v=GOVERNANCA-CA-001" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/calculations.js?v=PLATAFORMA-JOGOS-001" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/reports.js?v=RELATORIO-DETALHADO-001" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/reports.js?v=RELATORIO-DETALHADO-002-RELATORIO-GOVERNANCA-001" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/app.js?v=APP-VERSION-001" defer></script>
 </head>
 <body data-page="relatorios">
@@ -29,6 +29,8 @@
         <h1>Relatórios</h1>
         <p>Posições homologadas vigentes dos indicadores estratégicos.</p>
       </section>
+
+      <nav id="reportsModuleNavigation" class="report-module-navigation no-print" aria-label="Navegação do módulo Relatórios" hidden></nav>
 
       <article id="officialConsolidatedReport" class="official-report" aria-labelledby="officialReportTitle">
         <header class="official-report-header">
@@ -97,6 +99,61 @@
           <h3 id="detailedGovernanceTitle">Governança resumida</h3><div class="table-wrap"><table class="detailed-report-table"><thead><tr><th>Competência</th><th>Versão</th><th>Governança</th><th>Submetido em</th><th>Submetido por</th><th>Homologado em</th><th>Homologado por</th></tr></thead><tbody id="detailedGovernanceTable"></tbody></table></div>
         </section>
         <footer class="official-report-footer"><span>Sistema Estratégia — CAIXA Loterias</span><span id="detailedReportFooterGeneration">—</span></footer>
+      </article>
+
+      <article id="governanceAuditReport" class="official-report governance-audit-report" aria-labelledby="governanceReportTitle" hidden>
+        <header class="official-report-header">
+          <div><p class="official-report-system">Sistema Estratégia</p><h2 id="governanceReportTitle">Relatório de Governança e Auditoria</h2></div>
+          <div class="row-actions no-print"><a class="secondary-action" href="<?= APP_BASE_PATH ?>/relatorios">Voltar ao Consolidado</a><button id="printGovernanceReport" class="primary-action" type="button">Imprimir relatório de governança</button></div>
+        </header>
+        <section class="official-report-context" aria-label="Identificação do relatório de governança">
+          <div><span>Exercício</span><strong id="governanceContextYear">—</strong></div><div><span>Indicador</span><strong id="governanceContextIndicator">—</strong></div>
+          <div><span>Competência</span><strong id="governanceContextCompetence">—</strong></div><div><span>Escopo</span><strong id="governanceContextScope">—</strong></div>
+          <div><span>Gerado em</span><strong id="governanceContextGeneratedAt">—</strong></div><div><span>Gerado por</span><strong id="governanceContextGeneratedBy">—</strong></div>
+        </section>
+
+        <form id="governanceFilters" class="filters governance-report-filters no-print" novalidate>
+          <label>Exercício<select id="governanceFilterYear"></select></label>
+          <label>Indicador<select id="governanceFilterIndicator"><option value="">Todos</option></select></label>
+          <label>Competência<input id="governanceFilterCompetence" type="month" min="2020-01" max="2100-12"></label>
+          <label>Trimestre<select id="governanceFilterQuarter"><option value="">Todos</option><option value="1">1TRI</option><option value="2">2TRI</option><option value="3">3TRI</option><option value="4">4TRI</option></select></label>
+          <label>Unidade Apuradora<select id="governanceFilterUnit"><option value="">Todas</option></select></label>
+          <label>Diretoria<select id="governanceFilterBoard"><option value="">Todas</option></select></label>
+          <label>Tipo de evento<select id="governanceFilterEvent"><option value="">Todos</option></select></label>
+          <label>Usuário/matrícula<input id="governanceFilterUser" type="search" maxlength="255" autocomplete="off"></label>
+          <label>Status<select id="governanceFilterStatus"><option value="">Todos</option></select></label>
+          <label>Versão<input id="governanceFilterVersion" type="number" min="1" step="1"></label>
+          <label>Ordenação<select id="governanceFilterOrder"><option value="asc">Mais antigo → mais recente</option><option value="desc">Mais recente → mais antigo</option></select></label>
+          <div class="governance-filter-actions"><button class="primary-action" type="submit">Consultar</button><button id="clearGovernanceFilters" class="secondary-action" type="button">Limpar</button></div>
+        </form>
+        <p id="governanceFilterSummary" class="official-report-filter-summary">Informe ao menos indicador, competência, trimestre, evento, usuário ou versão.</p>
+        <div id="governanceReportNotice" class="notice info no-print">Selecione filtros para consultar a trilha de governança sem carregar todo o histórico corporativo.</div>
+
+        <section class="detailed-report-section" aria-labelledby="governanceCurrentTitle">
+          <h3 id="governanceCurrentTitle">Situação atual do lançamento</h3>
+          <div class="table-wrap"><table class="detailed-report-table governance-current-table"><thead><tr><th>Lançamento</th><th>Indicador</th><th>Competência</th><th>Versão</th><th>Status</th><th>Resultado oficial</th><th>Atingimento</th><th>Situação</th><th>Responsável</th><th>Governança</th><th>Última homologação</th></tr></thead><tbody id="governanceCurrentTable"><tr><td colspan="11">Nenhuma consulta executada.</td></tr></tbody></table></div>
+        </section>
+
+        <section class="detailed-report-section" aria-labelledby="governanceTimelineTitle">
+          <h3 id="governanceTimelineTitle">Linha do tempo da governança</h3>
+          <div id="governanceTimeline" class="governance-timeline"><p class="empty-state">Nenhuma consulta executada.</p></div>
+        </section>
+
+        <section class="detailed-report-section" aria-labelledby="governanceEventsTitle">
+          <div class="panel-title-row"><h3 id="governanceEventsTitle">Eventos normalizados</h3><strong id="governanceEventCount">0 evento(s)</strong></div>
+          <div class="table-wrap"><table class="detailed-report-table governance-events-table"><thead><tr><th>Data/Hora</th><th>Indicador</th><th>Competência</th><th>Lançamento</th><th>Versão</th><th>Evento</th><th>Usuário</th><th>Perfil</th><th>De</th><th>Para</th><th>Origem</th><th class="no-print">Detalhes</th></tr></thead><tbody id="governanceEventsTable"><tr><td colspan="12">Nenhuma consulta executada.</td></tr></tbody></table></div>
+          <div class="governance-pagination no-print"><button id="governancePreviousPage" class="secondary-action" type="button">Anterior</button><span id="governancePageInfo">Página 0 de 0</span><button id="governanceNextPage" class="secondary-action" type="button">Próxima</button></div>
+        </section>
+
+        <section class="detailed-report-section" aria-labelledby="governanceEvidenceTitle">
+          <h3 id="governanceEvidenceTitle">Evidências</h3>
+          <div class="table-wrap"><table class="detailed-report-table"><thead><tr><th>Competência</th><th>Lançamento</th><th>Versão</th><th>Arquivo</th><th>Upload</th><th>Usuário</th><th>Status</th><th class="no-print">Ação</th></tr></thead><tbody id="governanceEvidenceTable"><tr><td colspan="8">Nenhuma consulta executada.</td></tr></tbody></table></div>
+        </section>
+
+        <section class="detailed-report-section" aria-labelledby="governanceDocumentsTitle">
+          <h3 id="governanceDocumentsTitle">Observações documentais</h3><div id="governanceDocuments" class="detailed-document-grid"><p class="empty-state">Nenhuma consulta executada.</p></div>
+        </section>
+        <footer class="official-report-footer"><span>Sistema Estratégia — CAIXA Loterias</span><span id="governanceReportFooterGeneration">—</span></footer>
       </article>
 
       <section id="operationalReportsSection" class="operational-report-section no-print" hidden>

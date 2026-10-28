@@ -420,8 +420,35 @@
       : `/relatorios?tipo=detalhado&indicador=${encodeURIComponent(indicatorId)}`;
   }
 
+  function governanceApiUrl(params) {
+    return window.appUrl
+      ? window.appUrl("api/relatorios/governanca", params)
+      : `/api/relatorios/governanca?${new URLSearchParams(params).toString()}`;
+  }
+
+  function governanceReportUrl() {
+    return window.appUrl
+      ? window.appUrl("relatorios", { tipo: "governanca" })
+      : "/relatorios?tipo=governanca";
+  }
+
   function isActiveAdministrator(user) {
     return user?.perfilCodigo === "administrador" && user?.perfilOriginalCodigo === "administrador";
+  }
+
+  function reportsNavigation(user, activeMode) {
+    const target = document.getElementById("reportsModuleNavigation");
+    if (!target) return;
+    const items = [
+      { key: "consolidado", label: "Consolidado", href: window.appUrl ? window.appUrl("relatorios") : "/relatorios" },
+      { key: "detalhado", label: "Detalhado", href: `${window.appUrl ? window.appUrl("relatorios") : "/relatorios"}#officialReportTable`, title: "Selecione um indicador no Consolidado" }
+    ];
+    if (isActiveAdministrator(user)) {
+      items.push({ key: "governanca", label: "Governan\u00e7a/Auditoria", href: governanceReportUrl() });
+      items.push({ key: "operacional", label: "Consulta/Exporta\u00e7\u00e3o Operacional", href: `${window.appUrl ? window.appUrl("relatorios") : "/relatorios"}#operationalReportsSection` });
+    }
+    target.innerHTML = items.map((item) => `<a class="${item.key === activeMode ? "active" : ""}" href="${escapeHtml(item.href)}"${item.title ? ` title="${escapeHtml(item.title)}"` : ""}>${escapeHtml(item.label)}</a>`).join("");
+    target.hidden = false;
   }
 
   function selectOptions(target, values, allLabel, mapValue = (item) => item, mapLabel = (item) => item) {
@@ -616,6 +643,248 @@
     notice.textContent = error.message;
   }
 
+  let governanceState = {
+    user: null,
+    payload: null,
+    page: 1,
+    optionsInitialized: false
+  };
+
+  function governanceMode() {
+    const params = new URLSearchParams(String(window.location?.search || ""));
+    return params.get("tipo") === "governanca";
+  }
+
+  function governanceValue(id) {
+    return document.getElementById(id)?.value?.trim() || "";
+  }
+
+  function governanceFilters(initial = false) {
+    const competence = governanceValue("governanceFilterCompetence");
+    const filters = {
+      ano: competence ? competence.slice(0, 4) : (governanceValue("governanceFilterYear") || "2026"),
+      indicador: governanceValue("governanceFilterIndicator"),
+      competencia: competence,
+      trimestre: governanceValue("governanceFilterQuarter"),
+      unidade: governanceValue("governanceFilterUnit"),
+      diretoria: governanceValue("governanceFilterBoard"),
+      evento: governanceValue("governanceFilterEvent"),
+      usuario: governanceValue("governanceFilterUser"),
+      status: governanceValue("governanceFilterStatus"),
+      versao: governanceValue("governanceFilterVersion"),
+      pagina: String(governanceState.page),
+      ordem: governanceValue("governanceFilterOrder") || "asc"
+    };
+    if (initial) filters.inicial = "1";
+    return Object.fromEntries(Object.entries(filters).filter(([, value]) => value !== ""));
+  }
+
+  function initializeGovernanceOptions(options) {
+    if (governanceState.optionsInitialized) return;
+    selectOptions("governanceFilterYear", options.anos || [2026], null);
+    selectOptions("governanceFilterIndicator", options.indicadores || [], "Todos", (item) => item.id, (item) => `${String(item.codigo).padStart(2, "0")} \u2014 ${item.nome}`);
+    selectOptions("governanceFilterUnit", options.unidades || [], "Todas");
+    selectOptions("governanceFilterBoard", options.diretorias || [], "Todas");
+    selectOptions("governanceFilterEvent", options.eventos || [], "Todos", (item) => item.valor, (item) => item.rotulo);
+    selectOptions("governanceFilterStatus", options.status || [], "Todos");
+    const year = document.getElementById("governanceFilterYear");
+    if (year && [...year.options].some((option) => option.value === "2026")) year.value = "2026";
+    governanceState.optionsInitialized = true;
+  }
+
+  function governanceUser(value) {
+    return value || "N\u00e3o identificado";
+  }
+
+  function governanceMeasure(value, unit) {
+    return value === null || value === undefined || value === "" ? "\u2014" : formatMeasure(value, unit);
+  }
+
+  function renderGovernanceCurrent(payload) {
+    const target = document.getElementById("governanceCurrentTable");
+    const rows = payload.posicoesAtuais || [];
+    if (!rows.length) {
+      target.innerHTML = '<tr><td colspan="11">Nenhuma posi\u00e7\u00e3o atual encontrada para os filtros.</td></tr>';
+      return;
+    }
+    target.innerHTML = rows.map((row) => `<tr>
+      <td>${escapeHtml(row.lancamentoId)}</td><td>${escapeHtml(`${String(row.codigoIndicador).padStart(2, "0")} \u2014 ${row.indicador}`)}</td>
+      <td>${escapeHtml(referenceCompetence(row.competencia))}</td><td>${escapeHtml(row.versao)}</td><td>${escapeHtml(row.status || "\u2014")}</td>
+      <td class="report-number">${escapeHtml(governanceMeasure(row.resultado, row.unidadeMedida))}</td>
+      <td class="report-number">${row.atingimento === null ? "\u2014" : escapeHtml(Calculations.formatarPercentual(row.atingimento))}</td>
+      <td><span class="badge ${badgeClass(row.situacao)}">${escapeHtml(row.situacao || "\u2014")}</span></td>
+      <td>${escapeHtml(governanceUser(row.responsavel))}</td><td>${escapeHtml(row.governanca || "\u2014")}</td>
+      <td>${escapeHtml(formatApprovalDate(row.ultimaHomologacaoEm))}${row.ultimaHomologacaoPor ? `<small class="report-document-note">${escapeHtml(row.ultimaHomologacaoPor)}</small>` : ""}${row.ultimaHomologacaoEm ? `<small class="report-document-note">${row.ultimaHomologacaoVigente ? "Vigente" : "Hist\u00f3rica"}</small>` : ""}</td></tr>`).join("");
+  }
+
+  function governanceChangeList(changes) {
+    if (!Array.isArray(changes) || !changes.length) return "";
+    return `<dl class="governance-change-list">${changes.map((change) => `<dt>${escapeHtml(change.campo || "Campo")}</dt><dd><span>Antes: ${escapeHtml(change.antes ?? "\u2014")}</span><span>Depois: ${escapeHtml(change.depois ?? "\u2014")}</span></dd>`).join("")}</dl>`;
+  }
+
+  function governanceEventDetails(event) {
+    const parts = [];
+    if (event.descricao) parts.push(`<p><strong>Descri\u00e7\u00e3o:</strong> ${escapeHtml(event.descricao)}</p>`);
+    if (event.justificativa) parts.push(`<p><strong>Justificativa:</strong> ${escapeHtml(event.justificativa)}</p>`);
+    if (event.versaoAnterior !== null && event.versaoAnterior !== undefined) parts.push(`<p><strong>Vers\u00e3o anterior:</strong> ${escapeHtml(event.versaoAnterior)} | <strong>Vers\u00e3o nova:</strong> ${escapeHtml(event.versaoNova ?? "\u2014")}</p>`);
+    const changes = governanceChangeList(event.alteracoes);
+    if (changes) parts.push(changes);
+    if (!parts.length) return "\u2014";
+    return `<details class="governance-event-details"><summary>Ver detalhes</summary>${parts.join("")}</details>`;
+  }
+
+  function renderGovernanceTimeline(payload) {
+    const target = document.getElementById("governanceTimeline");
+    const events = payload.eventos || [];
+    if (!events.length) {
+      target.innerHTML = '<p class="empty-state">Nenhum evento de governan\u00e7a encontrado para os filtros.</p>';
+      return;
+    }
+    target.innerHTML = events.map((event) => `<article class="governance-timeline-item">
+      <div class="governance-timeline-marker" aria-hidden="true"></div><div class="governance-timeline-content">
+      <header><strong>${escapeHtml(event.tipoRotulo || event.tipo)}</strong><time>${escapeHtml(formatApprovalDate(event.dataHora))}</time></header>
+      <p>${escapeHtml(`${String(event.codigoIndicador).padStart(2, "0")} \u2014 ${event.indicador} | ${referenceCompetence(event.competencia)} | lan\u00e7amento ${event.lancamentoId} | vers\u00e3o ${event.versao ?? "\u2014"}`)}</p>
+      <small>${escapeHtml(governanceUser(event.usuario))}${event.perfil ? ` | ${escapeHtml(event.perfil)}` : ""}${event.statusAnterior || event.statusNovo ? ` | ${escapeHtml(event.statusAnterior || "\u2014")} \u2192 ${escapeHtml(event.statusNovo || "\u2014")}` : ""}</small>
+      </div></article>`).join("");
+  }
+
+  function renderGovernanceEvents(payload) {
+    const target = document.getElementById("governanceEventsTable");
+    const events = payload.eventos || [];
+    const pagination = payload.paginacao || { pagina: 0, paginas: 0, total: 0 };
+    document.getElementById("governanceEventCount").textContent = `${pagination.total || 0} evento(s)`;
+    document.getElementById("governancePageInfo").textContent = `P\u00e1gina ${pagination.paginas ? pagination.pagina : 0} de ${pagination.paginas || 0}`;
+    document.getElementById("governancePreviousPage").disabled = !pagination.paginas || pagination.pagina <= 1;
+    document.getElementById("governanceNextPage").disabled = !pagination.paginas || pagination.pagina >= pagination.paginas;
+    if (!events.length) {
+      target.innerHTML = '<tr><td colspan="12">Nenhum evento de governan\u00e7a encontrado para os filtros.</td></tr>';
+      return;
+    }
+    target.innerHTML = events.map((event) => `<tr>
+      <td>${escapeHtml(formatApprovalDate(event.dataHora))}</td><td>${escapeHtml(`${String(event.codigoIndicador).padStart(2, "0")} \u2014 ${event.indicador}`)}</td>
+      <td>${escapeHtml(referenceCompetence(event.competencia))}</td><td>${escapeHtml(event.lancamentoId)}</td><td>${escapeHtml(event.versao ?? "\u2014")}</td>
+      <td>${escapeHtml(event.tipoRotulo || event.tipo)}</td><td>${escapeHtml(governanceUser(event.usuario))}</td><td>${escapeHtml(event.perfil || "\u2014")}</td>
+      <td>${escapeHtml(event.statusAnterior || "\u2014")}</td><td>${escapeHtml(event.statusNovo || "\u2014")}</td><td>${escapeHtml(event.origemEvento || "\u2014")}</td>
+      <td class="no-print">${governanceEventDetails(event)}</td></tr>`).join("");
+  }
+
+  function renderGovernanceEvidence(payload) {
+    const target = document.getElementById("governanceEvidenceTable");
+    const evidence = payload.evidencias || [];
+    if (!evidence.length) {
+      target.innerHTML = '<tr><td colspan="8">Nenhuma evid\u00eancia encontrada para os filtros.</td></tr>';
+      return;
+    }
+    target.innerHTML = evidence.map((item) => `<tr><td>${escapeHtml(referenceCompetence(item.competencia))}</td><td>${escapeHtml(item.lancamentoId)}</td>
+      <td>${escapeHtml(item.versao)}</td><td>${escapeHtml(item.nomeArquivo || "\u2014")}${item.descricao ? `<small class="report-document-note">${escapeHtml(item.descricao)}</small>` : ""}</td>
+      <td>${escapeHtml(formatApprovalDate(item.dataUpload))}</td><td>${escapeHtml(governanceUser(item.usuario))}</td><td>${escapeHtml(item.status || "\u2014")}</td>
+      <td class="no-print">${item.podeBaixar ? `<a class="secondary-action table-action" href="${escapeHtml(evidenceDownloadUrl(item.id))}">Baixar</a>` : "\u2014"}</td></tr>`).join("");
+  }
+
+  function renderGovernanceDocuments(payload) {
+    const target = document.getElementById("governanceDocuments");
+    const documents = payload.observacoesDocumentais || [];
+    if (!documents.length) {
+      target.innerHTML = '<p class="empty-state">Nenhuma observa\u00e7\u00e3o documental encontrada para os filtros.</p>';
+      return;
+    }
+    target.innerHTML = documents.map((item) => `<article class="detailed-document-card">
+      <header><strong>${escapeHtml(item.trimestre || "\u2014")}</strong><span>${escapeHtml(referenceCompetence(item.competencia))}</span></header>
+      <p>${escapeHtml(item.observacao || "\u2014")}</p><dl><dt>Fonte</dt><dd>${escapeHtml(item.fonte || "\u2014")}</dd>
+      <dt>P\u00e1ginas</dt><dd>${escapeHtml(item.paginas || "\u2014")}</dd><dt>Tipo</dt><dd>${escapeHtml(item.tipo || "\u2014")}</dd>
+      <dt>Vers\u00e3o</dt><dd>${escapeHtml(item.versao)}</dd><dt>Carga</dt><dd>${escapeHtml(formatApprovalDate(item.carregadoEm))}</dd>
+      <dt>Origem</dt><dd>${escapeHtml(item.origem || "\u2014")}</dd><dt>Situa\u00e7\u00e3o</dt><dd>${item.vigente ? "Vigente" : "Hist\u00f3rica"}</dd></dl></article>`).join("");
+  }
+
+  function governanceFilterSummary(filters) {
+    const indicator = document.getElementById("governanceFilterIndicator")?.selectedOptions?.[0]?.textContent;
+    const event = document.getElementById("governanceFilterEvent")?.selectedOptions?.[0]?.textContent;
+    return [
+      `Exerc\u00edcio: ${filters.ano}`, filters.indicador ? `Indicador: ${indicator}` : "", filters.competencia ? `Compet\u00eancia: ${referenceCompetence(filters.competencia)}` : "",
+      filters.trimestre ? `Trimestre: ${filters.trimestre}TRI` : "", filters.unidade ? `Unidade: ${filters.unidade}` : "", filters.diretoria ? `Diretoria: ${filters.diretoria}` : "",
+      filters.evento ? `Evento: ${event}` : "", filters.usuario ? `Usu\u00e1rio: ${filters.usuario}` : "", filters.status ? `Status: ${filters.status}` : "",
+      filters.versao ? `Vers\u00e3o: ${filters.versao}` : "", `Ordem: ${filters.ordem === "desc" ? "mais recente primeiro" : "mais antigo primeiro"}`
+    ].filter(Boolean).join(" | ");
+  }
+
+  function renderGovernanceContext(payload) {
+    const filters = payload.filtros || {};
+    const generatedAt = formatApprovalDate(payload.geradoEm);
+    const generatedBy = [payload.geradoPor?.nome, payload.geradoPor?.matricula].filter(Boolean).join(" \u2014 ") || "\u2014";
+    const indicator = document.getElementById("governanceFilterIndicator")?.selectedOptions?.[0]?.textContent || "Todos";
+    document.getElementById("governanceContextYear").textContent = filters.ano || "\u2014";
+    document.getElementById("governanceContextIndicator").textContent = filters.indicador ? indicator : "Filtros aplicados";
+    document.getElementById("governanceContextCompetence").textContent = filters.competencia ? referenceCompetence(filters.competencia) : (filters.trimestre ? `${filters.trimestre}TRI/${filters.ano}` : "Conforme filtros");
+    document.getElementById("governanceContextScope").textContent = payload.escopo || "\u2014";
+    document.getElementById("governanceContextGeneratedAt").textContent = generatedAt;
+    document.getElementById("governanceContextGeneratedBy").textContent = generatedBy;
+    document.getElementById("governanceReportFooterGeneration").textContent = `Gerado por ${generatedBy} em ${generatedAt}`;
+    document.getElementById("governanceFilterSummary").textContent = governanceFilterSummary(filters);
+  }
+
+  function renderGovernancePayload(payload) {
+    governanceState.payload = payload;
+    initializeGovernanceOptions(payload.opcoes || {});
+    renderGovernanceContext(payload);
+    renderGovernanceCurrent(payload);
+    renderGovernanceTimeline(payload);
+    renderGovernanceEvents(payload);
+    renderGovernanceEvidence(payload);
+    renderGovernanceDocuments(payload);
+    const notice = document.getElementById("governanceReportNotice");
+    if (!payload.consultaExecutada) {
+      notice.hidden = false;
+      notice.textContent = "Selecione ao menos indicador, compet\u00eancia, trimestre, tipo de evento, usu\u00e1rio ou vers\u00e3o para iniciar a consulta.";
+    } else if (payload.limiteFonteAtingido) {
+      notice.hidden = false;
+      notice.textContent = "O limite seguro da consulta foi atingido. Refine os filtros para obter a trilha completa.";
+    } else {
+      notice.hidden = true;
+    }
+  }
+
+  async function loadGovernanceReport({ initial = false } = {}) {
+    const notice = document.getElementById("governanceReportNotice");
+    notice.hidden = true;
+    const response = await fetch(governanceApiUrl(governanceFilters(initial)), { cache: "no-store", headers: { Accept: "application/json" } });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok || body.sucesso === false) throw new Error(body.mensagem || "N\u00e3o foi poss\u00edvel carregar o relat\u00f3rio de governan\u00e7a.");
+    renderGovernancePayload(body.dados || body);
+  }
+
+  function showGovernanceError(error) {
+    const notice = document.getElementById("governanceReportNotice");
+    notice.hidden = false;
+    notice.textContent = error.message;
+  }
+
+  function clearGovernanceFilters() {
+    ["governanceFilterIndicator", "governanceFilterCompetence", "governanceFilterQuarter", "governanceFilterUnit", "governanceFilterBoard", "governanceFilterEvent", "governanceFilterUser", "governanceFilterStatus", "governanceFilterVersion"].forEach((id) => {
+      const field = document.getElementById(id);
+      if (field) field.value = "";
+    });
+    document.getElementById("governanceFilterOrder").value = "asc";
+    governanceState.page = 1;
+    loadGovernanceReport({ initial: true }).catch(showGovernanceError);
+  }
+
+  function bindGovernanceEvents() {
+    document.getElementById("governanceFilters")?.addEventListener("submit", (event) => {
+      event.preventDefault(); governanceState.page = 1; loadGovernanceReport().catch(showGovernanceError);
+    });
+    document.getElementById("clearGovernanceFilters")?.addEventListener("click", clearGovernanceFilters);
+    document.getElementById("printGovernanceReport")?.addEventListener("click", () => window.print());
+    document.getElementById("governancePreviousPage")?.addEventListener("click", () => {
+      if (governanceState.page <= 1) return;
+      governanceState.page -= 1; loadGovernanceReport().catch(showGovernanceError);
+    });
+    document.getElementById("governanceNextPage")?.addEventListener("click", () => {
+      const pages = governanceState.payload?.paginacao?.paginas || 0;
+      if (governanceState.page >= pages) return;
+      governanceState.page += 1; loadGovernanceReport().catch(showGovernanceError);
+    });
+  }
+
   function detailedMode() {
     const params = new URLSearchParams(String(window.location?.search || ""));
     return params.get("tipo") === "detalhado" && Boolean(params.get("indicador"))
@@ -637,7 +906,7 @@
     const items = [
       ["Código", String(indicator.codigo || "").padStart(2, "0")], ["Indicador", indicator.nome],
       ["Plano", indicator.plano], ["Pilar", indicator.pilar], ["Diretoria", indicator.diretoria],
-      ["Unidade apuradora", indicator.unidade], ["Descrição", indicator.descricao], ["Fórmula", indicator.formula],
+      ["Unidade apuradora", indicator.unidade], ["Observação de acompanhamento", indicator.descricao], ["Fórmula", indicator.formula],
       ["Polaridade", polaridadeLabel(indicator.polaridade)], ["Periodicidade", indicator.periodicidade],
       ["Meta anual", indicator.metaAnual], ["Unidade de medida", indicator.unidadeMedida]
     ];
@@ -775,14 +1044,26 @@
 
   async function init({ user }) {
     officialState.user = user;
+    governanceState.user = user;
+    if (governanceMode()) {
+      reportsNavigation(user, "governanca");
+      document.getElementById("officialConsolidatedReport").hidden = true;
+      document.getElementById("detailedIndicatorReport").hidden = true;
+      document.getElementById("governanceAuditReport").hidden = false;
+      bindGovernanceEvents();
+      await loadGovernanceReport({ initial: true }).catch(showGovernanceError);
+      return;
+    }
     const mode = detailedMode();
     if (mode) {
+      reportsNavigation(user, "detalhado");
       document.getElementById("officialConsolidatedReport").hidden = true;
       document.getElementById("detailedIndicatorReport").hidden = false;
       document.getElementById("printDetailedReport")?.addEventListener("click", () => window.print());
       await loadDetailedReport(mode).catch(showDetailedError);
       return;
     }
+    reportsNavigation(user, "consolidado");
     updatePositionFilters();
     bindOfficialEvents();
     await loadOfficialReport();
@@ -800,6 +1081,7 @@
   window.PageModules.relatorios = { init };
   window.__REPORTS_TEST_INTERNALS__ = {
     governanceLabel, situationLabel, formatMeasure, formatApprovalDate, isActiveAdministrator,
-    detailedMode, referenceCompetence, polaridadeLabel, detailedApiUrl, detailedReportUrl, evidenceDownloadUrl
+    detailedMode, governanceMode, referenceCompetence, polaridadeLabel, detailedApiUrl, detailedReportUrl,
+    governanceApiUrl, governanceReportUrl, evidenceDownloadUrl, governanceEventDetails, governanceFilterSummary
   };
 })();

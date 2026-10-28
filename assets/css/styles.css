@@ -80,12 +80,99 @@
 .detailed-collapsible summary { cursor: pointer; color: #31c4ff; font-weight: 700; }
 .detailed-collapsible[open] summary { margin-bottom: 10px; }
 
+/* Relatorio de Governanca e Auditoria */
+.report-module-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 16px;
+}
+.report-module-navigation a {
+  border: 1px solid rgba(49, 196, 255, 0.32);
+  border-radius: 8px;
+  color: #c8ddf2;
+  padding: 8px 12px;
+  text-decoration: none;
+}
+.report-module-navigation a:hover,
+.report-module-navigation a:focus,
+.report-module-navigation a.active {
+  border-color: #31c4ff;
+  background: rgba(49, 196, 255, 0.14);
+  color: #fff;
+}
+.governance-report-filters {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.governance-report-filters label { min-width: 0; }
+.governance-filter-actions {
+  display: flex;
+  align-items: end;
+  gap: 8px;
+}
+.governance-current-table { min-width: 1500px; }
+.governance-events-table { min-width: 1780px; }
+.governance-timeline {
+  position: relative;
+  display: grid;
+  gap: 0;
+  padding-left: 22px;
+}
+.governance-timeline::before {
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: 7px;
+  width: 2px;
+  background: rgba(49, 196, 255, 0.34);
+  content: "";
+}
+.governance-timeline-item {
+  position: relative;
+  padding: 0 0 18px 12px;
+}
+.governance-timeline-marker {
+  position: absolute;
+  top: 5px;
+  left: -20px;
+  width: 12px;
+  height: 12px;
+  border: 2px solid #31c4ff;
+  border-radius: 50%;
+  background: #073763;
+}
+.governance-timeline-content {
+  border: 1px solid rgba(49, 196, 255, 0.22);
+  border-radius: 8px;
+  background: rgba(4, 24, 50, 0.55);
+  padding: 10px 12px;
+}
+.governance-timeline-content header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: #31c4ff;
+}
+.governance-timeline-content p { margin: 6px 0; }
+.governance-timeline-content small { color: #9eb8d5; }
+.governance-event-details summary { cursor: pointer; color: #31c4ff; font-weight: 700; }
+.governance-event-details p { min-width: 280px; margin: 8px 0; white-space: normal; overflow-wrap: anywhere; }
+.governance-change-list { display: grid; grid-template-columns: max-content 1fr; gap: 6px 10px; min-width: 360px; margin: 10px 0 0; }
+.governance-change-list dt { color: #9eb8d5; }
+.governance-change-list dd { display: grid; gap: 3px; margin: 0; overflow-wrap: anywhere; }
+.governance-pagination { display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-top: 12px; }
+.governance-pagination button:disabled { opacity: .5; cursor: not-allowed; }
+
 @media (max-width: 820px) {
   .official-report { padding: 14px; }
   .official-report-header { align-items: flex-start; flex-direction: column; }
   .official-report-context { grid-template-columns: 1fr; }
   .detailed-identification-grid,
   .detailed-document-grid { grid-template-columns: 1fr; }
+  .governance-report-filters { grid-template-columns: 1fr; }
+  .governance-timeline-content header { align-items: flex-start; flex-direction: column; }
 }
 
 @page { size: A4 landscape; margin: 10mm; }
@@ -123,6 +210,12 @@
   .detailed-collapsible summary { display: none; }
   .detailed-collapsible:not([open]) > :not(summary) { display: block !important; }
   .detailed-collapsible > .table-wrap { display: block !important; overflow: visible !important; }
+  .governance-timeline { padding-left: 16px; }
+  .governance-timeline::before { background: #555 !important; }
+  .governance-timeline-marker { border-color: #000 !important; background: #fff !important; }
+  .governance-timeline-content { border: 1px solid #777 !important; background: #fff !important; color: #000 !important; break-inside: avoid; page-break-inside: avoid; }
+  .governance-timeline-content header, .governance-timeline-content small { color: #000 !important; }
+  .governance-events-table { font-size: 6.5pt !important; }
   .badge { border: 1px solid #555 !important; background: #fff !important; color: #000 !important; }
   .official-report-footer { display: flex; border-top: 1px solid #000; margin-top: 4mm; padding-top: 2mm; }
 }

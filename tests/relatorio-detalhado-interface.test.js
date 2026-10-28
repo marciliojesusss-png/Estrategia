@@ -11,12 +11,18 @@ const view = fs.readFileSync(path.join(root, 'views', 'frontend', 'relatorios.ph
 const css = fs.readFileSync(path.join(root, 'assets', 'css', 'styles.css'), 'utf8');
 const controller = fs.readFileSync(path.join(root, 'app', 'controllers', 'RelatorioApiController.php'), 'utf8');
 const service = fs.readFileSync(path.join(root, 'app', 'services', 'RelatorioIndicadorService.php'), 'utf8');
+const accessPolicy = fs.readFileSync(path.join(root, 'app', 'auth', 'AccessPolicy.php'), 'utf8');
+const publicReports = fs.readFileSync(path.join(root, 'public', 'relatorios.php'), 'utf8');
+const app = fs.readFileSync(path.join(root, 'assets', 'js', 'app.js'), 'utf8');
+const auth = fs.readFileSync(path.join(root, 'assets', 'js', 'auth.js'), 'utf8');
 
 assert.match(reports, /api\/relatorios\/indicador\/\$\{encodeURIComponent\(indicatorId\)\}/);
 assert.match(reports, /tipo:\s*"detalhado"/);
 assert.match(reports, /report-detail-link/);
 assert.match(reports, /window\.print\(\)/);
 assert.match(reports, /cache:\s*"no-store"/);
+assert.match(reports, /\["Observação de acompanhamento",\s*indicator\.descricao\]/);
+assert.doesNotMatch(reports, /\["Descrição",\s*indicator\.descricao\]/);
 assert.match(reports, /if \(mode\)[\s\S]*loadDetailedReport\(mode\)[\s\S]*return;[\s\S]*DataStore\.loadAll\(\)/,
   'modo detalhado deve consultar somente o endpoint do indicador e encerrar antes do carregamento operacional');
 assert.doesNotMatch(reports, /jspdf|dompdf|mPDF|TCPDF/i);
@@ -35,15 +41,22 @@ assert.match(view, /Evid.ncia da vers.o atual/);
 assert.match(view, /Evid.ncias de vers.es anteriores/);
 assert.match(view, /Ver hist.rico de vers.es/);
 assert.match(view, /Governan.a resumida/);
-assert.match(view, /RELATORIO-DETALHADO-001/);
+assert.match(view, /RELATORIO-DETALHADO-002/);
 
 assert.match(controller, /Cache-Control: private, no-store/);
-assert.match(controller, /Auth::requirePermission\('relatorios', 'visualizar', true\)/);
+assert.equal((controller.match(/Auth::requirePermission\('relatorios', 'visualizar', true\)/g) || []).length, 3,
+  'consolidado, detalhado e governança devem compartilhar a autorização backend de Relatórios');
 assert.match(service, /AccessPolicy::scopeAllows/);
 assert.match(service, /Sem posicao oficial/);
 assert.match(service, /Homologado legado - sem evento transacional/);
 assert.match(service, /observacaoDocumental/);
 assert.doesNotMatch(service, /INSERT\s+INTO|UPDATE\s+\w+\s+SET|DELETE\s+FROM/i);
+assert.match(accessPolicy, /'relatorios'\s*=>\s*array\('visualizar'\s*=>\s*array\('administrador',\s*'homologador',\s*'consultor_diretoria',\s*'unidade_apuradora'\)\)/);
+assert.doesNotMatch(accessPolicy, /'relatorios'\s*=>[^\r\n]*usuario_companhia/);
+assert.match(publicReports, /Auth::requirePagePermission\('relatorios', 'visualizar'\)/);
+assert.match(app, /\.filter\(\(\[, , key\]\)\s*=>\s*Auth\.canAccess\(key, user\)\)/);
+assert.match(auth, /relatorios:\s*\["Administrador",\s*"Unidade Apuradora",\s*"Diretoria Homologadora",\s*"Consultor da Diretoria"\]/);
+assert.doesNotMatch(auth, /relatorios:\s*\[[^\]]*(?:Usuario|Usuário) Companhia/);
 
 assert.match(css, /\.detailed-identification-grid/);
 assert.match(css, /\.detailed-document-grid/);
