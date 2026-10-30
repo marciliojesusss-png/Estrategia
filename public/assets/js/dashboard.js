@@ -157,6 +157,10 @@
   }
 
   function getOfficialMeta(regra, lancamento, resultado) {
+    if (regra?.tipoCalculo === "melhorias_acumuladas") {
+      const metaCalculada = window.IndicatorFormulas?.resolverMetaAprimoramento?.(regra, lancamento)?.metaPercentual;
+      if (toFiniteNumber(metaCalculada) !== null) return toFiniteNumber(metaCalculada);
+    }
     const metaCompetencia = toFiniteNumber(lancamento?.metaReferencia ?? lancamento?.metaMensal);
     if (metaCompetencia !== null) return metaCompetencia;
     if (regra?.tipoCalculo === "lucro_recorrente_mensal") {

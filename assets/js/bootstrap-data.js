@@ -903,7 +903,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "ano": 2026,
       "mes": 1,
       "nomeMes": "Janeiro",
-      "metaMensal": 0.0454,
+      "metaMensal": 0.045454545454545456,
       "fonte": "curva_trimestral_aprimoramento_experiencia_2026"
     },
     {
@@ -912,7 +912,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "ano": 2026,
       "mes": 2,
       "nomeMes": "Fevereiro",
-      "metaMensal": 0.0454,
+      "metaMensal": 0.045454545454545456,
       "fonte": "curva_trimestral_aprimoramento_experiencia_2026"
     },
     {
@@ -921,7 +921,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "ano": 2026,
       "mes": 3,
       "nomeMes": "Março",
-      "metaMensal": 0.0454,
+      "metaMensal": 0.045454545454545456,
       "fonte": "curva_trimestral_aprimoramento_experiencia_2026"
     },
     {
@@ -930,7 +930,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "ano": 2026,
       "mes": 4,
       "nomeMes": "Abril",
-      "metaMensal": 0.1364,
+      "metaMensal": 0.13636363636363635,
       "fonte": "curva_trimestral_aprimoramento_experiencia_2026"
     },
     {
@@ -939,7 +939,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "ano": 2026,
       "mes": 5,
       "nomeMes": "Maio",
-      "metaMensal": 0.1364,
+      "metaMensal": 0.13636363636363635,
       "fonte": "curva_trimestral_aprimoramento_experiencia_2026"
     },
     {
@@ -948,7 +948,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "ano": 2026,
       "mes": 6,
       "nomeMes": "Junho",
-      "metaMensal": 0.1364,
+      "metaMensal": 0.13636363636363635,
       "fonte": "curva_trimestral_aprimoramento_experiencia_2026"
     },
     {
@@ -957,7 +957,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "ano": 2026,
       "mes": 7,
       "nomeMes": "Julho",
-      "metaMensal": 0.1818,
+      "metaMensal": 0.18181818181818182,
       "fonte": "curva_trimestral_aprimoramento_experiencia_2026"
     },
     {
@@ -966,7 +966,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "ano": 2026,
       "mes": 8,
       "nomeMes": "Agosto",
-      "metaMensal": 0.1818,
+      "metaMensal": 0.18181818181818182,
       "fonte": "curva_trimestral_aprimoramento_experiencia_2026"
     },
     {
@@ -975,7 +975,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "ano": 2026,
       "mes": 9,
       "nomeMes": "Setembro",
-      "metaMensal": 0.1818,
+      "metaMensal": 0.18181818181818182,
       "fonte": "curva_trimestral_aprimoramento_experiencia_2026"
     },
     {
@@ -984,7 +984,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "ano": 2026,
       "mes": 10,
       "nomeMes": "Outubro",
-      "metaMensal": 0.25,
+      "metaMensal": 0.2727272727272727,
       "fonte": "curva_trimestral_aprimoramento_experiencia_2026"
     },
     {
@@ -993,7 +993,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "ano": 2026,
       "mes": 11,
       "nomeMes": "Novembro",
-      "metaMensal": 0.25,
+      "metaMensal": 0.2727272727272727,
       "fonte": "curva_trimestral_aprimoramento_experiencia_2026"
     },
     {
@@ -1002,7 +1002,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "ano": 2026,
       "mes": 12,
       "nomeMes": "Dezembro",
-      "metaMensal": 0.25,
+      "metaMensal": 0.2727272727272727,
       "fonte": "curva_trimestral_aprimoramento_experiencia_2026"
     },
     {
@@ -2959,19 +2959,19 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "mesesFechamentoTrimestral": [3, 6, 9, 12],
         "curvaTrimestralAcumulada": {
           "1TRI/2026": {
-            "metaPercentual": 0.0454,
+            "metaPercentual": 0.045454545454545456,
             "metaQuantidadeAcumulada": 1
           },
           "2TRI/2026": {
-            "metaPercentual": 0.1364,
+            "metaPercentual": 0.13636363636363635,
             "metaQuantidadeAcumulada": 3
           },
           "3TRI/2026": {
-            "metaPercentual": 0.1818,
+            "metaPercentual": 0.18181818181818182,
             "metaQuantidadeAcumulada": 4
           },
           "4TRI/2026": {
-            "metaPercentual": 0.25,
+            "metaPercentual": 0.2727272727272727,
             "metaQuantidadeAcumulada": 6
           }
         },
@@ -6661,6 +6661,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "camposEntrada": {
         "tipoPosicaoAprimoramento": "acompanhamento",
         "melhoriasImplementadasMes": 0,
+        "melhoriasImplementadasAcumuladas": 1,
         "metaPlanilhaAprimoramento": 0.0454,
         "realizadoPlanilhaAprimoramento": 0.0454,
         "atingimentoPlanilhaAprimoramento": 1,
@@ -6715,6 +6716,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "camposEntrada": {
         "tipoPosicaoAprimoramento": "acompanhamento",
         "melhoriasImplementadasMes": 0,
+        "melhoriasImplementadasAcumuladas": 1,
         "metaPlanilhaAprimoramento": 0.0454,
         "realizadoPlanilhaAprimoramento": 0.0454,
         "atingimentoPlanilhaAprimoramento": 1,
@@ -6826,6 +6828,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "status": "Em preenchimento",
       "camposEntrada": {
         "tipoPosicaoAprimoramento": "acompanhamento",
+        "melhoriasImplementadasAcumuladas": 1,
         "metaPlanilhaAprimoramento": 0.1364,
         "realizadoPlanilhaAprimoramento": 0.1818,
         "atingimentoPlanilhaAprimoramento": 1.3328445747800586,
@@ -6878,6 +6881,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "status": "Em preenchimento",
       "camposEntrada": {
         "tipoPosicaoAprimoramento": "acompanhamento",
+        "melhoriasImplementadasAcumuladas": 4,
         "metaPlanilhaAprimoramento": 0.1364,
         "realizadoPlanilhaAprimoramento": 0.1818,
         "atingimentoPlanilhaAprimoramento": 1.3328445747800586,
@@ -6988,6 +6992,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "status": "Em preenchimento",
       "camposEntrada": {
         "tipoPosicaoAprimoramento": "acompanhamento",
+        "melhoriasImplementadasAcumuladas": 5,
         "metaPlanilhaAprimoramento": 0.1818,
         "realizadoPlanilhaAprimoramento": 0.2727,
         "atingimentoPlanilhaAprimoramento": 1.5,
@@ -7040,6 +7045,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "status": "Em preenchimento",
       "camposEntrada": {
         "tipoPosicaoAprimoramento": "acompanhamento",
+        "melhoriasImplementadasAcumuladas": 5,
         "metaPlanilhaAprimoramento": 0.1818,
         "realizadoPlanilhaAprimoramento": 0.2727,
         "atingimentoPlanilhaAprimoramento": 1.5,

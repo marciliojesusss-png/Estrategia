@@ -141,8 +141,8 @@ assert.equal(climaDashboardOficial.percentualAtingido, 1);
 const aprimoramentoDashboardOficial = results.find((item) => item.indicador.id === 4);
 assert.equal(context.window.StrategicResults.officialSituation(aprimoramentoDashboardOficial), "Atingido");
 assert.equal(aprimoramentoDashboardOficial.competencia, "Março/2026");
-assert.ok(Math.abs(aprimoramentoDashboardOficial.meta - 0.0454) < 0.000001);
-assert.ok(Math.abs(aprimoramentoDashboardOficial.resultado - 0.0454) < 0.000001);
+assert.ok(Math.abs(aprimoramentoDashboardOficial.meta - (1 / 22)) < 0.000001);
+assert.ok(Math.abs(aprimoramentoDashboardOficial.resultado - (1 / 22)) < 0.000001);
 assert.ok(Math.abs(aprimoramentoDashboardOficial.percentualAtingido - 1) < 0.000001);
 
 const capacidadeTicDashboardOficial = results.find((item) => item.indicador.id === 11);
@@ -362,7 +362,7 @@ const aprimoramentoEntrePosicoes = context.window.StrategicResults.calcularDashb
   indicadores: [aprimoramentoIndicator], regras: [aprimoramentoRule], lancamentos: aprimoramentoPositions
 }).resultadosOficiais[0];
 assert.equal(aprimoramentoEntrePosicoes.competencia, "Março/2026");
-assert.ok(Math.abs(aprimoramentoEntrePosicoes.resultado - 0.0454) < 0.000001);
+assert.ok(Math.abs(aprimoramentoEntrePosicoes.resultado - (1 / 22)) < 0.000001);
 assert.equal(aprimoramentoEntrePosicoes.situacaoAtual, "Atingido");
 assert.equal(aprimoramentoEntrePosicoes.latestOperationalLaunch.mes, 3, "ABR/MAI não podem concorrer com o fechamento de MAR.");
 
@@ -376,7 +376,7 @@ const aprimoramentoJunhoDashboard = context.window.StrategicResults.calcularDash
 }).resultadosOficiais[0];
 assert.equal(aprimoramentoJunhoDashboard.competencia, "Junho/2026");
 assert.ok(Math.abs(aprimoramentoJunhoDashboard.resultado - (4 / 22)) < 0.000001);
-assert.ok(Math.abs(aprimoramentoJunhoDashboard.meta - 0.1364) < 0.000001);
+assert.ok(Math.abs(aprimoramentoJunhoDashboard.meta - (3 / 22)) < 0.000001);
 assert.ok(Math.abs(aprimoramentoJunhoDashboard.percentualAtingido - (4 / 3)) < 0.000001);
 assert.equal(aprimoramentoJunhoDashboard.situacaoCalculada, "Atingido");
 

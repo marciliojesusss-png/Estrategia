@@ -659,6 +659,9 @@
         regra.parametrosCalculo.curvaTrimestralPercentual?.[trimestre]?.metaPercentual ??
         null;
     }
+    if (regra?.tipoCalculo === "melhorias_acumuladas") {
+      return IndicatorFormulas.resolverMetaAprimoramento(regra, lancamento).metaPercentual;
+    }
     const metaPercentualAcoesPropostas = Calculations.resolverMetaPercentualAcoesPropostas?.(regra, lancamento);
     if (metaPercentualAcoesPropostas !== null && metaPercentualAcoesPropostas !== undefined) {
       return metaPercentualAcoesPropostas;
@@ -677,10 +680,6 @@
       const trimestre = lancamento?.trimestre || `${Math.ceil(Number(lancamento?.mes) / 3)}TRI/${lancamento?.ano || 2026}`;
       const metas = regra.parametrosCalculo.metasTrimestraisOficiais || {};
       return Object.prototype.hasOwnProperty.call(metas, trimestre) ? metas[trimestre] : null;
-    }
-    if (regra?.tipoCalculo === "melhorias_acumuladas") {
-      const trimestre = lancamento?.trimestre || `${Math.ceil(Number(lancamento?.mes) / 3)}TRI/${lancamento?.ano || 2026}`;
-      return regra?.parametrosCalculo?.curvaTrimestralAcumulada?.[trimestre]?.metaPercentual ?? null;
     }
     if (regra?.tipoCalculo === "participacao_ecossistema_lotex") {
       return lancamento?.metaReferencia ?? lancamento?.metaMensal ?? regra?.parametrosCalculo?.metasTecnicasPorCompetencia?.[lancamento?.competencia] ?? null;
@@ -712,6 +711,18 @@
   }
 
   function getLaunchListPerformance(regra, lancamento, calculation = null) {
+    if (regra?.tipoCalculo === "melhorias_acumuladas") {
+      const tracking = calculation?.tipoPosicaoAprimoramento === "acompanhamento" ||
+        window.IndicatorFormulas?.resolverTipoPosicaoAprimoramento?.(lancamento) === "acompanhamento";
+      return {
+        resultado: tracking
+          ? calculation?.percentualAcompanhamentoAprimoramento ?? null
+          : calculation?.resultadoMensal ?? lancamento?.resultadoMensal ?? null,
+        percentual: tracking
+          ? null
+          : calculation?.percentualAtingidoMensal ?? lancamento?.percentualAtingido ?? null
+      };
+    }
     const accumulatedRatio = regra?.tipoCalculo === "razao_canais_digitais";
     if (accumulatedRatio) {
       return {
@@ -1129,7 +1140,7 @@
         : isEditable(item)
           ? "Preencher"
           : "Visualizar";
-      const tableCalculation = ["nota_pesquisa_nps", "iniciativas_apoiadas", "execucao_acoes_propostas", "lucro_recorrente_mensal", "razao_canais_digitais"].includes(regra?.tipoCalculo)
+      const tableCalculation = ["nota_pesquisa_nps", "iniciativas_apoiadas", "execucao_acoes_propostas", "lucro_recorrente_mensal", "razao_canais_digitais", "melhorias_acumuladas"].includes(regra?.tipoCalculo)
         ? IndicatorFormulas.calcularIndicador(
           indicador,
           regra,

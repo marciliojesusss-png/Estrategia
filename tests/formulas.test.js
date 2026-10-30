@@ -661,12 +661,12 @@ const melhorias = formulas.calcularIndicador(
   melhoriasLancamentos[2],
   melhoriasLancamentos
 );
-closeTo(melhorias.resultadoMensal, 0.0454);
-closeTo(melhorias.resultadoAcumulado, 0.0454);
-closeTo(melhorias.resultadoOficialAnual, 0.0454);
+closeTo(melhorias.resultadoMensal, 1 / 22);
+closeTo(melhorias.resultadoAcumulado, 1 / 22);
+closeTo(melhorias.resultadoOficialAnual, 1 / 22);
 closeTo(melhorias.percentualAtingidoMensal, 1);
 closeTo(melhorias.percentualAtingidoAnual, 1);
-assert.equal(melhorias.resultadoMensalFormatado, "4,54%");
+assert.equal(melhorias.resultadoMensalFormatado, "4,55%");
 assert.equal(melhorias.percentualAtingidoMensalFormatado, "100%");
 assert.equal(melhorias.melhoriasEntreguesAcumuladas, 1);
 assert.equal(melhorias.melhoriasImplementadasAcumuladas, 1);
@@ -709,7 +709,7 @@ const aprimoramentoJunho = formulas.calcularIndicador(
   aprimoramentoPosicoes2Tri
 );
 closeTo(aprimoramentoJunho.resultadoMensal, 4 / 22);
-closeTo(aprimoramentoJunho.metaTrimestral, 0.1364);
+closeTo(aprimoramentoJunho.metaTrimestral, 3 / 22);
 closeTo(aprimoramentoJunho.percentualAtingidoMensal, 4 / 3);
 assert.equal(aprimoramentoJunho.resultadoMensalFormatado, "18,18%");
 assert.equal(aprimoramentoJunho.percentualAtingidoMensalFormatado, "133,33%");
@@ -796,7 +796,7 @@ const aprimoramentoLegado = formulas.calcularIndicador(
   [{ ano: 2026, mes: 3, camposEntrada: { melhoriasEntreguesMes: 1 } }]
 );
 assert.equal(aprimoramentoLegado.melhoriasImplementadasAcumuladas, 1);
-assert.equal(aprimoramentoLegado.resultadoMensalFormatado, "4,54%");
+assert.equal(aprimoramentoLegado.resultadoMensalFormatado, "4,55%");
 
 const regraGgr = {
   indicadorId: 5,

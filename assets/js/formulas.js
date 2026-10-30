@@ -216,9 +216,25 @@
     return possuiValorHistorico ? TIPO_POSICAO_APRIMORAMENTO.FECHAMENTO_QUANTITATIVO : null;
   }
 
+  function resolverMetaAprimoramento(regra, lancamento) {
+    const mes = Number(lancamento?.mes);
+    const ano = Number(lancamento?.ano) || 2026;
+    const trimestre = lancamento?.trimestre || `${Math.ceil(mes / 3)}TRI/${ano}`;
+    const criterio = regra?.parametrosCalculo?.curvaTrimestralAcumulada?.[trimestre] || {};
+    const totalMelhoriasPlano = toNumber(regra?.parametrosCalculo?.totalMelhoriasPlano2026);
+    const metaQuantidade = toNumber(criterio.metaQuantidadeAcumulada);
+    const metaPersistida = metaLancamento(lancamento);
+    const metaConfigurada = toNumber(criterio.metaPercentual);
+    const metaPercentual = metaQuantidade !== null && totalMelhoriasPlano > 0
+      ? metaQuantidade / totalMelhoriasPlano
+      : metaPersistida ?? metaConfigurada;
+    return { trimestre, metaPercentual, metaQuantidade, totalMelhoriasPlano };
+  }
+
   function resultadoAcompanhamentoAprimoramento(regra, lancamentoAtual) {
     const campoAcumulado = regra?.parametrosCalculo?.campoPosicaoAcumulada || "melhoriasImplementadasAcumuladas";
     const totalMelhoriasPlano = toNumber(regra?.parametrosCalculo?.totalMelhoriasPlano2026);
+    const metaAprimoramento = resolverMetaAprimoramento(regra, lancamentoAtual);
     const posicaoAcumulada = campo(lancamentoAtual, campoAcumulado);
     if (posicaoAcumulada !== null && (posicaoAcumulada < 0 || !Number.isInteger(posicaoAcumulada))) {
       return erro("A posição acumulada de acompanhamento deve ser uma quantidade inteira não negativa.", regra.unidadeMedida);
@@ -243,6 +259,8 @@
         percentualAcompanhamentoAprimoramento: percentualAcompanhamento,
         percentualAcompanhamentoAprimoramentoFormatado: formatarPercentual(percentualAcompanhamento),
         totalMelhoriasPlano2026: totalMelhoriasPlano,
+        metaTrimestral: metaAprimoramento.metaPercentual,
+        metaQuantidadeTrimestral: metaAprimoramento.metaQuantidade,
         fonteCalculoAprimoramento: posicaoAcumulada === null ? null : "posicao_absoluta_acompanhamento",
         situacao: semAvaliacao ? "Sem avaliação" : "Em acompanhamento"
       }),
@@ -1833,13 +1851,12 @@
       const mensal = incrementoAtual ?? incrementoLegadoAtual;
       if (aprimoramentoExperiencia && mensal === null && acumuladoCompatibilidadeAtual === null) {
         if (lancamentoAtual?.status === "Não iniciado") {
-          const trimestrePendente = `${Math.ceil(Number(lancamentoAtual.mes) / 3)}TRI/${lancamentoAtual.ano || 2026}`;
-          const criterioPendente = regra.parametrosCalculo?.curvaTrimestralAcumulada?.[trimestrePendente] || {};
+          const metaPendente = resolverMetaAprimoramento(regra, lancamentoAtual);
           return pendente("Fechamento trimestral aguardando resultado oficial.", regra.unidadeMedida, {
             statusCalculo: "aguardando_resultado_oficial",
             tipoPosicaoAprimoramento: TIPO_POSICAO_APRIMORAMENTO.FECHAMENTO_QUANTITATIVO,
-            metaTrimestral: toNumber(criterioPendente.metaPercentual),
-            metaQuantidadeTrimestral: toNumber(criterioPendente.metaQuantidadeAcumulada),
+            metaTrimestral: metaPendente.metaPercentual,
+            metaQuantidadeTrimestral: metaPendente.metaQuantidade,
             situacao: "Sem avaliação"
           });
         }
@@ -1895,22 +1912,13 @@
       if (acumulado > totalMelhoriasPlano) {
         return erro(`A posição acumulada não pode ser maior que ${totalMelhoriasPlano}, a base de melhorias mapeadas.`, regra.unidadeMedida);
       }
-      let percentualPlanoExecutado = acumulado / totalMelhoriasPlano;
+      const percentualPlanoExecutado = acumulado / totalMelhoriasPlano;
       const percentualPlanoExecutadoCalculado = percentualPlanoExecutado;
       const percentualMetaAnualAtingida = acumulado / metaMinimaMelhorias;
-      const trimestre = `${Math.ceil(Number(lancamentoAtual.mes) / 3)}TRI/${lancamentoAtual.ano || 2026}`;
-      const curva = regra.parametrosCalculo?.curvaTrimestralAcumulada || {};
-      const metaTrimestral = metaLancamento(lancamentoAtual) ?? toNumber(curva[trimestre]?.metaPercentual);
-      const metaQuantidadeTrimestral = toNumber(curva[trimestre]?.metaQuantidadeAcumulada);
-      if (metaTrimestral && metaQuantidadeTrimestral !== null && acumulado === metaQuantidadeTrimestral) {
-        percentualPlanoExecutado = metaTrimestral;
-      }
-      const metaPercentualPelaQuantidade = metaQuantidadeTrimestral !== null
-        ? metaQuantidadeTrimestral / totalMelhoriasPlano
-        : null;
-      const curvaEquivalenteAQuantidade = metaTrimestral && metaQuantidadeTrimestral > 0 &&
-        Math.abs(metaTrimestral - metaPercentualPelaQuantidade) <= 0.0001;
-      const percentualAtingidoCurva = curvaEquivalenteAQuantidade
+      const metaAprimoramento = resolverMetaAprimoramento(regra, lancamentoAtual);
+      const metaTrimestral = metaAprimoramento.metaPercentual;
+      const metaQuantidadeTrimestral = metaAprimoramento.metaQuantidade;
+      const percentualAtingidoCurva = metaQuantidadeTrimestral !== null && metaQuantidadeTrimestral > 0
         ? acumulado / metaQuantidadeTrimestral
         : metaTrimestral
           ? percentualPlanoExecutado / metaTrimestral
@@ -2842,6 +2850,7 @@
     resolverTipoPosicaoCapacitacao,
     resolverModoResultadoCapacitacao,
     resolverTipoPosicaoAprimoramento,
+    resolverMetaAprimoramento,
     resolverTipoPosicaoGgr,
     isMedicaoOficialPesquisaAnual,
     obterRegra,

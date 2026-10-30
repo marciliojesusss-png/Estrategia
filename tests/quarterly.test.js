@@ -459,8 +459,8 @@ const aprimoramentoQuarter = consolidarTrimestre(
 );
 assert.equal(aprimoramentoQuarter.statusTrimestre, "Fechado");
 assert.equal(aprimoramentoQuarter.mesesHomologados, 3);
-assert.ok(Math.abs(aprimoramentoQuarter.metaTrimestral - 0.0454) < 0.000001);
-assert.ok(Math.abs(aprimoramentoQuarter.resultadoTrimestral - 0.0454) < 0.000001);
+assert.ok(Math.abs(aprimoramentoQuarter.metaTrimestral - (1 / 22)) < 0.000001);
+assert.ok(Math.abs(aprimoramentoQuarter.resultadoTrimestral - (1 / 22)) < 0.000001);
 assert.ok(Math.abs(aprimoramentoQuarter.desempenhoTrimestral - 1) < 0.000001);
 assert.equal(aprimoramentoQuarter.dadosCalculados.melhoriasImplementadasAcumuladas, 1);
 assert.equal(aprimoramentoQuarter.situacaoTrimestral, "Atingido");
@@ -480,7 +480,7 @@ const aprimoramentoQuarter2 = consolidarTrimestre(
 );
 assert.equal(aprimoramentoQuarter2.statusTrimestre, "Fechado");
 assert.equal(aprimoramentoQuarter2.mesesHomologados, 3);
-assert.ok(Math.abs(aprimoramentoQuarter2.metaTrimestral - 0.1364) < 0.000001);
+assert.ok(Math.abs(aprimoramentoQuarter2.metaTrimestral - (3 / 22)) < 0.000001);
 assert.ok(Math.abs(aprimoramentoQuarter2.resultadoTrimestral - (4 / 22)) < 0.000001);
 assert.ok(Math.abs(aprimoramentoQuarter2.desempenhoTrimestral - (4 / 3)) < 0.000001);
 assert.equal(aprimoramentoQuarter2.dadosCalculados.melhoriasImplementadasAcumuladas, 4);

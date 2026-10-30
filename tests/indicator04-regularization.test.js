@@ -49,20 +49,20 @@ for (const month of [10, 11]) {
 }
 assert.equal(formulas.resolverTipoPosicaoAprimoramento(byMonth[12]), "fechamento_quantitativo");
 assert.equal(calculate(12).statusCalculo, "aguardando_resultado_oficial");
-assert.equal(calculate(12).metaTrimestral, 0.25);
+assert.equal(calculate(12).metaTrimestral, 6 / 22);
 assert.equal(calculate(12).metaQuantidadeTrimestral, 6);
 assert.equal(calculate(12).resultadoMensal, null);
 assert.equal(calculate(12).situacao, "Sem avaliação");
 
 const march = calculate(3);
-assert.equal(march.metaTrimestral, 0.0454);
-assert.equal(march.resultadoMensal, 0.0454);
+assert.equal(march.metaTrimestral, 1 / 22);
+assert.equal(march.resultadoMensal, 1 / 22);
 assert.equal(march.percentualAtingidoMensal, 1);
 assert.equal(march.melhoriasImplementadasAcumuladas, 1);
 assert.equal(march.situacao, "Atingido");
 
 const june = calculate(6);
-assert.equal(june.metaTrimestral, 0.1364);
+assert.equal(june.metaTrimestral, 3 / 22);
 assert.ok(Math.abs(june.resultadoMensal - (4 / 22)) < 1e-12);
 assert.ok(Math.abs(june.percentualAtingidoMensal - (4 / 3)) < 1e-12);
 assert.equal(june.percentualAtingidoMensalFormatado, "133,33%");
@@ -72,7 +72,7 @@ assert.equal(june.melhoriasImplementadasAcumuladas, 4);
 assert.equal(june.situacao, "Atingido");
 
 const september = calculate(9);
-assert.equal(september.metaTrimestral, 0.1818);
+assert.equal(september.metaTrimestral, 4 / 22);
 assert.ok(Math.abs(september.resultadoMensal - (6 / 22)) < 1e-12);
 assert.equal(september.percentualAtingidoMensal, 1.5);
 assert.equal(september.metaQuantidadeTrimestral, 4);
@@ -123,7 +123,8 @@ require("../assets/js/quarterly.js");
 const quarters = globalThis.QuarterlyConsolidation.consolidarAno(indicator, rule, launches);
 assert.deepEqual(quarters.map((item) => item.mesesEsperados), [1, 1, 1, 1]);
 assert.equal(quarters[0].statusTrimestre, "Fechado");
-assert.equal(quarters[0].resultadoTrimestral, 0.0454);
+assert.equal(quarters[0].metaTrimestral, 1 / 22);
+assert.equal(quarters[0].resultadoTrimestral, 1 / 22);
 assert.equal(quarters[0].desempenhoTrimestral, 1);
 assert.equal(quarters[1].statusTrimestre, "Parcial");
 assert.ok(Math.abs(quarters[1].resultadoTrimestral - (4 / 22)) < 1e-12);
@@ -132,7 +133,7 @@ assert.equal(quarters[2].statusTrimestre, "Parcial");
 assert.ok(Math.abs(quarters[2].resultadoTrimestral - (6 / 22)) < 1e-12);
 assert.equal(quarters[2].desempenhoTrimestral, 1.5);
 assert.equal(quarters[3].statusTrimestre, "Sem dados");
-assert.equal(quarters[3].metaTrimestral, 0.25);
+assert.equal(quarters[3].metaTrimestral, 6 / 22);
 assert.equal(quarters[3].resultadoTrimestral, null);
 
 const context = { window: {}, console, URLSearchParams, Intl, Date };
@@ -152,7 +153,7 @@ const dashboard = context.window.StrategicResults.calcularDashboard({
 }).resultadosOficiais[0];
 assert.equal(dashboard.competencia, "Março/2026");
 assert.equal(Number(dashboard.lancamento.id), 39);
-assert.equal(dashboard.resultado, 0.0454);
+assert.equal(dashboard.resultado, 1 / 22);
 assert.equal(dashboard.percentualAtingido, 1);
 assert.equal(dashboard.situacaoCalculada, "Atingido");
 

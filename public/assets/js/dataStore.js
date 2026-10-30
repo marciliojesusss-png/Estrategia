@@ -112,10 +112,10 @@
     "4TRI": { metaTecnicaIndice: 1.020, resultadoTecnicoIndice: null, resultadoOficialReportado: null, percentualAtingidoOficialReportado: null, escalaResultadoDocumental: "indice", situacao: null, fonte: null }
   });
   const APRIMORAMENTO_CURVA_TRIMESTRAL_2026 = {
-    "1TRI/2026": { metaPercentual: 0.0454, metaQuantidadeAcumulada: 1 },
-    "2TRI/2026": { metaPercentual: 0.1364, metaQuantidadeAcumulada: 3 },
-    "3TRI/2026": { metaPercentual: 0.1818, metaQuantidadeAcumulada: 4 },
-    "4TRI/2026": { metaPercentual: 0.25, metaQuantidadeAcumulada: 6 }
+    "1TRI/2026": { metaPercentual: 1 / 22, metaQuantidadeAcumulada: 1 },
+    "2TRI/2026": { metaPercentual: 3 / 22, metaQuantidadeAcumulada: 3 },
+    "3TRI/2026": { metaPercentual: 4 / 22, metaQuantidadeAcumulada: 4 },
+    "4TRI/2026": { metaPercentual: 6 / 22, metaQuantidadeAcumulada: 6 }
   };
   const TIPOS_POSICAO_APRIMORAMENTO = [
     { value: "", label: "Selecione..." },

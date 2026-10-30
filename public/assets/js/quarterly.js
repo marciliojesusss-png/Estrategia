@@ -172,6 +172,12 @@
       const metaCurva = referenceLaunch ? getMetaAcumuladaCompetencia(rule, referenceLaunch) : null;
       if (metaCurva !== null) return metaCurva;
     }
+    if (rule?.tipoCalculo === "melhorias_acumuladas") {
+      const quarterTarget = params.curvaTrimestralAcumulada?.[quarterLabel] || {};
+      const quantity = toNumber(quarterTarget.metaQuantidadeAcumulada);
+      const total = toNumber(params.totalMelhoriasPlano2026);
+      if (quantity !== null && total > 0) return quantity / total;
+    }
     const metaCompetencia = toNumber(referenceLaunch?.metaReferencia ?? referenceLaunch?.metaMensal);
     if (metaCompetencia !== null) return metaCompetencia;
     if (rule?.tipoCalculo === "participacao_ecossistema_com_cenarios") {
@@ -196,6 +202,11 @@
     }
     if (params.metaTipo === "curva_trimestral_acumulada") {
       const quarterTarget = params.curvaTrimestralAcumulada?.[quarterLabel] || {};
+      if (rule?.tipoCalculo === "melhorias_acumuladas") {
+        const quantity = toNumber(quarterTarget.metaQuantidadeAcumulada);
+        const total = toNumber(params.totalMelhoriasPlano2026);
+        return quantity !== null && total > 0 ? quantity / total : toNumber(quarterTarget.metaPercentual);
+      }
       if (rule?.tipoCalculo === "iniciativas_apoiadas") return toNumber(quarterTarget.metaQuantidadeAcumulada);
       if (rule?.tipoCalculo === "plano_acao_por_elementos") return toNumber(quarterTarget.metaElementosAcumulados);
       if (rule?.tipoCalculo === "execucao_acoes_propostas") return toNumber(quarterTarget.metaAcoesRealizadasAcumuladas);
