@@ -40,6 +40,10 @@ final class Router
             }
         }
         if($pathMatched){if($allowed)header('Allow: '.implode(', ',array_unique($allowed)));if(strpos($path,'/api/')===0)Response::error('Metodo nao permitido.',405);else{http_response_code(405);echo'Metodo nao permitido.';}return;}
+        if (ErrorHandler::isApiRequest($path)) {
+            Response::error('Recurso nao encontrado.', 404);
+            return;
+        }
         ErrorHandler::renderError(404);
     }
 

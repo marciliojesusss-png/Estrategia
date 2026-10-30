@@ -382,9 +382,15 @@
     };
   }
 
+  function canManageLaunches(user = state.user) {
+    const profile = String(user?.perfilCodigo || "").trim().toLowerCase();
+    return profile === "administrador" || profile === "unidade_apuradora" ||
+      ["Administrador", "Unidade Apuradora"].includes(user?.perfil);
+  }
+
   function isEditable(lancamento) {
     const statusEditable = lancamento && (EDITABLE_STATUSES.includes(lancamento.status) || lancamento.revisaoMoedaPendente === true);
-    return Boolean(statusEditable && launchMutationPolicy(lancamento).permitida);
+    return Boolean(canManageLaunches() && statusEditable && launchMutationPolicy(lancamento).permitida);
   }
 
   async function loadMutationPolicy(lancamento) {
@@ -1116,7 +1122,9 @@
     target.innerHTML = lancamentos.slice(0, 100).map((item) => {
       const indicador = porId[item.indicadorId];
       const regra = indicador ? getRule(indicador) : null;
-      const actionLabel = item.status === "Devolvido para ajuste"
+      const actionLabel = !canManageLaunches()
+        ? "Consultar"
+        : item.status === "Devolvido para ajuste"
         ? "Editar"
         : isEditable(item)
           ? "Preencher"
@@ -1172,6 +1180,7 @@
         ["Fórmula vigente", metodologiaIeo.formula, true]
       ] : []),
       ["Regra", regra.aviso || "Regra específica configurada.", true],
+      ["Versão", lancamento.versaoAtual ?? lancamento.versao ?? 1],
       ["Status atual", lancamento.status, true]
     ].map(([label, value, full]) => `
       <article class="detail-item ${full ? "full-span" : ""}">
@@ -1198,6 +1207,20 @@
     });
     document.querySelectorAll(".dynamic-entry-field, .dynamic-entry-toggle, .rgf-entry-field, [data-add-rgf-element], [data-remove-rgf-element]").forEach((input) => {
       input.disabled = disabled;
+    });
+  }
+
+  function configureLaunchAccessMode() {
+    const readOnly = !canManageLaunches();
+    document.getElementById("launchPageEyebrow").textContent = readOnly ? "Consulta" : "Preenchimento";
+    document.getElementById("launchPageDescription").textContent = readOnly
+      ? "Consulta somente leitura dos lançamentos da diretoria autorizada."
+      : "Registro dos dados pelas unidades apuradoras.";
+    document.getElementById("launchReadOnlyNotice").hidden = !readOnly;
+    document.getElementById("launchActionsHeader").textContent = readOnly ? "Consulta" : "Ações";
+    document.getElementById("launchEvidenceUploadControls").hidden = readOnly;
+    ["saveDraftButton", "sendApprovalButton", "requestReopenButton", "clearLaunchButton"].forEach((id) => {
+      document.getElementById(id).hidden = readOnly || id === "requestReopenButton";
     });
   }
 
@@ -2717,7 +2740,7 @@
       if (!button) return;
       state.selectedId = button.dataset.id;
       clearActionFeedback();
-      await loadMutationPolicy(getSelectedLaunch());
+      if (canManageLaunches()) await loadMutationPolicy(getSelectedLaunch());
       renderEditor();
       document.getElementById("launchEditorPanel").scrollIntoView({ behavior: "smooth", block: "start" });
     });
@@ -2815,8 +2838,10 @@
       selectedId: null
     };
 
-    document.getElementById("launchNotice").textContent =
-      "Preencha os campos exigidos pela regra do indicador. O sistema usa a matriz de regras e o motor central de cálculo.";
+    configureLaunchAccessMode();
+    document.getElementById("launchNotice").textContent = canManageLaunches()
+      ? "Preencha os campos exigidos pela regra do indicador. O sistema usa a matriz de regras e o motor central de cálculo."
+      : "Modo Consulta: os dados, evidências e histórico estão disponíveis somente para leitura.";
 
     bindEvents();
     refresh();
@@ -2824,7 +2849,7 @@
     const requestedId = new URLSearchParams(window.location.search).get("lancamentoId");
     if (requestedId && state.lancamentos.some((item) => String(item.id) === requestedId)) {
       state.selectedId = requestedId;
-      await loadMutationPolicy(getSelectedLaunch());
+      if (canManageLaunches()) await loadMutationPolicy(getSelectedLaunch());
       renderEditor();
       document.getElementById("launchEditorPanel").scrollIntoView({ block: "start" });
     }
@@ -2863,6 +2888,7 @@
     latestReopenCycleAction,
     unresolvedReopenCycle,
     requiresTransactionalPersistence,
+    canManageLaunches,
     launchRequiresEvidence,
     evidenceRequirementLabel
   };

@@ -63,7 +63,9 @@ for (const perfil of ["Consulta/Gestao", "Consulta/Gestão", "Usuario Companhia"
 
 const consultant = { perfil: "Consultor da Diretoria", perfilCodigo: "consultor_diretoria", diretoriaResponsavel: "DIFIR" };
 assert.equal(context.window.Auth.canAccess("homologacao", consultant), true);
-assert.equal(context.window.Auth.canAccess("lancamentos", consultant), false);
+assert.equal(context.window.Auth.canAccess("lancamentos", consultant), true);
+assert.equal(context.window.Auth.canAccess("lancamentos", { perfil: "Diretoria Homologadora" }), true);
+assert.equal(context.window.Auth.canAccess("homologacao", { perfil: "Unidade Apuradora" }), true);
 assert.deepEqual(
   context.window.Auth.filterIndicatorsByUser([
     { id: 1, diretoriaResponsavel: "DIFIR" },

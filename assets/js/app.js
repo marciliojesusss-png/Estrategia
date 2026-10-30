@@ -30,6 +30,18 @@
     [pageUrl("auditoria"), "Auditoria", "auditoria"]
   ];
 
+  function navigationLabel(label, key, user) {
+    const profile = String(user?.perfilCodigo || "").trim().toLowerCase();
+    const profileName = String(user?.perfil || "").trim();
+    if (key === "lancamentos" && (["homologador", "consultor_diretoria"].includes(profile) || ["Diretoria Homologadora", "Consultor da Diretoria"].includes(profileName))) {
+      return "Lançamentos (consulta)";
+    }
+    if (key === "homologacao" && (profile === "unidade_apuradora" || profileName === "Unidade Apuradora")) {
+      return "Histórico de Homologações";
+    }
+    return label;
+  }
+
   function storageMessages(storageInfo) {
     if (!storageInfo) return [];
     if (storageInfo.centralAvailable) return [];
@@ -47,6 +59,15 @@
     const messages = storageMessages(storageInfo);
     if (!messages.length) return;
     target.insertAdjacentHTML("afterend", messages.join(""));
+  }
+
+  function isActiveAdministrator(user) {
+    const activeProfile = String(user?.perfilCodigo || user?.perfil || "").trim().toLowerCase();
+    return activeProfile === "administrador";
+  }
+
+  function shouldLoadStorageInfo(page, user) {
+    return page !== "iniciativasHomologacao" && isActiveAdministrator(user);
   }
 
   function configureChartTheme() {
@@ -123,7 +144,7 @@
     const navLinks = NAV_ITEMS
       .filter(([, , key]) => Auth.canAccess(key, user))
       .map(([href, label, key]) => (
-        `<a class="nav-link ${key === page ? "active" : ""}" href="${href}">${label}</a>`
+        `<a class="nav-link ${key === page ? "active" : ""}" href="${href}">${escapeHtml(navigationLabel(label, key, user))}</a>`
       ))
       .join("");
     const logoUrl = window.assetUrl
@@ -196,9 +217,9 @@
     const independentInitiativeApproval = page === "iniciativasHomologacao";
     const independentAudit = page === "auditoria";
     const independentReports = page === "relatorios";
-    const storageInfo = independentInitiativeApproval ? null : await DataStore.getStorageInfo();
 
     if (page === "login") {
+      const storageInfo = await DataStore.getStorageInfo();
       await initLogin();
       renderLoginStorageNotice(storageInfo);
       return;
@@ -207,17 +228,33 @@
     const user = Auth.requireAuth();
     if (!user) return;
 
+    const institutionalIndicatorDetail = page === "indicadores" &&
+      user.perfilCodigo === "usuario_companhia" &&
+      new URLSearchParams(window.location.search).get("view") === "detalhe";
+
     if (!Auth.canAccess(page, user, { allowIndicatorDetail: true })) {
       Auth.setFlashMessage(Auth.getDeniedMessage(page, user), "warning");
       window.location.href = pageUrl("resumo-executivo");
       return;
     }
 
+    const storageInfo = shouldLoadStorageInfo(page, user)
+      ? await DataStore.getStorageInfo()
+      : null;
     renderShell(user, page, storageInfo);
 
     const module = window.PageModules && window.PageModules[page];
     if (module) {
-      if (centralExecutive || independentInitiativeApproval || independentAudit || independentReports) {
+      if (institutionalIndicatorDetail) {
+        await module.init({
+          user,
+          data: {
+            indicadores: [], lancamentos: [], regrasIndicadores: [], historico: [],
+            homologacoes: [], solicitacoesReabertura: [], planos: [], pilares: [],
+            unidades: [], diretorias: []
+          }
+        });
+      } else if (centralExecutive || independentInitiativeApproval || independentAudit || independentReports) {
         await module.init({ user });
       } else {
         const data = await DataStore.loadAll();

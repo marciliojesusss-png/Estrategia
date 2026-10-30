@@ -17,7 +17,12 @@ final class PrazosApuracaoApiController
         $method = Request::method();
         try {
             if ($method === 'GET') {
-                Auth::requireAnyAuthenticated();
+                Auth::requireApiProfiles(array(
+                    'administrador',
+                    'homologador',
+                    'consultor_diretoria',
+                    'unidade_apuradora',
+                ));
                 return Response::success($id === null ? $this->service->all() : $this->service->find($id));
             }
 

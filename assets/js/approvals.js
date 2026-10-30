@@ -259,6 +259,10 @@
     return ["Diretoria Homologadora", "Consultor da Diretoria"].includes(state.user?.perfil);
   }
 
+  function isUnitReader(user = state.user) {
+    return user?.perfilCodigo === "unidade_apuradora" || user?.perfil === "Unidade Apuradora";
+  }
+
   function isOriginalAdministrator(user = state.user) {
     return String(user?.perfilOriginalCodigo || "").trim().toLowerCase() === "administrador";
   }
@@ -317,6 +321,7 @@
   }
 
   async function loadReopenPolicy(lancamento) {
+    if (isUnitReader()) return;
     if (!lancamento || lancamento.status !== "Homologado") return;
     const id = String(lancamento.id);
     state.reopenPolicies[id] = { permitida: false, carregando: true, mensagem: "Verificando a janela de reabertura..." };
@@ -564,14 +569,33 @@
     const actionable = canAct(lancamento);
     const reopenable = canReopen(lancamento);
     const policy = state.reopenPolicies?.[String(lancamento.id)];
+    const decisionProfile = isAdmin() || isDirectoryReviewer();
+    const approveButton = document.getElementById("approveButton");
+    const returnButton = document.getElementById("returnButton");
     const reopenButton = document.getElementById("reopenButton");
     document.getElementById("approvalObservacaoDiretoria").disabled = !actionable;
-    document.getElementById("approveButton").disabled = !actionable;
-    document.getElementById("returnButton").disabled = !actionable;
-    reopenButton.hidden = !(isAdmin() || isHomologador());
+    document.getElementById("approvalDecisionField").hidden = !decisionProfile;
+    approveButton.hidden = !decisionProfile;
+    returnButton.hidden = !decisionProfile;
+    approveButton.disabled = !actionable;
+    returnButton.disabled = !actionable;
+    reopenButton.hidden = !decisionProfile;
     reopenButton.textContent = policy?.carregando ? "Verificando reabertura..." : "Reabrir para edição";
     reopenButton.disabled = !reopenable;
     reopenButton.title = reopenable ? "" : (policy?.mensagem || "Reabertura indisponível.");
+  }
+
+  function configureApprovalAccessMode() {
+    const readOnly = isUnitReader();
+    document.getElementById("approvalPageEyebrow").textContent = readOnly ? "Acompanhamento da unidade" : "Validação da diretoria";
+    document.getElementById("approvalPageTitle").textContent = readOnly ? "Histórico de Homologações" : "Homologação";
+    document.getElementById("approvalPageDescription").textContent = readOnly
+      ? "Histórico e acompanhamento dos lançamentos da própria unidade, sem ações de decisão."
+      : "Validação dos lançamentos, histórico de ações e rastreabilidade.";
+    document.getElementById("approvalReadOnlyNotice").hidden = !readOnly;
+    document.getElementById("approvalActionsHeader").textContent = readOnly ? "Consulta" : "Ações";
+    document.getElementById("initiativeApprovalTab").hidden = readOnly;
+    document.getElementById("indicatorApprovalTab").textContent = readOnly ? "Histórico de indicadores" : "Indicadores";
   }
 
   function renderPanel(options = {}) {
@@ -604,7 +628,9 @@
     renderReference(indicador, lancamento);
     setActionState(lancamento);
 
-    if (!options.suppressGeneralNotice && lancamento.status === "Homologado") {
+    if (!options.suppressGeneralNotice && isUnitReader()) {
+      showMessage("Histórico / acompanhamento somente leitura. A Unidade Apuradora não possui ações de homologação nesta tela.", "info");
+    } else if (!options.suppressGeneralNotice && lancamento.status === "Homologado") {
       const policy = state.reopenPolicies?.[String(lancamento.id)];
       showMessage(
         policy?.mensagem || "Verificando a janela de reabertura no servidor...",
@@ -922,7 +948,7 @@
       state.selectedId = button.dataset.id;
       clearActionFeedback();
       renderPanel();
-      loadReopenPolicy(getSelectedLaunch());
+      if (!isUnitReader()) loadReopenPolicy(getSelectedLaunch());
       document.getElementById("approvalPanel").scrollIntoView({ behavior: "smooth", block: "start" });
     });
 
@@ -955,6 +981,7 @@
       selectedId: null
     };
 
+    configureApprovalAccessMode();
     bindEvents();
     refresh();
 
@@ -962,7 +989,7 @@
     if (requestedId && state.lancamentos.some((item) => String(item.id) === String(requestedId))) {
       state.selectedId = requestedId;
       renderPanel();
-      loadReopenPolicy(getSelectedLaunch());
+      if (!isUnitReader()) loadReopenPolicy(getSelectedLaunch());
       document.getElementById("approvalPanel").scrollIntoView({ block: "start" });
     }
   }
@@ -982,6 +1009,7 @@
     isOriginalAdministrator,
     isOwnLaunch,
     independentReviewAllowed,
-    canApproveOrReturn
+    canApproveOrReturn,
+    isUnitReader
   };
 })();

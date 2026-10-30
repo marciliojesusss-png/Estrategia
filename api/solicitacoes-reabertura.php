@@ -9,7 +9,8 @@ $solicitacoes = new SolicitacoesReaberturaRepository($db);
 $auditoria = new AuditoriaRepository($db);
 $lancamentoService = new LancamentoService($db);
 
-$payload = Request::method() === 'GET' ? $_GET : Request::json();
+$method = Request::method();
+$payload = $method === 'GET' ? $_GET : Request::json();
 $action = (string) ($payload['action'] ?? 'listar');
 $user = Auth::currentUserForFrontend();
 $perfil = (string) ($user['perfilCodigo'] ?? 'usuario_companhia');
@@ -30,9 +31,18 @@ function append_audit(AuditoriaRepository $auditoria, array $entry): void
     ]);
 }
 
-if ($action === 'listar') {
+if ($method === 'GET') {
+    if ($action !== 'listar') {
+        Response::error('Metodo nao permitido para esta acao.', 405);
+        return;
+    }
     Auth::requirePermission('reaberturas', 'solicitar', true);
     Response::json($solicitacoes->all(Auth::scopeFilters(api_filters($_GET))));
+    return;
+}
+
+if ($method !== 'POST') {
+    Response::error('Metodo nao permitido.', 405);
     return;
 }
 
@@ -48,6 +58,7 @@ if (!in_array($action, ['aprovar', 'negar'], true)) {
 }
 
 Auth::requirePermission('reaberturas', 'decidir', true);
+Auth::requireCsrf();
 
 if (Auth::normalizeProfile($perfil) !== 'administrador') {
     append_audit($auditoria, [

@@ -84,18 +84,6 @@ $router->get('/iniciativas', $frontendPage('iniciativas.php'));
 $router->get('/iniciativas/homologacao', $frontendPage('iniciativas-homologacao.php'));
 $router->get('/iniciativas/consolidacao-ca', $frontendPage('iniciativas-consolidacao.php'));
 
-ini_set('display_errors', '1');
-error_reporting(E_ALL||E_STRICT||E_DEPRECATED||E_PARSE||E_WARNING||E_ERROR);
-
-set_error_handler(function($severity, $message, $filename, $lineno) {
-    // Se o erro foi silenciado com @, respeita e não para o código
-    if (!(error_reporting() & $severity)) {
-        return false;
-    }
-    // Transforma qualquer aviso/erro em uma exceção interrupiva
-    throw new ErrorException($message, 0, $severity, $filename, $lineno);
-});
-
 $indicadores = new IndicadorController();
 $router->get('/indicadores', $frontendPage('indicadores.php'));
 $router->get('/indicadores/novo', array($indicadores, 'create'));
@@ -134,9 +122,15 @@ $router->post('/administracao/configuracoes/{key}',array($administracao,'saveCon
 $router->get('/auditoria',$frontendPage('auditoria.php'));
 $router->any('/logout', $frontendPage('logout.php'));
 
-foreach (array('database', 'configuracoes', 'homologacoes', 'indicadores', 'lancamentos', 'relatorios', 'resumo-executivo', 'solicitacoes-reabertura', 'usuarios-acesso', 'visao-trimestral') as $api) {
+foreach (array('database', 'homologacoes', 'indicadores', 'lancamentos', 'usuarios-acesso') as $api) {
     $router->any('/api/' . $api, $legacyApi($api . '.php'));
 }
+$router->get('/api/configuracoes', $legacyApi('configuracoes.php'));
+$router->get('/api/relatorios', $legacyApi('relatorios.php'));
+$router->get('/api/resumo-executivo', $legacyApi('resumo-executivo.php'));
+$router->get('/api/visao-trimestral', $legacyApi('visao-trimestral.php'));
+$router->get('/api/solicitacoes-reabertura', $legacyApi('solicitacoes-reabertura.php'));
+$router->post('/api/solicitacoes-reabertura', $legacyApi('solicitacoes-reabertura.php'));
 $indicatorApi = new IndicadorApiController();
 $router->any('/api/indicadores/{id}', array($indicatorApi, 'handle'));
 $launchApi = new LancamentoApiController();

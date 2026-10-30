@@ -21,7 +21,9 @@ vm.runInContext(read("assets", "js", "auth.js"), authContext);
 
 const consultant = { perfil: "Consultor da Diretoria", perfilCodigo: "consultor_diretoria", diretoriaResponsavel: "DIFIR" };
 assert.equal(authContext.window.Auth.canAccess("homologacao", consultant), true);
-assert.equal(authContext.window.Auth.canAccess("lancamentos", consultant), false);
+assert.equal(authContext.window.Auth.canAccess("lancamentos", consultant), true);
+assert.equal(authContext.window.Auth.canAccess("lancamentos", { perfil: "Diretoria Homologadora" }), true);
+assert.equal(authContext.window.Auth.canAccess("homologacao", { perfil: "Unidade Apuradora" }), true);
 assert.deepEqual(
   Array.from(authContext.window.Auth.filterIndicatorsByUser([
     { id: 1, diretoriaResponsavel: "DIFIR" },

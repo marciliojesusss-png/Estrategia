@@ -28,14 +28,16 @@
     <nav id="appNav" class="sidebar"></nav>
     <main class="content">
       <section class="page-heading">
-        <p class="eyebrow">Validação da diretoria</p>
-        <h1>Homologação</h1>
-        <p>Validação dos lançamentos, histórico de ações e rastreabilidade.</p>
+        <p id="approvalPageEyebrow" class="eyebrow">Validação da diretoria</p>
+        <h1 id="approvalPageTitle">Homologação</h1>
+        <p id="approvalPageDescription">Validação dos lançamentos, histórico de ações e rastreabilidade.</p>
       </section>
 
+      <div id="approvalReadOnlyNotice" class="notice info" hidden>Histórico / acompanhamento somente leitura. A Unidade Apuradora não pode homologar, devolver ou reabrir registros.</div>
+
       <nav class="module-tabs" aria-label="Tipo de homologação">
-        <a class="active" href="/homologacoes">Indicadores</a>
-        <a href="/iniciativas/homologacao">Iniciativas</a>
+        <a id="indicatorApprovalTab" class="active" href="/homologacoes">Indicadores</a>
+        <a id="initiativeApprovalTab" href="/iniciativas/homologacao">Iniciativas</a>
       </nav>
 
       <section class="filters" aria-label="Filtros da homologação">
@@ -57,7 +59,7 @@
                 <th>Realizado</th>
                 <th>% atingido</th>
                 <th>Status</th>
-                <th>Ações</th>
+                <th id="approvalActionsHeader">Ações</th>
               </tr>
             </thead>
             <tbody id="homologacaoTable"></tbody>
@@ -111,7 +113,7 @@
             </details>
           </section>
 
-          <label class="full-span">Observação da diretoria
+          <label id="approvalDecisionField" class="full-span">Observação da diretoria
             <textarea id="approvalObservacaoDiretoria" rows="4"></textarea>
           </label>
 

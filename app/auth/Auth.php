@@ -292,6 +292,11 @@ final class Auth
     public static function scopeFilters(array $filters = array())
     {
         $user = self::authenticate();
+        return self::scopeFiltersForUser($user, $filters);
+    }
+
+    public static function scopeFiltersForUser(array $user, array $filters = array())
+    {
         if ($user['perfil'] === 'unidade_apuradora' && $user['unidade_apuradora'] !== '') {
             $filters['unidade_apuradora'] = $user['unidade_apuradora'];
             $filters['unidadeApuradora'] = $user['unidade_apuradora'];

@@ -18,17 +18,31 @@ final class DashboardApiController
 
     public function handle($action = 'resumo')
     {
-        Auth::requirePermission('dashboard', 'visualizar', true);
+        $user = Auth::requirePermission('dashboard', 'visualizar', true);
         $requestedFilters = $this->filters($_GET);
-        $generalView = $action === 'dados' && $this->isGeneralView($_GET);
-        $filters = $generalView ? $requestedFilters : Auth::scopeFilters($requestedFilters);
+        $requestedGeneralView = $action === 'dados' && $this->isGeneralView($_GET);
+        $generalView = $requestedGeneralView && AccessPolicy::allowsGeneralDashboard($user);
+        $institutionalView = Auth::normalizeProfile($user['perfil']) === 'usuario_companhia';
+        $filters = $generalView || $institutionalView
+            ? $requestedFilters
+            : Auth::scopeFiltersForUser($user, $requestedFilters);
         if ($action === 'dados') {
             $filters['ativo'] = true;
-            $data = $this->dadosService->dados($filters);
-            $data['escopoVisualizacao'] = $generalView ? 'geral' : 'proprio';
+            $data = $institutionalView
+                ? $this->dadosService->dadosInstitucionais($filters)
+                : $this->dadosService->dados($filters);
+            $data['escopoVisualizacao'] = $generalView || $institutionalView ? 'geral' : 'proprio';
             return Response::success($data, 'Dados centrais do Resumo Executivo consultados.');
         }
-        if ($action === 'resumo') return Response::success($this->service->resumo($filters), 'Resumo consultado.');
+        if ($institutionalView) $filters['status'] = 'Homologado';
+        if ($action === 'resumo') {
+            $summary = $this->service->resumo($filters);
+            if ($institutionalView) {
+                $summary['atualizacoesRecentes'] = array();
+                $summary['acessoInstitucional'] = true;
+            }
+            return Response::success($summary, 'Resumo consultado.');
+        }
         if ($action === 'graficos') return Response::success($this->service->graficos($filters), 'Graficos consultados.');
         Response::error('Recurso nao encontrado.', 404);
     }

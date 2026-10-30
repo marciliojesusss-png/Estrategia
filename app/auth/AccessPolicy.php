@@ -5,17 +5,17 @@ final class AccessPolicy
 {
     private static $matrix = array(
         'dashboard' => array('visualizar' => array('administrador', 'homologador', 'consultor_diretoria', 'unidade_apuradora', 'usuario_companhia')),
-        'visao_trimestral' => array('visualizar' => array('administrador', 'homologador', 'consultor_diretoria', 'unidade_apuradora', 'usuario_companhia')),
+        'visao_trimestral' => array('visualizar' => array('administrador', 'homologador', 'consultor_diretoria', 'unidade_apuradora')),
         'indicadores' => array(
             'visualizar' => array('administrador', 'homologador', 'consultor_diretoria', 'unidade_apuradora', 'usuario_companhia'),
             'gerenciar' => array('administrador'),
         ),
         'lancamentos' => array(
-            'visualizar' => array('administrador', 'homologador', 'consultor_diretoria', 'unidade_apuradora', 'usuario_companhia'),
+            'visualizar' => array('administrador', 'homologador', 'consultor_diretoria', 'unidade_apuradora'),
             'gerenciar' => array('administrador', 'unidade_apuradora'),
         ),
         'homologacoes' => array(
-            'visualizar' => array('administrador', 'homologador', 'consultor_diretoria', 'unidade_apuradora', 'usuario_companhia'),
+            'visualizar' => array('administrador', 'homologador', 'consultor_diretoria', 'unidade_apuradora'),
             'decidir' => array('administrador', 'homologador', 'consultor_diretoria'),
         ),
         'relatorios' => array('visualizar' => array('administrador', 'homologador', 'consultor_diretoria', 'unidade_apuradora')),
@@ -55,7 +55,8 @@ final class AccessPolicy
     public static function scopeAllows(array $user, array $record)
     {
         $profile = isset($user['perfil']) ? Auth::normalizeProfile($user['perfil']) : Auth::DEFAULT_PROFILE;
-        if ($profile === 'administrador' || $profile === 'usuario_companhia') return true;
+        if ($profile === 'administrador') return true;
+        if ($profile === 'usuario_companhia') return false;
         if ($profile === 'unidade_apuradora') {
             $unit = isset($record['unidade_apuradora']) ? $record['unidade_apuradora'] : (isset($record['unidadeApuradora']) ? $record['unidadeApuradora'] : '');
             return $unit !== '' && self::sameScope($unit, isset($user['unidade_apuradora']) ? $user['unidade_apuradora'] : '');
@@ -65,6 +66,12 @@ final class AccessPolicy
             return $board !== '' && self::sameScope($board, isset($user['diretoria_responsavel']) ? $user['diretoria_responsavel'] : '');
         }
         return false;
+    }
+
+    public static function allowsGeneralDashboard(array $user)
+    {
+        $profile = isset($user['perfil']) ? Auth::normalizeProfile($user['perfil']) : Auth::DEFAULT_PROFILE;
+        return $profile === 'administrador';
     }
 
     public static function initiativeScopeAllows(array $user, array $record)

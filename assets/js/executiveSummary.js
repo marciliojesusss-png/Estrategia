@@ -139,7 +139,7 @@
     return shortIndicatorName(indicator);
   }
 
-  async function loadCentralExecutiveData(viewScope = VIEW_SCOPE.GENERAL) {
+  async function loadCentralExecutiveData(viewScope = VIEW_SCOPE.GENERAL, user = state.user) {
     const baseTarget = typeof window.appUrl === "function"
       ? window.appUrl("api/dashboard/dados")
       : `${window.APP_BASE_PATH || ""}/index.php?route=api/dashboard/dados`;
@@ -154,7 +154,11 @@
     if (![data.indicadores, data.lancamentos, data.regrasIndicadores, data.frequenciasCobrancaOperacional, data.prazos].every(Array.isArray)) {
       throw new Error("A fonte central retornou dados incompletos para o Resumo Executivo.");
     }
-    if (normalizeText(data.fonte?.driver) !== "sqlsrv") {
+    if (viewScopeProfileCode(user) === "usuario_companhia") {
+      if (data.acessoInstitucional !== true || normalizeText(data.fonte?.tipo) !== "institucional") {
+        throw new Error("A fonte central retornou um payload institucional inválido.");
+      }
+    } else if (normalizeText(data.fonte?.driver) !== "sqlsrv") {
       throw new Error("O Resumo Executivo exige a fonte central SQL Server.");
     }
     if (normalizeText(data.escopoVisualizacao) !== requestedScope) {
@@ -174,11 +178,13 @@
   }
 
   function canChooseViewScope(user = state.user) {
-    return ["unidade_apuradora", "homologador", "consultor_diretoria"].includes(viewScopeProfileCode(user));
+    return false;
   }
 
   function defaultViewScope(user) {
-    return canChooseViewScope(user) ? VIEW_SCOPE.OWN : VIEW_SCOPE.GENERAL;
+    return ["unidade_apuradora", "homologador", "consultor_diretoria"].includes(viewScopeProfileCode(user))
+      ? VIEW_SCOPE.OWN
+      : VIEW_SCOPE.GENERAL;
   }
 
   function viewScopeStorageKey(user) {
@@ -199,9 +205,9 @@
   }
 
   function requestedViewScope(user) {
-    const requested = new URLSearchParams(window.location.search).get("escopo");
-    if (canChooseViewScope(user) && requested === "geral") return VIEW_SCOPE.GENERAL;
-    if (canChooseViewScope(user) && requested === "proprio") return VIEW_SCOPE.OWN;
+    if (["unidade_apuradora", "homologador", "consultor_diretoria"].includes(viewScopeProfileCode(user))) {
+      return VIEW_SCOPE.OWN;
+    }
     return storedViewScope(user);
   }
 
@@ -1511,7 +1517,7 @@
 
   async function init({ user }) {
     const initialScope = requestedViewScope(user);
-    const data = await loadCentralExecutiveData(initialScope);
+    const data = await loadCentralExecutiveData(initialScope, user);
     state = {
       data: null,
       user,

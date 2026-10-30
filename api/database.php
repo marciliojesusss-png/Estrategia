@@ -8,6 +8,11 @@ $method = Request::method();
 
 if ($method === 'GET') {
     if (($_GET['ping'] ?? '') !== '') {
+        $user = Auth::requireAnyAuthenticated();
+        if (Auth::normalizeProfile($user['perfil']) === 'usuario_companhia') {
+            Response::error('Acesso tecnico nao autorizado.', 403);
+            return;
+        }
         Response::json([
             'ok' => true,
             'mode' => 'php_sqlserver',
@@ -30,6 +35,10 @@ if ($method === 'GET') {
     }
 
     $user = Auth::requireAnyAuthenticated();
+    if (Auth::normalizeProfile($user['perfil']) === 'usuario_companhia') {
+        Response::error('Acesso operacional nao autorizado.', 403);
+        return;
+    }
     if ($collection === 'historico') Auth::requirePermission('auditoria', 'visualizar', true);
     if ($collection === 'usuarios') Auth::requirePermission('administracao', 'gerenciar', true);
     if ($collection === 'indicadores') Auth::requirePermission('indicadores', 'visualizar', true);

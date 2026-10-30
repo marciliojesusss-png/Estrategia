@@ -79,11 +79,45 @@ resumo_dados_ok(count($data['lancamentos']) === 276, 'servico deve retornar 276 
 resumo_dados_ok(count($data['regrasIndicadores']) === 23, 'servico deve retornar 23 regras');
 resumo_dados_ok(count($data['prazos']) === 2, 'servico deve retornar 2 prazos');
 resumo_dados_ok($data['fonte']['driver'] === 'sqlsrv', 'fonte deve usar driver sqlsrv');
-resumo_dados_ok(count($data['governancaHomologacaoAtual']) === 23, 'banco real deve ter 23 posicoes com homologacao corrente valida');
+
+$launchesById = array();
+foreach ($data['lancamentos'] as $launch) {
+    $launchesById[(string)$launch['id']] = $launch;
+}
+
+$governancePairs = array();
+foreach ($data['governancaHomologacaoAtual'] as $position) {
+    $launchId = isset($position['lancamentoId']) ? trim((string)$position['lancamentoId']) : '';
+    $version = isset($position['versao']) ? $position['versao'] : null;
+    resumo_dados_ok($launchId !== '', 'governanca corrente deve informar lancamentoId valido');
+    resumo_dados_ok(is_int($version) && $version >= 1, 'governanca corrente deve informar versao valida');
+    resumo_dados_ok(isset($launchesById[$launchId]), 'governanca corrente deve apontar para lancamento existente');
+    resumo_dados_ok($launchesById[$launchId]['status'] === 'Homologado', 'governanca corrente deve apontar para lancamento homologado');
+    resumo_dados_ok((int)$launchesById[$launchId]['versaoAtual'] === $version, 'governanca corrente deve corresponder a versao atual');
+    $pair = $launchId . ':' . $version;
+    resumo_dados_ok(!isset($governancePairs[$pair]), 'governanca corrente nao deve duplicar lancamento e versao');
+    $governancePairs[$pair] = true;
+}
+
+resumo_dados_ok(isset($launchesById['27']), 'lancamento 27 deve existir');
+$launch27 = $launchesById['27'];
+resumo_dados_ok((string)$launch27['indicadorId'] === '3', 'lancamento 27 deve pertencer ao Indicador 03');
+resumo_dados_ok($launch27['competencia'] === '2026-03', 'lancamento 27 deve representar MAR/2026');
+resumo_dados_ok($launch27['status'] === 'Homologado', 'lancamento 27 deve permanecer homologado');
+resumo_dados_ok((int)$launch27['versaoAtual'] === 2, 'lancamento 27 deve permanecer na versao 2');
+resumo_dados_ok(isset($governancePairs['27:2']), 'inclui homologacao corrente da versao atual do lancamento 27');
+
+resumo_dados_ok(isset($launchesById['152']), 'lancamento 152 deve existir');
+$launch152 = $launchesById['152'];
+resumo_dados_ok((string)$launch152['indicadorId'] === '13', 'lancamento 152 deve pertencer ao Indicador 13');
+resumo_dados_ok($launch152['competencia'] === '2026-08', 'lancamento 152 deve representar AGO/2026');
+resumo_dados_ok($launch152['status'] === 'Retificado', 'lancamento 152 deve permanecer retificado');
+resumo_dados_ok((int)$launch152['versaoAtual'] === 2, 'lancamento 152 deve permanecer na versao 2');
+resumo_dados_ok(!isset($governancePairs['152:2']), 'exclui homologacao historica do lancamento 152 apos retificacao');
 
 $governedIds = array_map('strval', array_column($data['governancaHomologacaoAtual'], 'lancamentoId'));
 foreach (array('1','2','3','6','9','12') as $indicator01LaunchId) {
     resumo_dados_ok(!in_array($indicator01LaunchId, $governedIds, true), 'Indicador 01 nao pode ganhar posicao oficial pelo lancamento ' . $indicator01LaunchId);
 }
 
-echo 'Resumo Executivo: schema real, governanca moderna/legada e 23 posicoes correntes validadas.' . PHP_EOL;
+echo 'Resumo Executivo: governanca corrente validada por lancamento, versao e invariantes transacionais.' . PHP_EOL;

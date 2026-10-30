@@ -42,6 +42,52 @@ final class ResumoExecutivoDadosService
         );
     }
 
+    public function dadosInstitucionais(array $filters = array()): array
+    {
+        return self::projecaoInstitucional($this->dados($filters));
+    }
+
+    public static function projecaoInstitucional(array $data): array
+    {
+        $idMap = array();
+        $launches = array();
+        foreach (isset($data['lancamentos']) && is_array($data['lancamentos']) ? $data['lancamentos'] : array() as $launch) {
+            if (!isset($launch['status']) || $launch['status'] !== 'Homologado') continue;
+            $originalId = isset($launch['id']) ? (string) $launch['id'] : '';
+            $institutionalId = 'institucional-' . (string) ($launch['indicadorId'] ?? '') . '-' . (string) ($launch['competencia'] ?? '');
+            if ($originalId !== '') $idMap[$originalId] = $institutionalId;
+            $launch['id'] = $institutionalId;
+            $launch['camposEntrada'] = array();
+            unset(
+                $launch['observacaoArea'],
+                $launch['referenciaEvidencia'],
+                $launch['evidenciaId'],
+                $launch['usuarioResponsavel'],
+                $launch['createdAt'],
+                $launch['updatedAt']
+            );
+            $launches[] = $launch;
+        }
+        $data['lancamentos'] = $launches;
+
+        $governance = array();
+        foreach (isset($data['governancaHomologacaoAtual']) && is_array($data['governancaHomologacaoAtual']) ? $data['governancaHomologacaoAtual'] : array() as $item) {
+            $originalId = isset($item['lancamentoId']) ? (string) $item['lancamentoId'] : '';
+            if (!isset($idMap[$originalId])) continue;
+            $item['lancamentoId'] = $idMap[$originalId];
+            $governance[] = $item;
+        }
+        $data['governancaHomologacaoAtual'] = $governance;
+        $data['prazos'] = array();
+        $data['fonte'] = array('tipo' => 'institucional');
+        foreach (isset($data['indicadores']) && is_array($data['indicadores']) ? $data['indicadores'] : array() as $index => $indicator) {
+            unset($indicator['createdAt'], $indicator['updatedAt']);
+            $data['indicadores'][$index] = $indicator;
+        }
+        $data['acessoInstitucional'] = true;
+        return $data;
+    }
+
     private function governancaHomologacaoAtual(array $lancamentos): array
     {
         $visible = array();

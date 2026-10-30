@@ -28,10 +28,12 @@
     <nav id="appNav" class="sidebar"></nav>
     <main class="content">
       <section class="page-heading">
-        <p class="eyebrow">Preenchimento</p>
-        <h1>Lançamentos</h1>
-        <p>Registro dos dados pelas unidades apuradoras.</p>
+        <p id="launchPageEyebrow" class="eyebrow">Preenchimento</p>
+        <h1 id="launchPageTitle">Lançamentos</h1>
+        <p id="launchPageDescription">Registro dos dados pelas unidades apuradoras.</p>
       </section>
+
+      <div id="launchReadOnlyNotice" class="notice info" hidden>Consulta somente leitura. Ações de preenchimento, submissão e gestão de evidências não estão disponíveis para este perfil.</div>
 
       <section class="filters" aria-label="Filtros dos lançamentos">
         <label>Mês <select data-filter="mes"></select></label>
@@ -52,7 +54,7 @@
                 <th>Resultado da competência</th>
                 <th>Situação</th>
                 <th>Status</th>
-                <th>Ações</th>
+                <th id="launchActionsHeader">Ações</th>
               </tr>
             </thead>
             <tbody id="lancamentosTable"></tbody>
@@ -174,7 +176,7 @@
               <input id="launchEvidenceReference" type="text" placeholder="Nota Técnica, processo, SharePoint ou outra referência documental">
             </label>
 
-            <div class="evidence-upload-grid">
+            <div id="launchEvidenceUploadControls" class="evidence-upload-grid">
               <label>Arquivo
                 <input id="launchEvidenceFile" type="file" accept=".pdf,.jpg,.jpeg,.png,.xls,.xlsx,.doc,.docx">
               </label>

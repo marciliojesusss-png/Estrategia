@@ -30,11 +30,15 @@ final class IndicadorConsultaInstitucionalService
         }
 
         $profile = Auth::normalizeProfile(isset($user['perfil']) ? $user['perfil'] : '');
+        if (!self::permiteDetalheGeral($user, $indicador)) {
+            throw new UnexpectedValueException('Indicador fora do escopo autorizado.');
+        }
+
         $scopeAllows = AccessPolicy::scopeAllows($user, $indicador);
         $operationalScope = $profile === 'administrador' || (
             in_array($profile, array('homologador', 'consultor_diretoria', 'unidade_apuradora'), true) && $scopeAllows
         );
-        $institutionalReadOnly = !$operationalScope;
+        $institutionalReadOnly = $profile === 'usuario_companhia';
 
         $launches = $this->lancamentos->all(array('indicadorId' => $id));
         if ($institutionalReadOnly) {
@@ -64,12 +68,38 @@ final class IndicadorConsultaInstitucionalService
                 'dentroEscopoOperacional' => $operationalScope,
                 'somenteHomologados' => $institutionalReadOnly,
             ),
-            'fonte' => array(
-                'tipo' => 'banco_central',
-                'driver' => (string) $this->db->getAttribute(PDO::ATTR_DRIVER_NAME),
-                'banco' => defined('SQLSERVER_DATABASE') ? SQLSERVER_DATABASE : '',
+            'fonte' => self::fonteDetalhe(
+                (string) $this->db->getAttribute(PDO::ATTR_DRIVER_NAME),
+                defined('SQLSERVER_DATABASE') ? SQLSERVER_DATABASE : '',
+                $institutionalReadOnly
             ),
         );
+    }
+
+    public static function permiteDetalheGeral(array $user, array $indicador): bool
+    {
+        $profile = Auth::normalizeProfile(isset($user['perfil']) ? $user['perfil'] : '');
+        if ($profile === 'administrador' || $profile === 'usuario_companhia') return true;
+
+        // Regra funcional deliberada: Consultor da Diretoria possui as mesmas
+        // prerrogativas operacionais do Homologador nesta fase.
+        if (!in_array($profile, array('homologador', 'consultor_diretoria', 'unidade_apuradora'), true)) {
+            return false;
+        }
+        return AccessPolicy::scopeAllows($user, $indicador);
+    }
+
+    public static function fonteDetalhe($driver, $database, bool $institutionalReadOnly): array
+    {
+        if ($institutionalReadOnly) {
+            return array('tipo' => 'institucional');
+        }
+        $fonte = array(
+            'tipo' => 'banco_central',
+            'driver' => (string) $driver,
+        );
+        $fonte['banco'] = (string) $database;
+        return $fonte;
     }
 
     private function sanitizeInstitutionalLaunch(array $launch): array

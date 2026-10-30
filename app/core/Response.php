@@ -3,12 +3,14 @@ declare(strict_types=1);
 
 final class Response
 {
+    private static $requestId;
+
     public static function json($data, $status = 200)
     {
         http_response_code($status);
         header('Content-Type: application/json; charset=utf-8');
         header('Cache-Control: no-store, private');
-        header('X-Request-Id: '.self::requestId());
+        header('X-Request-Id: ' . self::requestId());
         $encoded = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         if ($encoded === false) {
             http_response_code(500);
@@ -17,15 +19,30 @@ final class Response
         echo $encoded;
     }
 
-    private static function requestId(){if(!empty($_SERVER['HTTP_X_REQUEST_ID'])&&preg_match('/^[a-zA-Z0-9._-]{1,100}$/',$_SERVER['HTTP_X_REQUEST_ID']))return$_SERVER['HTTP_X_REQUEST_ID'];return bin2hex(random_bytes(12));}
-
-    public static function error($message, $status = 400, array $errors = array())
+    public static function requestId()
     {
-        self::json(array(
+        if (self::$requestId !== null) {
+            return self::$requestId;
+        }
+        if (!empty($_SERVER['HTTP_X_REQUEST_ID']) && preg_match('/^[a-zA-Z0-9._-]{1,100}$/', $_SERVER['HTTP_X_REQUEST_ID'])) {
+            self::$requestId = (string) $_SERVER['HTTP_X_REQUEST_ID'];
+        } else {
+            self::$requestId = bin2hex(random_bytes(12));
+        }
+        return self::$requestId;
+    }
+
+    public static function error($message, $status = 400, array $errors = array(), $requestId = null)
+    {
+        $payload = array(
             'sucesso' => false,
             'mensagem' => $message,
             'erros' => $errors,
-        ), $status);
+        );
+        if ($requestId !== null && $requestId !== '') {
+            $payload['requestId'] = (string) $requestId;
+        }
+        self::json($payload, $status);
     }
 
     public static function success($data = array(), $message = 'Operacao realizada com sucesso.', $status = 200)

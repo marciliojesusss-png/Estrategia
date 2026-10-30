@@ -35,7 +35,10 @@ final class IndicadorApiController
 
     private function index()
     {
-        Auth::requirePermission('indicadores', 'visualizar', true);
+        $user = Auth::requirePermission('indicadores', 'visualizar', true);
+        if (Auth::normalizeProfile($user['perfil']) === 'usuario_companhia') {
+            return Response::error('Acesso operacional nao autorizado.', 403);
+        }
         $filters = Auth::scopeFilters(array_filter($_GET, static function ($value) { return $value !== null && $value !== ''; }));
         $page = isset($_GET['page']) ? (int) $_GET['page'] : 1;
         $perPage = isset($_GET['perPage']) ? (int) $_GET['perPage'] : 25;
@@ -53,9 +56,14 @@ final class IndicadorApiController
                 );
             } catch (OutOfBoundsException $error) {
                 return Response::error($error->getMessage(), 404);
+            } catch (UnexpectedValueException $error) {
+                return Response::error($error->getMessage(), 403);
             }
         }
         $user = Auth::requirePermission('indicadores', 'visualizar', true);
+        if (Auth::normalizeProfile($user['perfil']) === 'usuario_companhia') {
+            return Response::error('Utilize a consulta institucional do indicador.', 403);
+        }
         $item = $this->service->find($id);
         if (!$item) return Response::error('Indicador nao encontrado.', 404);
         if ($user['perfil'] !== 'administrador' && $user['perfil'] !== 'usuario_companhia') Auth::authorizeRecord($item, true);

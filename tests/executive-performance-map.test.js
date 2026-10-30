@@ -172,7 +172,9 @@ assert.equal(internals.indicatorDetailNavigationParams(12, "general").escopo, "g
 assert.equal(internals.indicatorDetailNavigationParams(12, "own").escopo, "proprio");
 assert.equal(internals.indicatorDetailNavigationParams(12, "general").origem, "resumo-executivo");
 context.window.location.search = "?escopo=geral";
-assert.equal(internals.requestedViewScope({ perfilCodigo: "homologador" }), "general");
+assert.equal(internals.requestedViewScope({ perfilCodigo: "homologador" }), "own");
+assert.equal(internals.requestedViewScope({ perfilCodigo: "consultor_diretoria" }), "own");
+assert.equal(internals.canChooseViewScope({ perfilCodigo: "unidade_apuradora" }), false);
 context.window.location.search = "";
 const scopeData = {
   indicadores: [
