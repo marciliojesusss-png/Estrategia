@@ -1961,7 +1961,7 @@
             camposEntrada: [
               { nome: "tipoPosicaoAprimoramento", rotulo: "Tipo da posição", tipo: "selecao", obrigatorio: true, opcoes: TIPOS_POSICAO_APRIMORAMENTO },
               { nome: "melhoriasImplementadasMes", rotulo: "Melhorias implementadas no período de apuração", tipo: "inteiro", obrigatorio: false },
-              { nome: "melhoriasImplementadasAcumuladas", rotulo: "Melhorias implementadas acumuladas", tipo: "inteiro", obrigatorio: false, somenteLeitura: true },
+              { nome: "melhoriasImplementadasAcumuladas", rotulo: "Melhorias implementadas acumuladas até a competência", tipo: "inteiro", obrigatorio: false, somenteLeitura: true },
               { nome: "descricaoMelhoriasMes", rotulo: "Descrição das melhorias implementadas no período", tipo: "textarea", obrigatorio: false }
             ],
             campoResultadoPrincipal: "resultadoMensal",

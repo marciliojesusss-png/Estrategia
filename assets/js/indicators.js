@@ -443,7 +443,7 @@
             ]
           },
           { nome: "melhoriasImplementadasMes", rotulo: "Melhorias implementadas no período de apuração", tipo: "inteiro", obrigatorio: false },
-          { nome: "melhoriasImplementadasAcumuladas", rotulo: "Melhorias implementadas acumuladas", tipo: "inteiro", obrigatorio: false, somenteLeitura: true },
+          { nome: "melhoriasImplementadasAcumuladas", rotulo: "Melhorias implementadas acumuladas até a competência", tipo: "inteiro", obrigatorio: false, somenteLeitura: true },
           { nome: "descricaoMelhoriasMes", rotulo: "Descrição das melhorias implementadas no período", tipo: "textarea", obrigatorio: false }
         ]
       };
@@ -949,9 +949,15 @@
             ["Situação", situation],
             ...(isAprimoramento ? [
               ["Tipo da posição", tipoPosicaoAprimoramento === "acompanhamento" ? "Acompanhamento" : "Fechamento quantitativo"],
-              ["Posição acumulada anterior", Calculations.formatarInteiroBR(calculated.melhoriasImplementadasAcumuladasAnterior)],
-              ["Novas melhorias no período", Calculations.formatarInteiroBR(calculated.novasMelhoriasPeriodo)],
-              ["Melhorias implementadas acumuladas", Calculations.formatarInteiroBR(calculated.melhoriasImplementadasAcumuladas)],
+              ...(tipoPosicaoAprimoramento === "acompanhamento" ? [
+                ["Posição acumulada de acompanhamento", Calculations.formatarInteiroBR(calculated.posicaoAcompanhamentoAprimoramento)],
+                ["Percentual acumulado de acompanhamento", Calculations.formatarPercentual(calculated.percentualAcompanhamentoAprimoramento, 2, 2)],
+                ["Avaliação oficial", "Posição oficial somente em MAR, JUN, SET e DEZ", true]
+              ] : [
+                ["Posição acumulada anterior", Calculations.formatarInteiroBR(calculated.melhoriasImplementadasAcumuladasAnterior)],
+                ["Novas melhorias no período", Calculations.formatarInteiroBR(calculated.novasMelhoriasPeriodo)],
+                ["Melhorias implementadas acumuladas", Calculations.formatarInteiroBR(calculated.melhoriasImplementadasAcumuladas)]
+              ]),
               ["Base de melhorias mapeadas", Calculations.formatarInteiroBR(calculated.totalMelhoriasPlano2026 ?? regra?.parametrosCalculo?.totalMelhoriasPlano2026)]
             ] : []),
             ...(isPlataformaJogos ? [
@@ -987,6 +993,10 @@
               ["Resultado percentual oficial", Calculations.formatarPercentual(calculated.resultadoPercentualOficial, 5, 5)],
               ["Realizado financeiro", Calculations.formatarValor(calculated.realizadoFinanceiro, "moeda")],
               ["% da meta atingida", Calculations.formatarPercentual(calculated.percentualAtingimento, 2, 2)]
+            ] : isAprimoramento && tipoPosicaoAprimoramento === "acompanhamento" ? [
+              ["Posição acumulada de acompanhamento", Calculations.formatarInteiroBR(calculated.posicaoAcompanhamentoAprimoramento)],
+              ["Percentual acumulado de acompanhamento", Calculations.formatarPercentual(calculated.percentualAcompanhamentoAprimoramento, 2, 2)],
+              ["Avaliação oficial", "Não aplicável ao acompanhamento mensal"]
             ] : !isPlataformaJogos ? [
               [isLucroRecorrente ? "Meta da competência" : isAprimoramento ? "Meta do período" : "Meta de referência", isVisibilidadeRepasses
                 ? Calculations.formatarPercentual(Calculations.resolverMetaPercentualAcoesPropostas(regra, lancamento))
@@ -1544,6 +1554,9 @@
           (Number.isFinite(totalImprovements) && calculated?.resultadoMensal != null
             ? Math.round(Number(calculated.resultadoMensal) * totalImprovements)
             : null);
+        const displayedResult = positionType === "acompanhamento"
+          ? calculated?.percentualAcompanhamentoAprimoramento
+          : calculated?.resultadoMensal;
         return `
           <tr>
             <td>${name}/2026</td>
@@ -1551,7 +1564,7 @@
             <td>${Calculations.formatarInteiroBR(calculated?.novasMelhoriasPeriodo)}</td>
             <td>${Calculations.formatarInteiroBR(accumulatedImprovements)}</td>
             <td>${escapeHtml(launch?.camposEntrada?.descricaoMelhoriasMes || "-")}</td>
-            <td>${Calculations.formatarPercentual(calculated?.resultadoMensal, 2)}</td>
+            <td>${Calculations.formatarPercentual(displayedResult, 2)}</td>
             <td>${Calculations.formatarPercentual(calculated?.metaTrimestral, 2)}</td>
             <td>${Calculations.formatarPercentual(percent, 2)}</td>
             <td>${escapeHtml(situation)}</td>

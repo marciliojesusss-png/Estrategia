@@ -1481,6 +1481,7 @@
   function updateAprimoramentoPositionFields(regra, lancamento) {
     if (regra?.tipoCalculo !== "melhorias_acumuladas") return;
     const type = document.querySelector('[data-entry-field="tipoPosicaoAprimoramento"]')?.value || "";
+    const tracking = type === "acompanhamento";
     const quantitative = type === "fechamento_quantitativo";
     const incrementWrapper = document.querySelector('[data-entry-wrapper="melhoriasImplementadasMes"]');
     const positionWrapper = document.querySelector('[data-entry-wrapper="melhoriasImplementadasAcumuladas"]');
@@ -1490,11 +1491,11 @@
       if (input) input.disabled = !quantitative || !isEditable(lancamento);
     }
     if (positionWrapper) {
-      positionWrapper.hidden = !quantitative;
+      positionWrapper.hidden = !(tracking || quantitative);
       const input = positionWrapper.querySelector(".dynamic-entry-field");
       if (input) {
-        input.readOnly = true;
-        input.disabled = true;
+        input.readOnly = quantitative;
+        input.disabled = !(tracking || quantitative) || !isEditable(lancamento);
       }
     }
   }
@@ -1796,7 +1797,11 @@
       const memoria = lancamento?.camposEntrada || {};
       const fechamento = IndicatorFormulas.resolverTipoPosicaoAprimoramento(lancamento) === "fechamento_quantitativo";
       details.push(["Tipo de posição", fechamento ? "Fechamento trimestral" : "Acompanhamento do trimestre"]);
-      if (!fechamento) details.push(["Avaliação oficial", "Posição oficial somente em MAR, JUN, SET e DEZ"]);
+      if (!fechamento) {
+        details.push(["Posição acumulada de acompanhamento", Calculations.formatarInteiroBR(resultado.posicaoAcompanhamentoAprimoramento)]);
+        details.push(["Percentual acumulado de acompanhamento", Calculations.formatarPercentual(resultado.percentualAcompanhamentoAprimoramento, 2, 2)]);
+        details.push(["Avaliação oficial", "Posição oficial somente em MAR, JUN, SET e DEZ"]);
+      }
       if (memoria.fonteFechamentoAprimoramento) details.push(["Fonte do fechamento", memoria.fonteFechamentoAprimoramento]);
       if (memoria.fontePlanilhaAprimoramento) details.push(["Fonte da memória mensal", memoria.fontePlanilhaAprimoramento]);
       if (memoria.metaPlanilhaAprimoramento !== null && memoria.metaPlanilhaAprimoramento !== undefined) {
@@ -2206,6 +2211,10 @@
     const camposEntrada = window.DocumentationFields
       ? DocumentationFields.preserveLegacyFields(regra, lancamento, collectedFields)
       : collectedFields;
+    if (regra?.tipoCalculo === "melhorias_acumuladas" && camposEntrada.tipoPosicaoAprimoramento === "acompanhamento") {
+      delete camposEntrada.melhoriasImplementadasMes;
+      delete camposEntrada.melhoriasEntreguesMes;
+    }
     const ieoDirectToggle = document.getElementById("ieoDirectToggle");
     if (isIeoRule(regra) && ieoDirectToggle && !ieoDirectToggle.checked) {
       camposEntrada.ieoApuradoInformado = "";
@@ -2235,6 +2244,13 @@
       .filter((item) => item.indicadorId === indicador.id && item.ano === lancamento.ano && item.mes <= lancamento.mes)
       .sort((a, b) => a.mes - b.mes);
     const resultado = IndicatorFormulas.calcularIndicador(indicador, regra, lancamentoComEntrada, lancamentosDoIndicador);
+    if (
+      regra?.tipoCalculo === "melhorias_acumuladas" &&
+      camposEntrada.tipoPosicaoAprimoramento === "fechamento_quantitativo" &&
+      resultado.statusCalculo === "calculado"
+    ) {
+      camposEntrada.melhoriasImplementadasAcumuladas = resultado.melhoriasImplementadasAcumuladas;
+    }
     if (regra?.tipoCalculo === "nota_pesquisa_nps") {
       const hasPromoters = camposEntrada.percentualPromotores !== "" && camposEntrada.percentualPromotores !== null && camposEntrada.percentualPromotores !== undefined;
       const hasDetractors = camposEntrada.percentualDetratores !== "" && camposEntrada.percentualDetratores !== null && camposEntrada.percentualDetratores !== undefined;
@@ -2283,7 +2299,15 @@
       document.getElementById("percentualAnualWrapper").hidden = true;
     }
     if (result.regra?.tipoCalculo === "melhorias_acumuladas") {
-      document.getElementById("percentualMensalWrapper").hidden = false;
+      const tracking = result.resultado.tipoPosicaoAprimoramento === "acompanhamento";
+      document.getElementById("launchResultadoMensalLabel").textContent = tracking
+        ? "Percentual acumulado de acompanhamento"
+        : "Resultado da competência";
+      document.getElementById("launchPercentualCalculadoLabel").textContent = "% da meta atingida";
+      document.getElementById("launchSituacaoCalculadaLabel").textContent = tracking
+        ? "Situação de acompanhamento"
+        : "Situação";
+      document.getElementById("percentualMensalWrapper").hidden = tracking;
       document.getElementById("resultadoAnualWrapper").hidden = true;
       document.getElementById("percentualAnualWrapper").hidden = true;
       const accumulatedInput = document.querySelector('[data-entry-field="melhoriasImplementadasAcumuladas"]');
@@ -2302,7 +2326,11 @@
       document.getElementById("resultadoAnualWrapper").hidden = true;
       document.getElementById("percentualAnualWrapper").hidden = true;
     }
-    document.getElementById("launchResultadoMensal").value = result.resultado.resultadoMensalFormatado || Calculations.formatarValor(result.resultado.resultadoMensal, result.resultado.unidadeMedida);
+    const trackingAprimoramento = result.regra?.tipoCalculo === "melhorias_acumuladas" &&
+      result.resultado.tipoPosicaoAprimoramento === "acompanhamento";
+    document.getElementById("launchResultadoMensal").value = trackingAprimoramento
+      ? result.resultado.percentualAcompanhamentoAprimoramentoFormatado || "-"
+      : result.resultado.resultadoMensalFormatado || Calculations.formatarValor(result.resultado.resultadoMensal, result.resultado.unidadeMedida);
     const percentualPrincipal = result.regra?.tipoCalculo === "nota_pesquisa_nps"
       ? result.resultado.percentualAtingidoOficialNPS ?? result.resultado.percentualOficialNPS ?? result.resultado.percentualAtingidoMensal
       : result.resultado.percentualAtingidoMensal;

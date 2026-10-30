@@ -217,13 +217,33 @@
   }
 
   function resultadoAcompanhamentoAprimoramento(regra, lancamentoAtual) {
-    const semAvaliacao = lancamentoAtual?.status === "Não iniciado";
+    const campoAcumulado = regra?.parametrosCalculo?.campoPosicaoAcumulada || "melhoriasImplementadasAcumuladas";
+    const totalMelhoriasPlano = toNumber(regra?.parametrosCalculo?.totalMelhoriasPlano2026);
+    const posicaoAcumulada = campo(lancamentoAtual, campoAcumulado);
+    if (posicaoAcumulada !== null && (posicaoAcumulada < 0 || !Number.isInteger(posicaoAcumulada))) {
+      return erro("A posição acumulada de acompanhamento deve ser uma quantidade inteira não negativa.", regra.unidadeMedida);
+    }
+    if (posicaoAcumulada !== null && totalMelhoriasPlano !== null && posicaoAcumulada > totalMelhoriasPlano) {
+      return erro(`A posição acumulada de acompanhamento não pode ser maior que ${totalMelhoriasPlano}, a base de melhorias mapeadas.`, regra.unidadeMedida);
+    }
+    const percentualAcompanhamento = posicaoAcumulada !== null && totalMelhoriasPlano
+      ? posicaoAcumulada / totalMelhoriasPlano
+      : null;
+    const semAvaliacao = lancamentoAtual?.status === "Não iniciado" && posicaoAcumulada === null;
     return {
       ...pendente(semAvaliacao
         ? "Competência de acompanhamento ainda sem avaliação."
-        : "Acompanhamento registrado sem nova posição quantitativa.", regra.unidadeMedida, {
+        : posicaoAcumulada === null
+          ? "Acompanhamento registrado sem posição acumulada informativa."
+          : "Posição acumulada mensal registrada somente para acompanhamento.", regra.unidadeMedida, {
         statusCalculo: "acompanhamento",
         tipoPosicaoAprimoramento: TIPO_POSICAO_APRIMORAMENTO.ACOMPANHAMENTO,
+        melhoriasImplementadasAcumuladas: posicaoAcumulada,
+        posicaoAcompanhamentoAprimoramento: posicaoAcumulada,
+        percentualAcompanhamentoAprimoramento: percentualAcompanhamento,
+        percentualAcompanhamentoAprimoramentoFormatado: formatarPercentual(percentualAcompanhamento),
+        totalMelhoriasPlano2026: totalMelhoriasPlano,
+        fonteCalculoAprimoramento: posicaoAcumulada === null ? null : "posicao_absoluta_acompanhamento",
         situacao: semAvaliacao ? "Sem avaliação" : "Em acompanhamento"
       }),
       descricaoMelhoriasMes: raw(lancamentoAtual, "descricaoMelhoriasMes") || null
