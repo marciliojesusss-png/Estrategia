@@ -91,7 +91,7 @@ const approvals = fs.readFileSync(path.join(root, "assets/js/approvals.js"), "ut
 const publicApprovals = fs.readFileSync(path.join(root, "public/assets/js/approvals.js"), "utf8");
 const formulasSource = fs.readFileSync(path.join(root, "assets/js/formulas.js"), "utf8");
 const publicFormulasSource = fs.readFileSync(path.join(root, "public/assets/js/formulas.js"), "utf8");
-assert.match(launches, /"lucro_recorrente_mensal", "razao_canais_digitais", "melhorias_acumuladas"\]\.includes\(regra\?\.tipoCalculo\)/);
+assert.match(launches, /"lucro_recorrente_mensal", "razao_canais_digitais", "razao_pix", "melhorias_acumuladas"\]\.includes\(regra\?\.tipoCalculo\)/);
 assert.match(approvals, /"lucro_recorrente_mensal"\]\.includes\(regra\?\.tipoCalculo\)/);
 assert.equal(launches, publicLaunches, "launches.js deve ser idêntico nos dois diretórios de assets");
 assert.equal(approvals, publicApprovals, "approvals.js deve ser idêntico nos dois diretórios de assets");

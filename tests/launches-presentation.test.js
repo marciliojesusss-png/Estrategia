@@ -212,7 +212,7 @@ assert.match(launchesSource, /async function persistLaunch\(action\) \{\s+const 
 assert.match(launchesSource, /Evidência anexada, mas não foi possível salvar o lançamento/);
 assert.match(launchesSource, /meta_oficial_trimestral_projeto/);
 assert.match(launchesSource, /Evolução oficial do projeto/);
-assert.match(launchesSource, /\["nota_pesquisa_nps", "iniciativas_apoiadas", "execucao_acoes_propostas", "lucro_recorrente_mensal", "razao_canais_digitais", "melhorias_acumuladas"\]\.includes\(regra\?\.tipoCalculo\)/);
+assert.match(launchesSource, /\["nota_pesquisa_nps", "iniciativas_apoiadas", "execucao_acoes_propostas", "lucro_recorrente_mensal", "razao_canais_digitais", "razao_pix", "melhorias_acumuladas"\]\.includes\(regra\?\.tipoCalculo\)/);
 assert.match(launchesSource, /function updateSocioambientalInitiativeFields/);
 assert.match(launchesSource, /function validateSocioambientalRequiredFields/);
 assert.match(launchesSource, /Campo obrigatório para iniciativa apoiada\/realizada\./);

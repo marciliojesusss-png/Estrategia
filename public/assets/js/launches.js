@@ -723,6 +723,12 @@
           : calculation?.percentualAtingidoMensal ?? lancamento?.percentualAtingido ?? null
       };
     }
+    if (regra?.tipoCalculo === "razao_pix") {
+      return {
+        resultado: calculation?.resultadoOficialAnual ?? calculation?.resultadoAcumulado ?? lancamento?.resultadoOficialAnual ?? lancamento?.resultadoAcumulado ?? null,
+        percentual: calculation?.percentualAtingidoAnual ?? calculation?.percentualAtingidoAcumulado ?? lancamento?.percentualAtingidoAnual ?? lancamento?.percentualAtingidoAcumulado ?? lancamento?.percentualAtingido ?? null
+      };
+    }
     const accumulatedRatio = regra?.tipoCalculo === "razao_canais_digitais";
     if (accumulatedRatio) {
       return {
@@ -1140,7 +1146,7 @@
         : isEditable(item)
           ? "Preencher"
           : "Visualizar";
-      const tableCalculation = ["nota_pesquisa_nps", "iniciativas_apoiadas", "execucao_acoes_propostas", "lucro_recorrente_mensal", "razao_canais_digitais", "melhorias_acumuladas"].includes(regra?.tipoCalculo)
+      const tableCalculation = ["nota_pesquisa_nps", "iniciativas_apoiadas", "execucao_acoes_propostas", "lucro_recorrente_mensal", "razao_canais_digitais", "razao_pix", "melhorias_acumuladas"].includes(regra?.tipoCalculo)
         ? IndicatorFormulas.calcularIndicador(
           indicador,
           regra,
@@ -2608,7 +2614,7 @@
 
   async function saveLaunchData(action, lancamento, indicador, persistenceOptions = {}) {
     const calculation = updateCalculatedPreview();
-    const canaisDigitais = calculation.regra?.tipoCalculo === "razao_canais_digitais";
+    const razaoAcumulada = ["razao_canais_digitais", "razao_pix"].includes(calculation.regra?.tipoCalculo);
     const now = new Date().toISOString();
     const hasDocumentaryObservation = Boolean(lancamento.observacaoDocumental?.observacao);
     const updated = {
@@ -2617,7 +2623,7 @@
       resultadoMensal: calculation.resultado.resultadoMensal,
       realizadoMensal: calculation.realizado,
       percentualManual: isManual(indicador) ? calculation.percentualManual : null,
-      percentualAtingido: canaisDigitais
+      percentualAtingido: razaoAcumulada
         ? calculation.resultado.percentualAtingidoAnual ?? calculation.resultado.percentualAtingidoAcumulado
         : calculation.resultado.percentualAtingidoMensal,
       percentualAtingidoMensal: calculation.resultado.percentualAtingidoMensal,
@@ -2633,7 +2639,7 @@
         metaReferencia: calculation.resultado.metaReferenciaMensal,
         metaMensal: calculation.resultado.metaReferenciaMensal
       } : {}),
-      ...(canaisDigitais ? {
+      ...(razaoAcumulada ? {
         metaReferencia: calculation.resultado.metaReferencia,
         metaMensal: calculation.resultado.metaReferencia
       } : {}),

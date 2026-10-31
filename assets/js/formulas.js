@@ -1242,7 +1242,29 @@
       return erro("Arrecadação dos canais eletrônicos não pode ser maior que a arrecadação total dos produtos de loterias.", regra.unidadeMedida);
     }
 
-    const launches = lancamentosAteMes(lancamentoAtual, lancamentosDoAno);
+    // A colecao recebida pode conter o snapshot persistido anterior do mes
+    // atualmente aberto no formulario. Remove essa competencia da trajetoria e
+    // reinsere o lancamento corrente uma unica vez, garantindo que seus
+    // componentes editados participem do acumulado sem dupla contagem.
+    const currentKey = competenciaKey(lancamentoAtual);
+    const currentId = lancamentoAtual?.id === null || lancamentoAtual?.id === undefined
+      ? ""
+      : String(lancamentoAtual.id);
+    const currentMonth = Number(lancamentoAtual.mes);
+    const currentYear = Number(lancamentoAtual.ano);
+    const launches = [
+      ...(lancamentosDoAno || []).filter((launch) => {
+        if (Number(launch.mes) > currentMonth) return false;
+        if (currentId && String(launch?.id ?? "") === currentId) return false;
+        const launchKey = competenciaKey(launch);
+        if (currentKey && launchKey) return launchKey !== currentKey;
+        const sameMonth = Number(launch.mes) === currentMonth;
+        const launchYear = Number(launch.ano);
+        const sameYear = !currentYear || !launchYear || launchYear === currentYear;
+        return !(sameMonth && sameYear);
+      }),
+      lancamentoAtual
+    ].sort((a, b) => Number(a.mes) - Number(b.mes));
     const accumulatedNumerator = Math.round(
       launches.reduce((sum, launch) => sum + (currency.parseMoedaBR(raw(launch, numeratorField)) || 0), 0) * 100
     ) / 100;
