@@ -619,6 +619,7 @@
   }
 
   function getMetaLabel(regra) {
+    if (regra?.tipoCalculo === "iniciativas_apoiadas") return "Meta do marco trimestral";
     if (regra?.tipoCalculo === "razao_canais_digitais") return "Meta da competência";
     if (regra?.tipoCalculo === "marco_projeto_percentual" && regra?.parametrosCalculo?.metaTipo === "curva_trimestral_percentual") {
       return "Meta do fechamento trimestral";
@@ -1280,9 +1281,16 @@
       document.getElementById("resultadoAnualWrapper").hidden = true;
       document.getElementById("percentualAnualWrapper").hidden = true;
     }
+    if (regra?.tipoCalculo === "iniciativas_apoiadas") {
+      document.getElementById("percentualMensalWrapper").hidden = false;
+      document.getElementById("resultadoAnualWrapper").hidden = true;
+      document.getElementById("percentualAnualWrapper").hidden = false;
+    }
 
     document.getElementById("launchResultadoMensalLabel").textContent = regra?.tipoCalculo === "marco_projeto_percentual"
       ? "Resultado oficial da competência"
+      : regra?.tipoCalculo === "iniciativas_apoiadas"
+        ? "Iniciativas apoiadas acumuladas"
       : isIeoRule(regra)
       ? "IEO calculado da competência"
       : regra?.tipoCalculo === "nota_pesquisa_nps"
@@ -1298,6 +1306,8 @@
       : "Resultado da competência";
     document.getElementById("launchPercentualCalculadoLabel").textContent = regra?.tipoCalculo === "marco_projeto_percentual"
       ? "Atingimento oficial"
+      : regra?.tipoCalculo === "iniciativas_apoiadas"
+        ? "Atingimento do marco trimestral"
       : isIeoRule(regra)
       ? "% atingido"
       : ["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(regra?.tipoCalculo)
@@ -1320,11 +1330,15 @@
       : "Resultado oficial anual";
     document.getElementById("launchPercentualAcumuladoLabel").textContent = regra?.tipoCalculo === "lucro_recorrente_mensal"
       ? "% da meta acumulada"
+      : regra?.tipoCalculo === "iniciativas_apoiadas"
+        ? "Progresso anual"
       : regra?.tipoCalculo === "plano_acao_por_elementos"
         ? "% da meta anual"
       : "% da meta atingida anual";
     document.getElementById("launchSituacaoCalculadaLabel").textContent = regra?.tipoCalculo === "marco_projeto_percentual"
       ? "Situação oficial"
+      : regra?.tipoCalculo === "iniciativas_apoiadas"
+        ? "Situação calculada"
       : isIeoRule(regra)
       ? "Situação da competência"
       : "Situação";
@@ -1713,6 +1727,7 @@
     if (resultado?.metaTrimestral === undefined) return null;
     if (regra?.tipoCalculo === "investimento_socioambiental") return null;
     if (regra?.tipoCalculo === "marco_projeto_percentual") return null;
+    if (regra?.tipoCalculo === "iniciativas_apoiadas") return null;
     const value = resultado.metaTrimestral;
     if (regra?.tipoCalculo === "execucao_acoes_propostas") {
       return ["Meta trimestral", Calculations.formatarPercentual(resultado.metaPercentualTrimestral)];
@@ -1763,6 +1778,49 @@
     return details;
   }
 
+  function indicator16CalculatedDetails(resultado, regra, lancamento = {}) {
+    const trimestre = lancamento?.trimestre || `${Math.ceil(Number(lancamento?.mes) / 3)}TRI/${lancamento?.ano || 2026}`;
+    const apresentacao = resultado?.apresentacaoOficialSocioambiental ||
+      window.IndicatorFormulas?.obterApresentacaoOficialTrimestre?.(regra, trimestre) || null;
+    const literalVazio = apresentacao?.apresentacaoLiteralVazia === true;
+    const formatarQuantidade = (value, singular, plural) => {
+      const numero = toNumberOrNull(value);
+      if (numero === null) return "-";
+      return `${Calculations.formatarValor(numero, "quantidade")} ${numero === 1 ? singular : plural}`;
+    };
+    const formatarPercentualDocumental = (value) => literalVazio || value === null || value === undefined
+      ? "-"
+      : Calculations.formatarPercentual(value);
+    const details = [
+      ["Dados técnicos — Iniciativas apoiadas acumuladas", formatarQuantidade(resultado?.iniciativasApoiadasAcumuladas, "iniciativa", "iniciativas")],
+      ["Dados técnicos — Meta do marco trimestral", formatarQuantidade(resultado?.metaTrimestral, "iniciativa", "iniciativas")],
+      ["Dados técnicos — Atingimento do marco trimestral", resultado?.percentualAtingidoMensal === null || resultado?.percentualAtingidoMensal === undefined
+        ? "-"
+        : Calculations.formatarPercentual(resultado.percentualAtingidoMensal)],
+      ["Dados técnicos — Meta anual", formatarQuantidade(regra?.metaAnualValor, "iniciativa", "iniciativas")],
+      ["Dados técnicos — Progresso anual", resultado?.percentualMetaAnualRealizado === null || resultado?.percentualMetaAnualRealizado === undefined
+        ? "-"
+        : Calculations.formatarPercentual(resultado.percentualMetaAnualRealizado)]
+    ];
+
+    if (!apresentacao) return details;
+    details.push(
+      ["Fechamento oficial — Meta", formatarPercentualDocumental(apresentacao.metaOficialReportada)],
+      ["Fechamento oficial — Resultado", formatarPercentualDocumental(apresentacao.resultadoOficialReportado)],
+      ["Fechamento oficial — Atingimento", formatarPercentualDocumental(apresentacao.percentualAtingidoOficialReportado)],
+      ["Fechamento oficial — Situação", literalVazio ? "-" : apresentacao.situacaoOficial || "-"],
+      ["Fechamento oficial — Fonte", apresentacao.fonte || "-"]
+    );
+    if (apresentacao.curvaPercentual !== null && apresentacao.curvaPercentual !== undefined) {
+      details.push(["Curva documental do trimestre", Calculations.formatarPercentual(apresentacao.curvaPercentual)]);
+    }
+    if (apresentacao.previsao === true) {
+      details.push(["Natureza da posição documental", "Previsão; resultado ainda não apurado"]);
+    }
+    if (apresentacao.observacao) details.push(["Nota documental", apresentacao.observacao]);
+    return details;
+  }
+
   function renderFormulaDetails(resultado, regra, lancamento) {
     const wrapper = document.getElementById("formulaDetailsWrapper");
     const target = document.getElementById("formulaDetails");
@@ -1780,6 +1838,9 @@
     }
     if (Number(regra?.indicadorId) === 3) {
       indicator03CalculatedDetails(resultado, lancamento).forEach((detail) => details.push(detail));
+    }
+    if (regra?.tipoCalculo === "iniciativas_apoiadas") {
+      indicator16CalculatedDetails(resultado, regra, lancamento).forEach((detail) => details.push(detail));
     }
     if (regra?.tipoCalculo === "crescimento_rede_loterica_base_2025") {
       indicator23CalculatedDetails(resultado).forEach((detail) => details.push(detail));
@@ -2342,6 +2403,15 @@
       document.getElementById("percentualMensalWrapper").hidden = false;
       document.getElementById("resultadoAnualWrapper").hidden = true;
       document.getElementById("percentualAnualWrapper").hidden = true;
+    }
+    if (result.regra?.tipoCalculo === "iniciativas_apoiadas") {
+      document.getElementById("launchResultadoMensalLabel").textContent = "Iniciativas apoiadas acumuladas";
+      document.getElementById("launchPercentualCalculadoLabel").textContent = "Atingimento do marco trimestral";
+      document.getElementById("launchPercentualAcumuladoLabel").textContent = "Progresso anual";
+      document.getElementById("launchSituacaoCalculadaLabel").textContent = "Situação calculada";
+      document.getElementById("percentualMensalWrapper").hidden = false;
+      document.getElementById("resultadoAnualWrapper").hidden = true;
+      document.getElementById("percentualAnualWrapper").hidden = false;
     }
     const trackingAprimoramento = result.regra?.tipoCalculo === "melhorias_acumuladas" &&
       result.resultado.tipoPosicaoAprimoramento === "acompanhamento";
@@ -2926,6 +2996,7 @@
     indicator01CalculatedDetails,
     indicator02CalculatedDetails,
     indicator03CalculatedDetails,
+    indicator16CalculatedDetails,
     indicator23CalculatedDetails,
     socioambientalRequiredFieldState,
     normalizeRgfKey,

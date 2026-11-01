@@ -4069,6 +4069,41 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
             "marcoEsperado": "2ª iniciativa realizada"
           }
         },
+        "apresentacoesOficiaisTrimestrais": {
+          "1TRI/2026": {
+            "metaOficialReportada": null,
+            "resultadoOficialReportado": null,
+            "percentualAtingidoOficialReportado": null,
+            "situacaoOficial": null,
+            "curvaPercentual": 0,
+            "apresentacaoLiteralVazia": true,
+            "fonte": "Informe DILOT/GERIN nº 0029/2026",
+            "observacao": "O quadro oficial apresenta meta, realizado e atingimento como '-'; a observação documental registra curva de 0% no 1TRI."
+          },
+          "2TRI/2026": {
+            "metaOficialReportada": 0.5,
+            "resultadoOficialReportado": 0,
+            "percentualAtingidoOficialReportado": 0,
+            "situacaoOficial": "Abaixo da meta",
+            "fonte": "Informe DILOT/GERIN nº 0056/2026"
+          },
+          "3TRI/2026": {
+            "metaOficialReportada": 0.5,
+            "resultadoOficialReportado": 0.5,
+            "percentualAtingidoOficialReportado": 1,
+            "situacaoOficial": "Atingido",
+            "fonte": "Informe DILOT/GERIN nº 0078/2026"
+          },
+          "4TRI/2026": {
+            "metaOficialReportada": 1,
+            "resultadoOficialReportado": null,
+            "percentualAtingidoOficialReportado": null,
+            "situacaoOficial": null,
+            "previsao": true,
+            "fonte": "Curva anual prevista nos Informes DILOT/GERIN nº 0029/2026, 0056/2026 e 0078/2026",
+            "observacao": "Previsão de 100% com a 2ª iniciativa realizada; resultado não antecipado."
+          }
+        },
         "sentidoMeta": "quanto_maior_melhor"
       },
       "camposEntrada": [

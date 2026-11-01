@@ -2116,6 +2116,40 @@
     const trimestre = lancamentoAtual.trimestre || `${Math.ceil(Number(lancamentoAtual.mes) / 3)}TRI/${lancamentoAtual.ano || 2026}`;
     const curva = regra.parametrosCalculo?.curvaTrimestralAcumulada || {};
     const metaTrimestral = metaLancamento(lancamentoAtual) ?? toNumber(curva[trimestre]?.metaQuantidadeAcumulada);
+    const apresentacaoConfiguradaSocioambiental = obterApresentacaoOficialTrimestre(regra, trimestre);
+    const metaOficialDocumentalSocioambiental = toNumber(apresentacaoConfiguradaSocioambiental?.metaOficialReportada);
+    const resultadoDocumentalConfigurado = toNumber(apresentacaoConfiguradaSocioambiental?.resultadoOficialReportado);
+    const resultadoOficialDocumentalSocioambiental = resultadoDocumentalConfigurado === null &&
+      apresentacaoConfiguradaSocioambiental?.previsao === true && acumulado >= metaAnual
+      ? percentualMetaAnualRealizado
+      : resultadoDocumentalConfigurado;
+    const percentualDocumentalConfigurado = toNumber(apresentacaoConfiguradaSocioambiental?.percentualAtingidoOficialReportado);
+    const percentualAtingidoOficialDocumentalSocioambiental = percentualDocumentalConfigurado ?? (
+      resultadoOficialDocumentalSocioambiental !== null && metaOficialDocumentalSocioambiental
+        ? resultadoOficialDocumentalSocioambiental / metaOficialDocumentalSocioambiental
+        : null
+    );
+    const situacaoOficialDocumentalSocioambiental = apresentacaoConfiguradaSocioambiental?.situacaoOficial || (
+      percentualAtingidoOficialDocumentalSocioambiental === null
+        ? null
+        : percentualAtingidoOficialDocumentalSocioambiental >= 1 ? "Atingido" : "Abaixo da meta"
+    );
+    const apresentacaoOficialSocioambiental = apresentacaoConfiguradaSocioambiental ? {
+      ...apresentacaoConfiguradaSocioambiental,
+      resultadoOficialReportado: resultadoOficialDocumentalSocioambiental,
+      percentualAtingidoOficialReportado: percentualAtingidoOficialDocumentalSocioambiental,
+      situacaoOficial: situacaoOficialDocumentalSocioambiental
+    } : null;
+    const camadaDocumentalSocioambiental = {
+      apresentacaoOficialSocioambiental,
+      metaOficialDocumentalSocioambiental,
+      resultadoOficialDocumentalSocioambiental,
+      percentualAtingidoOficialDocumentalSocioambiental,
+      situacaoOficialDocumentalSocioambiental,
+      fonteOficialDocumentalSocioambiental: apresentacaoOficialSocioambiental?.fonte || null,
+      apresentacaoLiteralVaziaSocioambiental: apresentacaoConfiguradaSocioambiental?.apresentacaoLiteralVazia === true,
+      previsaoDocumentalSocioambiental: apresentacaoConfiguradaSocioambiental?.previsao === true
+    };
     const possuiAndamento = ateMes.some((item) => {
       const status = texto(item, campoStatus);
       return ["Em prospecção", "Em estruturação", "Em rito de governança"].includes(status);
@@ -2127,7 +2161,8 @@
         percentualMetaAnualRealizado,
         metaTrimestral,
         situacao: possuiAndamento ? "Em prospecção/estruturação" : "Sem meta no período",
-        statusCalculo: "sem_meta_periodo"
+        statusCalculo: "sem_meta_periodo",
+        ...camadaDocumentalSocioambiental
       });
     }
     const metaReferencia = metaTrimestral ?? toNumber(regra.metaAnualValor);
@@ -2147,8 +2182,10 @@
       iniciativasApoiadas,
       iniciativasApoiadasAcumuladas: acumulado,
       percentualMetaAnualRealizado,
+      percentualAtingidoAnual: percentualMetaAnualRealizado,
       metaTrimestral,
-      situacao
+      situacao,
+      ...camadaDocumentalSocioambiental
     });
   }
 

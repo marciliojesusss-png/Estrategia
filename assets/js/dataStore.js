@@ -210,6 +210,41 @@
       marcoEsperado: "2ª iniciativa realizada"
     }
   };
+  const APOIO_SOCIOAMBIENTAL_APRESENTACOES_OFICIAIS_2026 = {
+    "1TRI/2026": {
+      metaOficialReportada: null,
+      resultadoOficialReportado: null,
+      percentualAtingidoOficialReportado: null,
+      situacaoOficial: null,
+      curvaPercentual: 0,
+      apresentacaoLiteralVazia: true,
+      fonte: "Informe DILOT/GERIN nº 0029/2026",
+      observacao: "O quadro oficial apresenta meta, realizado e atingimento como '-'; a observação documental registra curva de 0% no 1TRI."
+    },
+    "2TRI/2026": {
+      metaOficialReportada: 0.5,
+      resultadoOficialReportado: 0,
+      percentualAtingidoOficialReportado: 0,
+      situacaoOficial: "Abaixo da meta",
+      fonte: "Informe DILOT/GERIN nº 0056/2026"
+    },
+    "3TRI/2026": {
+      metaOficialReportada: 0.5,
+      resultadoOficialReportado: 0.5,
+      percentualAtingidoOficialReportado: 1,
+      situacaoOficial: "Atingido",
+      fonte: "Informe DILOT/GERIN nº 0078/2026"
+    },
+    "4TRI/2026": {
+      metaOficialReportada: 1,
+      resultadoOficialReportado: null,
+      percentualAtingidoOficialReportado: null,
+      situacaoOficial: null,
+      previsao: true,
+      fonte: "Curva anual prevista nos Informes DILOT/GERIN nº 0029/2026, 0056/2026 e 0078/2026",
+      observacao: "Previsão de 100% com a 2ª iniciativa realizada; resultado não antecipado."
+    }
+  };
   const STATUS_INICIATIVA_SOCIOAMBIENTAL = [
     "Não iniciada",
     "Em prospecção",
@@ -2179,12 +2214,18 @@
             unidadeMedida: "quantidade",
             metaAnualValor: 2,
             parametrosCalculo: {
+              ...(rule.parametrosCalculo || {}),
+              campoId: "idIniciativaSocioambiental",
               campoNome: "nomeIniciativaSocioambiental",
+              campoDescricao: "descricaoAndamentoSocioambiental",
               campoStatus: "statusIniciativaSocioambiental",
               campoDataApoio: "dataApoioIniciativa",
               statusQueConta: "Apoiada/realizada",
+              permitirPeriodoNaDescricaoSemDataPontual: true,
+              mesesFechamentoTrimestral: [3, 6, 9, 12],
               metaTipo: "curva_trimestral_acumulada",
               curvaTrimestralAcumulada: APOIO_SOCIOAMBIENTAL_CURVA_2026,
+              apresentacoesOficiaisTrimestrais: APOIO_SOCIOAMBIENTAL_APRESENTACOES_OFICIAIS_2026,
               sentidoMeta: "quanto_maior_melhor"
             },
             camposEntrada: [

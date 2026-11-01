@@ -105,7 +105,9 @@
     if (rule?.tipoCalculo === "lucro_recorrente_mensal") {
       return toNumber(calculation?.percentualAtingidoAcumulado);
     }
-    const candidates = rule?.tipoCalculo === "plano_acao_por_elementos"
+    const candidates = rule?.tipoCalculo === "iniciativas_apoiadas"
+      ? [calculation?.percentualAtingidoMensal, calculation?.percentualAtingidoAcumulado, calculation?.percentualAtingidoAnual]
+      : rule?.tipoCalculo === "plano_acao_por_elementos"
       ? [calculation?.percentualAtingidoAcumulado, calculation?.percentualAtingidoMensal, calculation?.percentualAtingidoAnual]
       : [calculation?.percentualAtingidoAnual, calculation?.percentualAtingidoAcumulado, calculation?.percentualAtingidoMensal];
     return candidates.map(toNumber).find((value) => value !== null) ?? null;
@@ -405,7 +407,14 @@
         )
       ));
     const officialPresentation = root.IndicatorFormulas?.obterApresentacaoOficialTrimestre?.(regra, label) || null;
-    const documentaryPositionAvailable = toNumber(officialPresentation?.resultadoOficialReportado) !== null;
+    const socioambientalDocumental = regra?.tipoCalculo === "iniciativas_apoiadas";
+    const officialPresentationForQuarter = officialPresentation && (!socioambientalDocumental || homologatedCount > 0)
+      ? officialPresentation
+      : null;
+    const documentaryPositionAvailable = Boolean(officialPresentationForQuarter) && (
+      toNumber(officialPresentationForQuarter?.resultadoOficialReportado) !== null ||
+      officialPresentationForQuarter?.apresentacaoLiteralVazia === true
+    );
     let quarterStatus = homologatedCount === 0
       ? (documentaryPositionAvailable && requiresCurrentGovernance
         ? "Documental"
@@ -431,7 +440,7 @@
         resultadoOficialApresentado: null,
         resultadoDocumentalTrimestral: null,
         desempenhoOficialDocumentalTrimestral: null,
-        fonteDocumentalTrimestral: officialPresentation?.fonte || null,
+        fonteDocumentalTrimestral: officialPresentationForQuarter?.fonte || null,
         desempenhoTrimestral: null,
         metaTrimestral: meta,
         situacaoTrimestral: hasQualitativeAnnualResearchPosition ? "Em acompanhamento" : "Sem dados",
@@ -451,6 +460,8 @@
         possuiPosicaoQualitativa: hasQualitativeAnnualResearchPosition,
         possuiPosicaoOficialSistema: false,
         possuiPosicaoDocumental: false,
+        apresentacaoOficialDocumental: false,
+        notaApresentacaoOficial: null,
         statusGovernancaTrimestral: "Sem homologação transacional da versão atual",
         mesesHomologadosLegados: legacyHomologatedInQuarter.length
       };
@@ -557,6 +568,13 @@
       ? root.IndicatorFormulas?.calcularIndicador(indicador, regra, current, calculationScope)
       : null;
     const validCalculation = calculation && !calculation.erro && lucroRecorrenteYtdCompleto ? calculation : null;
+    const effectiveOfficialPresentation = socioambientalDocumental && validCalculation?.apresentacaoOficialSocioambiental
+      ? validCalculation.apresentacaoOficialSocioambiental
+      : officialPresentationForQuarter;
+    const effectiveDocumentaryPositionAvailable = Boolean(effectiveOfficialPresentation) && (
+      toNumber(effectiveOfficialPresentation?.resultadoOficialReportado) !== null ||
+      effectiveOfficialPresentation?.apresentacaoLiteralVazia === true
+    );
     let result = getOfficialResult(validCalculation, regra);
     let performance = getOfficialPerformance(validCalculation, regra);
     let calculatedQuarterResult = result;
@@ -633,45 +651,58 @@
       ? toNumber(validCalculation?.metaPercentual)
       : null;
     const technicalSituation = getSituation(validCalculation, technicalPerformance);
-    if (officialPresentation && regra?.tipoCalculo !== "crescimento_rede_loterica_base_2025") {
-      const reportedMeta = toNumber(officialPresentation.metaOficialReportada);
-      const reportedResult = toNumber(officialPresentation.resultadoOficialReportado);
-      const reportedPerformance = toNumber(officialPresentation.percentualAtingidoOficialReportado);
-      if (reportedMeta !== null) meta = reportedMeta;
-      if (reportedResult !== null) {
-        result = reportedResult;
-        officialPresentedResult = reportedResult;
+    if (effectiveOfficialPresentation && regra?.tipoCalculo !== "crescimento_rede_loterica_base_2025") {
+      const reportedMeta = toNumber(effectiveOfficialPresentation.metaOficialReportada);
+      const reportedResult = toNumber(effectiveOfficialPresentation.resultadoOficialReportado);
+      const reportedPerformance = toNumber(effectiveOfficialPresentation.percentualAtingidoOficialReportado);
+      if (effectiveOfficialPresentation.apresentacaoLiteralVazia === true) {
+        meta = null;
+        result = null;
+        officialPresentedResult = null;
+        performance = null;
+      } else {
+        if (reportedMeta !== null) meta = reportedMeta;
+        if (reportedResult !== null) {
+          result = reportedResult;
+          officialPresentedResult = reportedResult;
+        }
+        if (reportedPerformance !== null) performance = reportedPerformance;
       }
-      if (reportedPerformance !== null) performance = reportedPerformance;
     }
-    const officialSituation = officialPresentation?.situacaoOficial || officialPresentation?.situacao || technicalSituation;
+    const officialSituation = effectiveOfficialPresentation?.situacaoOficial || effectiveOfficialPresentation?.situacao || technicalSituation;
     const redeLotericaDocumental = regra?.tipoCalculo === "crescimento_rede_loterica_base_2025";
     const ecossistemaLotexDocumental = regra?.tipoCalculo === "participacao_ecossistema_lotex";
     const clientesAtivosDocumental = Number(regra?.indicadorId) === 3;
     const resultadoDocumentalTrimestral = redeLotericaDocumental
-      ? toNumber(validCalculation?.resultadoDocumentalRedeLoterica ?? officialPresentation?.resultadoOficialReportado)
+      ? toNumber(validCalculation?.resultadoDocumentalRedeLoterica ?? effectiveOfficialPresentation?.resultadoOficialReportado)
       : ecossistemaLotexDocumental
-        ? toNumber(validCalculation?.resultadoOficialDocumental ?? officialPresentation?.resultadoOficialReportado)
+        ? toNumber(validCalculation?.resultadoOficialDocumental ?? effectiveOfficialPresentation?.resultadoOficialReportado)
       : clientesAtivosDocumental
-        ? toNumber(validCalculation?.resultadoDocumentalClientesAtivos ?? officialPresentation?.resultadoOficialReportado)
+        ? toNumber(validCalculation?.resultadoDocumentalClientesAtivos ?? effectiveOfficialPresentation?.resultadoOficialReportado)
+      : socioambientalDocumental
+        ? toNumber(effectiveOfficialPresentation?.resultadoOficialReportado)
         : null;
     const desempenhoOficialDocumentalTrimestral = redeLotericaDocumental
-      ? toNumber(validCalculation?.percentualAtingidoOficialRedeLoterica ?? officialPresentation?.percentualAtingidoOficialReportado ?? officialPresentation?.percentualAtingidoOficial)
+      ? toNumber(validCalculation?.percentualAtingidoOficialRedeLoterica ?? effectiveOfficialPresentation?.percentualAtingidoOficialReportado ?? effectiveOfficialPresentation?.percentualAtingidoOficial)
       : ecossistemaLotexDocumental
-        ? toNumber(validCalculation?.percentualAtingidoOficialDocumental ?? officialPresentation?.percentualAtingidoOficialReportado)
+        ? toNumber(validCalculation?.percentualAtingidoOficialDocumental ?? effectiveOfficialPresentation?.percentualAtingidoOficialReportado)
       : clientesAtivosDocumental
-        ? toNumber(validCalculation?.percentualAtingidoOficialClientesAtivos ?? officialPresentation?.percentualAtingidoOficialReportado)
+        ? toNumber(validCalculation?.percentualAtingidoOficialClientesAtivos ?? effectiveOfficialPresentation?.percentualAtingidoOficialReportado)
+      : socioambientalDocumental
+        ? toNumber(effectiveOfficialPresentation?.percentualAtingidoOficialReportado)
         : null;
     const fonteDocumentalTrimestral = redeLotericaDocumental
-      ? validCalculation?.fonteResultadoRedeLoterica ?? officialPresentation?.fonte ?? null
+      ? validCalculation?.fonteResultadoRedeLoterica ?? effectiveOfficialPresentation?.fonte ?? null
         : ecossistemaLotexDocumental
-          ? validCalculation?.fonteResultadoEcossistema ?? officialPresentation?.fonte ?? null
+          ? validCalculation?.fonteResultadoEcossistema ?? effectiveOfficialPresentation?.fonte ?? null
         : Number(regra?.indicadorId) === 1
         ? validCalculation?.fonteResultadoOfertasPersonalizadas ?? officialPresentation?.fonte ?? null
         : nps
           ? validCalculation?.fontePesquisaNPS ?? officialPresentation?.fonte ?? null
           : clientesAtivosDocumental
-            ? validCalculation?.fonteResultadoClientesAtivos ?? officialPresentation?.fonte ?? null
+            ? validCalculation?.fonteResultadoClientesAtivos ?? effectiveOfficialPresentation?.fonte ?? null
+          : socioambientalDocumental
+            ? effectiveOfficialPresentation?.fonte ?? null
             : null;
 
     return {
@@ -710,10 +741,10 @@
       resultadoTecnicoTrimestral: technicalResult,
       desempenhoTecnicoTrimestral: technicalPerformance,
       situacaoTecnicaTrimestral: technicalSituation,
-      semNovaPesquisaNps: nps ? officialPresentation?.semNovaPesquisa === true : false,
-      proximaApuracaoNps: nps ? officialPresentation?.proximaApuracao ?? null : null,
-      apresentacaoOficialDocumental: Boolean(officialPresentation),
-      notaApresentacaoOficial: officialPresentation?.observacao || null,
+      semNovaPesquisaNps: nps ? effectiveOfficialPresentation?.semNovaPesquisa === true : false,
+      proximaApuracaoNps: nps ? effectiveOfficialPresentation?.proximaApuracao ?? null : null,
+      apresentacaoOficialDocumental: Boolean(effectiveOfficialPresentation),
+      notaApresentacaoOficial: effectiveOfficialPresentation?.observacao || null,
       statusTrimestre: quarterStatus,
       mesesHomologados: homologatedCount,
       mesesEsperados: expectedCount,
@@ -731,10 +762,10 @@
         ? officialQuarterLaunches.some((item) => isQualitativeAnnualResearchPosition(regra, item))
         : false,
       possuiPosicaoOficialSistema: homologatedCount > 0,
-      possuiPosicaoDocumental: documentaryPositionAvailable,
+      possuiPosicaoDocumental: effectiveDocumentaryPositionAvailable,
       statusGovernancaTrimestral: homologatedCount > 0
         ? "Homologado na versão atual"
-        : documentaryPositionAvailable ? "Somente documental" : "Sem homologação transacional da versão atual",
+        : effectiveDocumentaryPositionAvailable ? "Somente documental" : "Sem homologação transacional da versão atual",
       mesesHomologadosLegados: legacyHomologatedInQuarter.length,
       dadosCalculados: validCalculation
     };
