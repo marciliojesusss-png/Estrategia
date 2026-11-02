@@ -16,7 +16,7 @@
   <script src="/assets/js/databaseService.js?v=GOVERNANCA-CA-002" defer></script>
   <script src="/assets/js/auth.js?v=GOVERNANCA-CA-001" defer></script>
   <script src="/assets/js/calculations.js?v=PLATAFORMA-JOGOS-001" defer></script>
-  <script src="/assets/js/formulas.js?v=METAS-OFICIAIS-002" defer></script>
+  <script src="/assets/js/formulas.js?v=INDICADOR05-SITUACAO-TRIMESTRAL-001" defer></script>
   <script src="/assets/js/documentation-fields.js?v=DOCUMENTACAO-CENTRAL-001" defer></script>
   <script src="/assets/js/action-feedback.js?v=ACTION-FEEDBACK-001" defer></script>
   <script src="/assets/js/approvals.js?v=STATUS-HOMOLOGACAO-001" defer></script>

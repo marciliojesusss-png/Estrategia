@@ -188,12 +188,55 @@
 
   function resolverTipoPosicaoGgr(lancamento, regra = null) {
     const campoTipo = regra?.parametrosCalculo?.campoTipoPosicao || "tipoPosicaoGGR";
+    const mesesFechamento = regra?.parametrosCalculo?.mesesFechamentoTrimestral || [3, 6, 9, 12];
+    const fechamentoHomologado = String(lancamento?.status || "").trim().toLowerCase() === "homologado" &&
+      mesesFechamento.includes(Number(lancamento?.mes));
+    if (fechamentoHomologado) return TIPO_POSICAO_GGR.FECHAMENTO_TRIMESTRAL;
     const tipoExplicito = String(raw(lancamento || {}, campoTipo) || "").trim();
     if (Object.values(TIPO_POSICAO_GGR).includes(tipoExplicito)) return tipoExplicito;
-    const mesesFechamento = regra?.parametrosCalculo?.mesesFechamentoTrimestral || [3, 6, 9, 12];
     return mesesFechamento.includes(Number(lancamento?.mes))
       ? TIPO_POSICAO_GGR.FECHAMENTO_TRIMESTRAL
       : TIPO_POSICAO_GGR.ACOMPANHAMENTO;
+  }
+
+  function resolverFechamentoOficialGgr(lancamento, regra) {
+    if (resolverTipoPosicaoGgr(lancamento, regra) !== TIPO_POSICAO_GGR.FECHAMENTO_TRIMESTRAL) return null;
+    if (String(lancamento?.status || "").trim().toLowerCase() !== "homologado") return null;
+
+    const mes = Number(lancamento?.mes);
+    const ano = Number(lancamento?.ano) || 2026;
+    const trimestre = lancamento?.trimestre || `${Math.ceil(mes / 3)}TRI/${ano}`;
+    const apresentacao = obterApresentacaoOficialTrimestre(regra, trimestre);
+    const resultado = toNumber(apresentacao?.resultadoOficialReportado);
+    if (resultado === null) return null;
+
+    return {
+      resultado,
+      meta: toNumber(apresentacao?.metaOficialReportada),
+      percentual: toNumber(apresentacao?.percentualAtingidoOficialReportado),
+      situacao: apresentacao?.situacaoOficial || null,
+      fonte: apresentacao?.fonte || null,
+      trimestre
+    };
+  }
+
+  function resolverReferenciaAcumuladaGgr(lancamento, regra, campoAcumuladoDocumental) {
+    const fechamentoOficial = resolverFechamentoOficialGgr(lancamento, regra);
+    if (fechamentoOficial) {
+      return {
+        valor: fechamentoOficial.resultado,
+        origem: "fechamento_trimestral_homologado",
+        fechamentoOficial
+      };
+    }
+
+    const valorDocumental = campo(lancamento, campoAcumuladoDocumental);
+    if (valorDocumental === null) return null;
+    return {
+      valor: valorDocumental,
+      origem: "posicao_acumulada_documental",
+      fechamentoOficial: null
+    };
   }
 
   function resolverTipoPosicaoAprimoramento(lancamento) {
@@ -878,9 +921,12 @@
   function calcularGgrFormula(indicador, regra, lancamentoAtual, lancamentosDoAno) {
     const params = regra.parametrosCalculo || {};
     const campoAcumuladoDocumental = params.campoGgrAcumuladoDocumental || "ggrAcumuladoOficial";
-    const ggrAcumuladoDocumental = campo(lancamentoAtual, campoAcumuladoDocumental);
-    const metaAcumulada = getMetaAcumuladaCompetencia(regra, lancamentoAtual);
     const tipoPosicaoGGR = resolverTipoPosicaoGgr(lancamentoAtual, regra);
+    const acompanhamento = tipoPosicaoGGR === TIPO_POSICAO_GGR.ACOMPANHAMENTO;
+    const referenciaAtual = resolverReferenciaAcumuladaGgr(lancamentoAtual, regra, campoAcumuladoDocumental);
+    const fechamentoOficial = referenciaAtual?.fechamentoOficial || null;
+    const ggrAcumuladoDocumental = referenciaAtual?.valor ?? null;
+    const metaAcumulada = fechamentoOficial?.meta ?? getMetaAcumuladaCompetencia(regra, lancamentoAtual);
 
     if (ggrAcumuladoDocumental !== null) {
       if (ggrAcumuladoDocumental < 0) {
@@ -897,12 +943,12 @@
           ggrCalculadoMes: null,
           ggrAcumuladoAteCompetencia: ggrAcumuladoDocumental,
           ggrAcumuladoDocumental: true,
-          tipoPosicaoGGR
+          tipoPosicaoGGR,
+          situacao: acompanhamento ? "Em acompanhamento" : "Sem cálculo"
         });
       }
 
-      const percentual = ggrAcumuladoDocumental / metaAcumulada;
-      const acompanhamento = tipoPosicaoGGR === TIPO_POSICAO_GGR.ACOMPANHAMENTO;
+      const percentual = fechamentoOficial?.percentual ?? (ggrAcumuladoDocumental / metaAcumulada);
       return ok(
         ggrAcumuladoDocumental,
         ggrAcumuladoDocumental,
@@ -921,25 +967,47 @@
           ggrCalculadoMes: null,
           ggrAcumuladoAteCompetencia: ggrAcumuladoDocumental,
           ggrAcumuladoDocumental: true,
+          ggrFechamentoOficialHomologado: Boolean(fechamentoOficial),
+          origemGgrAcumulado: referenciaAtual.origem,
+          fonteResultadoGGR: fechamentoOficial?.fonte || null,
+          trimestreFechamentoGGR: fechamentoOficial?.trimestre || null,
           tipoPosicaoGGR,
           percentualMetaAcumulada: percentual,
-          situacao: acompanhamento ? "Em acompanhamento" : situacaoPorPercentual(percentual)
+          situacao: acompanhamento
+            ? "Em acompanhamento"
+            : fechamentoOficial?.situacao || situacaoPorPercentual(percentual)
         }
       );
     }
 
     const arrecadacao = campo(lancamentoAtual, params.campoArrecadacao || "arrecadacaoTotalMes");
     const premios = campo(lancamentoAtual, params.campoPremios || "premiosAPagarMes");
-    if (arrecadacao === null || premios === null) return pendente("Dados insuficientes para cálculo.", regra.unidadeMedida);
+    if (arrecadacao === null || premios === null) {
+      return pendente("Dados insuficientes para cálculo.", regra.unidadeMedida, {
+        tipoPosicaoGGR,
+        situacao: acompanhamento ? "Em acompanhamento" : "Sem cálculo"
+      });
+    }
     if (arrecadacao < 0 || premios < 0) return erro("Arrecadação total e prêmios a pagar não podem ser negativos.", regra.unidadeMedida);
 
     const ggrMes = arrecadacao - premios;
     const ateMes = lancamentosAteMes(lancamentoAtual, lancamentosDoAno);
-    const ggrAcumulado = ateMes.reduce((sum, item) => {
+    const referenciasAnteriores = ateMes
+      .filter((item) => Number(item.mes) < Number(lancamentoAtual.mes))
+      .map((item) => ({
+        mes: Number(item.mes),
+        referencia: resolverReferenciaAcumuladaGgr(item, regra, campoAcumuladoDocumental)
+      }))
+      .filter((item) => item.referencia !== null);
+    const referenciaAnterior = referenciasAnteriores.at(-1) || null;
+    const lancamentosAposReferencia = referenciaAnterior
+      ? ateMes.filter((item) => Number(item.mes) > referenciaAnterior.mes)
+      : ateMes;
+    const ggrAcumulado = lancamentosAposReferencia.reduce((sum, item) => {
       const itemArrecadacao = campo(item, params.campoArrecadacao || "arrecadacaoTotalMes");
       const itemPremios = campo(item, params.campoPremios || "premiosAPagarMes");
       return itemArrecadacao === null || itemPremios === null ? sum : sum + itemArrecadacao - itemPremios;
-    }, 0);
+    }, referenciaAnterior?.referencia.valor || 0);
 
     if (metaAcumulada === null || metaAcumulada <= 0) {
       return pendente("Meta de referência não cadastrada para a competência. Pendente de curva orçamentária.", regra.unidadeMedida, {
@@ -952,7 +1020,9 @@
         metaPendente: true,
         metaReferenciaMensagem: "Pendente de curva orçamentária",
         ggrCalculadoMes: ggrMes,
-        ggrAcumuladoAteCompetencia: ggrAcumulado
+        ggrAcumuladoAteCompetencia: ggrAcumulado,
+        tipoPosicaoGGR,
+        situacao: acompanhamento ? "Em acompanhamento" : "Sem cálculo"
       });
     }
 
@@ -965,9 +1035,11 @@
       ggrCalculadoMes: ggrMes,
       ggrAcumuladoAteCompetencia: ggrAcumulado,
       ggrAcumuladoDocumental: false,
+      ggrReferenciaAcumuladaAnterior: referenciaAnterior?.referencia.valor ?? null,
+      origemReferenciaGgrAnterior: referenciaAnterior?.referencia.origem || null,
       tipoPosicaoGGR,
       percentualMetaAcumulada: percentual,
-      situacao: situacaoPorPercentual(percentual)
+      situacao: acompanhamento ? "Em acompanhamento" : situacaoPorPercentual(percentual)
     });
   }
 

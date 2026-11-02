@@ -730,6 +730,12 @@
         percentual: calculation?.percentualAtingidoAnual ?? calculation?.percentualAtingidoAcumulado ?? lancamento?.percentualAtingidoAnual ?? lancamento?.percentualAtingidoAcumulado ?? lancamento?.percentualAtingido ?? null
       };
     }
+    if (regra?.tipoCalculo === "ggr_formula") {
+      return {
+        resultado: calculation?.resultadoOficialAnual ?? calculation?.resultadoAcumulado ?? lancamento?.resultadoOficialAnual ?? lancamento?.resultadoAcumulado ?? null,
+        percentual: calculation?.percentualAtingidoAnual ?? calculation?.percentualAtingidoAcumulado ?? lancamento?.percentualAtingidoAnual ?? lancamento?.percentualAtingidoAcumulado ?? lancamento?.percentualAtingido ?? null
+      };
+    }
     const accumulatedRatio = regra?.tipoCalculo === "razao_canais_digitais";
     if (accumulatedRatio) {
       return {
@@ -1147,7 +1153,7 @@
         : isEditable(item)
           ? "Preencher"
           : "Visualizar";
-      const tableCalculation = ["nota_pesquisa_nps", "iniciativas_apoiadas", "execucao_acoes_propostas", "lucro_recorrente_mensal", "razao_canais_digitais", "razao_pix", "melhorias_acumuladas"].includes(regra?.tipoCalculo)
+      const tableCalculation = ["nota_pesquisa_nps", "iniciativas_apoiadas", "execucao_acoes_propostas", "lucro_recorrente_mensal", "razao_canais_digitais", "razao_pix", "melhorias_acumuladas", "ggr_formula"].includes(regra?.tipoCalculo)
         ? IndicatorFormulas.calcularIndicador(
           indicador,
           regra,
@@ -1901,7 +1907,11 @@
       if (resultado.ggrAcumuladoDocumental) {
         details.push(["Natureza do realizado", "Posição acumulada documental; não somar com competências anteriores"]);
       }
-      if (memoria.fonteResultadoGGR) details.push(["Fonte do resultado", memoria.fonteResultadoGGR]);
+      if (resultado.ggrFechamentoOficialHomologado) {
+        details.push(["Precedência aplicada", "Fechamento trimestral homologado"]);
+      }
+      const fonteResultadoGGR = resultado.fonteResultadoGGR || memoria.fonteResultadoGGR;
+      if (fonteResultadoGGR) details.push(["Fonte do resultado", fonteResultadoGGR]);
       if (memoria.metaPlanilhaGGR !== null && memoria.metaPlanilhaGGR !== undefined) {
         details.push(["Memória da planilha — meta", Calculations.formatarValor(memoria.metaPlanilhaGGR, "moeda")]);
       }

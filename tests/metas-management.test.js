@@ -158,7 +158,7 @@ vm.runInContext(fs.readFileSync(path.join(root, "assets/js/dataStore.js"), "utf8
   );
   assert.equal(ggrResult.resultadoMensal, 1100);
   assert.equal(ggrResult.percentualAtingidoMensal, 1.1);
-  assert.equal(ggrResult.situacao, "Atingido");
+  assert.equal(ggrResult.situacao, "Em acompanhamento");
 
   const admin = fs.readFileSync(path.join(root, "assets/js/admin.js"), "utf8");
   const view = fs.readFileSync(path.join(root, "views/frontend/administracao.php"), "utf8");

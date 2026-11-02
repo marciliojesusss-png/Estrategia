@@ -16,10 +16,10 @@
   <script src="/assets/js/databaseService.js?v=GOVERNANCA-CA-002" defer></script>
   <script src="/assets/js/auth.js?v=GOVERNANCA-CA-001" defer></script>
   <script src="/assets/js/calculations.js?v=PLATAFORMA-JOGOS-001" defer></script>
-  <script src="/assets/js/formulas.js?v=METAS-OFICIAIS-002" defer></script>
+  <script src="/assets/js/formulas.js?v=INDICADOR05-SITUACAO-TRIMESTRAL-001" defer></script>
   <script src="/assets/js/documentation-fields.js?v=DOCUMENTACAO-COMPLEMENTAR-1TRI-001" defer></script>
   <script src="/assets/js/action-feedback.js?v=ACTION-FEEDBACK-001" defer></script>
-  <script src="/assets/js/launches.js?v=OBSERVACOES-DOCUMENTAIS-1TRI-001" defer></script>
+  <script src="/assets/js/launches.js?v=INDICADOR05-FECHAMENTO-HOMOLOGADO-001" defer></script>
   <script src="/assets/js/app.js?v=APP-VERSION-001" defer></script>
 </head>
 <body data-page="lancamentos">

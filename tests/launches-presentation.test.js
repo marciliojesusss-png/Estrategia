@@ -178,7 +178,8 @@ assert.match(view, /id="launchPercentualAcumuladoLabel">% da meta atingida anual
 assert.match(view, /id="resultadoAnualWrapper"/);
 assert.match(view, /documentation-fields\.js\?v=DOCUMENTACAO-COMPLEMENTAR-1TRI-001/);
 assert.match(view, /styles\.css\?v=APP-VERSION-001/);
-assert.match(view, /launches\.js\?v=OBSERVACOES-DOCUMENTAIS-1TRI-001/);
+assert.match(view, /formulas\.js\?v=INDICADOR05-SITUACAO-TRIMESTRAL-001/);
+assert.match(view, /launches\.js\?v=INDICADOR05-FECHAMENTO-HOMOLOGADO-001/);
 assert.match(view, /id="launchValidationFeedback"[^>]+role="alert"[^>]+aria-live="assertive"/);
 
 const dataStoreSource = fs.readFileSync(path.join(root, "assets", "js", "dataStore.js"), "utf8");
@@ -212,7 +213,7 @@ assert.match(launchesSource, /async function persistLaunch\(action\) \{\s+const 
 assert.match(launchesSource, /Evidência anexada, mas não foi possível salvar o lançamento/);
 assert.match(launchesSource, /meta_oficial_trimestral_projeto/);
 assert.match(launchesSource, /Evolução oficial do projeto/);
-assert.match(launchesSource, /\["nota_pesquisa_nps", "iniciativas_apoiadas", "execucao_acoes_propostas", "lucro_recorrente_mensal", "razao_canais_digitais", "razao_pix", "melhorias_acumuladas"\]\.includes\(regra\?\.tipoCalculo\)/);
+assert.match(launchesSource, /\["nota_pesquisa_nps", "iniciativas_apoiadas", "execucao_acoes_propostas", "lucro_recorrente_mensal", "razao_canais_digitais", "razao_pix", "melhorias_acumuladas", "ggr_formula"\]\.includes\(regra\?\.tipoCalculo\)/);
 assert.match(launchesSource, /function updateSocioambientalInitiativeFields/);
 assert.match(launchesSource, /function validateSocioambientalRequiredFields/);
 assert.match(launchesSource, /Campo obrigatório para iniciativa apoiada\/realizada\./);

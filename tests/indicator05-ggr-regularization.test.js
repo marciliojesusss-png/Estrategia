@@ -23,6 +23,12 @@ for (const file of ["indicator-periodicity.js", "currency.js", "calculations.js"
 const bootstrap = loadBootstrapData(root);
 const formulas = context.window.IndicatorFormulas;
 const quarterly = context.window.QuarterlyConsolidation;
+vm.runInNewContext(
+  fs.readFileSync(path.join(root, "assets", "js", "launches.js"), "utf8"),
+  context,
+  { filename: "launches.js" }
+);
+const launchListPresentation = context.window.__LAUNCHES_FILTER_TEST_INTERNALS__;
 const indicator = bootstrap.indicadores.find((item) => Number(item.id) === 5);
 const rule = bootstrap.regrasIndicadores.find((item) => Number(item.indicadorId) === 5);
 const launches = bootstrap.lancamentos.filter((item) => Number(item.indicadorId) === 5);
@@ -84,11 +90,207 @@ closeTo(byMonth[6].camposEntrada.atingimentoOficialGGR, 1.0002929301244285, 1e-1
 assert.equal(byMonth[6].camposEntrada.fontePlanilhaGGR, "16.10(3).xlsx");
 assert.equal(byMonth[6].camposEntrada.fonteOficialGGR, "Informe DILOT/GERIN nº 0056/2026");
 
+// A listagem deve apresentar o GGR acumulado calculado, nunca o resultado mensal legado.
+for (const [monthText, accumulatedExpected] of Object.entries({
+  1: 1131557094.81,
+  2: 2191177606.81,
+  3: 3322204494.29,
+  4: 4455763900.80,
+  5: 5640812286.33,
+  6: 6784050495.32,
+  7: 7883901606.54,
+  8: 9031400541.43,
+  9: 10435959467.05
+})) {
+  const month = Number(monthText);
+  const launch = byMonth[month];
+  const calculated = formulas.calcularIndicador(
+    indicator,
+    rule,
+    launch,
+    launches.filter((item) => Number(item.mes) <= month)
+  );
+  const presentation = launchListPresentation.getLaunchListPerformance(rule, launch, calculated);
+  closeTo(presentation.resultado, accumulatedExpected, 0.000001);
+}
+assert.equal(byMonth[2].resultadoMensal, 1059620512, "FEV preserva o componente mensal no modelo de dados");
+assert.equal(byMonth[3].resultadoMensal, 1131026887.48, "MAR preserva o componente mensal no modelo de dados");
+assert.notEqual(
+  launchListPresentation.getLaunchListPerformance(
+    rule,
+    byMonth[2],
+    formulas.calcularIndicador(indicator, rule, byMonth[2], launches.filter((item) => Number(item.mes) <= 2))
+  ).resultado,
+  byMonth[2].resultadoMensal,
+  "a coluna de resultado não pode voltar a exibir o GGR mensal de FEV"
+);
+
+// Regressão: a retificação documental de FEV não pode suprimir FEV de MAR nem
+// substituir o fechamento homologado do Informe 0029/2026.
+const retifiedLaunches = launches.map((item) => JSON.parse(JSON.stringify(item)));
+const retifiedByMonth = Object.fromEntries(retifiedLaunches.map((item) => [Number(item.mes), item]));
+Object.assign(retifiedByMonth[2], {
+  status: "Retificado",
+  versao: 2,
+  versaoAtual: 2,
+  resultadoAcumulado: 2219993242.78,
+  resultadoOficialAnual: 2219993242.78
+});
+Object.assign(retifiedByMonth[2].camposEntrada, {
+  arrecadacaoTotalMes: null,
+  premiosAPagarMes: null,
+  ggrAcumuladoOficial: 2219993242.78,
+  tipoPosicaoGGR: "acompanhamento"
+});
+
+const retifiedExpected = {
+  1: 1131557094.81,
+  2: 2219993242.78,
+  3: 3322204494.29,
+  4: 4455763900.80,
+  5: 5640812286.33,
+  6: 6784050495.32,
+  7: 7883901606.54,
+  8: 9031400541.43,
+  9: 10435959467.05
+};
+const expectedSituationByMonth = {
+  1: "Em acompanhamento",
+  2: "Em acompanhamento",
+  3: "Atingido",
+  4: "Em acompanhamento",
+  5: "Em acompanhamento",
+  6: "Atingido",
+  7: "Em acompanhamento",
+  8: "Em acompanhamento",
+  9: "Atingido",
+  10: "Em acompanhamento",
+  11: "Em acompanhamento"
+};
+
+for (const [monthText, accumulatedExpected] of Object.entries(retifiedExpected)) {
+  const month = Number(monthText);
+  const launch = retifiedByMonth[month];
+  const calculated = formulas.calcularIndicador(
+    indicator,
+    rule,
+    launch,
+    retifiedLaunches.filter((item) => Number(item.mes) <= month)
+  );
+  const presentation = launchListPresentation.getLaunchListPerformance(rule, launch, calculated);
+  closeTo(calculated.resultadoOficialAnual, accumulatedExpected, 0.000001);
+  closeTo(presentation.resultado, accumulatedExpected, 0.000001);
+  assert.equal(calculated.situacao, expectedSituationByMonth[month]);
+}
+
+const retifiedFebruary = formulas.calcularIndicador(indicator, rule, retifiedByMonth[2], retifiedLaunches.slice(0, 2));
+assert.equal(retifiedFebruary.resultadoOficialAnual, 2219993242.78);
+assert.equal(retifiedFebruary.origemGgrAcumulado, "posicao_acumulada_documental");
+assert.equal(retifiedFebruary.situacao, "Em acompanhamento");
+
+const retifiedMarch = formulas.calcularIndicador(indicator, rule, retifiedByMonth[3], retifiedLaunches.slice(0, 3));
+assert.equal(retifiedMarch.resultadoOficialAnual, 3322204494.29);
+closeTo(retifiedMarch.percentualAtingidoAnual, 1.0820645453025435, 1e-15);
+assert.equal(retifiedMarch.situacao, "Atingido");
+assert.equal(retifiedMarch.ggrFechamentoOficialHomologado, true);
+assert.equal(retifiedMarch.origemGgrAcumulado, "fechamento_trimestral_homologado");
+assert.equal(retifiedMarch.fonteResultadoGGR, "Informe DILOT/GERIN nº 0029/2026");
+
+const runtimeMarch = {
+  ...retifiedByMonth[3],
+  camposEntrada: {
+    ...retifiedByMonth[3].camposEntrada,
+    tipoPosicaoGGR: "acompanhamento"
+  }
+};
+const runtimeMarchResult = formulas.calcularIndicador(
+  indicator,
+  rule,
+  runtimeMarch,
+  [retifiedByMonth[1], retifiedByMonth[2], runtimeMarch]
+);
+assert.equal(formulas.resolverTipoPosicaoGgr(runtimeMarch, rule), "fechamento_trimestral");
+assert.equal(runtimeMarchResult.resultadoOficialAnual, 3322204494.29);
+assert.equal(runtimeMarchResult.ggrFechamentoOficialHomologado, true);
+
+const technicalMarch = {
+  ...retifiedByMonth[3],
+  status: "Em preenchimento"
+};
+const technicalMarchResult = formulas.calcularIndicador(
+  indicator,
+  rule,
+  technicalMarch,
+  [retifiedByMonth[1], retifiedByMonth[2], technicalMarch]
+);
+closeTo(
+  technicalMarchResult.resultadoOficialAnual,
+  3351020130.26,
+  0.000001,
+  "sem fechamento homologado, a posição documental de FEV deve ser a base técnica para MAR"
+);
+assert.equal(technicalMarchResult.ggrReferenciaAcumuladaAnterior, 2219993242.78);
+assert.equal(technicalMarchResult.origemReferenciaGgrAnterior, "posicao_acumulada_documental");
+
+const retifiedQ1 = quarterly.consolidarTrimestre(indicator, rule, retifiedLaunches, "1TRI/2026");
+assert.equal(retifiedQ1.statusTrimestre, "Fechado");
+assert.equal(retifiedQ1.resultadoTrimestral, 3322204494.29);
+closeTo(retifiedQ1.desempenhoTrimestral, 1.0820645453025435, 1e-15);
+
+const retifiedDashboard = context.window.StrategicResults.calcularDashboard({
+  indicadores: [indicator],
+  regras: [rule],
+  lancamentos: retifiedLaunches
+}).resultadosOficiais[0];
+assert.equal(retifiedDashboard.competencia, "Março/2026");
+assert.equal(retifiedDashboard.status, "Homologado");
+assert.equal(retifiedDashboard.resultado, 3322204494.29);
+
 // Natureza JAN–DEZ: somente MAR/JUN/SET/DEZ fecham trimestre.
 for (let month = 1; month <= 12; month += 1) {
   const expectedType = [3, 6, 9, 12].includes(month) ? "fechamento_trimestral" : "acompanhamento";
   assert.equal(formulas.resolverTipoPosicaoGgr(byMonth[month], rule), expectedType);
 }
+
+// A situação funcional é independente do status de governança e da existência de resultado.
+for (let month = 1; month <= 11; month += 1) {
+  const launch = month === 2 ? retifiedByMonth[2] : byMonth[month];
+  const source = month === 2 ? retifiedLaunches : launches;
+  const calculated = formulas.calcularIndicador(
+    indicator,
+    rule,
+    launch,
+    source.filter((item) => Number(item.mes) <= month)
+  );
+  assert.equal(calculated.situacao, expectedSituationByMonth[month], `situação funcional incorreta em ${month}/2026`);
+}
+assert.equal(byMonth[1].status, "Homologado");
+assert.equal(retifiedByMonth[2].status, "Retificado");
+assert.equal(byMonth[3].status, "Homologado");
+
+const decemberAbove = {
+  ...byMonth[12],
+  status: "Em preenchimento",
+  camposEntrada: {
+    ...(byMonth[12].camposEntrada || {}),
+    ggrAcumuladoOficial: rule.metaAnualValor * 1.01,
+    tipoPosicaoGGR: "fechamento_trimestral"
+  }
+};
+const decemberBelow = {
+  ...decemberAbove,
+  camposEntrada: {
+    ...decemberAbove.camposEntrada,
+    ggrAcumuladoOficial: rule.metaAnualValor * 0.99
+  }
+};
+const januaryToNovember = launches.filter((item) => Number(item.mes) <= 11);
+const decemberAboveResult = formulas.calcularIndicador(indicator, rule, decemberAbove, [...januaryToNovember, decemberAbove]);
+const decemberBelowResult = formulas.calcularIndicador(indicator, rule, decemberBelow, [...januaryToNovember, decemberBelow]);
+assert.equal(decemberAboveResult.situacao, "Atingido");
+assert.equal(decemberBelowResult.situacao, "Abaixo da meta");
+closeTo(decemberAboveResult.percentualAtingidoAnual, 1.01, 1e-15);
+closeTo(decemberBelowResult.percentualAtingidoAnual, 0.99, 1e-15);
 
 assert.equal(byMonth[12].metaMensal, 14996238568.92);
 assert.equal(byMonth[12].status, "Não iniciado");
