@@ -405,6 +405,7 @@
     const documentation = launchDocumentation(regra, lancamento);
     const displayLaunch = launchForDisplay(indicador, lancamento, regra);
     const npsCalculation = displayLaunch.__npsCalculation || null;
+    const isNps = regra?.tipoCalculo === "nota_pesquisa_nps";
     const indicatorCalculation = displayLaunch.__indicatorCalculation || null;
     const metodologiaIeo = Number(indicador?.id) === 6
       ? window.IeoRecorrente?.getMetodologiaIeoPorCompetencia?.(lancamento)
@@ -419,6 +420,7 @@
     const componentesInteiros = metodologiaIeo
       ? []
       : (regra?.camposEntrada || [])
+        .filter(() => !isNps)
         .filter((field) => field.tipo === "inteiro")
         .filter((field) => !(regra?.tipoCalculo === "melhorias_acumuladas" && ["melhoriasImplementadasMes", "melhoriasImplementadasAcumuladas"].includes(field.nome)))
         .filter((field) => {
@@ -479,13 +481,30 @@
       ["Descrição do andamento", lancamento.camposEntrada?.descricaoAndamentoPlataformaJogos || "-", true],
       ["Situação", indicatorCalculation?.situacao || displayLaunch.situacaoCalculada || "-"]
     ] : [];
-    const componentesNps = regra?.tipoCalculo === "nota_pesquisa_nps" ? [
+    const formatOptionalNpsPercentage = (value) => {
+      if (value === null || value === undefined || value === "") return "Não informado";
+      const normalized = window.IndicatorFormulas?.normalizarPercentual?.(value) ?? value;
+      return Calculations.formatarPercentual(normalized);
+    };
+    const formatOptionalNpsPoints = (value) => (
+      value === null || value === undefined || value === ""
+        ? "Não informado"
+        : Calculations.formatarValor(value, "pontos")
+    );
+    const componentesNps = isNps ? [
       ["Tipo da posição", lancamento.camposEntrada?.tipoPosicaoNPS || "-"],
-      ["Percentual de promotores", Calculations.formatarPercentual(npsCalculation?.percentualPromotores)],
-      ["Percentual de detratores", Calculations.formatarPercentual(npsCalculation?.percentualDetratores)],
-      ["NPS calculado", Calculations.formatarValor(npsCalculation?.npsCalculado ?? displayLaunch.resultadoMensal, "pontos")],
+      ["Meta da competência", formatOptionalNpsPoints(npsCalculation?.metaReferenciaPeriodo ?? lancamento.camposEntrada?.metaReferenciaCompetenciaNPS ?? lancamento.metaMensal)],
+      ["% Promotores", formatOptionalNpsPercentage(lancamento.camposEntrada?.percentualPromotores)],
+      ["% Detratores", formatOptionalNpsPercentage(lancamento.camposEntrada?.percentualDetratores)],
+      ["NPS calculado", npsCalculation?.origemNps === "componentes_formula" ? formatOptionalNpsPoints(npsCalculation.npsCalculado) : "Não informado"],
+      ["Resultado documental NPS", formatOptionalNpsPoints(lancamento.camposEntrada?.resultadoDocumentalNPS)],
       ["Data-base da pesquisa", lancamento.camposEntrada?.dataBasePesquisaNPS || "-"],
-      ["Fórmula do NPS", "Percentual de promotores − percentual de detratores", true]
+      ["Fonte documental", lancamento.camposEntrada?.fontePesquisaNPS || documentation.reference || "-"]
+    ] : [];
+    const resumoNps = isNps ? [
+      ["Resultado NPS", Calculations.formatarValor(displayLaunch.resultadoMensal ?? displayLaunch.realizadoMensal, "pontos")],
+      ["Atingimento", Calculations.formatarPercentual(displayLaunch.percentualAtingido)],
+      ["Situação", displayLaunch.situacaoCalculada || "-"]
     ] : [];
     const elementosRgf = regra?.tipoCalculo === "plano_acao_por_elementos"
       ? (Array.isArray(lancamento.camposEntrada?.elementosRGFAtendidos) && lancamento.camposEntrada.elementosRGFAtendidos.length
@@ -540,18 +559,21 @@
       ["Unidade apuradora", indicador.unidadeApuradora || "Não informado"],
       ["Diretoria responsável", indicador.diretoriaResponsavel || "Não informado"],
       ["Mês/Ano", `${lancamento.nomeMes}/${lancamento.ano}`],
-      ["Meta de referência", metaReferencia],
-      [metodologiaIeoCa ? "IEO calculado da competência" : regra?.tipoCalculo === "nota_pesquisa_nps" ? "NPS calculado" : regra?.tipoCalculo === "melhorias_acumuladas" ? "Resultado da posição" : isPlataformaJogos ? "Evolução oficial do projeto" : "Realizado mensal", isPlataformaJogos ? Calculations.formatarPercentual(displayLaunch.resultadoMensal ?? displayLaunch.realizadoMensal, 2) : Calculations.formatarValor(displayLaunch.resultadoMensal ?? displayLaunch.realizadoMensal, regra && regra.unidadeMedida)],
-      ["Percentual atingido", Calculations.formatarPercentual(displayLaunch.percentualAtingido, isPlataformaJogos ? 2 : 0)],
-      ...(!metodologiaIeoCa && !isPlataformaJogos ? [
-        ["Resultado acumulado", Calculations.formatarValor(displayLaunch.resultadoAcumulado, regra && regra.unidadeMedida)],
-        ["Percentual acumulado", Calculations.formatarPercentual(displayLaunch.percentualAtingidoAcumulado)]
+      ...(!isNps ? [
+        ["Meta de referência", metaReferencia],
+        [metodologiaIeoCa ? "IEO calculado da competência" : regra?.tipoCalculo === "melhorias_acumuladas" ? "Resultado da posição" : isPlataformaJogos ? "Evolução oficial do projeto" : "Realizado mensal", isPlataformaJogos ? Calculations.formatarPercentual(displayLaunch.resultadoMensal ?? displayLaunch.realizadoMensal, 2) : Calculations.formatarValor(displayLaunch.resultadoMensal ?? displayLaunch.realizadoMensal, regra && regra.unidadeMedida)],
+        ["Percentual atingido", Calculations.formatarPercentual(displayLaunch.percentualAtingido, isPlataformaJogos ? 2 : 0)],
+        ...(!metodologiaIeoCa && !isPlataformaJogos ? [
+          ["Resultado acumulado", Calculations.formatarValor(displayLaunch.resultadoAcumulado, regra && regra.unidadeMedida)],
+          ["Percentual acumulado", Calculations.formatarPercentual(displayLaunch.percentualAtingidoAcumulado)]
+        ] : [])
       ] : []),
       ["Tipo de cálculo", indicador.tipoCalculo],
       ["Métrica/Fórmula", metodologiaIeo?.formula || indicador.metrica, true],
       ...(metodologiaIeo ? [["Metodologia vigente", metodologiaIeo.descricao, true]] : []),
       ...componentesIeo,
       ...componentesNps,
+      ...resumoNps,
       ...detalhesRgf,
       ...componentesInteiros,
       ...detalhesAprimoramento,

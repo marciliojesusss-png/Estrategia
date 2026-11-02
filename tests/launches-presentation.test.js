@@ -179,7 +179,7 @@ assert.match(view, /id="resultadoAnualWrapper"/);
 assert.match(view, /documentation-fields\.js\?v=DOCUMENTACAO-COMPLEMENTAR-1TRI-001/);
 assert.match(view, /styles\.css\?v=APP-VERSION-001/);
 assert.match(view, /formulas\.js\?v=INDICADOR05-SITUACAO-TRIMESTRAL-001/);
-assert.match(view, /launches\.js\?v=INDICADOR05-FECHAMENTO-HOMOLOGADO-001/);
+assert.match(view, /launches\.js\?v=INDICADOR02-NPS-SIMPLIFICADO-001/);
 assert.match(view, /id="launchValidationFeedback"[^>]+role="alert"[^>]+aria-live="assertive"/);
 
 const dataStoreSource = fs.readFileSync(path.join(root, "assets", "js", "dataStore.js"), "utf8");
@@ -288,8 +288,8 @@ assert.match(approvalsSource, /\["nota_pesquisa_nps", "melhorias_acumuladas", "l
 assert.match(approvalsSource, /Acompanhamento sem nova medição/);
 assert.match(approvalsSource, /Ações realizadas \/ andamento/);
 assert.match(approvalsSource, /"Em acompanhamento"/);
-assert.match(approvalsSource, /const componentesNps = regra\?\.tipoCalculo === "nota_pesquisa_nps"/);
-assert.match(approvalsSource, /Percentual de promotores − percentual de detratores/);
+assert.match(approvalsSource, /const componentesNps = isNps/);
+assert.match(approvalsSource, /origemNps === "componentes_formula"/);
 assert.match(approvalsSource, /Novas melhorias no período/);
 assert.match(approvalsSource, /Melhorias implementadas acumuladas/);
 assert.match(approvalsSource, /Base de melhorias mapeadas/);

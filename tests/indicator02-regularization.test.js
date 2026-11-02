@@ -9,6 +9,7 @@ const data = loadBootstrapData(root);
 const indicator = data.indicadores.find((item) => Number(item.id) === 2);
 const rule = data.regrasIndicadores.find((item) => Number(item.indicadorId) === 2);
 const launches = data.lancamentos.filter((item) => Number(item.indicadorId) === 2 && Number(item.ano) === 2026);
+const historicalSnapshot = JSON.stringify(launches);
 const byMonth = Object.fromEntries(launches.map((item) => [Number(item.mes), item]));
 const targets = data.metas.filter((item) => Number(item.indicadorId) === 2 && Number(item.ano) === 2026).sort((a, b) => Number(a.mes) - Number(b.mes));
 
@@ -155,6 +156,65 @@ assert.ok(details.some(([label, value]) => label.includes("Atingimento técnico"
 assert.ok(details.some(([label]) => label.includes("Fonte documental")));
 
 const launchesSource = fs.readFileSync(path.join(root, "assets", "js", "launches.js"), "utf8");
-assert.match(launchesSource, /"fontePesquisaNPS",\s*\n\s*"observacaoArea"/);
+const npsLayout = context.window.__LAUNCHES_FILTER_TEST_INTERNALS__.npsInterfaceLayout;
+const expectedPrimaryFields = [
+  "tipoPosicaoNPS",
+  "metaReferenciaCompetenciaNPS",
+  "percentualPromotores",
+  "percentualDetratores",
+  "npsApurado",
+  "resultadoDocumentalNPS",
+  "dataBasePesquisaNPS",
+  "fontePesquisaNPS"
+];
+for (const type of ["Baseline", "ultima_pesquisa_disponivel", "Pesquisa oficial"]) {
+  const layout = npsLayout(rule, { tipoPosicaoNPS: type });
+  assert.deepEqual(Array.from(layout.primaryFields, (field) => field.nome), expectedPrimaryFields);
+  assert.equal(layout.primaryFields.length, 8);
+  assert.ok(layout.primaryFields.find((field) => field.nome === "tipoPosicaoNPS").opcoes.length > 0);
+}
 
-console.log("Indicador 02: pontos, referência 60 no 2TRI, periodicidade, governança e apresentação validados.");
+const emptyLayout = npsLayout(rule, { percentualPromotores: "", percentualDetratores: "" });
+assert.equal(emptyLayout.calculatedNps, "");
+assert.equal(emptyLayout.primaryFields.find((field) => field.nome === "percentualPromotores").placeholder, "Não informado");
+assert.equal(emptyLayout.primaryFields.find((field) => field.nome === "percentualDetratores").placeholder, "Não informado");
+assert.equal(emptyLayout.primaryFields.find((field) => field.nome === "npsApurado").placeholder, "—");
+assert.equal(npsLayout(rule, { percentualPromotores: 0.7263, percentualDetratores: 0.1343 }).calculatedNps, 59.2);
+assert.equal(npsLayout(rule, { percentualPromotores: "72,63", percentualDetratores: "13,43" }).calculatedNps, 59.2);
+
+const memoryNames = Array.from(emptyLayout.memoryFields, (field) => field.nome);
+for (const field of [
+  "totalRespondentesNPS",
+  "quantidadePromotoresNPS",
+  "quantidadeNeutrosNPS",
+  "quantidadeDetratoresNPS",
+  "metaDocumentalNPS",
+  "percentualAtingidoOficialNPS"
+]) {
+  assert.ok(memoryNames.includes(field), `${field} deve permanecer na memória de cálculo`);
+}
+assert.equal(september.origemNps, "ultima_pesquisa_documental");
+assert.equal(september.resultadoOficialNPS, 59.2);
+assert.match(launchesSource, /<details id="npsCalculationMemory"/);
+assert.match(launchesSource, /<summary>Memória de cálculo<\/summary>/);
+assert.match(launchesSource, /input\.dataset\.displayOnly === "true"/);
+
+const approvalsSource = fs.readFileSync(path.join(root, "assets", "js", "approvals.js"), "utf8");
+for (const label of [
+  "Tipo da posição",
+  "Meta da competência",
+  "% Promotores",
+  "% Detratores",
+  "NPS calculado",
+  "Resultado documental NPS",
+  "Data-base da pesquisa",
+  "Fonte documental"
+]) {
+  assert.ok(approvalsSource.includes(`["${label}"`), `${label} deve aparecer na conferência de homologação`);
+}
+assert.match(approvalsSource, /origemNps === "componentes_formula"/);
+assert.match(fs.readFileSync(path.join(root, "views", "frontend", "lancamentos.php"), "utf8"), /INDICADOR02-NPS-SIMPLIFICADO-001/);
+assert.match(fs.readFileSync(path.join(root, "views", "frontend", "homologacao.php"), "utf8"), /INDICADOR02-NPS-SIMPLIFICADO-001/);
+assert.equal(JSON.stringify(launches), historicalSnapshot, "a organização visual não pode mutar lançamentos históricos");
+
+console.log("Indicador 02: regra, histórico e interface NPS simplificada validados.");

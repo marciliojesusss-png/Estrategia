@@ -820,6 +820,51 @@
     return values;
   }
 
+  const NPS_PRIMARY_FIELD_NAMES = Object.freeze([
+    "tipoPosicaoNPS",
+    "metaReferenciaCompetenciaNPS",
+    "percentualPromotores",
+    "percentualDetratores",
+    "npsApurado",
+    "resultadoDocumentalNPS",
+    "dataBasePesquisaNPS",
+    "fontePesquisaNPS"
+  ]);
+
+  const NPS_PRIMARY_FIELD_DEFAULTS = Object.freeze({
+    tipoPosicaoNPS: { rotulo: "Tipo da posição", tipo: "selecao" },
+    metaReferenciaCompetenciaNPS: { rotulo: "Meta da competência", tipo: "numero", somenteLeitura: true },
+    percentualPromotores: { rotulo: "% Promotores", tipo: "percentual", entradaPtBr: true, placeholder: "Não informado" },
+    percentualDetratores: { rotulo: "% Detratores", tipo: "percentual", entradaPtBr: true, placeholder: "Não informado" },
+    npsApurado: { rotulo: "NPS calculado", tipo: "numero", somenteLeitura: true, placeholder: "—" },
+    resultadoDocumentalNPS: { rotulo: "Resultado documental NPS", tipo: "numero", placeholder: "Não informado" },
+    dataBasePesquisaNPS: { rotulo: "Data-base da pesquisa", tipo: "data" },
+    fontePesquisaNPS: { rotulo: "Fonte documental", tipo: "texto", placeholder: "Não informado" }
+  });
+
+  function npsInterfaceLayout(regra, values = {}) {
+    const configuredFields = regra?.camposEntrada || [];
+    const fieldsByName = new Map(configuredFields.map((field) => [field.nome, field]));
+    const primaryFields = NPS_PRIMARY_FIELD_NAMES.map((name) => ({
+      ...(fieldsByName.get(name) || { nome: name }),
+      ...NPS_PRIMARY_FIELD_DEFAULTS[name],
+      nome: name,
+      somenteExibicao: ["metaReferenciaCompetenciaNPS", "npsApurado"].includes(name)
+    }));
+    const primaryNames = new Set(NPS_PRIMARY_FIELD_NAMES);
+    const memoryFields = configuredFields.filter((field) => (
+      !primaryNames.has(field.nome) && field.nome !== "observacaoArea"
+    ));
+    const hasPromoters = values.percentualPromotores !== "" && values.percentualPromotores !== null && values.percentualPromotores !== undefined;
+    const hasDetractors = values.percentualDetratores !== "" && values.percentualDetratores !== null && values.percentualDetratores !== undefined;
+    const promoters = hasPromoters ? normalizarPercentual(values.percentualPromotores) : null;
+    const detractors = hasDetractors ? normalizarPercentual(values.percentualDetratores) : null;
+    const calculatedNps = promoters !== null && detractors !== null
+      ? Math.round((promoters - detractors) * 1e12) / 1e10
+      : "";
+    return { primaryFields, memoryFields, calculatedNps };
+  }
+
   function formatEntryValue(field, value) {
     if (field.tipo === "moeda" && value !== "") return CurrencyBR.formatarMoedaBR(value).replace(/^R\$\s?/, "");
     if (field.tipo === "inteiro" && value !== "") return Calculations.formatarInteiroBR(value);
@@ -917,7 +962,9 @@
           data-entry-field="${escapeHtml(field.nome)}"
           data-entry-type="${escapeHtml(field.tipo || "numero")}"
           type="${["texto", "moeda", "inteiro"].includes(field.tipo) || usesLocalizedPercentageEntry(field) ? "text" : field.tipo === "data" ? "date" : "number"}"
-          ${emptyDocumentalField ? "placeholder=\"-\"" : field.tipo === "moeda" || usesLocalizedPercentageEntry(field) ? "inputmode=\"decimal\" placeholder=\"0,00\"" : field.tipo === "inteiro" ? "inputmode=\"numeric\" placeholder=\"0\"" : field.tipo === "texto" || field.tipo === "data" ? "" : "step=\"any\""}
+          ${field.placeholder !== undefined
+            ? `placeholder="${escapeHtml(field.placeholder)}"${field.tipo === "percentual" ? " inputmode=\"decimal\"" : ""}`
+            : emptyDocumentalField ? "placeholder=\"-\"" : field.tipo === "moeda" || usesLocalizedPercentageEntry(field) ? "inputmode=\"decimal\" placeholder=\"0,00\"" : field.tipo === "inteiro" ? "inputmode=\"numeric\" placeholder=\"0\"" : field.tipo === "texto" || field.tipo === "data" ? "" : "step=\"any\""}
           value="${escapeHtml(emptyDocumentalField ? "" : formatEntryValue(field, value))}"
           ${field.obrigatorio ? "required" : ""}
           ${field.somenteLeitura ? "readonly" : ""}
@@ -1292,6 +1339,13 @@
       document.getElementById("resultadoAnualWrapper").hidden = true;
       document.getElementById("percentualAnualWrapper").hidden = false;
     }
+    if (regra?.tipoCalculo === "nota_pesquisa_nps") {
+      const metaWrapper = document.getElementById("launchMeta")?.closest("label");
+      if (metaWrapper) metaWrapper.hidden = true;
+      document.getElementById("percentualMensalWrapper").hidden = false;
+      document.getElementById("resultadoAnualWrapper").hidden = true;
+      document.getElementById("percentualAnualWrapper").hidden = true;
+    }
 
     document.getElementById("launchResultadoMensalLabel").textContent = regra?.tipoCalculo === "marco_projeto_percentual"
       ? "Resultado oficial da competência"
@@ -1300,7 +1354,7 @@
       : isIeoRule(regra)
       ? "IEO calculado da competência"
       : regra?.tipoCalculo === "nota_pesquisa_nps"
-        ? "Resultado NPS calculado"
+        ? "Resultado NPS"
       : regra?.tipoCalculo === "melhorias_acumuladas"
         ? "Resultado acumulado"
       : regra?.parametrosCalculo?.metaTipo === "meta_oficial_trimestral_projeto"
@@ -1316,6 +1370,8 @@
         ? "Atingimento do marco trimestral"
       : isIeoRule(regra)
       ? "% atingido"
+      : regra?.tipoCalculo === "nota_pesquisa_nps"
+        ? "Atingimento"
       : ["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(regra?.tipoCalculo)
         ? "Atingimento técnico"
       : regra?.tipoCalculo === "participacao_ecossistema_lotex"
@@ -1414,6 +1470,32 @@
         ${sourceMarkup}
       `;
       updateEcossistemaCurveFields(regra, lancamento);
+      return;
+    }
+    if (regra?.tipoCalculo === "nota_pesquisa_nps") {
+      const npsValues = { ...values };
+      if (npsValues.metaReferenciaCompetenciaNPS === "" || npsValues.metaReferenciaCompetenciaNPS === null || npsValues.metaReferenciaCompetenciaNPS === undefined) {
+        npsValues.metaReferenciaCompetenciaNPS = getDisplayMeta(regra, lancamento) ?? "";
+      }
+      const layout = npsInterfaceLayout(regra, npsValues);
+      document.getElementById("dynamicInputFields").innerHTML = `
+        <div class="notice info full-span">
+          <strong>Posição NPS da competência</strong> — informe os componentes disponíveis. O NPS técnico corresponde a % Promotores − % Detratores.
+        </div>
+        ${layout.primaryFields.map((field) => renderEntryInput(
+          field,
+          field.nome === "npsApurado" ? layout.calculatedNps : npsValues[field.nome] ?? "",
+          field.somenteExibicao ? 'data-display-only="true"' : ""
+        )).join("")}
+        <details id="npsCalculationMemory" class="evidence-history full-span">
+          <summary>Memória de cálculo</summary>
+          <p class="help-text">Componentes auxiliares preservados para auditoria. A ausência de informação permanece vazia e não representa zero.</p>
+          <div class="editor-form">
+            ${layout.memoryFields.map((field) => renderEntryInput(field, npsValues[field.nome] ?? "")).join("")}
+          </div>
+        </details>
+      `;
+      updateNpsPositionFields(regra, lancamento);
       return;
     }
     if (isIeoRule(regra)) {
@@ -1539,36 +1621,11 @@
 
   function updateNpsPositionFields(regra, lancamento) {
     if (regra?.tipoCalculo !== "nota_pesquisa_nps") return;
-    const type = String(document.querySelector('[data-entry-field="tipoPosicaoNPS"]')?.value || "");
-    const tracking = type.startsWith("Acompanhamento") || type === "Revisão metodológica";
-    const carriedPosition = type === "ultima_pesquisa_disponivel";
-    const visibleFields = new Set([
-      "tipoPosicaoNPS",
-      "metaReferenciaCompetenciaNPS",
-      ...(tracking ? [] : [
-        "resultadoDocumentalNPS",
-        "metaDocumentalNPS",
-        "percentualAtingidoOficialNPS"
-      ]),
-      ...(!tracking && !carriedPosition ? [
-        "percentualPromotores",
-        "percentualDetratores",
-        "totalRespondentesNPS",
-        "quantidadePromotoresNPS",
-        "quantidadeNeutrosNPS",
-        "quantidadeDetratoresNPS",
-        "npsApurado",
-        "dataBasePesquisaNPS"
-      ] : []),
-      "fontePesquisaNPS",
-      "observacaoArea"
-    ]);
-    document.querySelectorAll("[data-entry-wrapper]").forEach((wrapper) => {
-      const fieldName = wrapper.dataset.entryWrapper;
-      const visible = visibleFields.has(fieldName);
-      wrapper.hidden = !visible;
-      const input = wrapper.querySelector(".dynamic-entry-field");
-      if (input) input.disabled = !visible || !isEditable(lancamento);
+    document.querySelectorAll("#dynamicInputFields .dynamic-entry-field").forEach((input) => {
+      input.disabled = !isEditable(lancamento);
+      if (["metaReferenciaCompetenciaNPS", "npsApurado"].includes(input.dataset.entryField)) {
+        input.readOnly = true;
+      }
     });
   }
 
@@ -1830,6 +1887,11 @@
   function renderFormulaDetails(resultado, regra, lancamento) {
     const wrapper = document.getElementById("formulaDetailsWrapper");
     const target = document.getElementById("formulaDetails");
+    if (regra?.tipoCalculo === "nota_pesquisa_nps") {
+      wrapper.hidden = true;
+      target.innerHTML = "";
+      return;
+    }
     const details = [];
     const metodologiaCa = isIeoCaCompetence(regra, lancamento);
 
@@ -2257,7 +2319,7 @@
   function collectEntryValues() {
     const values = {};
     document.querySelectorAll(".dynamic-entry-field").forEach((input) => {
-      if (input.disabled) return;
+      if (input.disabled || input.dataset.displayOnly === "true") return;
       const type = input.dataset.entryType || "numero";
       values[input.dataset.entryField] = parseEntryValue(type, input.value);
     });
@@ -2372,6 +2434,7 @@
     document.getElementById("percentualMensalWrapper").hidden = hideAtingimentoFields;
     document.getElementById("percentualAnualWrapper").hidden = hideAtingimentoFields;
     document.getElementById("resultadoAnualWrapper").hidden = false;
+    document.getElementById("launchMeta")?.closest("label")?.removeAttribute("hidden");
     document.getElementById("realizadoWrapper").hidden = usesAutomaticCalculation(indicador, result.regra);
     document.getElementById("manualPercentWrapper").hidden = !isManual(indicador);
     document.getElementById("situacaoCalculadaWrapper").hidden = !usesAutomaticCalculation(indicador, result.regra);
@@ -2423,9 +2486,27 @@
       document.getElementById("resultadoAnualWrapper").hidden = true;
       document.getElementById("percentualAnualWrapper").hidden = false;
     }
+    const npsInterface = result.regra?.tipoCalculo === "nota_pesquisa_nps";
+    if (npsInterface) {
+      const metaWrapper = document.getElementById("launchMeta")?.closest("label");
+      if (metaWrapper) metaWrapper.hidden = true;
+      document.getElementById("launchResultadoMensalLabel").textContent = "Resultado NPS";
+      document.getElementById("launchPercentualCalculadoLabel").textContent = "Atingimento";
+      document.getElementById("launchSituacaoCalculadaLabel").textContent = "Situação";
+      document.getElementById("percentualMensalWrapper").hidden = false;
+      document.getElementById("resultadoAnualWrapper").hidden = true;
+      document.getElementById("percentualAnualWrapper").hidden = true;
+      const npsCalculatedInput = document.querySelector('[data-entry-field="npsApurado"]');
+      if (npsCalculatedInput) {
+        const layout = npsInterfaceLayout(result.regra, collectEntryValues());
+        npsCalculatedInput.value = layout.calculatedNps === "" ? "" : layout.calculatedNps;
+      }
+    }
     const trackingAprimoramento = result.regra?.tipoCalculo === "melhorias_acumuladas" &&
       result.resultado.tipoPosicaoAprimoramento === "acompanhamento";
-    document.getElementById("launchResultadoMensal").value = trackingAprimoramento
+    document.getElementById("launchResultadoMensal").value = npsInterface
+      ? Calculations.formatarValor(result.resultado.resultadoOficialNPS ?? result.resultado.resultadoMensal, "pontos")
+      : trackingAprimoramento
       ? result.resultado.percentualAcompanhamentoAprimoramentoFormatado || "-"
       : result.resultado.resultadoMensalFormatado || Calculations.formatarValor(result.resultado.resultadoMensal, result.resultado.unidadeMedida);
     const percentualPrincipal = result.regra?.tipoCalculo === "nota_pesquisa_nps"
@@ -3016,6 +3097,7 @@
     requiresTransactionalPersistence,
     canManageLaunches,
     launchRequiresEvidence,
-    evidenceRequirementLabel
+    evidenceRequirementLabel,
+    npsInterfaceLayout
   };
 })();

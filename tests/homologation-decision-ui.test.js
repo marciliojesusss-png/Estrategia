@@ -111,7 +111,7 @@ ok(decision.includes("Lançamento devolvido para ajuste com sucesso."), "devoluc
 ok(decision.includes("catch (error)"), "falhas de decisao devem ser visiveis");
 ok(approvals === publicApprovals, "assets e public de homologacao devem permanecer sincronizados");
 ok(view.includes("ACTION-FEEDBACK-001"), "view deve invalidar cache do feedback de acao");
-ok(view.includes("approvals.js?v=STATUS-HOMOLOGACAO-001"), "view deve invalidar o cache da normalizacao do status de homologacao");
+ok(view.includes("approvals.js?v=INDICADOR02-NPS-SIMPLIFICADO-001"), "view deve invalidar o cache da apresentação NPS na homologação");
 
 ok(launches.includes("Rascunho salvo com sucesso."), "rascunho deve confirmar sucesso");
 ok(launches.includes("Lançamento enviado para homologação com sucesso."), "envio deve confirmar sucesso");

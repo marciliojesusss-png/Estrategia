@@ -19,7 +19,7 @@
   <script src="/assets/js/formulas.js?v=INDICADOR05-SITUACAO-TRIMESTRAL-001" defer></script>
   <script src="/assets/js/documentation-fields.js?v=DOCUMENTACAO-COMPLEMENTAR-1TRI-001" defer></script>
   <script src="/assets/js/action-feedback.js?v=ACTION-FEEDBACK-001" defer></script>
-  <script src="/assets/js/launches.js?v=INDICADOR05-FECHAMENTO-HOMOLOGADO-001" defer></script>
+  <script src="/assets/js/launches.js?v=INDICADOR02-NPS-SIMPLIFICADO-001" defer></script>
   <script src="/assets/js/app.js?v=APP-VERSION-001" defer></script>
 </head>
 <body data-page="lancamentos">
