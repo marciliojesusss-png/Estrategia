@@ -1921,20 +1921,20 @@ const regraIncentivoSocioambiental = {
   tipoCalculo: "investimento_socioambiental",
   tipoConsolidacao: "valor_acumulado",
   unidadeMedida: "moeda",
-  metaAnualValor: 4307900,
+  metaAnualValor: 4307854.94,
   parametrosCalculo: {
     campoStatus: "statusProjetoIncentivoSocioambiental",
     campoValorMes: "valorInvestidoMes",
     campoValorAcumulado: "valorInvestidoAcumuladoCompetencia",
     statusQueConta: "Investimento realizado",
     metaTipo: "curva_trimestral_acumulada",
-    lucroLiquidoReferencia: 1305400000,
+    lucroLiquidoReferencia: 1305410587.78,
     mesesFechamentoTrimestral: [3, 6, 9, 12],
     curvaTrimestralAcumulada: {
       "1TRI/2026": { metaPercentualLucro: 0, metaValorAcumulado: 0 },
-      "2TRI/2026": { metaPercentualLucro: 0.0005, metaValorAcumulado: 652700 },
-      "3TRI/2026": { metaPercentualLucro: 0.001, metaValorAcumulado: 1305400 },
-      "4TRI/2026": { metaPercentualLucro: 0.0033, metaValorAcumulado: 4307900 }
+      "2TRI/2026": { metaPercentualLucro: 0.0005, metaValorAcumulado: 652705.29 },
+      "3TRI/2026": { metaPercentualLucro: 0.001, metaValorAcumulado: 1305410.59 },
+      "4TRI/2026": { metaPercentualLucro: 0.0033, metaValorAcumulado: 4307854.94 }
     },
     sentidoMeta: "quanto_maior_melhor"
   },
@@ -1977,15 +1977,15 @@ const incentivo2Tri = formulas.calcularIndicador(
     camposEntrada: {
       nomeProjetoIncentivoSocioambiental: "Projeto de impacto socioambiental apoiado",
       statusProjetoIncentivoSocioambiental: "Investimento realizado",
-      valorInvestidoMes: 652700
+      valorInvestidoMes: 652705.29
     }
   },
   [
     { ano: 2026, mes: 3, trimestre: "1TRI/2026", camposEntrada: { nomeProjetoIncentivoSocioambiental: "Projeto", statusProjetoIncentivoSocioambiental: "Em prospecção", valorInvestidoMes: 0 } },
-    { ano: 2026, mes: 6, trimestre: "2TRI/2026", camposEntrada: { nomeProjetoIncentivoSocioambiental: "Projeto de impacto socioambiental apoiado", statusProjetoIncentivoSocioambiental: "Investimento realizado", valorInvestidoMes: 652700 } }
+    { ano: 2026, mes: 6, trimestre: "2TRI/2026", camposEntrada: { nomeProjetoIncentivoSocioambiental: "Projeto de impacto socioambiental apoiado", statusProjetoIncentivoSocioambiental: "Investimento realizado", valorInvestidoMes: 652705.29 } }
   ]
 );
-assert.equal(incentivo2Tri.resultadoMensal, 652700);
+assert.equal(incentivo2Tri.resultadoMensal, 652705.29);
 closeTo(incentivo2Tri.percentualAtingidoMensal, 1);
 assert.equal(incentivo2Tri.situacao, "Atingido");
 
@@ -2002,15 +2002,46 @@ const incentivo3Tri = formulas.calcularIndicador(
 );
 assert.equal(incentivo3Tri.resultadoMensal, 190000);
 assert.equal(incentivo3Tri.realizadoFinanceiro, 190000);
-assert.equal(incentivo3Tri.metaFinanceira, 1305400);
+assert.equal(incentivo3Tri.metaFinanceira, 1305410.59);
 assert.equal(incentivo3Tri.metaPercentual, 0.001);
-closeTo(incentivo3Tri.resultadoPercentualOficial, 190000 / 1305400000, 0.000000000001);
-closeTo(incentivo3Tri.percentualAtingimento, 190000 / 1305400, 0.000000000001);
+closeTo(incentivo3Tri.resultadoPercentualOficial, 190000 / 1305410587.78, 0.000000000001);
+closeTo(incentivo3Tri.percentualAtingimento, 190000 / 1305410.59, 0.000000000001);
 assert.notEqual(incentivo3Tri.resultadoPercentualOficial, incentivo3Tri.percentualAtingimento);
-assert.equal(incentivo3Tri.resultadoPercentualOficialFormatado, "0,01455%");
+assert.equal(incentivo3Tri.resultadoPercentualOficialFormatado, "0,0146%");
 assert.equal(lancamentosIncentivo3Tri.reduce((total, item) => total + item.camposEntrada.valorInvestidoMes, 0), 190000);
 assert.equal(incentivo3Tri.valorInvestidoAcumuladoAteCompetencia, 190000);
 assert.equal(incentivo3Tri.situacao, "Abaixo da meta");
+
+const incentivo4Tri = formulas.calcularIndicador(
+  indicador(19, "Incentivo Socioambiental"),
+  regraIncentivoSocioambiental,
+  {
+    ano: 2026,
+    mes: 12,
+    trimestre: "4TRI/2026",
+    camposEntrada: {
+      nomeProjetoIncentivoSocioambiental: "Carteira anual de iniciativas",
+      statusProjetoIncentivoSocioambiental: "Investimento realizado",
+      valorInvestidoMes: 4307854.94,
+      valorInvestidoAcumuladoCompetencia: 4307854.94
+    }
+  },
+  [{
+    ano: 2026,
+    mes: 12,
+    trimestre: "4TRI/2026",
+    camposEntrada: {
+      nomeProjetoIncentivoSocioambiental: "Carteira anual de iniciativas",
+      statusProjetoIncentivoSocioambiental: "Investimento realizado",
+      valorInvestidoMes: 4307854.94,
+      valorInvestidoAcumuladoCompetencia: 4307854.94
+    }
+  }]
+);
+assert.equal(incentivo4Tri.metaFinanceira, 4307854.94);
+assert.equal(incentivo4Tri.realizadoFinanceiro, 4307854.94);
+closeTo(incentivo4Tri.percentualAtingimento, 1);
+assert.equal(incentivo4Tri.situacao, "Atingido");
 
 const regraVisibilidadeRepasses = {
   indicadorId: 20,
@@ -2401,7 +2432,7 @@ const amostras = {
   16: { nomeIniciativaSocioambiental: "1ª iniciativa socioambiental apoiada", tipoIniciativaSocioambiental: "Parceria", statusIniciativaSocioambiental: "Apoiada/realizada", dataApoioIniciativa: "2026-12-01", descricaoAndamentoSocioambiental: "Apoiada", evidenciaIniciativaSocioambiental: "Documento", observacaoArea: "Validado" },
   17: { repasseSocialAcumuladoCompetencia: 10452751135, dataBaseApuracao: "2026-12-31" },
   18: { elementoRGF: "Pesquisa", acaoExecutada: "Acao", descricaoAcao: "Descricao", statusAcao: "Concluída", dataConclusao: "2026-12-01", evidenciaAcao: "Evidencia" },
-  19: { nomeProjetoIncentivoSocioambiental: "Projeto apoiado", statusProjetoIncentivoSocioambiental: "Investimento realizado", valorInvestidoAcumuladoCompetencia: 4307900, evidenciaIncentivoSocioambiental: "Documento" },
+  19: { nomeProjetoIncentivoSocioambiental: "Projeto apoiado", statusProjetoIncentivoSocioambiental: "Investimento realizado", valorInvestidoAcumuladoCompetencia: 4307854.94, evidenciaIncentivoSocioambiental: "Documento" },
   20: { acaoPropostaVisibilidade: "campanha_repasses_sociais", statusAcaoVisibilidade: "Publicada/realizada" },
   21: { publicoAlvoElegivelJR: 1000, empregadosCapacitadosJR: 900, quantidadeMinimaIniciativasJR: 2, iniciativasConsideradasJR: "Duas iniciativas concluídas" },
   22: { arrTotal2025: 26612476457, arrEcoLotex2025: 173831435.50, arrEcoMarketplace2025: 746339639.03, arrTotal2026: 27000000000, arrEcoLotex2026: 180000000, arrEcoMarketplace2026: 750000000, tipoPosicaoEcossistema: "fechamento_trimestral" },

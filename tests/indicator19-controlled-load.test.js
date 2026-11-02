@@ -24,15 +24,18 @@ assert.equal(indicator19.pilar, "Sustentabilidade e Cidadania");
 assert.equal(rule19.tipoCalculo, "investimento_socioambiental");
 assert.equal(rule19.tipoConsolidacao, "valor_acumulado");
 assert.deepEqual(rule19.parametrosCalculo.mesesFechamentoTrimestral, [3, 6, 9, 12]);
-assert.equal(rule19.parametrosCalculo.lucroLiquidoReferencia, 1305400000);
+assert.equal(rule19.parametrosCalculo.lucroLiquidoReferencia, 1305410587.78);
 assert.equal(rule19.parametrosCalculo.percentualMetaAnual, 0.0033);
-assert.equal(rule19.metaAnualValor, 4307900);
+assert.equal(rule19.metaAnualValor, 4307854.94);
 assert.deepEqual(
   ["1TRI/2026", "2TRI/2026", "3TRI/2026", "4TRI/2026"].map(
     (quarter) => rule19.parametrosCalculo.curvaTrimestralAcumulada[quarter].metaValorAcumulado
   ),
-  [0, 652700, 1305400, 4307900]
+  [0, 652705.29, 1305410.59, 4307854.94]
 );
+assert.equal(Number((rule19.parametrosCalculo.lucroLiquidoReferencia * 0.0005).toFixed(2)), 652705.29);
+assert.equal(Number((rule19.parametrosCalculo.lucroLiquidoReferencia * 0.001).toFixed(2)), 1305410.59);
+assert.equal(Number((rule19.parametrosCalculo.lucroLiquidoReferencia * 0.0033).toFixed(2)), 4307854.94);
 
 const metas19 = bootstrap.metas
   .filter((meta) => Number(meta.indicadorId) === 19 && Number(meta.ano) === 2026)
@@ -40,7 +43,7 @@ const metas19 = bootstrap.metas
 assert.equal(metas19.length, 12);
 assert.deepEqual(
   metas19.map((meta) => Number(meta.metaMensal)),
-  [0, 0, 0, 652700, 652700, 652700, 1305400, 1305400, 1305400, 4307900, 4307900, 4307900]
+  [0, 0, 0, 652705.29, 652705.29, 652705.29, 1305410.59, 1305410.59, 1305410.59, 4307854.94, 4307854.94, 4307854.94]
 );
 
 // JAN–MAR preservam apenas o status legado; o fixture não fabrica ator ou data de homologação.
@@ -51,7 +54,7 @@ assert.ok([217, 218, 219].every((id) => !byId[id].evidenciaId));
 
 // ABR–JUN reproduzem o estado real já existente no SQL Server.
 assert.deepEqual([220, 221, 222].map((id) => byId[id].status), ["Homologado", "Homologado", "Homologado"]);
-assert.ok([220, 221, 222].every((id) => byId[id].metaMensal === 652700));
+assert.ok([220, 221, 222].every((id) => byId[id].metaMensal === 652705.29));
 assert.ok([220, 221, 222].every((id) => byId[id].resultadoMensal === 0));
 assert.ok([220, 221, 222].every((id) => byId[id].percentualAtingido === 0));
 assert.ok([220, 221, 222].every((id) => byId[id].situacaoCalculada === "Abaixo da meta"));
@@ -103,11 +106,12 @@ assert.deepEqual([223, 224, 225].map((id) => byId[id].camposEntrada.dataBaseApur
 assert.ok([223, 224, 225].every((id) => byId[id].camposEntrada.idProjetoIncentivoSocioambiental === "brasil-ladies-cup-2026"));
 assert.ok([223, 224, 225].every((id) => byId[id].camposEntrada.nomeProjetoIncentivoSocioambiental === "Patrocínio da edição 2026 da Brasil Ladies Cup"));
 assert.ok([223, 224, 225].every((id) => byId[id].resultadoMensal === 190000));
-assert.ok([223, 224, 225].every((id) => Math.abs(byId[id].percentualAtingido - (190000 / 1305400)) < 1e-15));
+assert.ok([223, 224, 225].every((id) => byId[id].metaMensal === 1305410.59));
+assert.ok([223, 224, 225].every((id) => Math.abs(byId[id].percentualAtingido - (190000 / 1305410.59)) < 1e-15));
 assert.equal([223, 224, 225].reduce((total, id) => total + byId[id].camposEntrada.valorInvestidoMes, 0), 190000);
 assert.equal(byId[225].situacaoCalculada, "Abaixo da meta");
-assert.equal(Number(((190000 / 1305400000) * 100).toFixed(5)), 0.01455);
-assert.equal(Number(((190000 / 1305400) * 100).toFixed(2)), 14.55);
+assert.equal(Number(((190000 / 1305410587.78) * 100).toFixed(4)), 0.0146);
+assert.equal(Number(((190000 / 1305410.59) * 100).toFixed(2)), 14.55);
 
 // Proteções explícitas dos Indicadores 16, 09 e 17.
 assert.equal(indicator16.unidadeApuradora, "GENOL");
@@ -153,5 +157,50 @@ assert.doesNotMatch(migration, /UPDATE\s+dbo\.(homologacoes|evidencias|retificac
 assert.doesNotMatch(migration, /INSERT\s+INTO\s+dbo\./i);
 assert.doesNotMatch(migration, /DELETE\s+FROM\s+dbo\./i);
 assert.doesNotMatch(migration, /570000/);
+
+const exactCurveMigrationPath = path.join(
+  root, "database", "sqlserver", "migrations",
+  "20261101_001_indicador19_curva_financeira_exata.sql"
+);
+const exactCurveMigration = fs.readFileSync(exactCurveMigrationPath, "utf8");
+assert.match(exactCurveMigration, /BEGIN TRANSACTION/);
+assert.match(exactCurveMigration, /COMMIT TRANSACTION/);
+assert.match(exactCurveMigration, /ROLLBACK TRANSACTION/);
+assert.match(exactCurveMigration, /652705\.29/);
+assert.match(exactCurveMigration, /1305410\.59/);
+assert.match(exactCurveMigration, /4307854\.94/);
+assert.match(exactCurveMigration, /1305400000/);
+assert.match(exactCurveMigration, /SET meta_referencia=CONVERT\(NVARCHAR\(100\),c\.meta_nova\)/);
+assert.match(exactCurveMigration, /SET valor_json=@regrasDepois/);
+assert.match(exactCurveMigration, /SET valor_json=@metasDepois/);
+assert.match(exactCurveMigration, /JSON_MODIFY\(@regrasDepois,'append \$'/);
+assert.match(exactCurveMigration, /JSON_MODIFY\(@metasDepois,'append \$'/);
+assert.doesNotMatch(exactCurveMigration, /JSON_(?:VALUE|QUERY)\([^\r\n]*CONCAT/i);
+assert.match(exactCurveMigration, /governanca, evidencias ou observacoes documentais foram alteradas/i);
+assert.match(exactCurveMigration, /Indicador 7/i);
+assert.doesNotMatch(exactCurveMigration, /UPDATE\s+dbo\.(homologacoes|evidencias|retificacoes|solicitacoes_reabertura|auditoria)/i);
+assert.doesNotMatch(exactCurveMigration, /INSERT\s+INTO\s+dbo\./i);
+assert.doesNotMatch(exactCurveMigration, /DELETE\s+FROM\s+dbo\./i);
+
+const exactBaselineMigrationPath = path.join(
+  root, "database", "sqlserver", "migrations",
+  "20261101_002_indicador19_baseline_exato.sql"
+);
+const exactBaselineMigration = fs.readFileSync(exactBaselineMigrationPath, "utf8");
+assert.match(exactBaselineMigration, /BEGIN TRANSACTION/);
+assert.match(exactBaselineMigration, /COMMIT TRANSACTION/);
+assert.match(exactBaselineMigration, /ROLLBACK TRANSACTION/);
+assert.match(exactBaselineMigration, /1305400000\.00/);
+assert.match(exactBaselineMigration, /1305410587\.78/);
+assert.match(exactBaselineMigration, /JSON_MODIFY\(@regraAntes,'\$\.parametrosCalculo\.lucroLiquidoReferencia',@baselineNovo\)/);
+assert.match(exactBaselineMigration, /652705\.29/);
+assert.match(exactBaselineMigration, /1305410\.59/);
+assert.match(exactBaselineMigration, /4307854\.94/);
+assert.match(exactBaselineMigration, /Indicador 7/);
+assert.match(exactBaselineMigration, /lancamentos_alterados/);
+assert.doesNotMatch(exactBaselineMigration, /UPDATE\s+(?:dbo\.)?lancamentos/i);
+assert.doesNotMatch(exactBaselineMigration, /UPDATE\s+dbo\.(indicadores|homologacoes|evidencias|retificacoes|solicitacoes_reabertura|auditoria)/i);
+assert.doesNotMatch(exactBaselineMigration, /INSERT\s+INTO\s+dbo\./i);
+assert.doesNotMatch(exactBaselineMigration, /DELETE\s+FROM\s+dbo\./i);
 
 console.log("indicator19-controlled-load.test.js: OK");

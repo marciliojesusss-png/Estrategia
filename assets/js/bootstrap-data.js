@@ -503,7 +503,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "plano": "PN",
       "unidadeApuradora": "GENOL",
       "diretoriaResponsavel": "DICOT",
-      "metaAnualDescricao": "0,33% do Lucro Líquido do ano (R$ 4.307.900,00 estimados)",
+      "metaAnualDescricao": "0,33% do Lucro Líquido do ano (R$ 4.307.854,94 conforme planilha da Unidade)",
       "metrica": "Valor investido em iniciativas com impacto socioambiental",
       "tipoCalculo": "investimento_socioambiental",
       "unidadeMedida": "moeda",
@@ -2226,7 +2226,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "ano": 2026,
       "mes": 4,
       "nomeMes": "Abril",
-      "metaMensal": 652700,
+      "metaMensal": 652705.29,
       "fonte": "curva_trimestral_incentivo_socioambiental_2026"
     },
     {
@@ -2235,7 +2235,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "ano": 2026,
       "mes": 5,
       "nomeMes": "Maio",
-      "metaMensal": 652700,
+      "metaMensal": 652705.29,
       "fonte": "curva_trimestral_incentivo_socioambiental_2026"
     },
     {
@@ -2244,7 +2244,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "ano": 2026,
       "mes": 6,
       "nomeMes": "Junho",
-      "metaMensal": 652700,
+      "metaMensal": 652705.29,
       "fonte": "curva_trimestral_incentivo_socioambiental_2026"
     },
     {
@@ -2253,7 +2253,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "ano": 2026,
       "mes": 7,
       "nomeMes": "Julho",
-      "metaMensal": 1305400,
+      "metaMensal": 1305410.59,
       "fonte": "curva_trimestral_incentivo_socioambiental_2026"
     },
     {
@@ -2262,7 +2262,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "ano": 2026,
       "mes": 8,
       "nomeMes": "Agosto",
-      "metaMensal": 1305400,
+      "metaMensal": 1305410.59,
       "fonte": "curva_trimestral_incentivo_socioambiental_2026"
     },
     {
@@ -2271,7 +2271,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "ano": 2026,
       "mes": 9,
       "nomeMes": "Setembro",
-      "metaMensal": 1305400,
+      "metaMensal": 1305410.59,
       "fonte": "curva_trimestral_incentivo_socioambiental_2026"
     },
     {
@@ -2280,7 +2280,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "ano": 2026,
       "mes": 10,
       "nomeMes": "Outubro",
-      "metaMensal": 4307900,
+      "metaMensal": 4307854.94,
       "fonte": "curva_trimestral_incentivo_socioambiental_2026"
     },
     {
@@ -2289,7 +2289,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "ano": 2026,
       "mes": 11,
       "nomeMes": "Novembro",
-      "metaMensal": 4307900,
+      "metaMensal": 4307854.94,
       "fonte": "curva_trimestral_incentivo_socioambiental_2026"
     },
     {
@@ -2298,7 +2298,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "ano": 2026,
       "mes": 12,
       "nomeMes": "Dezembro",
-      "metaMensal": 4307900,
+      "metaMensal": 4307854.94,
       "fonte": "curva_trimestral_incentivo_socioambiental_2026"
     },
     {
@@ -4327,7 +4327,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "tipoConsolidacao": "valor_acumulado",
       "metaRecorrente": false,
       "unidadeMedida": "moeda",
-      "metaAnualValor": 4307900,
+      "metaAnualValor": 4307854.94,
       "parametrosCalculo": {
         "campoNome": "nomeProjetoIncentivoSocioambiental",
         "campoTipo": "tipoIncentivoSocioambiental",
@@ -4339,7 +4339,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "campoEvidencia": "evidenciaIncentivoSocioambiental",
         "statusQueConta": "Investimento realizado",
         "metaTipo": "curva_trimestral_acumulada",
-        "lucroLiquidoReferencia": 1305400000,
+        "lucroLiquidoReferencia": 1305410587.78,
         "percentualMetaAnual": 0.0033,
         "mesesFechamentoTrimestral": [
           3,
@@ -4355,17 +4355,17 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
           },
           "2TRI/2026": {
             "metaPercentualLucro": 0.0005,
-            "metaValorAcumulado": 652700,
+            "metaValorAcumulado": 652705.29,
             "marcoEsperado": "Investimento acumulado de 0,05% do lucro líquido de referência"
           },
           "3TRI/2026": {
             "metaPercentualLucro": 0.001,
-            "metaValorAcumulado": 1305400,
+            "metaValorAcumulado": 1305410.59,
             "marcoEsperado": "Investimento acumulado de 0,10% do lucro líquido de referência"
           },
           "4TRI/2026": {
             "metaPercentualLucro": 0.0033,
-            "metaValorAcumulado": 4307900,
+            "metaValorAcumulado": 4307854.94,
             "marcoEsperado": "Investimento acumulado de 0,33% do lucro líquido de referência"
           }
         },
@@ -15583,7 +15583,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "unidadeApuradora": "GENOL",
       "diretoriaResponsavel": "DICOT",
       "metaMensal": 0,
-      "metaAnualDescricao": "0,33% do Lucro Líquido do ano (R$ 4.307.900,00 estimados)",
+      "metaAnualDescricao": "0,33% do Lucro Líquido do ano (R$ 4.307.854,94 conforme planilha da Unidade)",
       "status": "Homologado",
       "camposEntrada": {
         "nomeProjetoIncentivoSocioambiental": "Projeto de impacto socioambiental em prospecção",
@@ -15636,7 +15636,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "unidadeApuradora": "GENOL",
       "diretoriaResponsavel": "DICOT",
       "metaMensal": 0,
-      "metaAnualDescricao": "0,33% do Lucro Líquido do ano (R$ 4.307.900,00 estimados)",
+      "metaAnualDescricao": "0,33% do Lucro Líquido do ano (R$ 4.307.854,94 conforme planilha da Unidade)",
       "status": "Homologado",
       "camposEntrada": {
         "nomeProjetoIncentivoSocioambiental": "Projeto de impacto socioambiental em prospecção",
@@ -15689,7 +15689,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "unidadeApuradora": "GENOL",
       "diretoriaResponsavel": "DICOT",
       "metaMensal": 0,
-      "metaAnualDescricao": "0,33% do Lucro Líquido do ano (R$ 4.307.900,00 estimados)",
+      "metaAnualDescricao": "0,33% do Lucro Líquido do ano (R$ 4.307.854,94 conforme planilha da Unidade)",
       "status": "Homologado",
       "camposEntrada": {
         "nomeProjetoIncentivoSocioambiental": "Projeto de impacto socioambiental em prospecção",
@@ -15741,8 +15741,8 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "pilar": "Sustentabilidade e Cidadania",
       "unidadeApuradora": "GENOL",
       "diretoriaResponsavel": "DICOT",
-      "metaMensal": 652700,
-      "metaAnualDescricao": "0,33% do Lucro Líquido do ano (R$ 4.307.900,00 estimados)",
+      "metaMensal": 652705.29,
+      "metaAnualDescricao": "0,33% do Lucro Líquido do ano (R$ 4.307.854,94 conforme planilha da Unidade)",
       "status": "Homologado",
       "camposEntrada": {
         "nomeProjetoIncentivoSocioambiental": "Estruturação da carteira de projetos de incentivo socioambiental",
@@ -15804,8 +15804,8 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "pilar": "Sustentabilidade e Cidadania",
       "unidadeApuradora": "GENOL",
       "diretoriaResponsavel": "DICOT",
-      "metaMensal": 652700,
-      "metaAnualDescricao": "0,33% do Lucro Líquido do ano (R$ 4.307.900,00 estimados)",
+      "metaMensal": 652705.29,
+      "metaAnualDescricao": "0,33% do Lucro Líquido do ano (R$ 4.307.854,94 conforme planilha da Unidade)",
       "status": "Homologado",
       "camposEntrada": {
         "nomeProjetoIncentivoSocioambiental": "Estruturação da carteira de projetos de incentivo socioambiental",
@@ -15867,8 +15867,8 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "pilar": "Sustentabilidade e Cidadania",
       "unidadeApuradora": "GENOL",
       "diretoriaResponsavel": "DICOT",
-      "metaMensal": 652700,
-      "metaAnualDescricao": "0,33% do Lucro Líquido do ano (R$ 4.307.900,00 estimados)",
+      "metaMensal": 652705.29,
+      "metaAnualDescricao": "0,33% do Lucro Líquido do ano (R$ 4.307.854,94 conforme planilha da Unidade)",
       "status": "Homologado",
       "camposEntrada": {
         "nomeProjetoIncentivoSocioambiental": "Estruturação da carteira de projetos de incentivo socioambiental",
@@ -15930,8 +15930,8 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "pilar": "Sustentabilidade e Cidadania",
       "unidadeApuradora": "GENOL",
       "diretoriaResponsavel": "DICOT",
-      "metaMensal": 1305400,
-      "metaAnualDescricao": "0,33% do Lucro Líquido do ano (R$ 4.307.900,00 estimados)",
+      "metaMensal": 1305410.59,
+      "metaAnualDescricao": "0,33% do Lucro Líquido do ano (R$ 4.307.854,94 conforme planilha da Unidade)",
       "status": "Em preenchimento",
       "camposEntrada": {
         "idProjetoIncentivoSocioambiental": "brasil-ladies-cup-2026",
@@ -15951,13 +15951,13 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "valorRealizado": 190000,
       "resultadoMensal": 190000,
       "percentualManual": null,
-      "percentualAtingido": 0.1455492569327409,
-      "percentualAtingidoMensal": 0.1455492569327409,
+      "percentualAtingido": 0.145548076180384,
+      "percentualAtingidoMensal": 0.145548076180384,
       "resultadoAcumulado": 190000,
-      "percentualAcumulado": 0.1455492569327409,
+      "percentualAcumulado": 0.145548076180384,
       "resultadoOficialAnual": 190000,
-      "percentualAtingidoAnual": 0.1455492569327409,
-      "percentualAtingidoAcumulado": 0.1455492569327409,
+      "percentualAtingidoAnual": 0.145548076180384,
+      "percentualAtingidoAcumulado": 0.145548076180384,
       "justificativa": "",
       "observacaoArea": "Posição acumulada de julho/2026: R$ 190.000,00.",
       "observacaoDiretoria": "",
@@ -15987,8 +15987,8 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "pilar": "Sustentabilidade e Cidadania",
       "unidadeApuradora": "GENOL",
       "diretoriaResponsavel": "DICOT",
-      "metaMensal": 1305400,
-      "metaAnualDescricao": "0,33% do Lucro Líquido do ano (R$ 4.307.900,00 estimados)",
+      "metaMensal": 1305410.59,
+      "metaAnualDescricao": "0,33% do Lucro Líquido do ano (R$ 4.307.854,94 conforme planilha da Unidade)",
       "status": "Em preenchimento",
       "camposEntrada": {
         "idProjetoIncentivoSocioambiental": "brasil-ladies-cup-2026",
@@ -16008,13 +16008,13 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "valorRealizado": 190000,
       "resultadoMensal": 190000,
       "percentualManual": null,
-      "percentualAtingido": 0.1455492569327409,
-      "percentualAtingidoMensal": 0.1455492569327409,
+      "percentualAtingido": 0.145548076180384,
+      "percentualAtingidoMensal": 0.145548076180384,
       "resultadoAcumulado": 190000,
-      "percentualAcumulado": 0.1455492569327409,
+      "percentualAcumulado": 0.145548076180384,
       "resultadoOficialAnual": 190000,
-      "percentualAtingidoAnual": 0.1455492569327409,
-      "percentualAtingidoAcumulado": 0.1455492569327409,
+      "percentualAtingidoAnual": 0.145548076180384,
+      "percentualAtingidoAcumulado": 0.145548076180384,
       "justificativa": "",
       "observacaoArea": "Sem novo investimento em agosto; posição acumulada mantida em R$ 190.000,00.",
       "observacaoDiretoria": "",
@@ -16044,8 +16044,8 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "pilar": "Sustentabilidade e Cidadania",
       "unidadeApuradora": "GENOL",
       "diretoriaResponsavel": "DICOT",
-      "metaMensal": 1305400,
-      "metaAnualDescricao": "0,33% do Lucro Líquido do ano (R$ 4.307.900,00 estimados)",
+      "metaMensal": 1305410.59,
+      "metaAnualDescricao": "0,33% do Lucro Líquido do ano (R$ 4.307.854,94 conforme planilha da Unidade)",
       "status": "Em preenchimento",
       "camposEntrada": {
         "idProjetoIncentivoSocioambiental": "brasil-ladies-cup-2026",
@@ -16065,13 +16065,13 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "valorRealizado": 190000,
       "resultadoMensal": 190000,
       "percentualManual": null,
-      "percentualAtingido": 0.1455492569327409,
-      "percentualAtingidoMensal": 0.1455492569327409,
+      "percentualAtingido": 0.145548076180384,
+      "percentualAtingidoMensal": 0.145548076180384,
       "resultadoAcumulado": 190000,
-      "percentualAcumulado": 0.1455492569327409,
+      "percentualAcumulado": 0.145548076180384,
       "resultadoOficialAnual": 190000,
-      "percentualAtingidoAnual": 0.1455492569327409,
-      "percentualAtingidoAcumulado": 0.1455492569327409,
+      "percentualAtingidoAnual": 0.145548076180384,
+      "percentualAtingidoAcumulado": 0.145548076180384,
       "justificativa": "",
       "observacaoArea": "Posição oficial do 3TRI/2026: R$ 190.000,00 acumulados.",
       "observacaoDiretoria": "",
@@ -16101,8 +16101,8 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "pilar": "Sustentabilidade e Cidadania",
       "unidadeApuradora": "GENOL",
       "diretoriaResponsavel": "DICOT",
-      "metaMensal": 4307900,
-      "metaAnualDescricao": "0,33% do Lucro Líquido do ano (R$ 4.307.900,00 estimados)",
+      "metaMensal": 4307854.94,
+      "metaAnualDescricao": "0,33% do Lucro Líquido do ano (R$ 4.307.854,94 conforme planilha da Unidade)",
       "status": "Não iniciado",
       "camposEntrada": {},
       "realizado": null,
@@ -16145,8 +16145,8 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "pilar": "Sustentabilidade e Cidadania",
       "unidadeApuradora": "GENOL",
       "diretoriaResponsavel": "DICOT",
-      "metaMensal": 4307900,
-      "metaAnualDescricao": "0,33% do Lucro Líquido do ano (R$ 4.307.900,00 estimados)",
+      "metaMensal": 4307854.94,
+      "metaAnualDescricao": "0,33% do Lucro Líquido do ano (R$ 4.307.854,94 conforme planilha da Unidade)",
       "status": "Não iniciado",
       "camposEntrada": {},
       "realizado": null,
@@ -16189,8 +16189,8 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "pilar": "Sustentabilidade e Cidadania",
       "unidadeApuradora": "GENOL",
       "diretoriaResponsavel": "DICOT",
-      "metaMensal": 4307900,
-      "metaAnualDescricao": "0,33% do Lucro Líquido do ano (R$ 4.307.900,00 estimados)",
+      "metaMensal": 4307854.94,
+      "metaAnualDescricao": "0,33% do Lucro Líquido do ano (R$ 4.307.854,94 conforme planilha da Unidade)",
       "status": "Não iniciado",
       "camposEntrada": {},
       "realizado": null,

@@ -790,7 +790,7 @@
 
   function formatOfficialResult(resultado) {
     if (resultado?.regra?.tipoCalculo === "investimento_socioambiental") {
-      return Calculations.formatarPercentual(resultado.resultadoPercentualOficial, 5, 5);
+      return Calculations.formatarPercentual(resultado.resultadoPercentualOficial, 4, 4);
     }
     if (resultado?.regra?.parametrosCalculo?.metaTipo === "meta_oficial_trimestral_projeto") {
       return Calculations.formatarPercentual(resultado.resultado, 2);

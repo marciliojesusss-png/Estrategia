@@ -2312,7 +2312,7 @@
       return ok(valorInvestidoAcumulado, valorInvestidoAcumulado, null, null, regra.unidadeMedida, "Sem meta de investimento no período.", {
         realizadoFinanceiro: valorInvestidoAcumulado,
         resultadoPercentualOficial,
-        resultadoPercentualOficialFormatado: formatarPercentual(resultadoPercentualOficial, 5, 5),
+        resultadoPercentualOficialFormatado: formatarPercentual(resultadoPercentualOficial, 4, 4),
         percentualAtingimento: null,
         metaFinanceira: metaTrimestral,
         metaPercentual,
@@ -2340,7 +2340,7 @@
     return ok(valorInvestidoAcumulado, valorInvestidoAcumulado, percentual, percentual, regra.unidadeMedida, "Investimento socioambiental acumulado calculado.", {
       realizadoFinanceiro: valorInvestidoAcumulado,
       resultadoPercentualOficial,
-      resultadoPercentualOficialFormatado: formatarPercentual(resultadoPercentualOficial, 5, 5),
+      resultadoPercentualOficialFormatado: formatarPercentual(resultadoPercentualOficial, 4, 4),
       percentualAtingimento: percentual,
       metaFinanceira: metaReferencia,
       metaPercentual,

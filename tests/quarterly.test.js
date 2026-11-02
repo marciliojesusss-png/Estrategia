@@ -932,20 +932,20 @@ const incentivoQuarter = consolidarTrimestre(
     tipoCalculo: "investimento_socioambiental",
     tipoConsolidacao: "valor_acumulado",
     unidadeMedida: "moeda",
-    metaAnualValor: 4307900,
+    metaAnualValor: 4307854.94,
     parametrosCalculo: {
       campoStatus: "statusProjetoIncentivoSocioambiental",
       campoValorMes: "valorInvestidoMes",
       campoValorAcumulado: "valorInvestidoAcumuladoCompetencia",
       statusQueConta: "Investimento realizado",
       metaTipo: "curva_trimestral_acumulada",
-      lucroLiquidoReferencia: 1305400000,
+      lucroLiquidoReferencia: 1305410587.78,
       mesesFechamentoTrimestral: [3, 6, 9, 12],
       curvaTrimestralAcumulada: {
         "1TRI/2026": { metaPercentualLucro: 0, metaValorAcumulado: 0 },
-        "2TRI/2026": { metaPercentualLucro: 0.0005, metaValorAcumulado: 652700 },
-        "3TRI/2026": { metaPercentualLucro: 0.001, metaValorAcumulado: 1305400 },
-        "4TRI/2026": { metaPercentualLucro: 0.0033, metaValorAcumulado: 4307900 }
+        "2TRI/2026": { metaPercentualLucro: 0.0005, metaValorAcumulado: 652705.29 },
+        "3TRI/2026": { metaPercentualLucro: 0.001, metaValorAcumulado: 1305410.59 },
+        "4TRI/2026": { metaPercentualLucro: 0.0033, metaValorAcumulado: 4307854.94 }
       }
     },
     camposEntrada: [
@@ -974,17 +974,17 @@ const incentivo3TriRule = {
   tipoCalculo: "investimento_socioambiental",
   tipoConsolidacao: "valor_acumulado",
   unidadeMedida: "moeda",
-  metaAnualValor: 4307900,
+  metaAnualValor: 4307854.94,
   parametrosCalculo: {
     campoStatus: "statusProjetoIncentivoSocioambiental",
     campoValorMes: "valorInvestidoMes",
     campoValorAcumulado: "valorInvestidoAcumuladoCompetencia",
     statusQueConta: "Investimento realizado",
     metaTipo: "curva_trimestral_acumulada",
-    lucroLiquidoReferencia: 1305400000,
+    lucroLiquidoReferencia: 1305410587.78,
     mesesFechamentoTrimestral: [3, 6, 9, 12],
     curvaTrimestralAcumulada: {
-      "3TRI/2026": { metaPercentualLucro: 0.001, metaValorAcumulado: 1305400 }
+      "3TRI/2026": { metaPercentualLucro: 0.001, metaValorAcumulado: 1305410.59 }
     }
   },
   camposEntrada: [
@@ -998,7 +998,7 @@ const incentivo3TriQuarter = consolidarTrimestre(
   [
     { ano: 2026, mes: 7, status: "Em preenchimento", competencia: "2026-07", trimestre: "3TRI/2026", camposEntrada: { nomeProjetoIncentivoSocioambiental: "Brasil Ladies Cup 2026", statusProjetoIncentivoSocioambiental: "Investimento realizado", valorInvestidoMes: 190000, valorInvestidoAcumuladoCompetencia: 190000 } },
     { ano: 2026, mes: 8, status: "Em preenchimento", competencia: "2026-08", trimestre: "3TRI/2026", camposEntrada: { nomeProjetoIncentivoSocioambiental: "Brasil Ladies Cup 2026", statusProjetoIncentivoSocioambiental: "Investimento realizado", valorInvestidoMes: 0, valorInvestidoAcumuladoCompetencia: 190000 } },
-    { ano: 2026, mes: 9, status: "Homologado", competencia: "2026-09", trimestre: "3TRI/2026", metaReferencia: 1305400, camposEntrada: { nomeProjetoIncentivoSocioambiental: "Brasil Ladies Cup 2026", statusProjetoIncentivoSocioambiental: "Investimento realizado", valorInvestidoMes: 0, valorInvestidoAcumuladoCompetencia: 190000 } }
+    { ano: 2026, mes: 9, status: "Homologado", competencia: "2026-09", trimestre: "3TRI/2026", metaReferencia: 1305410.59, camposEntrada: { nomeProjetoIncentivoSocioambiental: "Brasil Ladies Cup 2026", statusProjetoIncentivoSocioambiental: "Investimento realizado", valorInvestidoMes: 0, valorInvestidoAcumuladoCompetencia: 190000 } }
   ],
   "3TRI/2026"
 );
@@ -1008,10 +1008,10 @@ assert.equal(incentivo3TriQuarter.mesesHomologados, 1);
 assert.equal(incentivo3TriQuarter.composicaoMensal.length, 1);
 assert.equal(incentivo3TriQuarter.composicaoMensal[0].mes, 9);
 assert.equal(incentivo3TriQuarter.resultadoFinanceiroTrimestral, 190000);
-assert.equal(incentivo3TriQuarter.metaFinanceiraTrimestral, 1305400);
-assert.ok(Math.abs(incentivo3TriQuarter.resultadoPercentualTrimestral - (190000 / 1305400000)) < 0.000000000001);
+assert.equal(incentivo3TriQuarter.metaFinanceiraTrimestral, 1305410.59);
+assert.ok(Math.abs(incentivo3TriQuarter.resultadoPercentualTrimestral - (190000 / 1305410587.78)) < 0.000000000001);
 assert.equal(incentivo3TriQuarter.metaPercentualTrimestral, 0.001);
-assert.ok(Math.abs(incentivo3TriQuarter.desempenhoTrimestral - (190000 / 1305400)) < 0.000000000001);
+assert.ok(Math.abs(incentivo3TriQuarter.desempenhoTrimestral - (190000 / 1305410.59)) < 0.000000000001);
 assert.equal(incentivo3TriQuarter.situacaoTrimestral, "Abaixo da meta");
 
 const visibilidadeQuarter = consolidarTrimestre(

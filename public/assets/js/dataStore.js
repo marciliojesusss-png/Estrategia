@@ -573,17 +573,17 @@
     },
     "2TRI/2026": {
       metaPercentualLucro: 0.0005,
-      metaValorAcumulado: 652700,
+      metaValorAcumulado: 652705.29,
       marcoEsperado: "Investimento acumulado de 0,05% do lucro líquido de referência"
     },
     "3TRI/2026": {
       metaPercentualLucro: 0.0010,
-      metaValorAcumulado: 1305400,
+      metaValorAcumulado: 1305410.59,
       marcoEsperado: "Investimento acumulado de 0,10% do lucro líquido de referência"
     },
     "4TRI/2026": {
       metaPercentualLucro: 0.0033,
-      metaValorAcumulado: 4307900,
+      metaValorAcumulado: 4307854.94,
       marcoEsperado: "Investimento acumulado de 0,33% do lucro líquido de referência"
     }
   };
@@ -1760,7 +1760,7 @@
             ...normalized,
             tipoCalculo: "investimento_socioambiental",
             unidadeMedida: "moeda",
-            metaAnualDescricao: "0,33% do Lucro Líquido do ano (R$ 4.307.900,00 estimados)",
+            metaAnualDescricao: "0,33% do Lucro Líquido do ano (R$ 4.307.854,94 conforme planilha da Unidade)",
             metrica: "Valor investido em iniciativas com impacto socioambiental"
           };
         }
@@ -2524,7 +2524,7 @@
             tipoCalculo: "investimento_socioambiental",
             tipoConsolidacao: "valor_acumulado",
             unidadeMedida: "moeda",
-            metaAnualValor: 4307900,
+            metaAnualValor: 4307854.94,
             parametrosCalculo: {
               campoNome: "nomeProjetoIncentivoSocioambiental",
               campoTipo: "tipoIncentivoSocioambiental",
@@ -2536,7 +2536,7 @@
               campoEvidencia: "evidenciaIncentivoSocioambiental",
               statusQueConta: "Investimento realizado",
               metaTipo: "curva_trimestral_acumulada",
-              lucroLiquidoReferencia: 1305400000,
+              lucroLiquidoReferencia: 1305410587.78,
               percentualMetaAnual: 0.0033,
               mesesFechamentoTrimestral: [3, 6, 9, 12],
               curvaTrimestralAcumulada: INCENTIVO_SOCIOAMBIENTAL_CURVA_2026,
@@ -2782,7 +2782,7 @@
         } : {}),
         ...(Number(launch.indicadorId) === 19 ? {
           metaMensal: getIncentivoSocioambientalMetaTrimestral(launch.ano, launch.mes),
-          metaAnualDescricao: "0,33% do Lucro Líquido do ano (R$ 4.307.900,00 estimados)"
+          metaAnualDescricao: "0,33% do Lucro Líquido do ano (R$ 4.307.854,94 conforme planilha da Unidade)"
         } : {}),
         ...(Number(launch.indicadorId) === 20 ? {
           metaMensal: getVisibilidadeRepassesMetaTrimestral(launch.ano, launch.mes),

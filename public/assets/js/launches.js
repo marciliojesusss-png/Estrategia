@@ -1985,7 +1985,7 @@
       details.push(["Lucro líquido de referência", Calculations.formatarValor(resultado.lucroLiquidoReferencia, "moeda")]);
       details.push(["Meta percentual", Calculations.formatarPercentual(resultado.metaPercentual, 2, 2)]);
       details.push(["Meta financeira", Calculations.formatarValor(resultado.metaFinanceira, "moeda")]);
-      details.push(["Resultado percentual oficial", Calculations.formatarPercentual(resultado.resultadoPercentualOficial, 5, 5)]);
+      details.push(["Resultado percentual oficial", Calculations.formatarPercentual(resultado.resultadoPercentualOficial, 4, 4)]);
       details.push(["Realizado financeiro", Calculations.formatarValor(resultado.realizadoFinanceiro, "moeda")]);
       details.push(["% da meta atingida", Calculations.formatarPercentual(resultado.percentualAtingimento, 2, 2)]);
       details.push(["Situação", resultado.situacao || "-"]);
