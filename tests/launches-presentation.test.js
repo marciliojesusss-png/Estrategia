@@ -20,9 +20,11 @@ const calculations = {
     return Number.isFinite(quantity) && total > 0 ? quantity / total : null;
   }
 };
+const indicatorFormulas = { obterRegra() { return null; } };
 const context = {
-  window: { PageModules: {}, Calculations: calculations },
-  Calculations: calculations
+  window: { PageModules: {}, Calculations: calculations, IndicatorFormulas: indicatorFormulas },
+  Calculations: calculations,
+  IndicatorFormulas: indicatorFormulas
 };
 vm.createContext(context);
 vm.runInContext(fs.readFileSync(path.join(root, "assets", "js", "launches.js"), "utf8"), context);
@@ -31,6 +33,15 @@ const internals = context.window.__LAUNCHES_FILTER_TEST_INTERNALS__;
 const representationRule13 = { indicadorId: 13, tipoCalculo: "percentual_direto", unidadeMedida: "percentual" };
 const representationRule14 = { indicadorId: 14, tipoCalculo: "percentual_direto", unidadeMedida: "percentual" };
 const jogoResponsavelRule21 = { indicadorId: 21, tipoCalculo: "cobertura_capacitacao_jogo_responsavel", unidadeMedida: "percentual" };
+const achievementPresentationRules = [
+  { indicadorId: 3, tipoCalculo: "crescimento_media_mensal", unidadeMedida: "percentual" },
+  { indicadorId: 11, tipoCalculo: "marco_projeto_percentual", unidadeMedida: "percentual" },
+  { indicadorId: 20, tipoCalculo: "execucao_acoes_propostas", unidadeMedida: "percentual" }
+];
+const individuallyPendingAchievementRules = [
+  { indicadorId: 8, tipoCalculo: "razao_canais_digitais", unidadeMedida: "percentual", camposEntrada: [{ nome: "arrecadacaoCanaisEletronicos" }] }
+];
+const pixAchievementRule = { indicadorId: 9, tipoCalculo: "razao_pix", unidadeMedida: "percentual", camposEntrada: [{ nome: "arrecadacaoPix" }] };
 assert.equal(internals.isRepresentationIndicator({ id: 13 }, representationRule13), true);
 assert.equal(internals.isRepresentationIndicator({ id: 14 }, representationRule14), true);
 assert.equal(internals.isRepresentationIndicator({ id: 15 }, { indicadorId: 15 }), false);
@@ -39,6 +50,19 @@ assert.equal(internals.usesReadOnlyAchievementField({ id: 21 }, jogoResponsavelR
 assert.equal(internals.shouldHideGoalAchievementFields({ id: 13 }, representationRule13), false);
 assert.equal(internals.shouldHideGoalAchievementFields({ id: 14 }, representationRule14), false);
 assert.equal(internals.shouldHideGoalAchievementFields({ id: 21 }, jogoResponsavelRule21), false);
+achievementPresentationRules.forEach((rule) => {
+  const indicator = { id: rule.indicadorId };
+  assert.equal(internals.usesReadOnlyAchievementField(indicator, rule), true, `Indicador ${rule.indicadorId} deve usar campo somente leitura`);
+  assert.equal(internals.shouldHideGoalAchievementFields(indicator, rule), false, `Indicador ${rule.indicadorId} deve exibir % atingido`);
+});
+individuallyPendingAchievementRules.forEach((rule) => {
+  const indicator = { id: rule.indicadorId };
+  assert.equal(internals.usesReadOnlyAchievementField(indicator, rule), false, `Indicador ${rule.indicadorId} deve aguardar análise individual`);
+  assert.equal(internals.shouldHideGoalAchievementFields(indicator, rule), true, `Indicador ${rule.indicadorId} não deve exibir o novo campo principal`);
+});
+assert.equal(internals.usesReadOnlyAchievementField({ id: 9 }, pixAchievementRule), true);
+assert.equal(internals.shouldHideGoalAchievementFields({ id: 9 }, pixAchievementRule), false);
+assert.equal(internals.usesReadOnlyAchievementField({ id: 8 }, individuallyPendingAchievementRules[0]), false);
 assert.equal(internals.formatRepresentationAchievement(1.0230179028133), "102,30%");
 assert.equal(internals.formatRepresentationAchievement((137 / 151) / 0.9), "100,81%");
 assert.equal(internals.formatRepresentationAchievement((123 / 184) / 0.9), "74,28%");
@@ -77,6 +101,11 @@ assert.equal(
   false,
   "a correção visual deve permanecer exclusiva do Indicador 06"
 );
+assert.equal(
+  internals.requiresListCalculation({ indicadorId: 23, tipoCalculo: "crescimento_rede_loterica_base_2025" }),
+  true,
+  "a listagem do Indicador 23 deve resolver a precedência documental nos fechamentos"
+);
 
 assert.deepEqual(
   JSON.parse(JSON.stringify(internals.quarterlyMetaDetail(
@@ -101,22 +130,80 @@ assert.deepEqual(
     indiceEmRelacaoA2025: 1.0057,
     crescimentoVs2025: 0.0057,
     percentualAtingidoTecnico: 1.0057 / 1.005,
+    baseReferencia2025Periodo: 1000,
+    realizado2026Periodo: 1005.7,
     resultadoDocumentalRedeLoterica: 0.0057,
     percentualAtingidoOficialRedeLoterica: 1.1386,
+    escalaResultadoDocumentalRedeLoterica: "incremento",
     fonteResultadoRedeLoterica: "Informe 0029",
     situacao: "Atingido"
   }))),
   [
-    ["Meta em índice", "100.49999999999999%"],
-    ["Resultado técnico em índice", "100.57000000000001%"],
+    ["Meta técnica em índice", "100.49999999999999%"],
+    ["Resultado técnico", "100.57000000000001%"],
     ["Crescimento equivalente", "0.5700000000000001%"],
     ["Atingimento técnico", `${(1.0057 / 1.005) * 100}%`],
-    ["Resultado documental", "0.5700000000000001%"],
-    ["Atingimento oficial documental", "113.86%"],
-    ["Fonte documental", "Informe 0029"],
-    ["Situação", "Atingido"]
+    ["ARL25 acumulada — memória técnica", "R$ 1000.00"],
+    ["ARL26 acumulada — memória técnica", "R$ 1005.70"],
+    ["Meta documental original", "0.49999999999998934%"],
+    ["Resultado documental original", "0.5700000000000001%"],
+    ["Atingimento oficial reportado", "113.86%"],
+    ["Escala oficial", "incremento"],
+    ["Fonte oficial", "Informe 0029"],
+    ["Situação técnica", "Atingido"]
   ]
 );
+
+const indicator23Rule = {
+  parametrosCalculo: {
+    apresentacoesOficiaisTrimestrais: {
+      "1TRI": { metaOficialReportada: 0.005, resultadoOficialReportado: 0.0057, percentualAtingidoOficialReportado: 1.1386, escalaResultadoDocumental: "incremento", situacao: "Atingido", fonte: "Informe 0029" },
+      "2TRI": { resultadoOficialReportado: 0.988, percentualAtingidoOficialReportado: 0.9784, escalaResultadoDocumental: "indice", situacao: "Abaixo da meta", fonte: "Informe 0056" }
+    }
+  }
+};
+assert.deepEqual(
+  JSON.parse(JSON.stringify(internals.indicator23OfficialPresentation(
+    indicator23Rule,
+    { mes: 3, metaReferencia: 1.005, camposEntrada: {} },
+    { metaIndiceCrescimento: 1.005 }
+  ))),
+  { visible: true, complete: true, meta: 1.005, result: 1.0057, originalMeta: 0.005, originalResult: 0.0057, performance: 1.1386, scale: "incremento", situation: "Atingido", source: "Informe 0029" }
+);
+assert.deepEqual(
+  JSON.parse(JSON.stringify(internals.indicator23OfficialPresentation(
+    indicator23Rule,
+    { mes: 6, metaReferencia: 1.01, camposEntrada: {} },
+    { metaIndiceCrescimento: 1.01 }
+  ))),
+  { visible: true, complete: true, meta: 1.01, result: 0.988, originalMeta: 1.01, originalResult: 0.988, performance: 0.9784, scale: "indice", situation: "Abaixo da meta", source: "Informe 0056" }
+);
+assert.equal(internals.indicator23OfficialPresentation(indicator23Rule, { mes: 5 }, {}).visible, false);
+const originalPercentageFormatter = calculations.formatarPercentual;
+calculations.formatarPercentual = (value, minimumDigits) => `${(Number(value) * 100).toFixed(minimumDigits)}%`;
+context.window.DataStore = {
+  resolveMeta(indicatorId, year, month, metas, fallback) { return fallback; }
+};
+[
+  [1, 1.005, "100.50%"],
+  [3, 1.005, "100.50%"],
+  [4, 1.01, "101.00%"],
+  [6, 1.01, "101.00%"],
+  [7, 1.015, "101.50%"],
+  [9, 1.015, "101.50%"],
+  [10, 1.02, "102.00%"],
+  [12, 1.02, "102.00%"]
+].forEach(([mes, metaReferencia, expected]) => {
+  assert.equal(
+    internals.formatDisplayMeta(
+      { indicadorId: 23, tipoCalculo: "crescimento_rede_loterica_base_2025", unidadeMedida: "percentual" },
+      { indicadorId: 23, ano: 2026, mes, metaReferencia },
+      []
+    ),
+    expected
+  );
+});
+calculations.formatarPercentual = originalPercentageFormatter;
 assert.deepEqual(
   JSON.parse(JSON.stringify(internals.quarterlyMetaDetail(
     { metaTrimestral: 2500, unidadeMedida: "moeda" },
@@ -185,10 +272,16 @@ assert.equal(
 
 const pixOfficialResultField = { nome: "resultadoOficialPix", tipo: "percentual" };
 const pixOfficialPerformanceField = { nome: "percentualAtingidoOficialPix", tipo: "percentual" };
+const pixPresentationSource = fs.readFileSync(path.join(root, "assets", "js", "launches.js"), "utf8");
+assert.match(pixPresentationSource, /\["Meta técnica", technicalTarget/);
+assert.doesNotMatch(pixPresentationSource, /Meta técnica da planilha/);
 assert.equal(internals.usesDecimalPercentageEntry(pixOfficialResultField), true);
 assert.equal(internals.formatEntryValue(pixOfficialResultField, 0.67), "67%");
 assert.equal(internals.formatEntryValue(pixOfficialResultField, 0.6713), "67,13%");
 assert.equal(internals.formatEntryValue(pixOfficialPerformanceField, 1.1009), "110,09%");
+assert.ok(Math.abs(internals.parseEntryValue("percentual", "0,57%", "decimal") - 0.0057) < 1e-12);
+assert.ok(Math.abs(internals.parseEntryValue("percentual", "98,8%", "decimal") - 0.988) < 1e-12);
+assert.match(internals.renderEntryInput({ nome: "resultadoDocumentalRedeLoterica", tipo: "percentual", escalaPercentual: "decimal" }, 0.0057), /data-entry-percent-scale="decimal"/);
 assert.equal(internals.formatEntryValue(pixOfficialPerformanceField, 1.0914), "109,14%");
 assert.equal(internals.formatEntryValue(pixOfficialResultField, 0.6764), "67,64%");
 assert.equal(internals.formatEntryValue(pixOfficialPerformanceField, 1.0737), "107,37%");
@@ -290,9 +383,9 @@ assert.match(view, /id="launchPercentualAcumuladoLabel">% da meta atingida anual
 assert.match(view, /id="resultadoAnualWrapper"/);
 assert.match(view, /documentation-fields\.js\?v=DOCUMENTACAO-COMPLEMENTAR-1TRI-001/);
 assert.match(view, /styles\.css\?v=APP-VERSION-001/);
-assert.match(view, /formulas\.js\?v=INDICADOR21-ATINGIMENTO-001/);
+assert.match(view, /formulas\.js\?v=INDICADOR09-PIX-001/);
 assert.match(view, /ieo-recorrente\.js\?v=INDICADOR06-CONFERENCIA-001/);
-assert.match(view, /launches\.js\?v=INDICADOR21-ATINGIMENTO-001/);
+assert.match(view, /launches\.js\?v=INDICADOR23-APRESENTACAO-002/);
 assert.match(view, /id="launchValidationFeedback"[^>]+role="alert"[^>]+aria-live="assertive"/);
 
 const dataStoreSource = fs.readFileSync(path.join(root, "assets", "js", "dataStore.js"), "utf8");
@@ -428,6 +521,24 @@ assert.match(actionOptionsHtml, /value="valor_label"[^>]*>Opção value\/label<\
 assert.match(actionOptionsHtml, /value="id_label"[^>]*>Opção id\/label<\/option>/);
 assert.match(actionOptionsHtml, /value="relatorio_sorte_em_numeros_2025"[^>]*selected[^>]*>Publicar relatório institucional &quot;A Sorte em Números — 2025&quot;<\/option>/);
 assert.match(actionOptionsHtml, /value="campanha_repasses_sociais"[^>]*>Realizar campanha publicitária exclusiva com foco no repasse social das Loterias CAIXA<\/option>/);
+
+const historicalTicMilestone = "Contratação adicional concluída - OS 25173021";
+const historicalTicSelectHtml = internals.renderEntryInput({
+  nome: "marcoAlcancadoTIC",
+  rotulo: "Marco alcançado",
+  tipo: "selecao",
+  opcoes: ["Não iniciado", "Contrato assinado com fornecedor"]
+}, historicalTicMilestone);
+assert.match(
+  historicalTicSelectHtml,
+  /value="Contratação adicional concluída - OS 25173021" selected>Contratação adicional concluída - OS 25173021 \(valor histórico\)<\/option>/,
+  "marco histórico do Indicador 11 deve permanecer selecionado sem alterar o dado persistido"
+);
+assert.doesNotMatch(
+  historicalTicSelectHtml,
+  /value="Não iniciado" selected/,
+  "marco histórico não pode cair visualmente em Não iniciado"
+);
 
 const visibilityRule = {
   tipoCalculo: "execucao_acoes_propostas",

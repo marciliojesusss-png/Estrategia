@@ -49,8 +49,13 @@ assert.deepEqual(
   { "1TRI/2026": 0.61, "2TRI/2026": 0.62, "3TRI/2026": 0.63, "4TRI/2026": 0.65 }
 );
 assert.deepEqual(
-  Object.fromEntries(Object.entries(rule.parametrosCalculo.trajetoriaTecnicaAuxiliar)),
-  { "2026-07": 0.6215, "2026-08": 0.6255, "2026-09": 0.6298 }
+  Object.fromEntries(Object.entries(rule.parametrosCalculo.metasTecnicasPixPorCompetencia)),
+  {
+    "2026-01": 0.626534447893964, "2026-02": 0.605481501057082, "2026-03": 0.6071564106775919,
+    "2026-04": 0.6086020793706577, "2026-05": 0.6114741270016698, "2026-06": 0.6150349765523602,
+    "2026-07": 0.6215, "2026-08": 0.6255, "2026-09": 0.6298,
+    "2026-10": 0.6342, "2026-11": 0.6383, "2026-12": 0.6543
+  }
 );
 assert.deepEqual(
   bootstrap.metas.filter((item) => Number(item.indicadorId) === 9).map((item) => item.metaMensal),
@@ -207,13 +212,11 @@ assert.match(migration, /Denominador exato de setembro não localizado/);
 assert.doesNotMatch(migration, /INSERT INTO dbo\.homologacoes/i);
 assert.doesNotMatch(migration, /INSERT INTO dbo\.evidencias/i);
 
-["formulas.js", "quarterly.js", "dashboard.js"].forEach((file) => {
-  assert.doesNotMatch(
-    fs.readFileSync(path.join(root, "assets", "js", file), "utf8"),
-    /trajetoriaTecnicaAuxiliar/,
-    `${file} não pode consumir a trajetória técnica auxiliar como meta oficial`
-  );
-});
+assert.match(
+  fs.readFileSync(path.join(root, "assets", "js", "formulas.js"), "utf8"),
+  /metasTecnicasPixPorCompetencia/,
+  "o motor deve consumir a curva técnica controladora sem substituir a meta oficial"
+);
 
 ["bootstrap-data.js", "dashboard.js", "dataStore.js", "formulas.js", "launches.js", "quarterly.js"].forEach((file) => {
   assert.deepEqual(

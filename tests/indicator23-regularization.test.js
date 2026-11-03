@@ -118,8 +118,31 @@ const q1 = context.window.QuarterlyConsolidation.consolidarTrimestre(indicator, 
 assert.equal(q1.statusTrimestre, "Parcial");
 assert.equal(q1.mesesEsperados, 1);
 assert.ok(Math.abs(q1.resultadoTecnicoTrimestral - 1.005693070069025235) < 1e-12);
+assert.equal(q1.metaTecnicaTrimestral, 1.005);
+assert.equal(q1.metaTrimestral, 1.005);
+assert.equal(q1.resultadoTrimestral, 1.0057);
+assert.equal(q1.desempenhoTrimestral, 1.1386);
 assert.equal(q1.resultadoDocumentalTrimestral, 0.0057);
 assert.equal(q1.desempenhoOficialDocumentalTrimestral, 1.1386);
+assert.equal(q1.metaDocumentalOriginalTrimestral, 0.005);
+assert.equal(q1.escalaOficialDocumentalTrimestral, "incremento");
+
+const q2 = context.window.QuarterlyConsolidation.consolidarTrimestre(indicator, rule, launches, "2TRI/2026");
+assert.equal(q2.metaTecnicaTrimestral, 1.01);
+assert.equal(q2.metaTrimestral, 1.01);
+assert.ok(Math.abs(q2.resultadoTecnicoTrimestral - 0.988471744167763192) < 1e-12);
+assert.equal(q2.resultadoTrimestral, 0.988);
+assert.equal(q2.desempenhoTrimestral, 0.9784);
+assert.equal(q2.metaDocumentalOriginalTrimestral, 1.01);
+assert.equal(q2.escalaOficialDocumentalTrimestral, "indice");
+
+const q3 = context.window.QuarterlyConsolidation.consolidarTrimestre(indicator, rule, launches, "3TRI/2026");
+assert.equal(q3.metaTecnicaTrimestral, 1.015);
+assert.equal(q3.metaTrimestral, 1.015);
+assert.equal(q3.resultadoTrimestral, 0.9816);
+assert.equal(q3.desempenhoTrimestral, 0.9671);
+assert.equal(q3.metaDocumentalOriginalTrimestral, 1.015);
+assert.equal(q3.escalaOficialDocumentalTrimestral, "indice");
 
 for (const month of [9, 10, 11, 12]) {
   assert.equal(byMonth[month].camposEntrada.arrecadacaoRedeLoterica2025PeriodoEquivalente, undefined);

@@ -16,8 +16,8 @@
   <script src="<?= APP_BASE_PATH ?>/assets/js/auth.js?v=GOVERNANCA-CA-001" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/calculations.js?v=PLATAFORMA-JOGOS-001" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/formulas.js?v=INDICADOR21-ATINGIMENTO-001" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/quarterly.js?v=METAS-OFICIAIS-002" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/quarterlyView.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/quarterly.js?v=INDICADOR23-APRESENTACAO-002" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/quarterlyView.js?v=INDICADOR23-APRESENTACAO-002" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/app.js?v=APP-VERSION-001" defer></script>
 </head>
 <body data-page="visaoTrimestral">

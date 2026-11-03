@@ -1956,7 +1956,9 @@
               trimestre: quarter.trimestre,
               metaTrimestral: quarter.metaTrimestral
             }))
-            : Calculations.formatarValor(quarter.metaTrimestral, quarterlyUnit)}</td>
+            : isRedeLoterica
+              ? Calculations.formatarPercentual(quarter.metaTrimestral, 2, 2)
+              : Calculations.formatarValor(quarter.metaTrimestral, quarterlyUnit)}</td>
         <td>
           ${isIncentivoSocioambiental
             ? `${Calculations.formatarPercentual(quarter.resultadoPercentualTrimestral, 4, 4)}<small class="quarter-message">${Calculations.formatarValor(quarter.resultadoFinanceiroTrimestral, "moeda")}</small>`
@@ -1970,15 +1972,19 @@
               : isEcossistema && quarter.dadosCalculados
                 ? `<small class="quarter-message">Cenário oficial: Lotex<br>Referência Lotex 2025: ${Calculations.formatarPercentual(quarter.referencia2025EcossistemaTrimestre)}<br>ARR Eco Lotex: ${Calculations.formatarMoedaBR(quarter.arrecadacaoViaEcossistemaTrimestre)}<br>ARR Marketplace (auxiliar): ${Calculations.formatarMoedaBR(quarter.arrecadacaoMarketplaceEcossistemaTrimestre)}<br>ARR Total: ${Calculations.formatarMoedaBR(quarter.arrecadacaoTotalEcossistemaTrimestre)}</small>`
               : isRedeLoterica && quarter.resultadoTecnicoTrimestral != null
-                ? `<small class="quarter-message">Índice técnico: ${Calculations.formatarPercentual(quarter.resultadoTecnicoTrimestral)}<br>Crescimento equivalente: ${Calculations.formatarPercentual(quarter.crescimentoTrimestral)}<br>Atingimento técnico: ${Calculations.formatarPercentual(quarter.desempenhoTecnicoTrimestral)}<br>Resultado documental: ${Calculations.formatarPercentual(quarter.resultadoDocumentalTrimestral)}<br>Atingimento oficial documental: ${Calculations.formatarPercentual(quarter.desempenhoOficialDocumentalTrimestral)}<br>Fonte: ${escapeHtml(quarter.fonteDocumentalTrimestral || "-")}</small>`
+                ? `<small class="quarter-message">Meta técnica em índice: ${Calculations.formatarPercentual(quarter.metaTecnicaTrimestral, 2, 2)}<br>Resultado técnico: ${Calculations.formatarPercentual(quarter.resultadoTecnicoTrimestral, 2, 2)}<br>Crescimento equivalente: ${Calculations.formatarPercentual(quarter.crescimentoTrimestral, 2, 2)}<br>Atingimento técnico: ${Calculations.formatarPercentual(quarter.desempenhoTecnicoTrimestral, 2, 2)}<br>Meta documental original: ${Calculations.formatarPercentual(quarter.metaDocumentalOriginalTrimestral, 2, 2)}<br>Resultado documental original: ${Calculations.formatarPercentual(quarter.resultadoDocumentalTrimestral)}<br>Atingimento oficial reportado: ${Calculations.formatarPercentual(quarter.desempenhoOficialDocumentalTrimestral, 2, 2)}<br>Escala oficial: ${String(quarter.escalaOficialDocumentalTrimestral || "").toLowerCase() === "incremento" ? "incremento" : "índice"}<br>Fonte oficial: ${escapeHtml(quarter.fonteDocumentalTrimestral || "-")}</small>`
               : isBase2025Growth && quarter.baseReferencia2025Trimestre != null
                 ? `<small class="quarter-message">Base 2025: ${Calculations.formatarMoedaBR(quarter.baseReferencia2025Trimestre)}<br>Indice: ${Calculations.formatarPercentual(quarter.indiceTrimestral)}<br>Crescimento: ${Calculations.formatarPercentual(quarter.crescimentoTrimestral)}</small>`
               : ""}
         </td>
         <td>${isIncentivoSocioambiental
           ? `${Calculations.formatarPercentual(quarter.resultadoPercentualTrimestral, 4, 4)}<small class="quarter-message">${Calculations.formatarValor(quarter.resultadoFinanceiroTrimestral, "moeda")}</small>`
-          : Calculations.formatarValor(quarter.resultadoOficialApresentado, quarterlyUnit)}</td>
-        <td>${formatPerformance(quarter.desempenhoTrimestral, regra)}</td>
+          : isRedeLoterica
+            ? Calculations.formatarPercentual(quarter.resultadoOficialApresentado)
+            : Calculations.formatarValor(quarter.resultadoOficialApresentado, quarterlyUnit)}</td>
+        <td>${isRedeLoterica
+          ? Calculations.formatarPercentual(quarter.desempenhoTrimestral, 2, 2)
+          : formatPerformance(quarter.desempenhoTrimestral, regra)}</td>
         <td>${escapeHtml(quarter.situacaoTrimestral)}</td>
         <td><span class="badge ${quarter.statusTrimestre === "Fechado" ? "ok" : quarter.statusTrimestre === "Parcial" ? "warn" : "info"}">${quarter.statusTrimestre}</span></td>
       </tr>

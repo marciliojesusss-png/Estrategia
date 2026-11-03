@@ -9,17 +9,17 @@
   <script src="/assets/js/ieo-recorrente.js?v=INDICADOR06-CONFERENCIA-001" defer></script>
   <script src="/assets/js/lucro-recorrente.js?v=METAS-OFICIAIS-003" defer></script>
   <script src="/assets/js/situations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="/assets/js/bootstrap-data.js?v=METAS-OFICIAIS-003" defer></script>
+  <script src="/assets/js/bootstrap-data.js?v=INDICADOR09-PIX-001" defer></script>
   <script src="/assets/js/indicator-periodicity.js?v=PERIODICIDADE-TRIMESTRAL-001" defer></script>
-  <script src="/assets/js/dataStore.js?v=GOVERNANCA-CA-001" defer></script>
+  <script src="/assets/js/dataStore.js?v=INDICADOR09-PIX-001" defer></script>
   <script src="/assets/js/central-persistence.js?v=METAS-OFICIAIS-002" defer></script>
   <script src="/assets/js/databaseService.js?v=GOVERNANCA-CA-002" defer></script>
   <script src="/assets/js/auth.js?v=GOVERNANCA-CA-001" defer></script>
   <script src="/assets/js/calculations.js?v=PLATAFORMA-JOGOS-001" defer></script>
-  <script src="/assets/js/formulas.js?v=INDICADOR21-ATINGIMENTO-001" defer></script>
+  <script src="/assets/js/formulas.js?v=INDICADOR09-PIX-001" defer></script>
   <script src="/assets/js/documentation-fields.js?v=DOCUMENTACAO-COMPLEMENTAR-1TRI-001" defer></script>
   <script src="/assets/js/action-feedback.js?v=ACTION-FEEDBACK-001" defer></script>
-  <script src="/assets/js/launches.js?v=INDICADOR21-ATINGIMENTO-001" defer></script>
+  <script src="/assets/js/launches.js?v=INDICADOR23-APRESENTACAO-002" defer></script>
   <script src="/assets/js/app.js?v=APP-VERSION-001" defer></script>
 </head>
 <body data-page="lancamentos">

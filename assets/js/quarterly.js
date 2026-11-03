@@ -651,6 +651,39 @@
       ? toNumber(validCalculation?.metaPercentual)
       : null;
     const technicalSituation = getSituation(validCalculation, technicalPerformance);
+    const redeLotericaDocumental = regra?.tipoCalculo === "crescimento_rede_loterica_base_2025";
+    let metaDocumentalOriginalTrimestral = null;
+    if (redeLotericaDocumental && validCalculation) {
+      const escalaDocumental = String(
+        validCalculation?.escalaResultadoDocumentalRedeLoterica ??
+        effectiveOfficialPresentation?.escalaResultadoDocumental ??
+        "indice"
+      ).trim().toLowerCase();
+      const reportedMeta = toNumber(effectiveOfficialPresentation?.metaOficialReportada);
+      const officialMeta = reportedMeta !== null
+        ? reportedMeta
+        : escalaDocumental === "incremento" && technicalMeta !== null
+          ? technicalMeta - 1
+          : technicalMeta;
+      const reportedResult = toNumber(
+        validCalculation?.resultadoDocumentalRedeLoterica ??
+        effectiveOfficialPresentation?.resultadoOficialReportado
+      );
+      const reportedPerformance = toNumber(
+        validCalculation?.percentualAtingidoOficialRedeLoterica ??
+        effectiveOfficialPresentation?.percentualAtingidoOficialReportado ??
+        effectiveOfficialPresentation?.percentualAtingidoOficial
+      );
+      if (officialMeta !== null && reportedResult !== null && reportedPerformance !== null) {
+        metaDocumentalOriginalTrimestral = officialMeta;
+        const presentationMeta = escalaDocumental === "incremento" ? 1 + officialMeta : officialMeta;
+        const presentationResult = escalaDocumental === "incremento" ? 1 + reportedResult : reportedResult;
+        meta = presentationMeta;
+        result = presentationResult;
+        officialPresentedResult = presentationResult;
+        performance = reportedPerformance;
+      }
+    }
     if (effectiveOfficialPresentation && regra?.tipoCalculo !== "crescimento_rede_loterica_base_2025") {
       const reportedMeta = toNumber(effectiveOfficialPresentation.metaOficialReportada);
       const reportedResult = toNumber(effectiveOfficialPresentation.resultadoOficialReportado);
@@ -670,7 +703,6 @@
       }
     }
     const officialSituation = effectiveOfficialPresentation?.situacaoOficial || effectiveOfficialPresentation?.situacao || technicalSituation;
-    const redeLotericaDocumental = regra?.tipoCalculo === "crescimento_rede_loterica_base_2025";
     const ecossistemaLotexDocumental = regra?.tipoCalculo === "participacao_ecossistema_lotex";
     const clientesAtivosDocumental = Number(regra?.indicadorId) === 3;
     const resultadoDocumentalTrimestral = redeLotericaDocumental
@@ -733,6 +765,10 @@
       crescimentoTrimestral: ["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(regra?.tipoCalculo) ? validCalculation?.crescimentoVs2025 ?? null : null,
       resultadoDocumentalTrimestral,
       desempenhoOficialDocumentalTrimestral,
+      metaDocumentalOriginalTrimestral,
+      escalaOficialDocumentalTrimestral: redeLotericaDocumental
+        ? validCalculation?.escalaResultadoDocumentalRedeLoterica ?? effectiveOfficialPresentation?.escalaResultadoDocumental ?? null
+        : null,
       fonteDocumentalTrimestral,
       desempenhoTrimestral: performance,
       metaTrimestral: meta,

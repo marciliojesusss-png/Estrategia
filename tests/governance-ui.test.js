@@ -63,12 +63,14 @@ assert.doesNotMatch(databaseService, /status: "Reaberto"/);
 
 assert.match(read("views", "frontend", "administracao.php"), /admin\.js\?v=GOVERNANCA-CA-002/);
 assert.match(read("views", "frontend", "homologacao.php"), /approvals\.js\?v=INDICADOR02-NPS-SIMPLIFICADO-001/);
-assert.match(read("views", "frontend", "lancamentos.php"), /launches\.js\?v=INDICADOR21-ATINGIMENTO-001/);
+assert.match(read("views", "frontend", "lancamentos.php"), /launches\.js\?v=INDICADOR23-APRESENTACAO-002/);
 
 for (const view of ["administracao.php", "homologacao.php", "indicadores.php", "lancamentos.php", "login.php", "relatorios.php", "resumo-executivo.php", "visao-trimestral.php"]) {
   const source = read("views", "frontend", view);
   assert.match(source, /auth\.js\?v=GOVERNANCA-CA-001/);
-  assert.match(source, /dataStore\.js\?v=GOVERNANCA-CA-001/);
+  assert.match(source, view === "lancamentos.php"
+    ? /dataStore\.js\?v=INDICADOR09-PIX-001/
+    : /dataStore\.js\?v=GOVERNANCA-CA-001/);
 }
 
 console.log("Interface de governança, consultor e fechamento CA OK");

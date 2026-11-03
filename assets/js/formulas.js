@@ -1380,6 +1380,7 @@
 
   function calcularRazaoPix(indicador, regra, lancamentoAtual, lancamentosDoAno) {
     const params = regra.parametrosCalculo || {};
+    const competencyKey = lancamentoAtual.competencia || `${lancamentoAtual.ano}-${String(lancamentoAtual.mes).padStart(2, "0")}`;
     const accumulatedPixField = params.campoNumeradorAcumulado || "arrecadacaoPixAcumuladaCompetencia";
     const accumulatedTotalField = params.campoDenominadorAcumulado || "arrecadacaoTotalCanaisEletronicosAcumuladaCompetencia";
     const legacyPixField = params.campoNumeradorMensalLegado || params.campoNumerador || "arrecadacaoPixMes";
@@ -1392,6 +1393,8 @@
     const totalCurrent = currency.parseMoedaBR(raw(lancamentoAtual, totalField));
     const pixApproximate = currency.parseMoedaBR(raw(lancamentoAtual, "arrecadacaoPixAcumuladaCompetenciaAproximada"));
     const annualTarget = toNumber(lancamentoAtual.metaReferencia ?? lancamentoAtual.metaMensal ?? regra.metaAnualValor) || 0.65;
+    const technicalTarget = toNumber(params.metasTecnicasPixPorCompetencia?.[competencyKey]) ?? annualTarget;
+    const reference2025 = toNumber(params.referenciasPix2025PorCompetencia?.[competencyKey]);
     const officialResult = normalizarPercentual(raw(lancamentoAtual, params.campoResultadoOficial || "resultadoOficialPix"));
     const officialPerformanceRaw = raw(lancamentoAtual, params.campoPercentualAtingidoOficial || "percentualAtingidoOficialPix");
     const officialPerformanceNumber = toNumber(officialPerformanceRaw);
@@ -1414,6 +1417,11 @@
       resultadoOficialDocumental: officialResult,
       percentualAtingidoOficialDocumental: officialPerformance,
       metaReferencia: annualTarget,
+      metaOperacionalPix: annualTarget,
+      metaTecnicaPix: technicalTarget,
+      participacaoPix2025Acumulada: reference2025,
+      percentualAtingidoTecnicoPix: null,
+      fechamentoOficialPix: isOfficialClosing,
       situacao: officialSituation,
       origemPosicaoPix: "documental_sem_componentes_tecnicos_exatos",
       excluiInternetBankingCaixa: params.excluirInternetBankingCaixa === true
@@ -1463,12 +1471,20 @@
     }
     const monthlyResult = pixCurrent / totalCurrent;
     const accumulatedResult = pixAccumulated / totalAccumulated;
-    const performanceForSituation = officialPerformance ?? (accumulatedResult / annualTarget);
+    const technicalPerformanceRaw = technicalTarget > 0 ? accumulatedResult / technicalTarget : null;
+    const technicalPerformancePrecision = toNumber(params.casasArredondamentoAtingimentoTecnicoPorCompetencia?.[competencyKey]);
+    const technicalPerformance = technicalPerformanceRaw !== null && Number.isInteger(technicalPerformancePrecision)
+      ? Math.round((technicalPerformanceRaw + Number.EPSILON) * (10 ** technicalPerformancePrecision)) / (10 ** technicalPerformancePrecision)
+      : technicalPerformanceRaw;
+    const principalPerformance = isOfficialClosing
+      ? officialPerformance ?? technicalPerformance
+      : technicalPerformance;
+    const performanceForSituation = officialPerformance ?? technicalPerformance;
     return ok(
       monthlyResult,
       accumulatedResult,
-      monthlyResult / annualTarget,
-      accumulatedResult / annualTarget,
+      technicalPerformance,
+      principalPerformance,
       regra.unidadeMedida,
       hasAccumulatedPosition
         ? "Resultado técnico calculado diretamente sobre a posição acumulada da competência, sem nova soma."
@@ -1478,10 +1494,17 @@
         canaisEletronicosAcumulado: totalAccumulated,
         resultadoCalculado: accumulatedResult,
         resultadoOficialAnual: officialResult ?? accumulatedResult,
-        percentualAtingidoAnual: officialPerformance ?? (accumulatedResult / annualTarget),
+        percentualAtingidoAnual: principalPerformance,
         resultadoOficialDocumental: officialResult,
         percentualAtingidoOficialDocumental: officialPerformance,
         metaReferencia: annualTarget,
+        metaOperacionalPix: annualTarget,
+        metaTecnicaPix: technicalTarget,
+        participacaoPix2025Acumulada: reference2025,
+        percentualAtingidoTecnicoPix: technicalPerformance,
+        percentualAtingidoTecnicoPixSemArredondamento: technicalPerformanceRaw,
+        fechamentoOficialPix: isOfficialClosing,
+        fontePosicaoPix: texto(lancamentoAtual, "fontePosicaoPix") || null,
         situacao: isOfficialClosing ? situacaoPorPercentual(performanceForSituation) : "Em acompanhamento",
         origemPosicaoPix: hasAccumulatedPosition ? "acumulada" : "mensal_legada",
         excluiInternetBankingCaixa: params.excluirInternetBankingCaixa === true

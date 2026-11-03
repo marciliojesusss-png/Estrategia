@@ -137,6 +137,9 @@
   }
 
   function formatQuarterMeta(row, quarter) {
+    if (row.rule?.tipoCalculo === "crescimento_rede_loterica_base_2025") {
+      return Calculations.formatarPercentual(quarter.metaTrimestral, 2, 2);
+    }
     const metaPercentualAcoesPropostas = Calculations.resolverMetaPercentualAcoesPropostas?.(row.rule, {
       trimestre: quarter.trimestre,
       metaTrimestral: quarter.metaTrimestral
@@ -147,13 +150,29 @@
     return Calculations.formatarValor(quarter.metaTrimestral, quarterValueUnit(row.rule));
   }
 
+  function formatQuarterResult(row, quarter) {
+    return row.rule?.tipoCalculo === "crescimento_rede_loterica_base_2025"
+      ? Calculations.formatarPercentual(quarter.resultadoTrimestral)
+      : Calculations.formatarValor(quarter.resultadoTrimestral, quarterValueUnit(row.rule));
+  }
+
+  function formatQuarterPerformance(row, quarter) {
+    return row.rule?.tipoCalculo === "crescimento_rede_loterica_base_2025"
+      ? Calculations.formatarPercentual(quarter.desempenhoTrimestral, 2, 2)
+      : Calculations.formatarPercentual(quarter.desempenhoTrimestral);
+  }
+
+  function officialScaleLabel(value) {
+    return String(value || "").toLowerCase() === "incremento" ? "incremento" : "índice";
+  }
+
   function quarterCells(row) {
     const unit = quarterValueUnit(row.rule);
     const isPlataformaJogos = row.rule?.tipoCalculo === "projeto_marco_entrega";
     return row.quarters.map((quarter) => `
       <td>${formatQuarterMeta(row, quarter)}${isPlataformaJogos ? "<small>Meta de evolução do MVP</small>" : ""}</td>
       <td class="official-value">
-        ${Calculations.formatarValor(quarter.resultadoTrimestral, unit)}
+        ${formatQuarterResult(row, quarter)}
         ${isPlataformaJogos ? "<small>Evolução realizada do MVP</small>" : ""}
         ${row.rule.tipoCalculo === "razao_pix" && quarter.resultadoCalculadoTrimestral != null
           ? `<small>Calculado: ${Calculations.formatarValor(quarter.resultadoCalculadoTrimestral, row.rule.unidadeMedida)}<br>PIX: ${Calculations.formatarMoedaBR(quarter.pixAcumuladoTrimestre)}<br>Canais: ${Calculations.formatarMoedaBR(quarter.canaisAcumuladoTrimestre)}</small>`
@@ -162,7 +181,7 @@
           : ["participacao_ecossistema_lotex", "participacao_ecossistema_com_cenarios"].includes(row.rule.tipoCalculo) && quarter.dadosCalculados
             ? `<small>Cenário oficial: Lotex<br>Referência Lotex 2025: ${Calculations.formatarPercentual(quarter.referencia2025EcossistemaTrimestre)}<br>ARR Eco Lotex: ${Calculations.formatarMoedaBR(quarter.arrecadacaoViaEcossistemaTrimestre)}<br>ARR Marketplace (auxiliar): ${Calculations.formatarMoedaBR(quarter.arrecadacaoMarketplaceEcossistemaTrimestre)}<br>ARR Total: ${Calculations.formatarMoedaBR(quarter.arrecadacaoTotalEcossistemaTrimestre)}</small>`
           : row.rule.tipoCalculo === "crescimento_rede_loterica_base_2025" && quarter.resultadoTecnicoTrimestral != null
-            ? `<small>Índice técnico: ${Calculations.formatarPercentual(quarter.resultadoTecnicoTrimestral)}<br>Crescimento equivalente: ${Calculations.formatarPercentual(quarter.crescimentoTrimestral)}<br>Atingimento técnico: ${Calculations.formatarPercentual(quarter.desempenhoTecnicoTrimestral)}<br>Resultado documental: ${Calculations.formatarPercentual(quarter.resultadoDocumentalTrimestral)}<br>Atingimento oficial documental: ${Calculations.formatarPercentual(quarter.desempenhoOficialDocumentalTrimestral)}<br>Fonte: ${escapeHtml(quarter.fonteDocumentalTrimestral || "-")}</small>`
+            ? `<small>Meta técnica em índice: ${Calculations.formatarPercentual(quarter.metaTecnicaTrimestral, 2, 2)}<br>Resultado técnico: ${Calculations.formatarPercentual(quarter.resultadoTecnicoTrimestral, 2, 2)}<br>Crescimento equivalente: ${Calculations.formatarPercentual(quarter.crescimentoTrimestral, 2, 2)}<br>Atingimento técnico: ${Calculations.formatarPercentual(quarter.desempenhoTecnicoTrimestral, 2, 2)}<br>Meta documental original: ${Calculations.formatarPercentual(quarter.metaDocumentalOriginalTrimestral, 2, 2)}<br>Resultado documental original: ${Calculations.formatarPercentual(quarter.resultadoDocumentalTrimestral)}<br>Atingimento oficial reportado: ${Calculations.formatarPercentual(quarter.desempenhoOficialDocumentalTrimestral, 2, 2)}<br>Escala oficial: ${officialScaleLabel(quarter.escalaOficialDocumentalTrimestral)}<br>Fonte oficial: ${escapeHtml(quarter.fonteDocumentalTrimestral || "-")}</small>`
           : row.rule.tipoCalculo === "crescimento_comparado_base_2025" && quarter.baseReferencia2025Trimestre != null
             ? `<small>Base 2025: ${Calculations.formatarMoedaBR(quarter.baseReferencia2025Trimestre)}<br>Indice: ${Calculations.formatarPercentual(quarter.indiceTrimestral)}<br>Crescimento: ${Calculations.formatarPercentual(quarter.crescimentoTrimestral)}</small>`
           : row.rule.tipoCalculo === "nota_pesquisa_nps" && quarter.resultadoTecnicoTrimestral != null
@@ -177,7 +196,7 @@
       <td>
         ${row.rule.tipoCalculo === "razao_canais_digitais" && quarter.desempenhoTrimestral != null
           ? `${(quarter.desempenhoTrimestral * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`
-          : Calculations.formatarPercentual(quarter.desempenhoTrimestral)}
+          : formatQuarterPerformance(row, quarter)}
         ${isPlataformaJogos ? "<small>% de atingimento da evolução prevista</small>" : ""}
         <span class="quarter-situation">${escapeHtml(quarter.situacaoTrimestral)}</span>
       </td>

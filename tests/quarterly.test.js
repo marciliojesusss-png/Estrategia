@@ -1486,9 +1486,14 @@ const redeLotericaDocumentalQuarter = consolidarTrimestre(
 assert.equal(redeLotericaDocumentalQuarter.statusTrimestre, "Parcial");
 assert.ok(Math.abs(redeLotericaDocumentalQuarter.metaTrimestral - 1.005) < 0.000001);
 assert.ok(Math.abs(redeLotericaDocumentalQuarter.resultadoTrimestral - 1.0057) < 0.000001);
+assert.ok(Math.abs(redeLotericaDocumentalQuarter.desempenhoTrimestral - 1.1386) < 0.000001);
+assert.ok(Math.abs(redeLotericaDocumentalQuarter.metaTecnicaTrimestral - 1.005) < 0.000001);
+assert.ok(Math.abs(redeLotericaDocumentalQuarter.resultadoTecnicoTrimestral - 1.0057) < 0.000001);
 assert.ok(Math.abs(redeLotericaDocumentalQuarter.desempenhoTecnicoTrimestral - (1.0057 / 1.005)) < 0.000001);
 assert.ok(Math.abs(redeLotericaDocumentalQuarter.resultadoDocumentalTrimestral - 0.0057) < 0.000001);
 assert.ok(Math.abs(redeLotericaDocumentalQuarter.desempenhoOficialDocumentalTrimestral - 1.1386) < 0.000001);
+assert.ok(Math.abs(redeLotericaDocumentalQuarter.metaDocumentalOriginalTrimestral - 0.005) < 0.000001);
+assert.equal(redeLotericaDocumentalQuarter.escalaOficialDocumentalTrimestral, "incremento");
 assert.equal(redeLotericaDocumentalQuarter.fonteDocumentalTrimestral, "Informe 0029");
 assert.equal(redeLotericaDocumentalQuarter.situacaoTrimestral, "Atingido");
 

@@ -1,6 +1,7 @@
 (function () {
   const EDITABLE_STATUSES = ["Não iniciado", "Nao iniciado", "Rascunho", "Em preenchimento", "Devolvido para ajuste", "Reaberto", "Retificado"];
   const MANUAL_TYPES = ["manual_homologado", "qualitativo"];
+  const ACHIEVEMENT_VISIBLE_INDICATOR_IDS = new Set([3, 9, 11, 20]);
   const DECIMAL_PERCENTAGE_ENTRY_FIELDS = new Set([
     "ieoApuradoInformado",
     "resultadoOficialPix",
@@ -100,6 +101,68 @@
       performance: toNumberOrNull(resultado.percentualAtingidoOficialDocumental ?? memory.percentualAtingidoOficialEcossistema ?? configured.percentualAtingidoOficialReportado),
       source: resultado.fonteResultadoEcossistema || memory.fonteResultadoEcossistema || configured.fonte || null
     };
+  }
+
+  function indicator23IsClosure(lancamento) {
+    return [3, 6, 9, 12].includes(Number(lancamento?.mes));
+  }
+
+  function indicator23OfficialPresentation(regra, lancamento, resultado = {}) {
+    const visible = indicator23IsClosure(lancamento);
+    const quarterKey = `${Math.ceil(Number(lancamento?.mes) / 3)}TRI`;
+    const configured = regra?.parametrosCalculo?.apresentacoesOficiaisTrimestrais?.[quarterKey] || {};
+    const memory = lancamento?.camposEntrada || {};
+    const originalResult = toNumberOrNull(
+      resultado.resultadoDocumentalRedeLoterica ??
+      memory.resultadoDocumentalRedeLoterica ??
+      configured.resultadoOficialReportado
+    );
+    const performance = toNumberOrNull(
+      resultado.percentualAtingidoOficialRedeLoterica ??
+      memory.percentualAtingidoOficialRedeLoterica ??
+      configured.percentualAtingidoOficialReportado
+    );
+    const scale = String(
+      resultado.escalaResultadoDocumentalRedeLoterica ??
+      memory.escalaResultadoDocumentalRedeLoterica ??
+      configured.escalaResultadoDocumental ??
+      "indice"
+    ).trim().toLowerCase();
+    const technicalMeta = toNumberOrNull(resultado.metaIndiceCrescimento ?? lancamento?.metaReferencia ?? lancamento?.metaMensal);
+    const configuredMeta = toNumberOrNull(configured.metaOficialReportada);
+    const originalMeta = configuredMeta !== null
+      ? configuredMeta
+      : scale === "incremento" && technicalMeta !== null
+        ? technicalMeta - 1
+        : technicalMeta;
+    const meta = scale === "incremento" && originalMeta !== null ? 1 + originalMeta : originalMeta;
+    const result = scale === "incremento" && originalResult !== null ? 1 + originalResult : originalResult;
+    return {
+      visible,
+      complete: visible && originalMeta !== null && originalResult !== null && performance !== null,
+      meta,
+      result,
+      originalMeta,
+      originalResult,
+      performance,
+      scale,
+      situation: configured.situacaoOficial || configured.situacao || resultado.situacao || null,
+      source: resultado.fonteResultadoRedeLoterica || memory.fonteResultadoRedeLoterica || configured.fonte || null
+    };
+  }
+
+  function applyIndicator23OfficialFieldLayout(regra, lancamento, official = null) {
+    const presentation = official || indicator23OfficialPresentation(regra, lancamento, {});
+    if (!presentation?.complete) return false;
+    document.getElementById("launchMetaLabel").textContent = "Meta oficial reportada";
+    document.getElementById("launchResultadoMensalLabel").textContent = "Resultado oficial reportado";
+    document.getElementById("launchPercentualCalculadoLabel").textContent = "Atingimento oficial reportado";
+    document.getElementById("launchSituacaoCalculadaLabel").textContent = "Situação oficial";
+    document.getElementById("percentualMensalWrapper").hidden = false;
+    document.getElementById("resultadoAnualWrapper").hidden = true;
+    document.getElementById("percentualAnualWrapper").hidden = true;
+    document.getElementById("launchMeta").value = Calculations.formatarPercentual(presentation.meta, 2, 2);
+    return true;
   }
 
   function indicator22PresentationModel(resultado, regra, lancamento) {
@@ -539,7 +602,8 @@
       "razao_canais_digitais",
       "razao_pix",
       "melhorias_acumuladas",
-      "ggr_formula"
+      "ggr_formula",
+      "crescimento_rede_loterica_base_2025"
     ].includes(regra?.tipoCalculo);
   }
 
@@ -881,6 +945,9 @@
 
   function formatDisplayMeta(regra, lancamento, metas = state.data?.metas || []) {
     const meta = getDisplayMeta(regra, lancamento, metas);
+    if (regra?.tipoCalculo === "crescimento_rede_loterica_base_2025" && typeof meta !== "string") {
+      return Calculations.formatarPercentual(meta, 2, 2);
+    }
     return typeof meta === "string" ? meta : Calculations.formatarValor(meta, regra && regra.unidadeMedida);
   }
 
@@ -1036,6 +1103,19 @@
     );
     if (field.tipo === "selecao") {
       const options = field.opcoes || [];
+      const normalizedValue = String(value ?? "");
+      const configuredValueExists = options.some((option) => {
+        const label = typeof option === "string"
+          ? option
+          : option.label ?? option.nome ?? option.id ?? "";
+        const optionValue = typeof option === "string"
+          ? option
+          : option.value ?? option.id ?? option.label ?? option.nome ?? "";
+        return [optionValue, label].some((candidate) => normalizedValue === String(candidate));
+      });
+      const historicalOption = field.nome === "marcoAlcancadoTIC" && normalizedValue && !configuredValueExists
+        ? `<option value="${escapeHtml(normalizedValue)}" selected>${escapeHtml(normalizedValue)} (valor histórico)</option>`
+        : "";
       return `
         <label class="${wrapperClass}" data-entry-wrapper="${escapeHtml(field.nome)}">${escapeHtml(field.rotulo || field.nome)}
           <select
@@ -1045,6 +1125,7 @@
             ${field.obrigatorio ? "required" : ""}
             ${extra}
           >
+            ${historicalOption}
             ${options.map((option) => {
               const label = typeof option === "string"
                 ? option
@@ -1052,7 +1133,7 @@
               const optionValue = typeof option === "string"
                 ? option
                 : option.value ?? option.id ?? option.label ?? option.nome ?? "";
-              const selected = [optionValue, label].some((candidate) => String(value || "") === String(candidate));
+              const selected = [optionValue, label].some((candidate) => normalizedValue === String(candidate));
               return `<option value="${escapeHtml(optionValue)}" ${selected ? "selected" : ""}>${escapeHtml(label)}</option>`;
             }).join("")}
           </select>
@@ -1080,6 +1161,7 @@
           class="dynamic-entry-field"
           data-entry-field="${escapeHtml(field.nome)}"
           data-entry-type="${escapeHtml(field.tipo || "numero")}"
+          ${usesDecimalPercentageEntry(field) ? 'data-entry-percent-scale="decimal"' : ""}
           type="${["texto", "moeda", "inteiro"].includes(field.tipo) || usesLocalizedPercentageEntry(field) ? "text" : field.tipo === "data" ? "date" : "number"}"
           ${field.placeholder !== undefined
             ? `placeholder="${escapeHtml(field.placeholder)}"${field.tipo === "percentual" ? " inputmode=\"decimal\"" : ""}`
@@ -1261,7 +1343,10 @@
   }
 
   function usesReadOnlyAchievementField(indicador, regra) {
-    return isRepresentationIndicator(indicador, regra) || isJogoResponsavelIndicator(indicador, regra);
+    const indicatorId = Number(indicador?.id ?? indicador?.indicadorId ?? regra?.indicadorId);
+    return ACHIEVEMENT_VISIBLE_INDICATOR_IDS.has(indicatorId) ||
+      isRepresentationIndicator(indicador, regra) ||
+      isJogoResponsavelIndicator(indicador, regra);
   }
 
   function formatRepresentationAchievement(value) {
@@ -1273,7 +1358,8 @@
 
   function resolveRepresentationAchievement(indicador, regra, lancamento, calculatedValue) {
     const calculated = toNumberOrNull(calculatedValue);
-    if (!isRepresentationIndicator(indicador, regra)) return calculated;
+    if (!usesReadOnlyAchievementField(indicador, regra)) return calculated;
+    if (Number(indicador?.id ?? indicador?.indicadorId ?? regra?.indicadorId) === 9) return calculated;
 
     const persistedResult = toNumberOrNull(
       lancamento?.resultadoOficialAnual ?? lancamento?.resultadoMensal ?? lancamento?.resultadoCalculado
@@ -1370,8 +1456,11 @@
         )
         : null;
       const tablePerformance = getLaunchListPerformance(regra, item, tableCalculation);
+      const indicator23Official = regra?.tipoCalculo === "crescimento_rede_loterica_base_2025"
+        ? indicator23OfficialPresentation(regra, item, tableCalculation || {})
+        : null;
       const situacao = Situations.normalizarSituacao(
-        tableCalculation?.situacao ||
+        (indicator23Official?.complete ? indicator23Official.situation : tableCalculation?.situacao) ||
         item.situacaoCalculada ||
         getCalculatedSituation(tablePerformance.percentual)
       );
@@ -1379,8 +1468,12 @@
         <tr>
           <td>${escapeHtml(indicador ? indicador.indicador : item.indicadorId)}</td>
           <td>${escapeHtml(launchMonthName(item))}/${escapeHtml(item.ano)}</td>
-          <td>${escapeHtml(formatDisplayMeta(regra, item))}</td>
-          <td>${Calculations.formatarValor(tablePerformance.resultado, regra && regra.unidadeMedida)}</td>
+          <td>${indicator23Official?.complete
+            ? Calculations.formatarPercentual(indicator23Official.meta, 2, 2)
+            : escapeHtml(formatDisplayMeta(regra, item))}</td>
+          <td>${indicator23Official?.complete
+            ? Calculations.formatarPercentual(indicator23Official.result)
+            : Calculations.formatarValor(tablePerformance.resultado, regra && regra.unidadeMedida)}</td>
           <td>${escapeHtml(situacao)}</td>
           <td><span class="badge ${badgeClass(item.status)}">${escapeHtml(item.status)}</span></td>
           <td><button class="secondary-action table-action" type="button" data-id="${item.id}">${actionLabel}</button></td>
@@ -1471,6 +1564,10 @@
     document.getElementById("percentualAnualWrapper").hidden = hideAtingimentoFields;
     document.getElementById("resultadoAnualWrapper").hidden = false;
     document.getElementById("situacaoCalculadaWrapper").hidden = !automatic;
+    if (usesReadOnlyAchievementField(indicador, regra)) {
+      document.getElementById("percentualMensalWrapper").hidden = false;
+      document.getElementById("percentualAnualWrapper").hidden = true;
+    }
     if (isRepresentationIndicator(indicador, regra)) {
       document.getElementById("percentualMensalWrapper").hidden = false;
       document.getElementById("percentualAnualWrapper").hidden = true;
@@ -1530,12 +1627,12 @@
       : regra?.tipoCalculo === "participacao_ecossistema_lotex"
         ? "Resultado Lotex da competência"
       : "Resultado da competência";
-    document.getElementById("launchPercentualCalculadoLabel").textContent = regra?.tipoCalculo === "marco_projeto_percentual"
+    document.getElementById("launchPercentualCalculadoLabel").textContent = usesReadOnlyAchievementField(indicador, regra)
+      ? "% atingido"
+      : regra?.tipoCalculo === "marco_projeto_percentual"
       ? "Atingimento oficial"
       : regra?.tipoCalculo === "iniciativas_apoiadas"
         ? "Atingimento do marco trimestral"
-      : usesReadOnlyAchievementField(indicador, regra)
-        ? "% atingido"
       : isIeoRule(regra)
       ? "% atingido"
       : regra?.tipoCalculo === "nota_pesquisa_nps"
@@ -2067,6 +2164,9 @@
     if (regra?.tipoCalculo === "razao_canais_digitais") {
       indicator08CalculatedDetails(resultado).forEach((detail) => details.push(detail));
     }
+    if (regra?.tipoCalculo === "razao_pix") {
+      indicator09CalculatedDetails(resultado).forEach((detail) => details.push(detail));
+    }
     if (Number(regra?.indicadorId) === 1) {
       indicator01CalculatedDetails(resultado).forEach((detail) => details.push(detail));
     }
@@ -2310,16 +2410,16 @@
     if (resultado.percentualMetaAnual !== undefined) {
       details.push(["Avanço sobre a meta anual", Calculations.formatarPercentual(resultado.percentualMetaAnual)]);
     }
-    if (resultado.pixAcumulado !== undefined) {
+    if (resultado.pixAcumulado !== undefined && regra?.tipoCalculo !== "razao_pix") {
       details.push(["Arrecadação PIX acumulada", Calculations.formatarValor(resultado.pixAcumulado, "moeda")]);
     }
-    if (resultado.canaisEletronicosAcumulado !== undefined) {
+    if (resultado.canaisEletronicosAcumulado !== undefined && regra?.tipoCalculo !== "razao_pix") {
       details.push(["Arrecadação total dos canais eletrônicos", Calculations.formatarValor(resultado.canaisEletronicosAcumulado, "moeda")]);
     }
     if (resultado.produtosLoteriasAcumulado !== undefined) {
       details.push(["Arrecadação total dos produtos de loterias", Calculations.formatarValor(resultado.produtosLoteriasAcumulado, "moeda")]);
     }
-    if (resultado.resultadoCalculado !== undefined) {
+    if (resultado.resultadoCalculado !== undefined && regra?.tipoCalculo !== "razao_pix") {
       details.push(["Resultado percentual calculado", Calculations.formatarPercentual(resultado.resultadoCalculado)]);
     }
     if (resultado.detalhesMetaMensal) {
@@ -2350,6 +2450,37 @@
       ["Resultado acumulado documental", documentedResult === null ? "-" : Calculations.formatarPercentual(documentedResult, 2, 2)],
       ["Atingimento oficial documental", documentedPerformance === null ? "-" : Calculations.formatarPercentual(documentedPerformance, 2, 2)]
     ];
+  }
+
+  function indicator09CalculatedDetails(resultado) {
+    const reference2025 = toNumberOrNull(resultado?.participacaoPix2025Acumulada);
+    const technicalTarget = toNumberOrNull(resultado?.metaTecnicaPix);
+    const operationalTarget = toNumberOrNull(resultado?.metaOperacionalPix ?? resultado?.metaReferencia);
+    const technicalResult = toNumberOrNull(resultado?.resultadoCalculado);
+    const technicalPerformance = toNumberOrNull(resultado?.percentualAtingidoTecnicoPix);
+    const documentedResult = resultado?.fechamentoOficialPix
+      ? toNumberOrNull(resultado?.resultadoOficialDocumental)
+      : null;
+    const documentedPerformance = resultado?.fechamentoOficialPix
+      ? toNumberOrNull(resultado?.percentualAtingidoOficialDocumental)
+      : null;
+    const details = [
+      ["Participação PIX acumulada 2025", reference2025 === null ? "-" : Calculations.formatarPercentual(reference2025, 6, 10)],
+      ["Meta técnica", technicalTarget === null ? "-" : Calculations.formatarPercentual(technicalTarget, 6, 10)],
+      ["PIX acumulado 2026", resultado?.pixAcumulado === null || resultado?.pixAcumulado === undefined ? "-" : Calculations.formatarValor(resultado.pixAcumulado, "moeda")],
+      ["Total acumulado dos canais eletrônicos 2026", resultado?.canaisEletronicosAcumulado === null || resultado?.canaisEletronicosAcumulado === undefined ? "-" : Calculations.formatarValor(resultado.canaisEletronicosAcumulado, "moeda")],
+      ["Resultado técnico calculado", technicalResult === null ? "-" : Calculations.formatarPercentual(technicalResult, 2, 2)],
+      ["Atingimento técnico", technicalPerformance === null ? "-" : Calculations.formatarPercentual(technicalPerformance, 2, 2)]
+    ];
+    if (resultado?.fechamentoOficialPix) {
+      details.push(
+        ["Meta oficial/operacional", operationalTarget === null ? "-" : Calculations.formatarPercentual(operationalTarget, 2, 2)],
+        ["Resultado oficial reportado", documentedResult === null ? "-" : Calculations.formatarPercentual(documentedResult, 2, 2)],
+        ["Atingimento oficial reportado", documentedPerformance === null ? "-" : Calculations.formatarPercentual(documentedPerformance, 2, 2)],
+        ["Fonte oficial", resultado?.fontePosicaoPix || "-"]
+      );
+    }
+    return details;
   }
 
   function indicator01CalculatedDetails(resultado) {
@@ -2400,15 +2531,23 @@
     const atingimentoTecnico = toNumberOrNull(resultado?.percentualAtingidoTecnico ?? resultado?.percentualAtingidoAcumulado);
     const resultadoDocumental = toNumberOrNull(resultado?.resultadoDocumentalRedeLoterica);
     const atingimentoOficial = toNumberOrNull(resultado?.percentualAtingidoOficialRedeLoterica);
+    const escalaOficial = String(resultado?.escalaResultadoDocumentalRedeLoterica || "").trim().toLowerCase();
+    const metaDocumentalOriginal = metaIndice === null || !["incremento", "indice"].includes(escalaOficial)
+      ? null
+      : escalaOficial === "incremento" ? metaIndice - 1 : metaIndice;
     return [
-      ["Meta em índice", metaIndice === null ? "-" : Calculations.formatarPercentual(metaIndice, 2, 2)],
-      ["Resultado técnico em índice", resultadoIndice === null ? "-" : Calculations.formatarPercentual(resultadoIndice, 2, 2)],
+      ["Meta técnica em índice", metaIndice === null ? "-" : Calculations.formatarPercentual(metaIndice, 2, 2)],
+      ["Resultado técnico", resultadoIndice === null ? "-" : Calculations.formatarPercentual(resultadoIndice, 2, 2)],
       ["Crescimento equivalente", crescimento === null ? "-" : Calculations.formatarPercentual(crescimento, 2, 2)],
       ["Atingimento técnico", atingimentoTecnico === null ? "-" : Calculations.formatarPercentual(atingimentoTecnico, 2, 2)],
-      ["Resultado documental", resultadoDocumental === null ? "-" : Calculations.formatarPercentual(resultadoDocumental, 2, 2)],
-      ["Atingimento oficial documental", atingimentoOficial === null ? "-" : Calculations.formatarPercentual(atingimentoOficial, 2, 2)],
-      ["Fonte documental", resultado?.fonteResultadoRedeLoterica || "-"],
-      ["Situação", resultado?.situacao || "-"]
+      ["ARL25 acumulada — memória técnica", resultado?.baseReferencia2025Periodo === null || resultado?.baseReferencia2025Periodo === undefined ? "-" : Calculations.formatarValor(resultado.baseReferencia2025Periodo, "moeda")],
+      ["ARL26 acumulada — memória técnica", resultado?.realizado2026Periodo === null || resultado?.realizado2026Periodo === undefined ? "-" : Calculations.formatarValor(resultado.realizado2026Periodo, "moeda")],
+      ["Meta documental original", metaDocumentalOriginal === null ? "-" : Calculations.formatarPercentual(metaDocumentalOriginal, 2, 2)],
+      ["Resultado documental original", resultadoDocumental === null ? "-" : Calculations.formatarPercentual(resultadoDocumental)],
+      ["Atingimento oficial reportado", atingimentoOficial === null ? "-" : Calculations.formatarPercentual(atingimentoOficial, 2, 2)],
+      ["Escala oficial", escalaOficial === "incremento" ? "incremento" : escalaOficial === "indice" ? "índice" : "-"],
+      ["Fonte oficial", resultado?.fonteResultadoRedeLoterica || "-"],
+      ["Situação técnica", resultado?.situacao || "-"]
     ];
   }
 
@@ -2471,6 +2610,7 @@
     setFormDisabled(disabled);
     observationField.readOnly = Boolean(documentation.readOnly);
     enforceRuleFieldState(indicador, regra, disabled);
+    applyIndicator23OfficialFieldLayout(regra, lancamento);
     document.getElementById("sendApprovalButton").textContent =
       lancamento.status === "Devolvido para ajuste" ? "Reenviar para homologação" : "Enviar para homologação";
     const requestButton = document.getElementById("requestReopenButton");
@@ -2490,7 +2630,7 @@
     document.querySelectorAll(".dynamic-entry-field").forEach((input) => {
       if (input.disabled || input.dataset.displayOnly === "true") return;
       const type = input.dataset.entryType || "numero";
-      values[input.dataset.entryField] = parseEntryValue(type, input.value);
+      values[input.dataset.entryField] = parseEntryValue(type, input.value, input.dataset.entryPercentScale);
     });
     const selectedLaunch = getSelectedLaunch();
     const selectedIndicator = selectedLaunch && getIndicatorMap()[selectedLaunch.indicadorId];
@@ -2500,11 +2640,17 @@
     return values;
   }
 
-  function parseEntryValue(type, value) {
+  function parseEntryValue(type, value, percentageScale = "") {
     if (value === "") return "";
     if (type === "numero") return toNumberOrNull(value);
     if (type === "inteiro") return Calculations.parseInteiroBR(value);
     if (type === "moeda") return CurrencyBR.parseMoedaBR(value);
+    if (type === "percentual" && percentageScale === "decimal") {
+      let normalized = String(value).trim().replace(/%/g, "").replace(/\s/g, "");
+      if (normalized.includes(",")) normalized = normalized.replace(/\./g, "").replace(",", ".");
+      const displayedPercentage = toNumberOrNull(normalized);
+      return displayedPercentage === null ? null : displayedPercentage / 100;
+    }
     if (type === "percentual") return normalizarPercentual(value);
     return String(value).trim();
   }
@@ -2607,6 +2753,11 @@
     document.getElementById("realizadoWrapper").hidden = usesAutomaticCalculation(indicador, result.regra);
     document.getElementById("manualPercentWrapper").hidden = !isManual(indicador);
     document.getElementById("situacaoCalculadaWrapper").hidden = !usesAutomaticCalculation(indicador, result.regra);
+    if (usesReadOnlyAchievementField(indicador, result.regra)) {
+      document.getElementById("percentualMensalWrapper").hidden = false;
+      document.getElementById("percentualAnualWrapper").hidden = true;
+      document.getElementById("launchPercentualCalculadoLabel").textContent = "% atingido";
+    }
     if (isRepresentationIndicator(indicador, result.regra)) {
       document.getElementById("percentualMensalWrapper").hidden = false;
       document.getElementById("percentualAnualWrapper").hidden = true;
@@ -2683,12 +2834,22 @@
     }
     const trackingAprimoramento = result.regra?.tipoCalculo === "melhorias_acumuladas" &&
       result.resultado.tipoPosicaoAprimoramento === "acompanhamento";
-    document.getElementById("launchResultadoMensal").value = npsInterface
+    const indicator23Official = result.regra?.tipoCalculo === "crescimento_rede_loterica_base_2025"
+      ? indicator23OfficialPresentation(result.regra, lancamento, result.resultado)
+      : null;
+    applyIndicator23OfficialFieldLayout(result.regra, lancamento, indicator23Official);
+    document.getElementById("launchResultadoMensal").value = indicator23Official?.complete
+      ? Calculations.formatarPercentual(indicator23Official.result)
+      : npsInterface
       ? Calculations.formatarValor(result.resultado.resultadoOficialNPS ?? result.resultado.resultadoMensal, "pontos")
       : trackingAprimoramento
       ? result.resultado.percentualAcompanhamentoAprimoramentoFormatado || "-"
       : result.resultado.resultadoMensalFormatado || Calculations.formatarValor(result.resultado.resultadoMensal, result.resultado.unidadeMedida);
-    const percentualCalculado = result.regra?.tipoCalculo === "nota_pesquisa_nps"
+    const percentualCalculado = indicator23Official?.complete
+      ? indicator23Official.performance
+      : result.regra?.tipoCalculo === "razao_pix"
+      ? result.resultado.percentualAtingidoAnual
+      : result.regra?.tipoCalculo === "nota_pesquisa_nps"
       ? result.resultado.percentualAtingidoOficialNPS ?? result.resultado.percentualOficialNPS ?? result.resultado.percentualAtingidoMensal
       : result.resultado.percentualAtingidoMensal;
     const percentualPrincipal = resolveRepresentationAchievement(
@@ -2697,16 +2858,24 @@
       lancamento,
       percentualCalculado
     );
-    document.getElementById("launchPercentualCalculado").value = isIeoRule(result.regra) && percentualPrincipal === null
+    document.getElementById("launchPercentualCalculado").value = indicator23Official?.complete
+      ? Calculations.formatarPercentual(indicator23Official.performance, 2, 2)
+      : isIeoRule(result.regra) && percentualPrincipal === null
       ? "Sem cálculo"
       : usesReadOnlyAchievementField(indicador, result.regra)
         ? formatRepresentationAchievement(percentualPrincipal)
       : result.regra?.tipoCalculo === "nota_pesquisa_nps"
         ? Calculations.formatarPercentual(percentualPrincipal)
         : result.resultado.percentualAtingidoMensalFormatado || Calculations.formatarPercentual(percentualPrincipal);
-    document.getElementById("launchResultadoAcumulado").value = result.resultado.resultadoOficialAnualFormatado || Calculations.formatarValor(result.resultado.resultadoOficialAnual, result.resultado.unidadeMedida);
-    document.getElementById("launchPercentualAcumulado").value = result.resultado.percentualAtingidoAnualFormatado || Calculations.formatarPercentual(result.resultado.percentualAtingidoAnual);
-    document.getElementById("launchSituacaoCalculada").value = Situations.normalizarSituacao(result.resultado.situacao || getCalculatedSituation(result.resultado.percentualAtingidoAnual ?? result.resultado.percentualAtingidoMensal));
+    document.getElementById("launchResultadoAcumulado").value = indicator23Official?.complete
+      ? Calculations.formatarPercentual(indicator23Official.result)
+      : result.resultado.resultadoOficialAnualFormatado || Calculations.formatarValor(result.resultado.resultadoOficialAnual, result.resultado.unidadeMedida);
+    document.getElementById("launchPercentualAcumulado").value = indicator23Official?.complete
+      ? Calculations.formatarPercentual(indicator23Official.performance, 2, 2)
+      : result.resultado.percentualAtingidoAnualFormatado || Calculations.formatarPercentual(result.resultado.percentualAtingidoAnual);
+    document.getElementById("launchSituacaoCalculada").value = Situations.normalizarSituacao(indicator23Official?.complete
+      ? indicator23Official.situation
+      : result.resultado.situacao || getCalculatedSituation(result.resultado.percentualAtingidoAnual ?? result.resultado.percentualAtingidoMensal));
     if (result.resultado.erro) {
       document.getElementById("launchResultadoMensal").value = "-";
       document.getElementById("launchPercentualCalculado").value = "-";
@@ -3283,10 +3452,13 @@
     isCanaisDigitaisDocumentalField,
     renderEntryInput,
     indicator08CalculatedDetails,
+    indicator09CalculatedDetails,
     indicator01CalculatedDetails,
     indicator02CalculatedDetails,
     indicator03CalculatedDetails,
     indicator16CalculatedDetails,
+    indicator23IsClosure,
+    indicator23OfficialPresentation,
     indicator23CalculatedDetails,
     socioambientalRequiredFieldState,
     normalizeRgfKey,
