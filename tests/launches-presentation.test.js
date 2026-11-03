@@ -30,6 +30,61 @@ vm.createContext(context);
 vm.runInContext(fs.readFileSync(path.join(root, "assets", "js", "launches.js"), "utf8"), context);
 const internals = context.window.__LAUNCHES_FILTER_TEST_INTERNALS__;
 
+const technicalAchievement = internals.getPercentualAtingidoParaApresentacao(
+  { id: 13 },
+  { tipoCalculo: "percentual_direto" },
+  { mes: 9 },
+  { statusCalculo: "calculado", percentualAtingidoMensal: 1.0230179028132993 },
+  { percentual: 1.0230179028132993 }
+);
+assert.equal(technicalAchievement, 1.0230179028132993);
+assert.equal(internals.formatRepresentationAchievement(technicalAchievement), "102,30%");
+assert.equal(
+  internals.getPercentualAtingidoParaApresentacao(
+    { id: 18 },
+    { tipoCalculo: "plano_acao_por_elementos" },
+    { mes: 9 },
+    { statusCalculo: "calculado", percentualAtingidoMensal: 1.6 },
+    { percentual: 1.6 }
+  ),
+  1.6,
+  "atingimentos superiores a 100% não podem sofrer teto"
+);
+assert.equal(
+  internals.getPercentualAtingidoParaApresentacao(
+    { id: 9 },
+    { tipoCalculo: "razao_pix" },
+    { mes: 9 },
+    { statusCalculo: "calculado", percentualAtingidoOficialDocumental: 1.0737, percentualAtingidoMensal: 1.0741 },
+    { percentual: 1.0741 }
+  ),
+  1.0737,
+  "Indicador 09 deve priorizar o fechamento documental"
+);
+assert.equal(
+  internals.getPercentualAtingidoParaApresentacao(
+    { id: 23 },
+    { tipoCalculo: "crescimento_rede_loterica_base_2025" },
+    { mes: 3 },
+    { statusCalculo: "calculado", percentualAtingidoOficialRedeLoterica: 1.1386, percentualAtingidoTecnico: 1.0007 },
+    { percentual: 1.0007 }
+  ),
+  1.1386,
+  "Indicador 23 MAR deve preservar 113,86% oficial"
+);
+[
+  { statusCalculo: "acompanhamento", percentualAtingidoMensal: 1 },
+  { statusCalculo: "aguardando_dados", percentualAtingidoMensal: null },
+  { statusCalculo: "calculado", medicaoOficialPesquisa2026: false, percentualAtingidoMensal: 1 },
+  { statusCalculo: "calculado", percentualAtingidoMensal: null },
+  { statusCalculo: "calculado", erro: "Sem componentes", percentualAtingidoMensal: 1 }
+].forEach((result) => {
+  assert.equal(
+    internals.getPercentualAtingidoParaApresentacao({ id: 12 }, { tipoCalculo: "nota_pesquisa_anual" }, { mes: 9 }, result, { percentual: null }),
+    null
+  );
+});
+
 const representationRule13 = { indicadorId: 13, tipoCalculo: "percentual_direto", unidadeMedida: "percentual" };
 const representationRule14 = { indicadorId: 14, tipoCalculo: "percentual_direto", unidadeMedida: "percentual" };
 const jogoResponsavelRule21 = { indicadorId: 21, tipoCalculo: "cobertura_capacitacao_jogo_responsavel", unidadeMedida: "percentual" };
@@ -385,7 +440,8 @@ assert.match(view, /documentation-fields\.js\?v=DOCUMENTACAO-COMPLEMENTAR-1TRI-0
 assert.match(view, /styles\.css\?v=APP-VERSION-001/);
 assert.match(view, /formulas\.js\?v=INDICADOR09-PIX-001/);
 assert.match(view, /ieo-recorrente\.js\?v=INDICADOR06-CONFERENCIA-001/);
-assert.match(view, /launches\.js\?v=INDICADOR23-APRESENTACAO-002/);
+assert.match(view, /launches\.js\?v=COLUNA-ATINGIMENTO-001/);
+assert.match(view, /<th>% atingido<\/th>\s*<th>Situação<\/th>/);
 assert.match(view, /id="launchValidationFeedback"[^>]+role="alert"[^>]+aria-live="assertive"/);
 
 const dataStoreSource = fs.readFileSync(path.join(root, "assets", "js", "dataStore.js"), "utf8");

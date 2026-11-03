@@ -943,6 +943,32 @@
     };
   }
 
+  function getPercentualAtingidoParaApresentacao(indicador, regra, lancamento, resultado, tablePerformance = {}) {
+    if (!resultado || resultado.erro || resultado.statusCalculo !== "calculado") return null;
+    if (regra?.tipoCalculo === "nota_pesquisa_anual" && resultado.medicaoOficialPesquisa2026 !== true) return null;
+
+    const officialFields = [
+      "percentualAtingidoOficialOfertasPersonalizadas",
+      "percentualAtingidoOficialNPS",
+      "percentualAtingidoOficialClientesAtivos",
+      "percentualAtingidoOficialCapacitacao",
+      "percentualAtingidoOficialDocumentalSocioambiental",
+      "percentualAtingidoOficialRedeLoterica",
+      "percentualAtingidoOficialDocumental"
+    ];
+    for (const field of officialFields) {
+      const officialValue = toNumberOrNull(resultado[field]);
+      if (officialValue !== null) return officialValue;
+    }
+
+    return toNumberOrNull(
+      tablePerformance?.percentual ??
+      resultado.percentualAtingidoMensal ??
+      resultado.percentualAtingidoAcumulado ??
+      resultado.percentualAtingidoAnual
+    );
+  }
+
   function formatDisplayMeta(regra, lancamento, metas = state.data?.metas || []) {
     const meta = getDisplayMeta(regra, lancamento, metas);
     if (regra?.tipoCalculo === "crescimento_rede_loterica_base_2025" && typeof meta !== "string") {
@@ -1429,7 +1455,7 @@
     const target = document.getElementById("lancamentosTable");
     const porId = getIndicatorMap();
     if (!lancamentos.length) {
-      target.innerHTML = '<tr><td colspan="7">Nenhum lançamento encontrado para o escopo e filtros selecionados.</td></tr>';
+      target.innerHTML = '<tr><td colspan="8">Nenhum lançamento encontrado para o escopo e filtros selecionados.</td></tr>';
       return;
     }
 
@@ -1455,7 +1481,25 @@
           ))
         )
         : null;
+      const achievementCalculation = tableCalculation || IndicatorFormulas.calcularIndicador(
+        indicador,
+        regra,
+        item,
+        state.lancamentos.filter((candidate) => (
+          Number(candidate.indicadorId) === Number(item.indicadorId) &&
+          Number(candidate.ano) === Number(item.ano) &&
+          Number(candidate.mes) <= Number(item.mes)
+        ))
+      );
       const tablePerformance = getLaunchListPerformance(regra, item, tableCalculation);
+      const achievementPerformance = getLaunchListPerformance(regra, item, achievementCalculation);
+      const percentualAtingidoApresentacao = getPercentualAtingidoParaApresentacao(
+        indicador,
+        regra,
+        item,
+        achievementCalculation,
+        achievementPerformance
+      );
       const indicator23Official = regra?.tipoCalculo === "crescimento_rede_loterica_base_2025"
         ? indicator23OfficialPresentation(regra, item, tableCalculation || {})
         : null;
@@ -1474,6 +1518,7 @@
           <td>${indicator23Official?.complete
             ? Calculations.formatarPercentual(indicator23Official.result)
             : Calculations.formatarValor(tablePerformance.resultado, regra && regra.unidadeMedida)}</td>
+          <td>${formatRepresentationAchievement(percentualAtingidoApresentacao)}</td>
           <td>${escapeHtml(situacao)}</td>
           <td><span class="badge ${badgeClass(item.status)}">${escapeHtml(item.status)}</span></td>
           <td><button class="secondary-action table-action" type="button" data-id="${item.id}">${actionLabel}</button></td>
@@ -3442,6 +3487,7 @@
     getMetaLabel,
     getDisplayMeta,
     getLaunchListPerformance,
+    getPercentualAtingidoParaApresentacao,
     formatDisplayMeta,
     formatEntryValue,
     isCapacitacaoAchievementField,

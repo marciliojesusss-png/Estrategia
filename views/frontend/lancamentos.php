@@ -19,7 +19,7 @@
   <script src="/assets/js/formulas.js?v=INDICADOR09-PIX-001" defer></script>
   <script src="/assets/js/documentation-fields.js?v=DOCUMENTACAO-COMPLEMENTAR-1TRI-001" defer></script>
   <script src="/assets/js/action-feedback.js?v=ACTION-FEEDBACK-001" defer></script>
-  <script src="/assets/js/launches.js?v=INDICADOR23-APRESENTACAO-002" defer></script>
+  <script src="/assets/js/launches.js?v=COLUNA-ATINGIMENTO-001" defer></script>
   <script src="/assets/js/app.js?v=APP-VERSION-001" defer></script>
 </head>
 <body data-page="lancamentos">
@@ -52,6 +52,7 @@
                 <th>Mês / competência</th>
                 <th>Meta</th>
                 <th>Resultado da competência</th>
+                <th>% atingido</th>
                 <th>Situação</th>
                 <th>Status</th>
                 <th id="launchActionsHeader">Ações</th>
