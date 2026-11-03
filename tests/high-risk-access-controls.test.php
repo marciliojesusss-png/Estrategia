@@ -29,8 +29,10 @@ $admin = array('perfil' => 'administrador', 'perfil_original' => 'administrador'
 $simulatedUnit = array('perfil' => 'unidade_apuradora', 'perfil_original' => 'administrador', 'unidade_apuradora' => 'SUCOL');
 $simulatedBoard = array('perfil' => 'homologador', 'perfil_original' => 'administrador', 'diretoria_responsavel' => 'DICOT');
 high_risk_ok(AccessPolicy::allowsGeneralDashboard($admin), 'Administrador ativo perdeu visao geral');
-high_risk_ok(!AccessPolicy::allowsGeneralDashboard($simulatedUnit), 'Administrador simulado como Unidade ampliou escopo');
-high_risk_ok(!AccessPolicy::allowsGeneralDashboard($simulatedBoard), 'Administrador simulado como Diretoria ampliou escopo');
+high_risk_ok(AccessPolicy::allowsGeneralDashboard($simulatedUnit), 'Unidade perdeu a consulta geral do Resumo Executivo');
+high_risk_ok(AccessPolicy::allowsGeneralDashboard($simulatedBoard), 'Diretoria perdeu a consulta geral do Resumo Executivo');
+high_risk_ok(AccessPolicy::allowsGeneralDashboard(array('perfil' => 'consultor_diretoria')), 'Consultor perdeu a consulta geral do Resumo Executivo');
+high_risk_ok(!AccessPolicy::allowsGeneralDashboard($company), 'Companhia deve continuar usando somente o fluxo institucional dedicado');
 
 $unitFilters = Auth::scopeFiltersForUser($simulatedUnit, array('escopo' => 'geral', 'unidade_apuradora' => 'GERIN'));
 high_risk_ok($unitFilters['unidade_apuradora'] === 'SUCOL', 'escopo=geral ampliou Unidade');
@@ -83,6 +85,8 @@ high_risk_ok(substr_count($evidenceController, "requirePermission('lancamentos',
 $dashboardController = file_get_contents(__DIR__ . '/../app/controllers/DashboardApiController.php');
 high_risk_ok(strpos($dashboardController, 'AccessPolicy::allowsGeneralDashboard($user)') !== false, 'Dashboard nao valida perfil ativo para escopo geral');
 high_risk_ok(strpos($dashboardController, 'Auth::scopeFiltersForUser($user, $requestedFilters)') !== false, 'Dashboard nao reaplica escopo autenticado');
+high_risk_ok(strpos($dashboardController, '$readOnlyGeneralView') !== false, 'Escopo geral restrito deixou de usar fluxo somente leitura');
+high_risk_ok(strpos($dashboardController, 'dadosInstitucionais($filters)') !== false, 'Escopo geral restrito deixou de sanitizar o payload');
 
 foreach (array('administrador', 'homologador', 'consultor_diretoria', 'unidade_apuradora') as $profile) {
     high_risk_ok(AccessPolicy::allows($profile, 'relatorios', 'visualizar'), 'Relatorios regrediram para ' . $profile);

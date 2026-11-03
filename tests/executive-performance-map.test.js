@@ -126,10 +126,43 @@ const climateReportedResult = {
   regra: { tipoCalculo: "nota_pesquisa_anual" },
   medicaoOficialPesquisa2026: false,
   resultadoOficialReportado: true,
+  percentualAtingido: 1,
   contextoResultadoOficial: "Resultado oficial reportado no 1TRI/2026"
 };
-assert.equal(internals.officialResultContext(climateReportedResult), "Resultado oficial reportado no 1TRI/2026");
-assert.equal(internals.researchSupportText(climateReportedResult), "Pesquisa 2026 prevista para Nov/2026");
+assert.equal(internals.officialResultContext(climateReportedResult), null);
+assert.equal(internals.researchSupportText(climateReportedResult), "Pesquisa oficial 2026 ainda não realizada");
+assert.equal(internals.executiveOfficialValue(climateReportedResult), "-");
+assert.equal(internals.executiveOfficialDetail(climateReportedResult), null);
+assert.equal(internals.executiveDisplayAttainment(climateReportedResult), null);
+
+const platformOfficialProject = {
+  indicador: { id: 10 },
+  regra: { parametrosCalculo: { metaTipo: "meta_oficial_trimestral_projeto" } },
+  possuiPosicaoOficial: true,
+  percentualAtingido: null,
+  lancamentoAcao: {
+    id: "111",
+    status: "Homologado",
+    situacaoCalculada: "Em andamento",
+    camposEntrada: {
+      statusProjetoPlataformaJogos: "Em andamento",
+      marcoAtualPlataformaJogos: "Sprints iniciais executadas",
+      evidenciaPlataformaJogos: "Informe trimestral de acompanhamento"
+    }
+  }
+};
+assert.equal(internals.projectOfficialQualitativeResult(platformOfficialProject), "Em andamento");
+assert.equal(internals.executiveOfficialValue(platformOfficialProject), "Em andamento");
+assert.equal(internals.executiveOfficialDetail(platformOfficialProject), null);
+assert.equal(internals.executiveDisplayAttainment(platformOfficialProject), null);
+assert.equal(internals.projectOfficialQualitativeResult({
+  ...platformOfficialProject,
+  lancamentoAcao: { id: "111", status: "Homologado", situacaoCalculada: "Em andamento", camposEntrada: {} }
+}), null, "posição sem fonte documental não deve ser promovida como resultado oficial");
+assert.equal(internals.projectOfficialQualitativeResult({
+  ...platformOfficialProject,
+  lancamentoAcao: { id: "institucional-10-2026-03", status: "Homologado", situacaoCalculada: "Em andamento", camposEntrada: {} }
+}), "Em andamento", "projeção institucional homologada e higienizada deve preservar a posição qualitativa");
 const climateTotals = internals.aggregate([
   { situacaoAtual: "Em acompanhamento", statusAtual: "Homologado", lancamento: {} },
   { situacaoAtual: "Atingido", statusAtual: "Homologado", lancamento: {} }
@@ -172,10 +205,19 @@ assert.equal(internals.indicatorDetailNavigationParams(12, "general").escopo, "g
 assert.equal(internals.indicatorDetailNavigationParams(12, "own").escopo, "proprio");
 assert.equal(internals.indicatorDetailNavigationParams(12, "general").origem, "resumo-executivo");
 context.window.location.search = "?escopo=geral";
-assert.equal(internals.requestedViewScope({ perfilCodigo: "homologador" }), "own");
-assert.equal(internals.requestedViewScope({ perfilCodigo: "consultor_diretoria" }), "own");
-assert.equal(internals.canChooseViewScope({ perfilCodigo: "unidade_apuradora" }), false);
+assert.equal(internals.requestedViewScope({ perfilCodigo: "homologador" }), "general");
+assert.equal(internals.requestedViewScope({ perfilCodigo: "consultor_diretoria" }), "general");
+assert.equal(internals.canChooseViewScope({ perfilCodigo: "unidade_apuradora" }), true);
+assert.equal(internals.canChooseViewScope({ perfilCodigo: "homologador" }), true);
+assert.equal(internals.canChooseViewScope({ perfilCodigo: "consultor_diretoria" }), true);
+assert.equal(internals.canChooseViewScope({ perfilCodigo: "administrador" }), false);
+context.window.location.search = "?escopo=proprio";
+assert.equal(internals.requestedViewScope({ perfilCodigo: "unidade_apuradora" }), "own");
 context.window.location.search = "";
+const scopeSelectorView = fs.readFileSync(path.join(root, "views", "frontend", "resumo-executivo.php"), "utf8");
+assert.match(scopeSelectorView, /data-own-scope-label>Meu escopo<\/span>/);
+assert.match(scopeSelectorView, /data-executive-view-scope="general"[^>]*>Escopo geral/);
+assert.match(scopeSelectorView, /executiveSummary\.js\?v=RESUMO-RESULTADO-10-12-002/);
 const scopeData = {
   indicadores: [
     { id: 1, ativo: true, unidadeApuradora: "SUCOL", diretoriaResponsavel: "DIFIR" },
@@ -338,11 +380,13 @@ assert.equal(
 const executiveSource = fs.readFileSync(path.join(root, "assets", "js", "executiveSummary.js"), "utf8");
 const executiveView = fs.readFileSync(path.join(root, "views", "frontend", "resumo-executivo.php"), "utf8");
 assert.match(executiveSource, /Pesquisa: \$\{measurement\}/);
-assert.match(executiveSource, /Medição: \$\{escapeHtml\(measurement\)\}/);
+assert.match(executiveSource, /function executiveOfficialDetail\(result\)/);
+assert.match(executiveSource, /isPendingOfficialResearch2026\(result\) \|\| projectOfficialQualitativeResult\(result\)/);
+assert.match(executiveSource, /<strong>\$\{escapeHtml\(officialResult\)\}<\/strong>/);
 assert.match(executiveSource, /performanceToneForResult/);
 assert.match(executiveSource, /executive-performance-\$\{tone\}/);
 assert.match(executiveView, /Azul neutro <strong>Em acompanhamento<\/strong>/);
-assert.match(executiveView, /executiveSummary\.js\?v=GOVERNANCA-CA-001/);
+assert.match(executiveView, /executiveSummary\.js\?v=RESUMO-RESULTADO-10-12-002/);
 assert.match(executiveView, /dashboard\.js\?v=GOVERNANCA-CA-001/);
 assert.match(executiveView, /styles\.css\?v=APP-VERSION-001/);
 assert.equal(executiveSource, fs.readFileSync(path.join(root, "public", "assets", "js", "executiveSummary.js"), "utf8"));

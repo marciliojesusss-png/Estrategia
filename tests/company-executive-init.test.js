@@ -6,6 +6,10 @@ const vm = require("node:vm");
 const root = path.resolve(__dirname, "..");
 const appSource = fs.readFileSync(path.join(root, "assets/js/app.js"), "utf8");
 const executiveSource = fs.readFileSync(path.join(root, "assets/js/executiveSummary.js"), "utf8");
+const executiveView = fs.readFileSync(path.join(root, "views/frontend/resumo-executivo.php"), "utf8");
+
+assert.match(executiveView, /#INTERNO\.CAIXA/,
+  "a visão institucional do Resumo Executivo deve manter a classificação na impressão da página");
 
 function element(id = "") {
   return {
@@ -156,6 +160,13 @@ async function loadExecutivePayload(user, data) {
   assert.deepEqual(institutionalPayload.fonte, { tipo: "institucional" }, "Companhia deve receber fonte minima");
   assert.equal("driver" in institutionalPayload.fonte, false, "Companhia nao deve receber fonte.driver");
   assert.equal("banco" in institutionalPayload.fonte, false, "Companhia nao deve receber fonte.banco");
+
+  const restrictedGeneralPayload = await loadExecutivePayload(
+    { perfilCodigo: "unidade_apuradora", perfilOriginalCodigo: "administrador" },
+    { ...basePayload, acessoInstitucional: true, fonte: { tipo: "institucional" } },
+  );
+  assert.equal(restrictedGeneralPayload.indicadores.length, 23, "Unidade deve receber os 23 indicadores na consulta geral");
+  assert.deepEqual(restrictedGeneralPayload.fonte, { tipo: "institucional" }, "Consulta geral da Unidade deve usar payload sanitizado");
 
   const operationalPayload = await loadExecutivePayload(
     { perfilCodigo: "administrador", perfilOriginalCodigo: "administrador" },

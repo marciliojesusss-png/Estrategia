@@ -18,7 +18,7 @@
   <script src="<?= APP_BASE_PATH ?>/assets/js/prazo-apuracao.js?v=PRAZOS-APURACAO-001" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/dataStore.js?v=GOVERNANCA-CA-001" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/dashboard.js?v=GOVERNANCA-CA-001" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/executiveSummary.js?v=GOVERNANCA-CA-001" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/executiveSummary.js?v=RESUMO-RESULTADO-10-12-002" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/app.js?v=APP-VERSION-001" defer></script>
 </head>
 <body data-page="resumoExecutivo">
@@ -28,6 +28,7 @@
     <main class="content executive-content">
       <section class="page-heading executive-heading">
         <div>
+          <p class="eyebrow">#INTERNO.CAIXA</p>
           <p class="eyebrow">Visão gerencial</p>
           <h1>Resumo Executivo</h1>
           <p>Leitura consolidada do desempenho oficial dos indicadores estratégicos.</p>
@@ -41,8 +42,8 @@
           <span id="executiveViewScopeNote" aria-live="polite"></span>
         </div>
         <div class="executive-view-scope__options" role="group" aria-label="Selecionar escopo de visualização">
-          <button class="executive-view-scope__option" type="button" data-executive-view-scope="own" aria-pressed="false">Meus indicadores</button>
-          <button class="executive-view-scope__option" type="button" data-executive-view-scope="general" aria-pressed="false">Visão geral — <span data-general-indicator-count>23</span> indicadores</button>
+          <button class="executive-view-scope__option" type="button" data-executive-view-scope="own" aria-pressed="false"><span data-own-scope-label>Meu escopo</span></button>
+          <button class="executive-view-scope__option" type="button" data-executive-view-scope="general" aria-pressed="false">Escopo geral — <span data-general-indicator-count>23</span> indicadores</button>
         </div>
       </section>
 

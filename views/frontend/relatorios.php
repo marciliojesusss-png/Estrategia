@@ -34,7 +34,7 @@
 
       <article id="officialConsolidatedReport" class="official-report" aria-labelledby="officialReportTitle">
         <header class="official-report-header">
-          <div><p class="official-report-system">Sistema Estratégia</p><h2 id="officialReportTitle">Relatório Consolidado de Indicadores — Posição Oficial</h2></div>
+          <div><p class="official-report-system">#INTERNO.CAIXA</p><p class="official-report-system">Sistema Estratégia</p><h2 id="officialReportTitle">Relatório Consolidado de Indicadores — Posição Oficial</h2></div>
           <button id="printOfficialReport" class="primary-action no-print" type="button">Imprimir</button>
         </header>
         <section class="official-report-context" aria-label="Identificação do relatório">
@@ -64,7 +64,7 @@
 
       <article id="detailedIndicatorReport" class="official-report detailed-indicator-report" aria-labelledby="detailedReportTitle" hidden>
         <header class="official-report-header">
-          <div><p class="official-report-system">Sistema Estratégia</p><h2 id="detailedReportTitle">Relatório Detalhado do Indicador</h2></div>
+          <div><p class="official-report-system">#INTERNO.CAIXA</p><p class="official-report-system">Sistema Estratégia</p><h2 id="detailedReportTitle">Relatório Detalhado do Indicador</h2></div>
           <div class="row-actions no-print"><a id="backToConsolidatedReport" class="secondary-action" href="<?= APP_BASE_PATH ?>/relatorios">Voltar ao Consolidado</a><button id="printDetailedReport" class="primary-action" type="button">Imprimir relatório detalhado</button></div>
         </header>
         <section class="official-report-context" aria-label="Identificação da geração do relatório detalhado">
@@ -103,7 +103,7 @@
 
       <article id="governanceAuditReport" class="official-report governance-audit-report" aria-labelledby="governanceReportTitle" hidden>
         <header class="official-report-header">
-          <div><p class="official-report-system">Sistema Estratégia</p><h2 id="governanceReportTitle">Relatório de Governança e Auditoria</h2></div>
+          <div><p class="official-report-system">#INTERNO.CAIXA</p><p class="official-report-system">Sistema Estratégia</p><h2 id="governanceReportTitle">Relatório de Governança e Auditoria</h2></div>
           <div class="row-actions no-print"><a class="secondary-action" href="<?= APP_BASE_PATH ?>/relatorios">Voltar ao Consolidado</a><button id="printGovernanceReport" class="primary-action" type="button">Imprimir relatório de governança</button></div>
         </header>
         <section class="official-report-context" aria-label="Identificação do relatório de governança">

@@ -154,7 +154,8 @@
     if (![data.indicadores, data.lancamentos, data.regrasIndicadores, data.frequenciasCobrancaOperacional, data.prazos].every(Array.isArray)) {
       throw new Error("A fonte central retornou dados incompletos para o Resumo Executivo.");
     }
-    if (viewScopeProfileCode(user) === "usuario_companhia") {
+    const readOnlyGeneralView = viewScope === VIEW_SCOPE.GENERAL && canChooseViewScope(user);
+    if (viewScopeProfileCode(user) === "usuario_companhia" || readOnlyGeneralView) {
       if (data.acessoInstitucional !== true || normalizeText(data.fonte?.tipo) !== "institucional") {
         throw new Error("A fonte central retornou um payload institucional inválido.");
       }
@@ -178,7 +179,7 @@
   }
 
   function canChooseViewScope(user = state.user) {
-    return false;
+    return ["unidade_apuradora", "homologador", "consultor_diretoria"].includes(viewScopeProfileCode(user));
   }
 
   function defaultViewScope(user) {
@@ -205,9 +206,9 @@
   }
 
   function requestedViewScope(user) {
-    if (["unidade_apuradora", "homologador", "consultor_diretoria"].includes(viewScopeProfileCode(user))) {
-      return VIEW_SCOPE.OWN;
-    }
+    const requested = new URLSearchParams(window.location.search).get("escopo");
+    if (canChooseViewScope(user) && requested === "geral") return VIEW_SCOPE.GENERAL;
+    if (canChooseViewScope(user) && requested === "proprio") return VIEW_SCOPE.OWN;
     return storedViewScope(user);
   }
 
@@ -290,6 +291,8 @@
     const generalCount = generalData ? activeIndicators(generalData).length : EXPECTED_GENERAL_INDICATOR_COUNT;
     const countTarget = selector.querySelector("[data-general-indicator-count]");
     if (countTarget) countTarget.textContent = String(generalCount);
+    const ownLabel = selector.querySelector("[data-own-scope-label]");
+    if (ownLabel) ownLabel.textContent = responsibilityLabel();
 
     selector.querySelectorAll("[data-executive-view-scope]").forEach((button) => {
       const active = button.dataset.executiveViewScope === state.viewScope;
@@ -600,6 +603,7 @@
   }
 
   function officialResultContext(result) {
+    if (isPendingOfficialResearch2026(result)) return null;
     if (result?.regra?.tipoCalculo !== "nota_pesquisa_anual" || !result.resultadoOficialReportado) return null;
     return result.contextoResultadoOficial || "Resultado oficial reportado em acompanhamento";
   }
@@ -608,10 +612,55 @@
     const measurement = measurementReference(result);
     if (result?.regra?.tipoCalculo === "nota_pesquisa_anual" && result.medicaoOficialPesquisa2026 === false) {
       return Number(result?.indicador?.id) === 12
-        ? "Pesquisa 2026 prevista para Nov/2026"
+        ? "Pesquisa oficial 2026 ainda não realizada"
         : "Pesquisa anual ainda não realizada";
     }
     return measurement ? `Pesquisa: ${measurement}` : "Sem nova medição";
+  }
+
+  function isPendingOfficialResearch2026(result) {
+    return Number(result?.indicador?.id) === 12 &&
+      result?.regra?.tipoCalculo === "nota_pesquisa_anual" &&
+      result.medicaoOficialPesquisa2026 === false;
+  }
+
+  function projectOfficialQualitativeResult(result) {
+    if (Number(result?.indicador?.id) !== 10 ||
+        result?.regra?.parametrosCalculo?.metaTipo !== "meta_oficial_trimestral_projeto" ||
+        result?.possuiPosicaoOficial !== true) return null;
+    const launch = result.lancamento || result.lancamentoAcao || result.latestOperationalLaunch;
+    if (!launch || launch.status !== "Homologado") return null;
+    const fields = launch.camposEntrada || {};
+    const institutionalProjection = String(launch.id || "").startsWith("institucional-");
+    const hasDocumentarySource = institutionalProjection || [
+      fields.evidenciaPlataformaJogos,
+      fields.referenciaDocumentalPlataformaJogos,
+      launch.referenciaEvidencia
+    ].some((value) => String(value || "").trim() !== "");
+    if (!hasDocumentarySource) return null;
+    const qualitative = fields.statusProjetoPlataformaJogos ||
+      fields.marcoAtualPlataformaJogos ||
+      launch.situacaoCalculada;
+    return String(qualitative || "").trim() || null;
+  }
+
+  function executiveOfficialValue(result) {
+    if (isPendingOfficialResearch2026(result)) return "-";
+    const qualitativeProject = projectOfficialQualitativeResult(result);
+    if (qualitativeProject) return qualitativeProject;
+    return (result?.lancamento || result?.trimestral)
+      ? StrategicResults.formatOfficialResult(result)
+      : "-";
+  }
+
+  function executiveOfficialDetail(result) {
+    if (isPendingOfficialResearch2026(result) || projectOfficialQualitativeResult(result)) return null;
+    return officialResultContext(result) ||
+      (measurementReference(result) ? `Medição: ${measurementReference(result)}` : null);
+  }
+
+  function executiveDisplayAttainment(result) {
+    return isPendingOfficialResearch2026(result) ? null : result?.percentualAtingido;
   }
 
   function displaySituation(result) {
@@ -1323,7 +1372,7 @@
   function performanceMapCard(result, index = 0) {
     const name = limparNomeIndicador(result.indicador.indicador);
     const shortName = nomeIndicadorMapa(result.indicador);
-    const officialResult = (result.lancamento || result.trimestral) ? StrategicResults.formatOfficialResult(result) : "-";
+    const officialResult = executiveOfficialValue(result);
     const meta = StrategicResults.formatOfficialMeta(result);
     const situation = displaySituation(result);
     const status = displayStatus(result);
@@ -1333,14 +1382,19 @@
     const researchContext = researchSupportText(result);
     const isResearchSurvey = ["nota_pesquisa_nps", "nota_pesquisa_anual"].includes(result.regra?.tipoCalculo);
     const isPlataformaJogos = Number(result.indicador.id) === 10 && result.regra?.parametrosCalculo?.metaTipo === "meta_oficial_trimestral_projeto";
+    const displayAttainment = executiveDisplayAttainment(result);
     const previous = previousMonthlyResult(result);
-    const variation = performanceVariation(result.percentualAtingido, previous?.percentualAtingido);
+    const variation = performanceVariation(displayAttainment, previous?.percentualAtingido);
     const variationLabel = formatPerformanceVariation(variation);
     const variationTitle = Number(result.indicador.id) === 7
       ? "Variação do atingimento"
       : "Variação";
-    const percentLabel = performancePercentLabel(result.percentualAtingido);
-    const percentValue = performancePercentValue(result.percentualAtingido);
+    const percentLabel = isPendingOfficialResearch2026(result)
+      ? "Sem percentual oficial"
+      : performancePercentLabel(displayAttainment);
+    const percentValue = isPendingOfficialResearch2026(result)
+      ? "-"
+      : performancePercentValue(displayAttainment);
     const tone = performanceToneForResult(result);
     const toneLabel = performanceToneLabel(tone);
     const active = Number(result.indicador.id) === Number(state.indicatorFilterId);
@@ -1382,10 +1436,10 @@
       >
         <span class="executive-performance-name">${escapeHtml(`${indicatorNumberLabel(result.indicador)}. ${shortName}`)}</span>
         <span class="executive-performance-main">
-          <strong>${officialResult}</strong>
+          <strong>${escapeHtml(officialResult)}</strong>
           <span class="executive-performance-percent">
             <b>${escapeHtml(percentValue)}</b>
-            ${toFiniteNumber(result.percentualAtingido) === null ? "" : "<small>da meta</small>"}
+            ${toFiniteNumber(displayAttainment) === null ? "" : "<small>da meta</small>"}
           </span>
         </span>
         ${isResearchSurvey ? `
@@ -1396,7 +1450,7 @@
         ` : isPlataformaJogos ? `
           <span class="executive-performance-footer executive-performance-context">
             <span>Evolução do projeto</span>
-            <span>${escapeHtml(result.lancamento?.camposEntrada?.statusProjetoPlataformaJogos || situation)}</span>
+            <span>${escapeHtml(projectOfficialQualitativeResult(result) || situation)}</span>
           </span>
         ` : `
           <span class="executive-performance-footer">
@@ -1481,10 +1535,8 @@
     target.innerHTML = ordered.map((result) => {
       const situation = displaySituation(result);
       const status = displayStatus(result);
-      const measurement = measurementReference(result);
-      const resultContext = officialResultContext(result);
-      const officialValue = result.lancamento ? StrategicResults.formatOfficialResult(result) : "-";
-      const isPlataformaJogos = Number(result.indicador.id) === 10 && result.regra?.parametrosCalculo?.metaTipo === "meta_oficial_trimestral_projeto";
+      const officialValue = executiveOfficialValue(result);
+      const officialDetail = executiveOfficialDetail(result);
       return `
         <tr>
           <td>${planBadgesMarkup(result.indicador)}</td>
@@ -1492,7 +1544,7 @@
           <td class="indicator-name"><span class="executive-indicator-cell"><span>${escapeHtml(limparNomeIndicador(result.indicador.indicador))}</span>${responsibilityBadgeMarkup(result.indicador)}</span></td>
           <td>${escapeHtml(executiveTableCompetence(result) || "-")}</td>
           <td>${StrategicResults.formatOfficialMeta(result)}</td>
-          <td class="official-value"><span class="executive-official-measurement"><strong>${escapeHtml(officialValue)}</strong>${isPlataformaJogos ? "<small>Evolução do projeto</small>" : resultContext ? `<small>${escapeHtml(resultContext)}</small>` : measurement ? `<small>Medição: ${escapeHtml(measurement)}</small>` : ""}</span></td>
+          <td class="official-value"><span class="executive-official-measurement"><strong>${escapeHtml(officialValue)}</strong>${officialDetail ? `<small>${escapeHtml(officialDetail)}</small>` : ""}</span></td>
           <td class="col-situacao"><span class="badge badge-situacao ${badgeClass(situation)} ${String(situation).length > 16 ? "long" : ""}">${escapeHtml(situation)}</span></td>
           ${shouldHideStatusColumn() ? "" : `<td class="col-status"><span class="badge badge-status ${badgeClass(status)}">${escapeHtml(status)}</span></td>`}
           <td><a class="secondary-action table-action dashboard-action" href="${window.AppRoutes ? window.AppRoutes.page("indicadores", indicatorDetailNavigationParams(result.indicador.id)) : `/indicadores?${new URLSearchParams(indicatorDetailNavigationParams(result.indicador.id)).toString()}`}" title="Visualizar indicador">Ver</a></td>
@@ -1638,6 +1690,11 @@
       measurementReference,
       officialResultContext,
       researchSupportText,
+      isPendingOfficialResearch2026,
+      projectOfficialQualitativeResult,
+      executiveOfficialValue,
+      executiveOfficialDetail,
+      executiveDisplayAttainment,
       summarySituationGroup,
       chartSituation,
       aggregate,

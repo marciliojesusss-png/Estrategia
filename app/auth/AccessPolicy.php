@@ -71,7 +71,7 @@ final class AccessPolicy
     public static function allowsGeneralDashboard(array $user)
     {
         $profile = isset($user['perfil']) ? Auth::normalizeProfile($user['perfil']) : Auth::DEFAULT_PROFILE;
-        return $profile === 'administrador';
+        return in_array($profile, array('administrador', 'homologador', 'consultor_diretoria', 'unidade_apuradora'), true);
     }
 
     public static function initiativeScopeAllows(array $user, array $record)

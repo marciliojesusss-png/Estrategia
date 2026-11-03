@@ -18,6 +18,8 @@ assert.match(reports, /DataStore\.loadAll\(\)/);
 assert.match(reports, /if \(isActiveAdministrator\(user\)\)/);
 assert.doesNotMatch(reports, /DataTable|jspdf|dompdf|mPDF|TCPDF/i);
 assert.match(view, /Relat.rio Consolidado de Indicadores/);
+assert.equal((view.match(/#INTERNO\.CAIXA/g) || []).length, 3,
+  'cada saída imprimível do módulo de relatórios deve exibir a classificação institucional');
 assert.match(view, /operationalReportsSection/);
 assert.match(view, /Consulta\/Exporta..o Operacional/);
 assert.match(view, /officialReportFilterSummary/);

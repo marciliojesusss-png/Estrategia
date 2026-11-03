@@ -22,13 +22,15 @@ final class DashboardApiController
         $requestedFilters = $this->filters($_GET);
         $requestedGeneralView = $action === 'dados' && $this->isGeneralView($_GET);
         $generalView = $requestedGeneralView && AccessPolicy::allowsGeneralDashboard($user);
-        $institutionalView = Auth::normalizeProfile($user['perfil']) === 'usuario_companhia';
+        $profile = Auth::normalizeProfile($user['perfil']);
+        $institutionalView = $profile === 'usuario_companhia';
+        $readOnlyGeneralView = $generalView && $profile !== 'administrador';
         $filters = $generalView || $institutionalView
             ? $requestedFilters
             : Auth::scopeFiltersForUser($user, $requestedFilters);
         if ($action === 'dados') {
             $filters['ativo'] = true;
-            $data = $institutionalView
+            $data = $institutionalView || $readOnlyGeneralView
                 ? $this->dadosService->dadosInstitucionais($filters)
                 : $this->dadosService->dados($filters);
             $data['escopoVisualizacao'] = $generalView || $institutionalView ? 'geral' : 'proprio';
