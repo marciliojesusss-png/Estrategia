@@ -61,7 +61,7 @@ const databaseService = read("assets", "js", "databaseService.js");
 assert.match(databaseService, /api\/lancamentos\/\$\{encodeURIComponent\(id\)\}\/reabrir/);
 assert.doesNotMatch(databaseService, /status: "Reaberto"/);
 
-assert.match(read("views", "frontend", "administracao.php"), /admin\.js\?v=GOVERNANCA-CA-002/);
+assert.match(read("views", "frontend", "administracao.php"), /admin\.js\?v=MATRIZ-COBERTURA-003/);
 assert.match(read("views", "frontend", "homologacao.php"), /approvals\.js\?v=INDICADOR02-NPS-SIMPLIFICADO-001/);
 assert.match(read("views", "frontend", "lancamentos.php"), /launches\.js\?v=COLUNA-ATINGIMENTO-001/);
 

@@ -2439,6 +2439,74 @@ th {
   font-size: 1.5rem;
 }
 
+.access-coverage-workspace {
+  display: grid;
+  gap: 18px;
+}
+
+.access-coverage-workspace[hidden] {
+  display: none;
+}
+
+.access-coverage-heading h3,
+.access-coverage-users h3 {
+  margin: 0;
+}
+
+.access-coverage-cards {
+  margin-bottom: 0;
+}
+
+.access-coverage-cards .summary-card small {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.access-coverage-filters {
+  margin-bottom: 0;
+}
+
+.access-coverage-users {
+  display: grid;
+  gap: 14px;
+}
+
+.access-coverage-user-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.access-coverage-user-group {
+  padding: 14px;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: rgba(8, 38, 74, 0.72);
+}
+
+.access-coverage-user-title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.access-coverage-user-title span {
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.access-coverage-user-group ul {
+  margin: 12px 0 0;
+  padding-left: 20px;
+}
+
+.access-coverage-user-group li + li {
+  margin-top: 6px;
+}
+
 .detail-panel {
   margin-top: 18px;
 }

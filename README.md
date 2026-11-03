@@ -357,8 +357,17 @@ Requisicoes da aplicacao devem entrar por `public/index.php` ou pelo
 
 Quem criou, salvou, alterou, retificou ou enviou um lançamento não pode
 homologá-lo nem devolvê-lo, mesmo que seu perfil seja alterado posteriormente.
-A verificação é feita no backend pela matrícula autenticada, pelo responsável
-atual e pelos eventos de produção existentes em `auditoria` e `homologacoes`.
+A única exceção deliberada é o usuário cujo perfil cadastral original é
+`Administrador`: durante a fase atual de produção e estabilização, ele mantém a
+prerrogativa excepcional de continuidade operacional, inclusive quando utiliza
+`Visualizar como`. A boa prática é preferir outro Administrador disponível para
+a homologação, sem transformar essa preferência em bloqueio técnico. A decisão,
+a cobertura desejada com três Administradores ativos e os controles preservados
+estão documentados em [`docs/governanca-acessos.md`](docs/governanca-acessos.md).
+
+A verificação dos demais perfis é feita no backend pela matrícula autenticada,
+pelo responsável atual e pelos eventos de produção existentes em `auditoria` e
+`homologacoes`.
 
 A configuração `fechamentosConselhoAdministracao` é armazenada como JSON na
 tabela existente `configuracoes`. A data de fechamento é cadastrada

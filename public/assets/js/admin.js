@@ -35,6 +35,7 @@
   ];
 
   const MODULE_TITLES = {
+    cobertura: "Matriz de Cobertura",
     acessos: "Acessos corporativos",
     usuarios: "Usuários simulados",
     planos: "Planos",
@@ -60,6 +61,8 @@
     accessStorage: null,
     accessStorageWarned: false,
     loadingAccessUsers: false,
+    accessCoverage: null,
+    loadingAccessCoverage: false,
     prazos: []
   };
 
@@ -121,6 +124,23 @@
       showMessage(error.message || "Nao foi possivel carregar os acessos.", "warning");
     } finally {
       state.loadingAccessUsers = false;
+    }
+  }
+
+  async function loadAccessCoverage() {
+    if (state.loadingAccessCoverage) return;
+    state.loadingAccessCoverage = true;
+    try {
+      const payload = await adminApi("api/administracao/cobertura-acessos");
+      if (!payload || !Array.isArray(payload.linhas) || !payload.cards) {
+        throw new Error("A matriz de cobertura retornou uma estrutura inválida.");
+      }
+      state.accessCoverage = payload;
+    } catch (error) {
+      state.accessCoverage = { error: error.message || "Não foi possível carregar a matriz de cobertura.", linhas: [], cards: null, filtros: {} };
+      showMessage(state.accessCoverage.error, "warning");
+    } finally {
+      state.loadingAccessCoverage = false;
     }
   }
 
@@ -220,6 +240,10 @@
       button.classList.toggle("active", button.dataset.adminModule === module);
     });
     document.getElementById("adminForm").hidden = true;
+    document.getElementById("accessCoverageWorkspace").hidden = module !== "cobertura";
+    document.getElementById("adminDefaultTable").hidden = module === "cobertura";
+    document.getElementById("adminGrid").hidden = module === "cobertura";
+    document.getElementById("resetOperationalDataButton").hidden = module === "cobertura";
     document.getElementById("adminNewButton").hidden = !["acessos", "usuarios", "planos", "pilares", "unidades", "diretorias", "metas", "prazosApuracao", "fechamentoCa"].includes(module);
     renderModule();
   }
@@ -260,6 +284,21 @@
     return ACCESS_PROFILE_OPTIONS.find(([value]) => value === profile)?.[1] || profile || "-";
   }
 
+  function isAdministratorAccess(item = {}) {
+    return String(item.perfil || "").trim().toLowerCase() === "administrador";
+  }
+
+  function accessUnitLabel(item = {}) {
+    if (isAdministratorAccess(item)) return "GERAL";
+    const profile = String(item.perfil || "").trim().toLowerCase();
+    return profile === "unidade_apuradora" ? (item.unidadeApuradora || "-") : "-";
+  }
+
+  function accessDirectoryLabel(item = {}) {
+    const profile = String(item.perfil || "").trim().toLowerCase();
+    return ["homologador", "consultor_diretoria"].includes(profile) ? (item.diretoriaResponsavel || "-") : "-";
+  }
+
   function normalizeAccessUser(item = {}) {
     return {
       ...item,
@@ -291,14 +330,114 @@
         <td>${escapeHtml(item.matricula)}</td>
         <td>${escapeHtml(item.nome)}</td>
         <td>${escapeHtml(accessProfileLabel(item.perfil))}</td>
-        <td>${escapeHtml(item.unidadeApuradora || item.sgUnidade || "-")}</td>
-        <td>${escapeHtml(item.diretoriaResponsavel || "-")}</td>
+        <td>${escapeHtml(accessUnitLabel(item))}</td>
+        <td>${escapeHtml(accessDirectoryLabel(item))}</td>
         <td><span class="badge ${item.ativo ? "ok" : "danger"}">${item.ativo ? "Ativo" : "Inativo"}</span></td>
         <td><button class="secondary-action table-action" type="button" data-edit-access="${escapeHtml(item.id)}">Editar</button></td>
       </tr>
     `);
 
     table(["Matrícula", "Nome", "Perfil", "Unidade", "Diretoria", "Status", "Ações"], rows);
+  }
+
+  function coverageBadgeClass(status) {
+    if (status === "Completa") return "ok";
+    if (status === "Reduzida") return "warn";
+    return "danger";
+  }
+
+  function populateCoverageFilter(id, values) {
+    const select = document.getElementById(id);
+    const selected = select.value;
+    select.innerHTML = `<option value="">Todas</option>${(values || []).map((value) => (
+      `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`
+    )).join("")}`;
+    if ([...select.options].some((option) => option.value === selected)) select.value = selected;
+  }
+
+  function filteredCoverageRows() {
+    const rows = state.accessCoverage?.linhas || [];
+    const directory = document.getElementById("accessCoverageDirectoryFilter").value;
+    const unit = document.getElementById("accessCoverageUnitFilter").value;
+    const functionName = document.getElementById("accessCoverageFunctionFilter").value;
+    const coverage = document.getElementById("accessCoverageStatusFilter").value;
+    return rows.filter((row) => (
+      (!directory || row.diretoria === directory)
+      && (!unit || row.unidadeEscopo === unit)
+      && (!functionName || row.funcao === functionName)
+      && (!coverage || row.cobertura === coverage)
+    ));
+  }
+
+  function renderCoverageCards(cards) {
+    const target = document.getElementById("accessCoverageCards");
+    if (!cards) {
+      target.innerHTML = "";
+      return;
+    }
+    const items = [
+      ["Administradores", `${cards.administradores.ativos} / ${cards.administradores.esperado}`, cards.administradores.cobertura],
+      ["Unidades com cobertura completa", `${cards.unidadesCompletas.atuais} / ${cards.unidadesCompletas.total}`, ""],
+      ["Diretorias com cobertura completa", `${cards.diretoriasCompletas.atuais} / ${cards.diretoriasCompletas.total}`, ""],
+      ["Posições de cobertura pendentes", String(cards.posicoesPendentes), ""]
+    ];
+    target.innerHTML = items.map(([label, value, detail]) => `
+      <article class="summary-card">
+        <span>${escapeHtml(label)}</span>
+        <strong>${escapeHtml(value)}</strong>
+        ${detail ? `<small>${escapeHtml(detail)}</small>` : ""}
+      </article>
+    `).join("");
+  }
+
+  function renderCoverageRows() {
+    const rows = filteredCoverageRows();
+    document.getElementById("accessCoverageTableBody").innerHTML = rows.length
+      ? rows.map((row) => `
+        <tr>
+          <td>${escapeHtml(row.diretoria)}</td>
+          <td>${escapeHtml(row.unidadeEscopo)}</td>
+          <td>${escapeHtml(row.funcao)}</td>
+          <td>${escapeHtml(row.esperado)}</td>
+          <td>${escapeHtml(row.ativos)}</td>
+          <td><span class="badge ${coverageBadgeClass(row.cobertura)}">${escapeHtml(row.cobertura)}</span></td>
+        </tr>
+      `).join("")
+      : `<tr><td colspan="6">Nenhuma cobertura corresponde aos filtros selecionados.</td></tr>`;
+
+    document.getElementById("accessCoverageUsers").innerHTML = rows.length
+      ? rows.map((row) => `
+        <article class="access-coverage-user-group">
+          <div class="access-coverage-user-title">
+            <strong>${escapeHtml(row.unidadeEscopo)} — ${escapeHtml(row.funcao)}</strong>
+            <span>${escapeHtml(row.ativos)} / ${escapeHtml(row.esperado)}</span>
+          </div>
+          ${row.usuarios.length ? `
+            <ul>${row.usuarios.map((user) => `<li><strong>${escapeHtml(user.matricula)}</strong> — ${escapeHtml(user.nome)}</li>`).join("")}</ul>
+          ` : `<p class="help-text">Nenhum usuário ativo nesta cobertura.</p>`}
+        </article>
+      `).join("")
+      : `<p class="help-text">Nenhum usuário ativo corresponde aos filtros selecionados.</p>`;
+  }
+
+  function renderAccessCoverage() {
+    if (state.accessCoverage === null) {
+      document.getElementById("accessCoverageCards").innerHTML = `<p class="help-text">Carregando matriz de cobertura...</p>`;
+      document.getElementById("accessCoverageTableBody").innerHTML = `<tr><td colspan="6">Carregando coberturas...</td></tr>`;
+      document.getElementById("accessCoverageUsers").innerHTML = "";
+      loadAccessCoverage().then(() => {
+        if (state.module === "cobertura") renderAccessCoverage();
+      });
+      return;
+    }
+
+    const filters = state.accessCoverage.filtros || {};
+    populateCoverageFilter("accessCoverageDirectoryFilter", filters.diretorias);
+    populateCoverageFilter("accessCoverageUnitFilter", filters.unidades);
+    populateCoverageFilter("accessCoverageFunctionFilter", filters.funcoes);
+    populateCoverageFilter("accessCoverageStatusFilter", filters.coberturas);
+    renderCoverageCards(state.accessCoverage.cards);
+    renderCoverageRows();
   }
 
   function openAccessForm(item = null) {
@@ -1113,6 +1252,10 @@
   }
 
   function renderModule() {
+    if (state.module === "cobertura") {
+      renderAccessCoverage();
+      return;
+    }
     if (state.module === "acessos") {
       renderAccessUsers();
       return;
@@ -1187,6 +1330,10 @@
       }
     });
 
+    document.getElementById("accessCoverageFilters").addEventListener("change", () => {
+      if (state.module === "cobertura" && state.accessCoverage) renderCoverageRows();
+    });
+
     document.getElementById("adminTableBody").addEventListener("click", (event) => {
       const fechamentoButton = event.target.closest("[data-edit-fechamento-ca]");
       if (fechamentoButton) {
@@ -1251,7 +1398,7 @@
 
   async function init({ data, user }) {
     const storageInfo = await DataStore.getStorageInfo();
-    state = { data, user, storageInfo, module: "acessos", editingId: null, accessUsers: null, accessStorage: null, accessStorageWarned: false, loadingAccessUsers: false, prazos: [] };
+    state = { data, user, storageInfo, module: "acessos", editingId: null, accessUsers: null, accessStorage: null, accessStorageWarned: false, loadingAccessUsers: false, accessCoverage: null, loadingAccessCoverage: false, prazos: [] };
     state.data.solicitacoesReabertura = state.data.solicitacoesReabertura || [];
     await loadPrazosApuracao();
     renderConfigurationInfo();

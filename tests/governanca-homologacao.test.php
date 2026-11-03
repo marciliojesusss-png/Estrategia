@@ -55,6 +55,8 @@ function governance_throws($class, $callback, $message)
 $consultant = array('perfil' => 'consultor_diretoria', 'matricula' => 'C200002', 'diretoria_responsavel' => 'DIFIR');
 $director = array('perfil' => 'homologador', 'matricula' => 'C300003', 'diretoria_responsavel' => 'DIFIR');
 $admin = array('perfil' => 'administrador', 'perfil_original' => 'administrador', 'matricula' => 'C100001', 'diretoria_responsavel' => '');
+$adminB = array('perfil' => 'administrador', 'perfil_original' => 'administrador', 'matricula' => 'C100002', 'diretoria_responsavel' => '');
+$adminC = array('perfil' => 'administrador', 'perfil_original' => 'administrador', 'matricula' => 'C100003', 'diretoria_responsavel' => '');
 $adminAsReviewer = array('perfil' => 'homologador', 'perfil_original' => 'administrador', 'matricula' => 'C118119', 'diretoria_responsavel' => 'DIFIR');
 $unit = array('perfil' => 'unidade_apuradora', 'matricula' => 'C400004', 'unidade_apuradora' => 'SUCOL');
 $launch = array(
@@ -77,7 +79,32 @@ governance_ok(AccessPolicy::allows('administrador', 'homologacoes', 'decidir'), 
 governance_ok(AccessPolicy::scopeAllows($consultant, $launch), 'consultor DIFIR deve acessar DIFIR');
 governance_ok(!AccessPolicy::scopeAllows($consultant, array_merge($launch, array('diretoriaResponsavel' => 'DICOT'))), 'consultor DIFIR nao deve acessar DICOT');
 
-// Segregacao permanece vinculada a matricula, inclusive apos troca de perfil.
+// Casos A-D: excecao administrativa deliberada e cobertura com tres Administradores.
+GovernancaHomologacao::assertIndependentReviewer(
+    array_merge($launch, array('usuarioResponsavel' => 'C100001')),
+    'C100001',
+    $admin,
+    array('C100001')
+);
+GovernancaHomologacao::assertIndependentReviewer(
+    array_merge($launch, array('usuarioResponsavel' => 'C118119')),
+    'C118119',
+    $adminAsReviewer,
+    array('C118119')
+);
+GovernancaHomologacao::assertIndependentReviewer(
+    array_merge($launch, array('usuarioResponsavel' => 'C100001')),
+    'C100001',
+    $adminB,
+    array('C100001')
+);
+GovernancaHomologacao::assertIndependentReviewer($launch, 'C400004', $adminC, array('C400004'));
+
+// Casos E-H: segregacao normal permanece vinculada a matricula e ao historico.
+$formerUnitAsDirector = array('perfil' => 'homologador', 'matricula' => 'C400004', 'diretoria_responsavel' => 'DIFIR');
+governance_throws('UnexpectedValueException', function () use ($launch, $formerUnitAsDirector) {
+    GovernancaHomologacao::assertIndependentReviewer($launch, 'C400004', $formerUnitAsDirector, array('C400004'));
+}, 'unidade que passou a homologador deve continuar bloqueada');
 GovernancaHomologacao::assertIndependentReviewer($launch, 'C400004', $consultant);
 $selfLaunch = array_merge($launch, array('usuarioResponsavel' => 'CORPCAIXA\\C200002'));
 $error = governance_throws('UnexpectedValueException', function () use ($selfLaunch, $consultant) {
@@ -90,8 +117,7 @@ governance_throws('UnexpectedValueException', function () use ($launch, $directo
 governance_throws('UnexpectedValueException', function () use ($launch, $consultant) {
     GovernancaHomologacao::assertIndependentReviewer($launch, 'C200002', $consultant);
 }, 'troca posterior para consultor nao remove autoria do envio');
-GovernancaHomologacao::assertIndependentReviewer(array_merge($launch, array('usuarioResponsavel' => 'C100001')), 'C100001', $admin, array('C100001'));
-GovernancaHomologacao::assertIndependentReviewer($launch, 'C400004', $admin);
+GovernancaHomologacao::assertIndependentReviewer($launch, 'C400004', $director, array('C400004'));
 $reference152 = array_merge($launch, array(
     'id' => '152', 'indicadorId' => 13, 'competencia' => '2026-08', 'versaoAtual' => 1,
     'status' => LancamentoStateMachine::SUBMITTED, 'usuarioResponsavel' => 'C118119',

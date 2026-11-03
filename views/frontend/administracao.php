@@ -17,7 +17,7 @@
   <script src="/assets/js/dataService.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/auth.js?v=GOVERNANCA-CA-001" defer></script>
   <script src="/assets/js/prazo-apuracao.js?v=PRAZOS-APURACAO-001" defer></script>
-  <script src="/assets/js/admin.js?v=GOVERNANCA-CA-002" defer></script>
+  <script src="/assets/js/admin.js?v=MATRIZ-COBERTURA-003" defer></script>
   <script src="/assets/js/app.js?v=APP-VERSION-001" defer></script>
 </head>
 <body data-page="administracao">
@@ -51,6 +51,7 @@
 
       <section class="panel admin-workspace">
         <div class="admin-tabs" aria-label="Módulos administrativos">
+          <button class="secondary-action" type="button" data-admin-module="cobertura">Matriz de Cobertura</button>
           <button class="secondary-action" type="button" data-admin-module="acessos">Acessos</button>
           <button class="secondary-action" type="button" data-admin-module="usuarios">Usuários</button>
           <button class="secondary-action" type="button" data-admin-module="planos">Planos</button>
@@ -82,7 +83,68 @@
 
         <form id="adminForm" class="editor-form" hidden></form>
 
-        <div class="table-wrap">
+        <section id="accessCoverageWorkspace" class="access-coverage-workspace" aria-labelledby="access-coverage-title" hidden>
+          <div class="access-coverage-heading">
+            <div>
+              <p class="eyebrow">Leitura administrativa</p>
+              <h3 id="access-coverage-title">Matriz de Cobertura</h3>
+              <p class="help-text">Posição atual derivada exclusivamente dos acessos ativos e dos catálogos institucionais.</p>
+            </div>
+          </div>
+
+          <div id="accessCoverageCards" class="summary-grid access-coverage-cards" aria-live="polite"></div>
+
+          <form id="accessCoverageFilters" class="filters access-coverage-filters" aria-label="Filtros da matriz de cobertura">
+            <label>Diretoria
+              <select id="accessCoverageDirectoryFilter" name="diretoria">
+                <option value="">Todas</option>
+              </select>
+            </label>
+            <label>Unidade
+              <select id="accessCoverageUnitFilter" name="unidade">
+                <option value="">Todas</option>
+              </select>
+            </label>
+            <label>Função/Perfil
+              <select id="accessCoverageFunctionFilter" name="funcao">
+                <option value="">Todas</option>
+              </select>
+            </label>
+            <label>Situação de cobertura
+              <select id="accessCoverageStatusFilter" name="cobertura">
+                <option value="">Todas</option>
+              </select>
+            </label>
+          </form>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Diretoria</th>
+                  <th>Unidade/Escopo</th>
+                  <th>Função</th>
+                  <th>Esperado</th>
+                  <th>Ativos</th>
+                  <th>Cobertura</th>
+                </tr>
+              </thead>
+              <tbody id="accessCoverageTableBody"></tbody>
+            </table>
+          </div>
+
+          <section class="access-coverage-users" aria-labelledby="access-coverage-users-title">
+            <div class="panel-title-row">
+              <div>
+                <p class="eyebrow">Acessos atuais</p>
+                <h3 id="access-coverage-users-title">Usuários ativos por cobertura</h3>
+              </div>
+            </div>
+            <div id="accessCoverageUsers" class="access-coverage-user-grid"></div>
+          </section>
+        </section>
+
+        <div id="adminDefaultTable" class="table-wrap">
           <table>
             <thead id="adminTableHead"></thead>
             <tbody id="adminTableBody"></tbody>
