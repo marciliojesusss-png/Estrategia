@@ -2,6 +2,7 @@
   const EDITABLE_STATUSES = ["Não iniciado", "Nao iniciado", "Rascunho", "Em preenchimento", "Devolvido para ajuste", "Reaberto", "Retificado"];
   const MANUAL_TYPES = ["manual_homologado", "qualitativo"];
   const DECIMAL_PERCENTAGE_ENTRY_FIELDS = new Set([
+    "ieoApuradoInformado",
     "resultadoOficialPix",
     "percentualAtingidoOficialPix",
     "resultadoAcumuladoDocumentalCanaisDigitais",
@@ -276,6 +277,29 @@
     return field?.tipo === "percentual" && (field.entradaPtBr === true || usesDecimalPercentageEntry(field));
   }
 
+  function isCapacitacaoAchievementField(field) {
+    return field?.nome === "percentualAtingidoOficialCapacitacao";
+  }
+
+  function normalizeAchievementFactor(value) {
+    if (value === "" || value === null || value === undefined) return null;
+    let normalizedValue = value;
+    if (typeof normalizedValue === "string") {
+      normalizedValue = normalizedValue.trim().replace("%", "");
+      if (normalizedValue.includes(",")) normalizedValue = normalizedValue.replace(/\./g, "").replace(",", ".");
+    }
+    const number = toNumberOrNull(normalizedValue);
+    if (number === null) return null;
+    return Math.abs(number) >= 10 ? number / 100 : number;
+  }
+
+  function formatAchievementFactor(value) {
+    const factor = normalizeAchievementFactor(value);
+    return factor === null
+      ? ""
+      : `${(factor * 100).toLocaleString("pt-BR", { maximumFractionDigits: 4 })}%`;
+  }
+
   function isCanaisDigitaisDocumentalField(field) {
     return [
       "resultadoAcumuladoDocumentalCanaisDigitais",
@@ -423,6 +447,100 @@
 
   function isIeoRule(regra) {
     return regra?.tipoCalculo === "indice_inverso" && Number(regra?.indicadorId) === 6;
+  }
+
+  function formatIeoConferenciaPercent(value) {
+    const number = toNumberOrNull(value);
+    return number === null
+      ? "—"
+      : `${(number * 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
+  }
+
+  function ieoReconciliationModel(resultado = {}) {
+    const possuiCalculado = resultado.resultadoCalculado !== null && resultado.resultadoCalculado !== undefined;
+    const possuiInformado = resultado.resultadoInformado !== null && resultado.resultadoInformado !== undefined;
+    if (!possuiCalculado && !possuiInformado) return { visible: false };
+
+    if (resultado.divergenciaIeo === true) {
+      return {
+        visible: true,
+        tone: "warning",
+        title: "Divergência na apuração do IEO",
+        message: `O IEO informado pela Unidade é ${formatIeoConferenciaPercent(resultado.resultadoInformado)}, enquanto os componentes preenchidos resultam em ${formatIeoConferenciaPercent(resultado.resultadoCalculado)}. Confira os valores antes de encaminhar para homologação.`,
+        details: [
+          ["IEO informado pela Unidade", formatIeoConferenciaPercent(resultado.resultadoInformado)],
+          ["IEO calculado pelos componentes", formatIeoConferenciaPercent(resultado.resultadoCalculado)],
+          ["Diferença absoluta", formatIeoConferenciaPercent(resultado.diferencaIeo)]
+        ]
+      };
+    }
+
+    if (resultado.valoresConferidosIeo === true) {
+      return {
+        visible: true,
+        tone: "success",
+        title: "Valores conferidos",
+        message: "O IEO informado pela Unidade coincide com o resultado calculado pelos componentes na precisão oficial.",
+        details: [
+          ["IEO informado pela Unidade", formatIeoConferenciaPercent(resultado.resultadoInformado)],
+          ["IEO calculado pelos componentes", formatIeoConferenciaPercent(resultado.resultadoCalculado)]
+        ]
+      };
+    }
+
+    return {
+      visible: true,
+      tone: "info",
+      title: possuiCalculado ? "IEO calculado pelos componentes" : "IEO informado pela Unidade",
+      message: possuiCalculado
+        ? "O resultado técnico foi obtido a partir dos componentes completos da metodologia."
+        : "Ainda não há componentes completos para conferência; o resultado oficial utiliza o valor informado pela Unidade.",
+      details: [[
+        possuiCalculado ? "IEO calculado" : "IEO informado",
+        formatIeoConferenciaPercent(possuiCalculado ? resultado.resultadoCalculado : resultado.resultadoInformado)
+      ]]
+    };
+  }
+
+  function renderIeoReconciliation(resultado) {
+    const target = document.getElementById("ieoReconciliationStatus");
+    if (!target) return;
+    const model = ieoReconciliationModel(resultado);
+    target.hidden = !model.visible;
+    if (!model.visible) {
+      target.innerHTML = "";
+      return;
+    }
+    target.innerHTML = `
+      <div class="notice ${escapeHtml(model.tone)}">
+        <strong>${escapeHtml(model.title)}</strong>
+        <p>${escapeHtml(model.message)}</p>
+        <dl class="formula-details-grid">
+          ${model.details.map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join("")}
+        </dl>
+      </div>
+    `;
+  }
+
+  function isIeoSubmissionBlockedByDivergence(action, resultado) {
+    return action === "send" && resultado?.divergenciaIeo === true;
+  }
+
+  function ieoCalculatedPersistenceValue(regra, resultado = {}) {
+    return isIeoRule(regra) ? (resultado.resultadoCalculado ?? null) : resultado.resultadoMensal;
+  }
+
+  function requiresListCalculation(regra) {
+    return isIeoRule(regra) || [
+      "nota_pesquisa_nps",
+      "iniciativas_apoiadas",
+      "execucao_acoes_propostas",
+      "lucro_recorrente_mensal",
+      "razao_canais_digitais",
+      "razao_pix",
+      "melhorias_acumuladas",
+      "ggr_formula"
+    ].includes(regra?.tipoCalculo);
   }
 
   function isIeoCaCompetence(regra, lancamento = getSelectedLaunch()) {
@@ -868,6 +986,7 @@
   function formatEntryValue(field, value) {
     if (field.tipo === "moeda" && value !== "") return CurrencyBR.formatarMoedaBR(value).replace(/^R\$\s?/, "");
     if (field.tipo === "inteiro" && value !== "") return Calculations.formatarInteiroBR(value);
+    if (isCapacitacaoAchievementField(field)) return formatAchievementFactor(value);
     if (usesDecimalPercentageEntry(field) && value !== "") {
       const decimal = toNumberOrNull(value);
       return decimal === null ? "" : `${(decimal * 100).toLocaleString("pt-BR", { maximumFractionDigits: 4 })}%`;
@@ -1131,8 +1250,46 @@
     return Boolean(indicador && indicador.id === 1) || isOfertasPersonalizadasRule(regra);
   }
 
+  function isRepresentationIndicator(indicador, regra) {
+    const indicatorId = Number(indicador?.id ?? indicador?.indicadorId ?? regra?.indicadorId);
+    return indicatorId === 13 || indicatorId === 14;
+  }
+
+  function isJogoResponsavelIndicator(indicador, regra) {
+    const indicatorId = Number(indicador?.id ?? indicador?.indicadorId ?? regra?.indicadorId);
+    return indicatorId === 21 && regra?.tipoCalculo === "cobertura_capacitacao_jogo_responsavel";
+  }
+
+  function usesReadOnlyAchievementField(indicador, regra) {
+    return isRepresentationIndicator(indicador, regra) || isJogoResponsavelIndicator(indicador, regra);
+  }
+
+  function formatRepresentationAchievement(value) {
+    const number = toNumberOrNull(value);
+    return number === null
+      ? "-"
+      : `${(number * 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
+  }
+
+  function resolveRepresentationAchievement(indicador, regra, lancamento, calculatedValue) {
+    const calculated = toNumberOrNull(calculatedValue);
+    if (!isRepresentationIndicator(indicador, regra)) return calculated;
+
+    const persistedResult = toNumberOrNull(
+      lancamento?.resultadoOficialAnual ?? lancamento?.resultadoMensal ?? lancamento?.resultadoCalculado
+    );
+    const persistedAchievement = toNumberOrNull(
+      lancamento?.percentualAtingido ?? lancamento?.percentualAtingidoMensal
+    );
+    if (!EDITABLE_STATUSES.includes(lancamento?.status) && persistedResult !== null && persistedAchievement !== null) {
+      return persistedAchievement;
+    }
+    return calculated;
+  }
+
   function shouldHideGoalAchievementFields(indicador, regra) {
     if (isIeoRule(regra)) return false;
+    if (usesReadOnlyAchievementField(indicador, regra)) return false;
     if (["participacao_ecossistema_lotex", "participacao_ecossistema_com_cenarios"].includes(regra?.tipoCalculo)) return false;
     if (["crescimento_comparado_base_2025", "crescimento_rede_loterica_base_2025"].includes(regra?.tipoCalculo)) return false;
     if (isOfertasPersonalizadasIndicator(indicador, regra)) return false;
@@ -1200,7 +1357,7 @@
         : isEditable(item)
           ? "Preencher"
           : "Visualizar";
-      const tableCalculation = ["nota_pesquisa_nps", "iniciativas_apoiadas", "execucao_acoes_propostas", "lucro_recorrente_mensal", "razao_canais_digitais", "razao_pix", "melhorias_acumuladas", "ggr_formula"].includes(regra?.tipoCalculo)
+      const tableCalculation = requiresListCalculation(regra)
         ? IndicatorFormulas.calcularIndicador(
           indicador,
           regra,
@@ -1314,6 +1471,15 @@
     document.getElementById("percentualAnualWrapper").hidden = hideAtingimentoFields;
     document.getElementById("resultadoAnualWrapper").hidden = false;
     document.getElementById("situacaoCalculadaWrapper").hidden = !automatic;
+    if (isRepresentationIndicator(indicador, regra)) {
+      document.getElementById("percentualMensalWrapper").hidden = false;
+      document.getElementById("percentualAnualWrapper").hidden = true;
+    }
+    if (isJogoResponsavelIndicator(indicador, regra)) {
+      document.getElementById("percentualMensalWrapper").hidden = false;
+      document.getElementById("resultadoAnualWrapper").hidden = false;
+      document.getElementById("percentualAnualWrapper").hidden = true;
+    }
     if (isIeoRule(regra)) {
       document.getElementById("percentualMensalWrapper").hidden = false;
       document.getElementById("percentualAnualWrapper").hidden = true;
@@ -1368,6 +1534,8 @@
       ? "Atingimento oficial"
       : regra?.tipoCalculo === "iniciativas_apoiadas"
         ? "Atingimento do marco trimestral"
+      : usesReadOnlyAchievementField(indicador, regra)
+        ? "% atingido"
       : isIeoRule(regra)
       ? "% atingido"
       : regra?.tipoCalculo === "nota_pesquisa_nps"
@@ -1522,6 +1690,7 @@
             )}
           </div>
         ` : ""}
+        <div id="ieoReconciliationStatus" class="full-span" hidden></div>
         ${admin && !metodologiaCa ? `
           <div class="full-span">
             <p class="eyebrow">Ajuste de desempenho oficial</p>
@@ -2438,6 +2607,16 @@
     document.getElementById("realizadoWrapper").hidden = usesAutomaticCalculation(indicador, result.regra);
     document.getElementById("manualPercentWrapper").hidden = !isManual(indicador);
     document.getElementById("situacaoCalculadaWrapper").hidden = !usesAutomaticCalculation(indicador, result.regra);
+    if (isRepresentationIndicator(indicador, result.regra)) {
+      document.getElementById("percentualMensalWrapper").hidden = false;
+      document.getElementById("percentualAnualWrapper").hidden = true;
+    }
+    if (isJogoResponsavelIndicator(indicador, result.regra)) {
+      document.getElementById("percentualMensalWrapper").hidden = false;
+      document.getElementById("resultadoAnualWrapper").hidden = false;
+      document.getElementById("percentualAnualWrapper").hidden = true;
+      document.getElementById("launchPercentualCalculadoLabel").textContent = "% atingido";
+    }
     if (isIeoRule(result.regra)) {
       document.getElementById("percentualMensalWrapper").hidden = false;
       document.getElementById("percentualAnualWrapper").hidden = true;
@@ -2509,11 +2688,19 @@
       : trackingAprimoramento
       ? result.resultado.percentualAcompanhamentoAprimoramentoFormatado || "-"
       : result.resultado.resultadoMensalFormatado || Calculations.formatarValor(result.resultado.resultadoMensal, result.resultado.unidadeMedida);
-    const percentualPrincipal = result.regra?.tipoCalculo === "nota_pesquisa_nps"
+    const percentualCalculado = result.regra?.tipoCalculo === "nota_pesquisa_nps"
       ? result.resultado.percentualAtingidoOficialNPS ?? result.resultado.percentualOficialNPS ?? result.resultado.percentualAtingidoMensal
       : result.resultado.percentualAtingidoMensal;
+    const percentualPrincipal = resolveRepresentationAchievement(
+      indicador,
+      result.regra,
+      lancamento,
+      percentualCalculado
+    );
     document.getElementById("launchPercentualCalculado").value = isIeoRule(result.regra) && percentualPrincipal === null
       ? "Sem cálculo"
+      : usesReadOnlyAchievementField(indicador, result.regra)
+        ? formatRepresentationAchievement(percentualPrincipal)
       : result.regra?.tipoCalculo === "nota_pesquisa_nps"
         ? Calculations.formatarPercentual(percentualPrincipal)
         : result.resultado.percentualAtingidoMensalFormatado || Calculations.formatarPercentual(percentualPrincipal);
@@ -2530,6 +2717,7 @@
         : "Sem cálculo";
     }
     renderFormulaDetails(result.resultado, result.regra, lancamento);
+    renderIeoReconciliation(isIeoRule(result.regra) ? result.resultado : null);
     renderIndicator22Experience(result.resultado, result.regra, lancamento);
     applyIndicator22Layout(result.regra);
     return result;
@@ -2556,6 +2744,14 @@
     }
 
     if (!validateSocioambientalRequiredFields(regra, { focus: true })) return false;
+
+    if (isIeoSubmissionBlockedByDivergence(action, result?.resultado)) {
+      showMessage(
+        "Não é possível enviar para homologação enquanto houver divergência entre o IEO informado pela Unidade e o resultado calculado pelos componentes.",
+        "warning"
+      );
+      return false;
+    }
 
     if (action === "send" && regra.tipoCalculo === "cobertura_capacitacao") {
       const tipoPosicao = IndicatorFormulas.resolverTipoPosicaoCapacitacao({
@@ -2781,7 +2977,7 @@
     const updated = {
       ...lancamento,
       camposEntrada: calculation.camposEntrada,
-      resultadoMensal: calculation.resultado.resultadoMensal,
+      resultadoMensal: ieoCalculatedPersistenceValue(calculation.regra, calculation.resultado),
       realizadoMensal: calculation.realizado,
       percentualManual: isManual(indicador) ? calculation.percentualManual : null,
       percentualAtingido: razaoAcumulada
@@ -3079,6 +3275,9 @@
     getLaunchListPerformance,
     formatDisplayMeta,
     formatEntryValue,
+    isCapacitacaoAchievementField,
+    normalizeAchievementFactor,
+    formatAchievementFactor,
     parseEntryValue,
     usesDecimalPercentageEntry,
     isCanaisDigitaisDocumentalField,
@@ -3095,9 +3294,20 @@
     latestReopenCycleAction,
     unresolvedReopenCycle,
     requiresTransactionalPersistence,
+    requiresListCalculation,
     canManageLaunches,
     launchRequiresEvidence,
     evidenceRequirementLabel,
-    npsInterfaceLayout
+    npsInterfaceLayout,
+    isRepresentationIndicator,
+    isJogoResponsavelIndicator,
+    usesReadOnlyAchievementField,
+    shouldHideGoalAchievementFields,
+    formatRepresentationAchievement,
+    resolveRepresentationAchievement,
+    formatIeoConferenciaPercent,
+    ieoReconciliationModel,
+    isIeoSubmissionBlockedByDivergence,
+    ieoCalculatedPersistenceValue
   };
 })();

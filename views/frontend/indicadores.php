@@ -6,7 +6,7 @@
   <title>CAIXA Loterias | Indicadores</title>
   <link rel="stylesheet" href="/assets/css/styles.css?v=APP-VERSION-001">
   <script src="/assets/js/currency.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="/assets/js/ieo-recorrente.js?v=METAS-OFICIAIS-002" defer></script>
+  <script src="/assets/js/ieo-recorrente.js?v=INDICADOR06-CONFERENCIA-001" defer></script>
   <script src="/assets/js/lucro-recorrente.js?v=METAS-OFICIAIS-003" defer></script>
   <script src="/assets/js/situations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/bootstrap-data.js?v=METAS-OFICIAIS-003" defer></script>
@@ -15,7 +15,7 @@
   <script src="/assets/js/databaseService.js?v=GOVERNANCA-CA-002" defer></script>
   <script src="/assets/js/auth.js?v=GOVERNANCA-CA-001" defer></script>
   <script src="/assets/js/calculations.js?v=PLATAFORMA-JOGOS-001" defer></script>
-  <script src="/assets/js/formulas.js?v=INDICADOR05-SITUACAO-TRIMESTRAL-001" defer></script>
+  <script src="/assets/js/formulas.js?v=INDICADOR21-ATINGIMENTO-001" defer></script>
   <script src="/assets/js/quarterly.js?v=METAS-OFICIAIS-002" defer></script>
   <script src="/assets/js/documentation-fields.js?v=DOCUMENTACAO-CENTRAL-001" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/indicators.js?v=GOVERNANCA-CA-001" defer></script>

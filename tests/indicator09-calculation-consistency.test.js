@@ -92,11 +92,12 @@ assert.equal(december.situacao, "Atingido", "DEZ deve ser tratado como fechament
 assert.equal(decemberList.resultado, 0.66);
 assert.equal(decemberList.percentual, 1.015);
 
-assert.match(
-  launchesSource,
-  /const tableCalculation = \[[^\]]*"razao_pix"[^\]]*\]\.includes\(regra\?\.tipoCalculo\)/,
+assert.equal(
+  listInternals.requiresListCalculation(rule),
+  true,
   "a listagem deve recalcular razao_pix"
 );
+assert.match(launchesSource, /const tableCalculation = requiresListCalculation\(regra\)/);
 assert.match(
   launchesSource,
   /const razaoAcumulada = \["razao_canais_digitais", "razao_pix"\]\.includes/,

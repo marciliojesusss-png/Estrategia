@@ -124,6 +124,32 @@ closeTo(mulheresGestoras.percentualAtingidoAnual, 1.1764705882);
 assert.equal(mulheresGestoras.resultadoMensalFormatado, "50%");
 assert.equal(mulheresGestoras.percentualAtingidoMensalFormatado, "117,65%");
 
+const mulheresGestorasSetembro = formulas.calcularIndicador(
+  indicador(13, "Mulheres Chefes de Unidade e Gestoras"),
+  regraMulheresGestoras,
+  { mes: 9, camposEntrada: { mulheresGestorasMes: 20, totalGestoresMes: 46, dataBaseApuracao: "2026-09-30" } },
+  [{ mes: 9, camposEntrada: { mulheresGestorasMes: 20, totalGestoresMes: 46, dataBaseApuracao: "2026-09-30" } }]
+);
+closeTo(mulheresGestorasSetembro.resultadoMensal, 20 / 46, 1e-12);
+closeTo(mulheresGestorasSetembro.percentualAtingidoMensal, (20 / 46) / 0.425, 1e-12);
+
+const mulheresGestorasNaMeta = formulas.calcularIndicador(
+  indicador(13, "Mulheres Chefes de Unidade e Gestoras"),
+  regraMulheresGestoras,
+  { mes: 9, camposEntrada: { mulheresGestorasMes: 17, totalGestoresMes: 40, dataBaseApuracao: "2026-09-30" } },
+  [{ mes: 9, camposEntrada: { mulheresGestorasMes: 17, totalGestoresMes: 40, dataBaseApuracao: "2026-09-30" } }]
+);
+closeTo(mulheresGestorasNaMeta.percentualAtingidoMensal, 1, 1e-12);
+
+const mulheresGestorasSemResultado = formulas.calcularIndicador(
+  indicador(13, "Mulheres Chefes de Unidade e Gestoras"),
+  regraMulheresGestoras,
+  { mes: 9, camposEntrada: {} },
+  [{ mes: 9, camposEntrada: {} }]
+);
+assert.equal(mulheresGestorasSemResultado.percentualAtingidoMensal, null);
+assert.equal(mulheresGestorasSemResultado.percentualAtingidoMensalFormatado, "-");
+
 const mulheresGestorasParcial = formulas.calcularIndicador(
   indicador(13, "Mulheres Chefes de Unidade e Gestoras"),
   regraMulheresGestoras,
@@ -2252,9 +2278,29 @@ const jogoResponsavel1Tri = formulas.calcularIndicador(
   []
 );
 closeTo(jogoResponsavel1Tri.resultadoMensal, 137 / 151);
-assert.equal(jogoResponsavel1Tri.percentualAtingidoMensal, 1);
+closeTo(jogoResponsavel1Tri.percentualAtingidoMensal, (137 / 151) / 0.90);
+assert.equal(jogoResponsavel1Tri.percentualAtingidoMensalFormatado, "100,81%");
 assert.equal(jogoResponsavel1Tri.quantidadeMinimaIniciativasJR, 1);
 assert.equal(jogoResponsavel1Tri.situacao, "Atingido");
+
+const jogoResponsavelNaMeta = formulas.calcularIndicador(
+  indicador(21, "Jogo Responsável 2026 (Capacitação e Disseminação)"),
+  regraJogoResponsavelCapacitacao,
+  {
+    ano: 2026,
+    mes: 3,
+    trimestre: "1TRI/2026",
+    metaReferencia: 0.90,
+    camposEntrada: {
+      publicoAlvoElegivelJR: 100,
+      empregadosCapacitadosJR: 90,
+      quantidadeMinimaIniciativasJR: 1
+    }
+  },
+  []
+);
+closeTo(jogoResponsavelNaMeta.percentualAtingidoMensal, 1);
+assert.equal(jogoResponsavelNaMeta.percentualAtingidoMensalFormatado, "100%");
 
 const jogoResponsavelJunho = formulas.calcularIndicador(
   indicador(21, "Jogo Responsável 2026 (Capacitação e Disseminação)"),
@@ -2274,7 +2320,39 @@ const jogoResponsavelJunho = formulas.calcularIndicador(
 );
 closeTo(jogoResponsavelJunho.resultadoMensal, 123 / 184);
 closeTo(jogoResponsavelJunho.percentualAtingidoMensal, (123 / 184) / 0.90);
+assert.equal(jogoResponsavelJunho.percentualAtingidoMensalFormatado, "74,28%");
 assert.equal(jogoResponsavelJunho.situacao, "Abaixo da meta");
+
+const jogoResponsavelSetembro = formulas.calcularIndicador(
+  indicador(21, "Jogo Responsável 2026 (Capacitação e Disseminação)"),
+  regraJogoResponsavelCapacitacao,
+  {
+    ano: 2026,
+    mes: 9,
+    trimestre: "3TRI/2026",
+    metaReferencia: 0.90,
+    camposEntrada: {
+      publicoAlvoElegivelJR: 171,
+      empregadosCapacitadosJR: 99,
+      quantidadeMinimaIniciativasJR: 2
+    }
+  },
+  []
+);
+closeTo(jogoResponsavelSetembro.resultadoMensal, 99 / 171);
+closeTo(jogoResponsavelSetembro.percentualAtingidoMensal, (99 / 171) / 0.90);
+assert.equal(jogoResponsavelSetembro.resultadoMensalFormatado, "57,89%");
+assert.equal(jogoResponsavelSetembro.percentualAtingidoMensalFormatado, "64,33%");
+assert.equal(jogoResponsavelSetembro.situacao, "Abaixo da meta");
+
+const jogoResponsavelSemResultado = formulas.calcularIndicador(
+  indicador(21, "Jogo Responsável 2026 (Capacitação e Disseminação)"),
+  regraJogoResponsavelCapacitacao,
+  { ano: 2026, mes: 9, trimestre: "3TRI/2026", metaReferencia: 0.90, camposEntrada: {} },
+  []
+);
+assert.equal(jogoResponsavelSemResultado.percentualAtingidoMensal, null);
+assert.equal(jogoResponsavelSemResultado.percentualAtingidoMensalFormatado, "-");
 assert.deepEqual(
   formulas.obterApresentacaoOficialTrimestre(regraJogoResponsavelCapacitacao, "2TRI/2026"),
   regraJogoResponsavelCapacitacao.parametrosCalculo.apresentacoesOficiaisTrimestrais["2TRI/2026"]

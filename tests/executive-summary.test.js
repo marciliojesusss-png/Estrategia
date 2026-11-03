@@ -253,7 +253,7 @@ assert.equal(context.window.StrategicResults.officialSituation(jogoResponsavelCa
 assert.equal(jogoResponsavelCapacitacaoDashboardOficial.competencia, "Março/2026");
 assert.equal(jogoResponsavelCapacitacaoDashboardOficial.meta, 0.90);
 assert.ok(Math.abs(jogoResponsavelCapacitacaoDashboardOficial.resultado - (137 / 151)) < 0.000001);
-assert.equal(jogoResponsavelCapacitacaoDashboardOficial.percentualAtingido, 1);
+assert.ok(Math.abs(jogoResponsavelCapacitacaoDashboardOficial.percentualAtingido - ((137 / 151) / 0.90)) < 0.000001);
 
 const jogoResponsavelComSetembroPendente = context.window.StrategicResults.calcularDashboard({
   indicadores: [indicators.find((item) => item.id === 21)],
@@ -313,9 +313,9 @@ const ieoDashboardAgosto = context.window.StrategicResults.calcularDashboard({
 }).resultadosOficiais[0];
 assert.equal(context.window.StrategicResults.officialSituation(ieoDashboardAgosto), "Atingido");
 assert.equal(ieoDashboardAgosto.competencia, "Agosto/2026");
-assert.ok(Math.abs(ieoDashboardAgosto.meta - 0.2664) < 0.000001);
+assert.ok(Math.abs(ieoDashboardAgosto.meta - 0.2988) < 0.000001);
 assert.ok(Math.abs(ieoDashboardAgosto.resultado - 0.20) < 0.000001);
-assert.ok(Math.abs(ieoDashboardAgosto.percentualAtingido - (1 - ((0.20 - 0.2664) / (1 - 0.2664)))) < 0.000001);
+assert.ok(Math.abs(ieoDashboardAgosto.percentualAtingido - (1 - ((0.20 - 0.2988) / (1 - 0.2988)))) < 0.000001);
 
 const repasseDashboardOficial = results.find((item) => item.indicador.id === 17);
 assert.equal(context.window.StrategicResults.officialSituation(repasseDashboardOficial), "Atingido");

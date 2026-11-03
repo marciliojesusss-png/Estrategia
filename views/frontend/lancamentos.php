@@ -6,7 +6,7 @@
   <title>CAIXA Loterias | Lançamentos</title>
   <link rel="stylesheet" href="<?= APP_BASE_PATH ?>/assets/css/styles.css?v=APP-VERSION-001">
   <script src="/assets/js/currency.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="/assets/js/ieo-recorrente.js?v=METAS-OFICIAIS-002" defer></script>
+  <script src="/assets/js/ieo-recorrente.js?v=INDICADOR06-CONFERENCIA-001" defer></script>
   <script src="/assets/js/lucro-recorrente.js?v=METAS-OFICIAIS-003" defer></script>
   <script src="/assets/js/situations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/bootstrap-data.js?v=METAS-OFICIAIS-003" defer></script>
@@ -16,10 +16,10 @@
   <script src="/assets/js/databaseService.js?v=GOVERNANCA-CA-002" defer></script>
   <script src="/assets/js/auth.js?v=GOVERNANCA-CA-001" defer></script>
   <script src="/assets/js/calculations.js?v=PLATAFORMA-JOGOS-001" defer></script>
-  <script src="/assets/js/formulas.js?v=INDICADOR05-SITUACAO-TRIMESTRAL-001" defer></script>
+  <script src="/assets/js/formulas.js?v=INDICADOR21-ATINGIMENTO-001" defer></script>
   <script src="/assets/js/documentation-fields.js?v=DOCUMENTACAO-COMPLEMENTAR-1TRI-001" defer></script>
   <script src="/assets/js/action-feedback.js?v=ACTION-FEEDBACK-001" defer></script>
-  <script src="/assets/js/launches.js?v=INDICADOR02-NPS-SIMPLIFICADO-001" defer></script>
+  <script src="/assets/js/launches.js?v=INDICADOR21-ATINGIMENTO-001" defer></script>
   <script src="/assets/js/app.js?v=APP-VERSION-001" defer></script>
 </head>
 <body data-page="lancamentos">

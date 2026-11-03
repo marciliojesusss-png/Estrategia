@@ -6,7 +6,7 @@
   <title>CAIXA Loterias | Relatório Consolidado</title>
   <link rel="stylesheet" href="/assets/css/styles.css?v=APP-VERSION-001">
   <script src="<?= APP_BASE_PATH ?>/assets/js/currency.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/ieo-recorrente.js?v=METAS-OFICIAIS-002" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/ieo-recorrente.js?v=INDICADOR06-CONFERENCIA-001" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/lucro-recorrente.js?v=METAS-OFICIAIS-003" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/situations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/bootstrap-data.js?v=METAS-OFICIAIS-003" defer></script>

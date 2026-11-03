@@ -848,9 +848,9 @@ const ieoQuarterNovaMetodologia = consolidarTrimestre(
   "3TRI/2026"
 );
 assert.equal(ieoQuarterNovaMetodologia.statusTrimestre, "Fechado");
-assert.ok(Math.abs(ieoQuarterNovaMetodologia.metaTrimestral - 0.2664) < 0.000001);
+assert.ok(Math.abs(ieoQuarterNovaMetodologia.metaTrimestral - 0.2923) < 0.000001);
 assert.ok(Math.abs(ieoQuarterNovaMetodologia.resultadoTrimestral - 0.24) < 0.000001);
-assert.ok(Math.abs(ieoQuarterNovaMetodologia.desempenhoTrimestral - (1 - ((0.24 - 0.2664) / (1 - 0.2664)))) < 0.000001);
+assert.ok(Math.abs(ieoQuarterNovaMetodologia.desempenhoTrimestral - (1 - ((0.24 - 0.2923) / (1 - 0.2923)))) < 0.000001);
 assert.equal(ieoQuarterNovaMetodologia.situacaoTrimestral, "Atingido");
 
 const ofertasQuarter = consolidarTrimestre(
@@ -1105,7 +1105,7 @@ assert.equal(jogoResponsavelCapacitacaoQuarter.statusTrimestre, "Fechado");
 assert.equal(jogoResponsavelCapacitacaoQuarter.mesesHomologados, 1);
 assert.equal(jogoResponsavelCapacitacaoQuarter.metaTrimestral, 0.90);
 assert.ok(Math.abs(jogoResponsavelCapacitacaoQuarter.resultadoTrimestral - (137 / 151)) < 0.000001);
-assert.equal(jogoResponsavelCapacitacaoQuarter.desempenhoTrimestral, 1);
+assert.ok(Math.abs(jogoResponsavelCapacitacaoQuarter.desempenhoTrimestral - ((137 / 151) / 0.90)) < 0.000001);
 assert.equal(jogoResponsavelCapacitacaoQuarter.situacaoTrimestral, "Atingido");
 
 const jogoResponsavelCapacitacao2Tri = consolidarTrimestre(

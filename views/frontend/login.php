@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="<?= APP_BASE_PATH ?>/assets/css/styles.css?v=APP-VERSION-001">
   <script src="/assets/vendor/chart.umd.min.js?v=4.4.7" defer></script>
   <script src="/assets/js/currency.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
-  <script src="/assets/js/ieo-recorrente.js?v=METAS-OFICIAIS-002" defer></script>
+  <script src="/assets/js/ieo-recorrente.js?v=INDICADOR06-CONFERENCIA-001" defer></script>
   <script src="/assets/js/lucro-recorrente.js?v=METAS-OFICIAIS-003" defer></script>
   <script src="/assets/js/situations.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/bootstrap-data.js?v=METAS-OFICIAIS-003" defer></script>

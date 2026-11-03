@@ -633,7 +633,11 @@
 
     const cobertura = capacitados / publicoAlvo;
     const percentualMatematico = cobertura / metaCobertura;
-    const percentualAtingido = cobertura >= metaCobertura ? 1 : percentualMatematico;
+    const percentualAtingido = regra.tipoCalculo === "cobertura_capacitacao_jogo_responsavel"
+      ? percentualMatematico
+      : cobertura >= metaCobertura
+        ? 1
+        : percentualMatematico;
     const situacao = cobertura >= metaCobertura
       ? "Atingido"
       : "Abaixo da meta";

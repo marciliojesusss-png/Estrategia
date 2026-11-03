@@ -21,7 +21,7 @@ global.IeoRecorrente = {
   getMetaCompetencia: (launch) => ({
     "2026-01": 0.1449,
     "2026-07": 0.1423833333333333,
-    "2026-08": 0.2664
+    "2026-08": 0.2988
   })[launch.competencia] ?? null
 };
 
@@ -79,8 +79,8 @@ const augustPrepared = global.CentralPersistence.prepareLaunchForCentral({
   metaReferencia: null,
   camposEntrada: {}
 });
-assert.equal(augustPrepared.metaMensal, 0.2664);
-assert.equal(augustPrepared.metaReferencia, 0.2664);
+assert.equal(augustPrepared.metaMensal, 0.2988);
+assert.equal(augustPrepared.metaReferencia, 0.2988);
 
 const normalLaunch = global.CentralPersistence.prepareLaunchForCentral({
   id: "outro-indicador",

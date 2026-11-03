@@ -27,7 +27,10 @@ const regraBase = {
 assert.equal(ieo.getMetodologiaIeoPorCompetencia("2026-07").codigo, "original");
 assert.equal(ieo.getMetodologiaIeoPorCompetencia("2026-08").codigo, "ca_agosto_2026");
 assert.equal(ieo.getMetaCompetencia("2026-07"), 0.1423833333333333);
-assert.equal(ieo.getMetaCompetencia("2026-08"), 0.2664);
+assert.equal(ieo.getMetaCompetencia("2026-08"), 0.2988);
+assert.equal(ieo.getMetaCompetencia("2026-09"), 0.2923);
+assert.equal(ieo.getMetaCompetencia("2026-10"), 0.2913);
+assert.equal(ieo.getMetaCompetencia("2026-11"), 0.2929);
 assert.equal(ieo.getMetaCompetencia("2026-12"), 0.2664);
 
 const regraJulho = ieo.ajustarRegraIeo(structuredClone(regraBase), "2026-07");
@@ -84,14 +87,118 @@ const marco = ieo.calcularIeo(regraBase, {
     despesaPessoalMes: 28000000,
     despesasAdministrativasMes: 43625600,
     receitasLiquidasMes: 663200000,
-    ieoApuradoInformado: 0.50
+    ieoApuradoInformado: 0.108
   }
 });
 closeTo(marco.resultadoMensal, 0.108);
 closeTo(marco.percentualAtingidoMensal, 1.0421778245122093);
 assert.equal(marco.percentualAtingidoMensalFormatado, "104,22%");
 assert.equal(marco.situacao, "Atingido");
-assert.equal(marco.origemResultado, "calculado");
+assert.equal(marco.origemResultado, "calculado_conferido");
+assert.equal(marco.resultadoCalculado, 0.108);
+assert.equal(marco.resultadoInformado, 0.108);
+assert.equal(marco.resultadoOficial, 0.108);
+assert.equal(marco.valoresConferidosIeo, true);
+assert.equal(marco.divergenciaIeo, false);
+
+const resultadosDocumentaisSemComponentes = [
+  ["2026-01", 0.1449, 0.0642, "109,44%", 109.44],
+  ["2026-02", 0.1445, 0.11, "104,03%", 104.03],
+  ["2026-03", 0.1441, 0.108, "104,22%", 104.22],
+  ["2026-04", 0.1436, 0.1113, "103,77%", 103.77],
+  ["2026-05", 0.1432, 0.1115, "103,7%", 103.70],
+  ["2026-06", 0.1428, 0.1115, "103,65%", 103.65]
+].map(([competencia, metaReferencia, ieoApuradoInformado, percentualFormatadoEsperado, percentualEsperado]) => {
+  const calculo = ieo.calcularIeo(regraBase, {
+    competencia,
+    metaReferencia,
+    camposEntrada: { ieoApuradoInformado }
+  });
+  assert.equal(calculo.metodologiaIeo, "original");
+  assert.equal(calculo.resultadoMensal, ieoApuradoInformado);
+  assert.equal(calculo.percentualAtingidoMensalFormatado, percentualFormatadoEsperado);
+  assert.equal(Math.round(calculo.percentualAtingidoMensal * 10000) / 100, percentualEsperado);
+  assert.equal(calculo.situacao, "Atingido");
+  assert.equal(calculo.origemResultado, "informado");
+  assert.equal(calculo.resultadoCalculado, null);
+  assert.equal(calculo.resultadoInformado, ieoApuradoInformado);
+  assert.equal(calculo.resultadoOficial, ieoApuradoInformado);
+  assert.equal(calculo.divergenciaIeo, false);
+  assert.equal(calculo.numeradorIeo, undefined);
+  assert.equal(calculo.denominadorIeo, undefined);
+  return calculo;
+});
+assert.equal(resultadosDocumentaisSemComponentes.length, 6);
+
+const abrilConferidoNaPrecisaoOficial = ieo.calcularIeo(regraBase, {
+  competencia: "2026-04",
+  metaReferencia: 0.1436,
+  camposEntrada: {
+    despesaPessoalMes: 89043444.39,
+    despesasAdministrativasMes: 0,
+    receitasLiquidasMes: 800062366.68,
+    ieoApuradoInformado: 0.1113
+  }
+});
+closeTo(abrilConferidoNaPrecisaoOficial.resultadoCalculadoBruto, 0.11129562906389598, Number.EPSILON);
+assert.equal(abrilConferidoNaPrecisaoOficial.resultadoCalculado, 0.1113);
+assert.equal(abrilConferidoNaPrecisaoOficial.resultadoInformado, 0.1113);
+assert.equal(abrilConferidoNaPrecisaoOficial.resultadoOficial, 0.1113);
+assert.equal(abrilConferidoNaPrecisaoOficial.origemResultado, "calculado_conferido");
+assert.equal(abrilConferidoNaPrecisaoOficial.valoresConferidosIeo, true);
+assert.equal(abrilConferidoNaPrecisaoOficial.divergenciaIeo, false);
+
+const abrilDivergente = ieo.calcularIeo(regraBase, {
+  competencia: "2026-04",
+  metaReferencia: 0.1436,
+  camposEntrada: {
+    despesaPessoalMes: 100,
+    despesasAdministrativasMes: 0,
+    receitasLiquidasMes: 1000,
+    ieoApuradoInformado: 0.1113
+  }
+});
+assert.equal(abrilDivergente.resultadoCalculado, 0.1);
+assert.equal(abrilDivergente.resultadoInformado, 0.1113);
+assert.equal(abrilDivergente.resultadoOficial, 0.1113);
+assert.equal(abrilDivergente.resultadoMensal, 0.1113);
+assert.equal(abrilDivergente.origemResultado, "informado_com_divergencia");
+assert.equal(abrilDivergente.valoresConferidosIeo, false);
+assert.equal(abrilDivergente.divergenciaIeo, true);
+assert.equal(abrilDivergente.submissaoBloqueadaPorDivergenciaIeo, true);
+closeTo(abrilDivergente.percentualAtingidoMensal, ieo.calcularPercentualAtingido(0.1436, 0.1113), Number.EPSILON);
+
+const componentesInvalidosNaoCedemAoInformado = ieo.calcularIeo(regraBase, {
+  competencia: "2026-04",
+  metaReferencia: 0.1436,
+  camposEntrada: {
+    despesaPessoalMes: 100,
+    despesasAdministrativasMes: 0,
+    receitasLiquidasMes: 0,
+    ieoApuradoInformado: 0.1113
+  }
+});
+assert.equal(componentesInvalidosNaoCedemAoInformado.statusCalculo, "erro");
+assert.match(componentesInvalidosNaoCedemAoInformado.mensagem, /maiores que zero/);
+
+const junhoDocumentalSemRateioArtificial = ieo.calcularIeo(regraBase, {
+  competencia: "2026-06",
+  metaReferencia: 0.1428,
+  camposEntrada: {
+    despesaPessoalMes: "",
+    despesasAdministrativasMes: "",
+    receitasLiquidasMes: "",
+    ieoApuradoInformado: 0.1115
+  }
+});
+assert.equal(junhoDocumentalSemRateioArtificial.metodologiaIeo, "original");
+assert.equal(junhoDocumentalSemRateioArtificial.resultadoMensal, 0.1115);
+closeTo(junhoDocumentalSemRateioArtificial.percentualAtingidoMensal, 1.0365142323845078, Number.EPSILON);
+assert.equal(junhoDocumentalSemRateioArtificial.percentualAtingidoMensalFormatado, "103,65%");
+assert.equal(junhoDocumentalSemRateioArtificial.situacao, "Atingido");
+assert.equal(junhoDocumentalSemRateioArtificial.origemResultado, "informado");
+assert.equal(junhoDocumentalSemRateioArtificial.numeradorIeo, undefined);
+assert.equal(junhoDocumentalSemRateioArtificial.denominadorIeo, undefined);
 
 closeTo(ieo.calcularPercentualAtingido(0.1449, 0.1449), 1, Number.EPSILON);
 assert.ok(ieo.calcularPercentualAtingido(0.1449, 0.20) < 1);
@@ -122,18 +229,19 @@ const agostoAtingido = ieo.calcularIeo(regraBase, {
     despesasServicosPagamentosMes: 50,
     outrasDespesasOperacionaisMes: 30,
     receitasOperacionaisMes: 1000,
-    despesasTributosMes: 100,
-    ieoApuradoInformado: 0.25
+    despesasTributosMes: 100
   }
 });
 closeTo(agostoAtingido.numeradorIeo, 180);
 closeTo(agostoAtingido.denominadorIeo, 900);
 closeTo(agostoAtingido.resultadoMensal, 0.20);
-closeTo(agostoAtingido.percentualAtingidoMensal, 1.0905125408942202);
+closeTo(agostoAtingido.percentualAtingidoMensal, 1.1409013120365088);
 assert.equal(agostoAtingido.resultadoMensalFormatado, "20,00%");
-assert.equal(agostoAtingido.percentualAtingidoMensalFormatado, "109,05%");
+assert.equal(agostoAtingido.percentualAtingidoMensalFormatado, "114,09%");
 assert.equal(agostoAtingido.situacao, "Atingido");
-assert.equal(agostoAtingido.origemResultado, "calculado_metodologia_ca");
+assert.equal(agostoAtingido.origemResultado, "calculado");
+assert.equal(agostoAtingido.resultadoCalculado, 0.2);
+assert.equal(agostoAtingido.resultadoInformado, null);
 
 const exemploFormularioAgosto = ieo.calcularIeo(regraBase, {
   competencia: "2026-08",
@@ -142,8 +250,7 @@ const exemploFormularioAgosto = ieo.calcularIeo(regraBase, {
     despesasServicosPagamentosMes: 40000000,
     outrasDespesasOperacionaisMes: 20000000,
     receitasOperacionaisMes: 800000000,
-    despesasTributosMes: 100000000,
-    ieoApuradoInformado: 0.01
+    despesasTributosMes: 100000000
   }
 });
 closeTo(exemploFormularioAgosto.numeradorIeo, 160000000);
@@ -151,9 +258,27 @@ closeTo(exemploFormularioAgosto.denominadorIeo, 700000000);
 closeTo(exemploFormularioAgosto.resultadoBruto, 160000000 / 700000000);
 assert.equal(exemploFormularioAgosto.resultadoMensal, 0.2286);
 assert.equal(exemploFormularioAgosto.resultadoMensalFormatado, "22,86%");
-assert.equal(exemploFormularioAgosto.percentualAtingidoMensalFormatado, "105,15%");
+assert.equal(exemploFormularioAgosto.percentualAtingidoMensalFormatado, "110,01%");
 assert.equal(exemploFormularioAgosto.situacao, "Atingido");
-assert.equal(exemploFormularioAgosto.origemResultado, "calculado_metodologia_ca");
+assert.equal(exemploFormularioAgosto.origemResultado, "calculado");
+
+const agostoDivergente = ieo.calcularIeo(regraBase, {
+  competencia: "2026-08",
+  camposEntrada: {
+    despesasGeraisAdministrativasMes: 100,
+    despesasServicosPagamentosMes: 50,
+    outrasDespesasOperacionaisMes: 30,
+    receitasOperacionaisMes: 1000,
+    despesasTributosMes: 100,
+    ieoApuradoInformado: 0.25
+  }
+});
+assert.equal(agostoDivergente.resultadoCalculado, 0.2);
+assert.equal(agostoDivergente.resultadoInformado, 0.25);
+assert.equal(agostoDivergente.resultadoOficial, 0.25);
+assert.equal(agostoDivergente.resultadoMensal, 0.25);
+assert.equal(agostoDivergente.origemResultado, "informado_com_divergencia");
+assert.equal(agostoDivergente.divergenciaIeo, true);
 
 const agostoOficialArredondado = ieo.calcularIeo(regraBase, {
   competencia: "2026-08",
@@ -203,16 +328,28 @@ const agostoAbaixo = ieo.calcularIeo(regraBase, {
   }
 });
 closeTo(agostoAbaixo.resultadoMensal, 1 / 3);
-closeTo(agostoAbaixo.percentualAtingidoMensal, 0.9087604507451836);
-assert.equal(agostoAbaixo.percentualAtingidoMensalFormatado, "90,88%");
+closeTo(agostoAbaixo.percentualAtingidoMensal, 0.9507510933637574);
+assert.equal(agostoAbaixo.percentualAtingidoMensalFormatado, "95,08%");
 assert.equal(agostoAbaixo.situacao, "Abaixo da meta");
 
 const componentesAusentes = ieo.calcularIeo(regraBase, {
   competencia: "2026-08",
   camposEntrada: { ieoApuradoInformado: 0.20 }
 });
-assert.equal(componentesAusentes.statusCalculo, "aguardando_dados");
-assert.equal(componentesAusentes.resultadoMensal, null);
+assert.equal(componentesAusentes.statusCalculo, "calculado");
+assert.equal(componentesAusentes.resultadoMensal, 0.2);
+assert.equal(componentesAusentes.resultadoCalculado, null);
+assert.equal(componentesAusentes.resultadoOficial, 0.2);
+assert.equal(componentesAusentes.origemResultado, "informado");
+
+const julhoSemResultado = ieo.calcularIeo(regraBase, {
+  competencia: "2026-07",
+  metaReferencia: 0.1423833333333333,
+  camposEntrada: {}
+});
+assert.equal(julhoSemResultado.metodologiaIeo, "original");
+assert.equal(julhoSemResultado.resultadoMensal, null);
+assert.equal(julhoSemResultado.percentualAtingidoMensal, null);
 
 const denominadorZero = ieo.calcularIeo(regraBase, {
   competencia: "2026-08",

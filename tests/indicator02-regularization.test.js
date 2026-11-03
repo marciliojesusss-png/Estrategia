@@ -213,7 +213,7 @@ for (const label of [
   assert.ok(approvalsSource.includes(`["${label}"`), `${label} deve aparecer na conferência de homologação`);
 }
 assert.match(approvalsSource, /origemNps === "componentes_formula"/);
-assert.match(fs.readFileSync(path.join(root, "views", "frontend", "lancamentos.php"), "utf8"), /INDICADOR02-NPS-SIMPLIFICADO-001/);
+assert.match(fs.readFileSync(path.join(root, "views", "frontend", "lancamentos.php"), "utf8"), /INDICADOR06-CONFERENCIA-001/);
 assert.match(fs.readFileSync(path.join(root, "views", "frontend", "homologacao.php"), "utf8"), /INDICADOR02-NPS-SIMPLIFICADO-001/);
 assert.equal(JSON.stringify(launches), historicalSnapshot, "a organização visual não pode mutar lançamentos históricos");
 

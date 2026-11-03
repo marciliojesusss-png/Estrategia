@@ -52,7 +52,7 @@ vm.runInContext(fs.readFileSync(path.join(root, "assets/js/dataStore.js"), "utf8
   assert.equal(loadedLaunches.find((item) => item.id === "ieo-ago").metaReferencia, 0.2988, "o lançamento deve usar a meta oficial");
   assert.equal(store.resolveMeta(6, 2026, 8, metas, 0.2664), 0.2988, "a meta oficial deve vencer o fallback de 26,64%");
   assert.equal(store.resolveMeta(6, 2026, 9, metas, 0.2664), 0.2711, "setembro deve preservar sua própria meta");
-  assert.equal(store.resolveMeta(6, 2026, 8, [], null), 0.2664, "26,64% continua válido apenas como fallback sem configuração");
+  assert.equal(store.resolveMeta(6, 2026, 8, [], null), 0.2988, "o fallback de agosto deve respeitar a curva mensal da nova metodologia");
   assert.equal(store.resolveMeta(6, 2026, 10, metas, 0.23), 0.23, "sem configuração, o valor persistido no lançamento precede o fallback");
   assert.equal(store.resolveMeta(7, 2026, 1, metas, 999), 110);
   assert.equal(store.resolveMeta(5, 2026, 1, metas, 999), 1000, "o mecanismo deve funcionar para um terceiro indicador");

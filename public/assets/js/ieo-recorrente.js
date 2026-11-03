@@ -54,10 +54,10 @@
     fim: "2026-12",
     metaReferencia: META_REFERENCIA_CA_2026,
     metasPorCompetencia: Object.freeze({
-      "2026-08": META_REFERENCIA_CA_2026,
-      "2026-09": META_REFERENCIA_CA_2026,
-      "2026-10": META_REFERENCIA_CA_2026,
-      "2026-11": META_REFERENCIA_CA_2026,
+      "2026-08": 0.2988,
+      "2026-09": 0.2923,
+      "2026-10": 0.2913,
+      "2026-11": 0.2929,
       "2026-12": META_REFERENCIA_CA_2026
     }),
     camposEntrada: CAMPOS_CA,
@@ -195,6 +195,43 @@
     return Math.round((resultadoNumerico + Number.EPSILON) * 10000) / 10000;
   }
 
+  function conferirIeoInformadoCalculado(resultadoCalculadoBruto, resultadoInformadoBruto) {
+    const resultadoCalculado = arredondarIeoOficial(resultadoCalculadoBruto);
+    const resultadoInformado = arredondarIeoOficial(resultadoInformadoBruto);
+    const possuiCalculado = resultadoCalculado !== null;
+    const possuiInformado = resultadoInformado !== null;
+    const possuiAmbos = possuiCalculado && possuiInformado;
+    const divergenciaIeo = possuiAmbos && resultadoCalculado !== resultadoInformado;
+    const valoresConferidosIeo = possuiAmbos && !divergenciaIeo;
+    const resultadoOficial = divergenciaIeo
+      ? resultadoInformado
+      : possuiCalculado
+        ? resultadoCalculado
+        : resultadoInformado;
+    const origemResultado = divergenciaIeo
+      ? "informado_com_divergencia"
+      : valoresConferidosIeo
+        ? "calculado_conferido"
+        : possuiCalculado
+          ? "calculado"
+          : possuiInformado
+            ? "informado"
+            : null;
+    return {
+      resultadoCalculado,
+      resultadoInformado,
+      resultadoOficial,
+      possuiCalculado,
+      possuiInformado,
+      possuiAmbos,
+      divergenciaIeo,
+      valoresConferidosIeo,
+      diferencaIeo: possuiAmbos ? Math.abs(resultadoInformado - resultadoCalculado) : null,
+      origemResultado,
+      submissaoBloqueadaPorDivergenciaIeo: divergenciaIeo
+    };
+  }
+
   function calcularPercentualAtingido(meta, realizado) {
     const metaNumerica = numeroDecimal(meta);
     const realizadoNumerico = numeroDecimal(realizado);
@@ -304,6 +341,9 @@
     const valores = Object.fromEntries(nomes.map((nome) => [nome, parseNumero(raw(lancamento, nome))]));
     const informado = normalizarPercentual(raw(lancamento, "ieoApuradoInformado"));
     if (Object.values(valores).some((value) => value === null)) {
+      if (informado !== null) {
+        return { resultado: informado, origemResultado: "informado", ieoApuradoInformado: informado };
+      }
       return falha(regra, "Informe os cinco componentes da metodologia vigente para calcular o IEO.", false);
     }
     if (Object.values(valores).some((value) => value < 0)) {
@@ -339,9 +379,15 @@
       metaReferenciaMensal: getMetaCompetencia(lancamento, regraAjustada)
     });
 
-    const resultadoBruto = parcial.resultado;
-    if (resultadoBruto < 0) return falha(regraAjustada, "IEO realizado não pode ser negativo.", true);
-    const resultado = arredondarIeoOficial(resultadoBruto);
+    const origemCalculada = ["calculado", "calculado_metodologia_ca"].includes(parcial.origemResultado);
+    const resultadoCalculadoBruto = origemCalculada ? parcial.resultado : null;
+    const resultadoInformadoBruto = parcial.ieoApuradoInformado ?? null;
+    if ([resultadoCalculadoBruto, resultadoInformadoBruto].some((value) => value !== null && value < 0)) {
+      return falha(regraAjustada, "IEO realizado não pode ser negativo.", true);
+    }
+    const conferencia = conferirIeoInformadoCalculado(resultadoCalculadoBruto, resultadoInformadoBruto);
+    const resultadoBruto = resultadoCalculadoBruto ?? resultadoInformadoBruto;
+    const resultado = conferencia.resultadoOficial;
     const metaCompetencia = getMetaCompetencia(lancamento, regraAjustada);
     if (metaCompetencia === null || metaCompetencia <= 0) {
       const retorno = falha(regraAjustada, "IEO calculado. Meta de referência não cadastrada para a competência.", false);
@@ -350,7 +396,11 @@
       retorno.resultadoMensal = resultado;
       retorno.resultadoMensalFormatado = formatarPercentual(resultado);
       retorno.situacao = "Sem meta de referência";
-      return retorno;
+      return Object.assign(retorno, conferencia, {
+        resultadoBruto,
+        resultadoCalculadoBruto,
+        resultadoInformadoBruto
+      });
     }
 
     let percentual;
@@ -375,9 +425,11 @@
       resultado,
       percentual
     );
-    return Object.assign({}, parcial, {
+    return Object.assign({}, parcial, conferencia, {
       resultado,
       resultadoBruto,
+      resultadoCalculadoBruto,
+      resultadoInformadoBruto,
       resultadoMensal: resultado,
       resultadoMensalFormatado: formatarPercentual(resultado, casasMinimas),
       resultadoAcumulado: resultado,
@@ -404,6 +456,11 @@
       sentidoMeta: "quanto_menor_melhor",
       situacao,
       ieoRealizadoMes: resultado,
+      origemResultado: conferencia.origemResultado,
+      resultadoCalculadoFormatado: formatarPercentual(conferencia.resultadoCalculado, 2),
+      resultadoInformadoFormatado: formatarPercentual(conferencia.resultadoInformado, 2),
+      resultadoOficialFormatado: formatarPercentual(resultado, 2),
+      diferencaIeoFormatada: formatarPercentual(conferencia.diferencaIeo, 2),
       metodologiaIeo: metodologia.codigo,
       descricaoMetodologiaIeo: metodologia.descricao,
       formulaVigenteIeo: metodologia.formula,
@@ -488,6 +545,7 @@
     calcularIeoMetodologiaOriginal,
     calcularIeoMetodologiaCa,
     arredondarIeoOficial,
+    conferirIeoInformadoCalculado,
     calcularPercentualAtingido,
     gerarDetalhesMetaMensal,
     acrescentarMetodologiaDetalhes,
