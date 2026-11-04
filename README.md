@@ -171,6 +171,10 @@ aplicacao e armazenada no banco.
 
 ### Restauracao no ambiente corporativo
 
+O procedimento obrigatório de conferência dos SIDs antes de liberar cada novo
+backup está documentado em
+[`docs/controle-sid-backups-sqlserver.md`](docs/controle-sid-backups-sqlserver.md).
+
 Os backups do ambiente local nao contem o login tecnico da instancia
 corporativa. Depois de cada restauracao, o DBA deve criar ou remapear o usuario
 do banco para o login corporativo e reaplicar os papeis da aplicacao.
@@ -199,6 +203,13 @@ sqlcmd -S "SERVIDOR\INSTANCIA" -E -b `
 O script e idempotente: cria ou remapeia o usuario do banco e garante a
 associacao aos papeis `db_datareader` e `db_datawriter`. Ele nao cria login na
 instancia e nao concede `db_owner`.
+
+Quando o novo backup tambem precisar carregar os mesmos SIDs do backup
+corporativo antigo, execute `database/sqlserver/gerar-backup-sids-corporativos.sql`
+na instancia corporativa. O script exige que os logins `CORPCAIXA\c118119` e
+`s531902` ja existam com os SIDs esperados, restaura um banco de staging, valida
+`owner/dbo` e o usuario da aplicacao e grava um novo `.bak`. O backup de origem
+nao e sobrescrito.
 
 Por fim, valide a conexao a partir do servidor IIS, usando o mesmo PHP da
 aplicacao:
