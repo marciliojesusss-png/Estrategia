@@ -28,6 +28,8 @@ $routerScript = contents($root . '/public/router.php');
 $indexSource = contents($root . '/public/index.php');
 $databaseSource = contents($root . '/app/core/Database.php');
 $authSource = contents($root . '/app/auth/Auth.php');
+$loteriasGateSource = contents($root . '/app/auth/CaixaLoteriasAccessGate.php');
+$sqlServerDiagnostic = contents($root . '/scripts/diagnostico-sqlserver.php');
 $homologationScript = contents($root . '/scripts/validar-homologacao.php');
 
 foreach (array('X-Content-Type-Options', 'X-Frame-Options', 'Referrer-Policy', 'Permissions-Policy') as $header) {
@@ -75,6 +77,11 @@ check(strpos($databaseSource, "sqlsrv:Server=") === false, 'Conexao SQL Server n
 check(strpos($databaseSource, 'sqlsrv_connect') !== false, 'Conexao SQL Server nativa deve usar sqlsrv_connect.');
 check(substr_count($databaseSource, 'connectSqlsrvNative') >= 1, 'Conexao SQL Server nativa nao localizada no runtime.');
 check(strpos($authSource, "app_url('login')") !== false, 'Rotas locais nao autenticadas devem ir para route=login.');
+check(strpos($authSource, 'CaixaLoteriasAccessGate::allows($corporate)') !== false, 'Autenticacao nao aplica a restricao de unidade da CAIXA Loterias.');
+check(strpos($loteriasGateSource, '[BASEDB001].[dbo].[SIREDTB_Unidade_Caixa_Loterias]') !== false, 'Fonte corporativa de unidades da CAIXA Loterias ausente.');
+check(strpos($loteriasGateSource, ':unidade') !== false, 'Consulta de unidade deve usar parametro preparado.');
+check(strpos($loteriasGateSource, "[IC_Ativo] = 1") !== false, 'Restricao deve considerar apenas unidades ativas.');
+check(strpos($sqlServerDiagnostic, '[BASEDB001].[dbo].[SIREDTB_Unidade_Caixa_Loterias]') !== false, 'Diagnostico SQL Server nao valida a leitura da lista corporativa.');
 check(strpos($indexSource, "\$_GET['route']") !== false, 'Front controller deve ler a rota por $_GET[route].');
 check(strpos($indexSource, "REQUEST_URI") === false, 'Front controller nao deve identificar rota por REQUEST_URI.');
 check(strpos($indexSource, "\$_GET['rota']") === false, 'Parametro legado rota nao deve ser lido pelo front controller.');

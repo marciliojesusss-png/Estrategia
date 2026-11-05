@@ -8,6 +8,7 @@ require_once __DIR__ . '/../core/Csrf.php';
 require_once __DIR__ . '/../core/Logger.php';
 require_once __DIR__ . '/AccessLogger.php';
 require_once __DIR__ . '/CorporateIdentity.php';
+require_once __DIR__ . '/CaixaLoteriasAccessGate.php';
 require_once __DIR__ . '/AccessPolicy.php';
 
 final class Auth
@@ -43,6 +44,9 @@ final class Auth
         $matricula = trim(isset($corporate['matricula']) ? (string) $corporate['matricula'] : '');
         if ($matricula === '') {
             self::deny('Usuario corporativo nao identificado.');
+        }
+        if (!CaixaLoteriasAccessGate::allows($corporate)) {
+            self::deny('Acesso restrito aos empregados lotados em unidades ativas da CAIXA Loterias.');
         }
         $access = self::findAccess($matricula);
         if ($access === null) {

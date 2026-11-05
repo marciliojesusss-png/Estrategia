@@ -78,6 +78,7 @@ $artifacts = array(
     'script banco/schema/usuarios' => __DIR__ . '/validar-banco-schema-usuarios.php',
     'teste seguranca/publicacao' => dirname(__DIR__) . '/tests/security-publication.test.php',
     'teste autenticacao/autorizacao' => dirname(__DIR__) . '/tests/auth-authorization.test.php',
+    'teste restricao unidades CAIXA Loterias' => dirname(__DIR__) . '/tests/caixa-loterias-access-gate.test.php',
 );
 
 foreach ($artifacts as $label => $path) {
@@ -86,13 +87,14 @@ foreach ($artifacts as $label => $path) {
 
 $manual = array(
     'usuario corporativo identificado',
+    'usuario de unidade ativa da CAIXA Loterias autorizado',
+    'usuario de unidade externa ou inativa recebe acesso negado',
     'upload e download de evidencia via navegador',
     'administrador cadastra e edita indicador',
     'administrador consulta auditoria e administra usuarios',
     'unidade apuradora cria rascunho e submete lancamento',
     'homologador aprova, rejeita e consulta historico',
     'usuario companhia consulta dashboard e relatorios',
-    'usuario sem cadastro recebe acesso negado',
     'CSRF exigido em alteracoes',
     'mensagens nao exibem credenciais',
 );

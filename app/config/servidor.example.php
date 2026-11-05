@@ -13,6 +13,7 @@ return array(
 
     'auth_provider' => 'legacy_file',
     'ldap_legacy_path' => dirname(APP_ROOT) . '/acessoldap/LDAP.php',
+    'auth_require_caixa_loterias_unit' => true,
 
     'diagnostico_php_version' => '',
 );

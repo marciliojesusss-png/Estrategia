@@ -130,6 +130,7 @@ return array(
     'db_password' => 'SENHA_SQL',
     'auth_provider' => 'legacy_file',
     'ldap_legacy_path' => dirname(dirname(__DIR__)) . '/../acessoldap/LDAP.php',
+    'auth_require_caixa_loterias_unit' => true,
     'diagnostico_php_version' => '',
 );
 ```
@@ -235,6 +236,14 @@ O arquivo LDAP deve ficar fora da pasta `Estrategia`:
 A aplicacao valida `is_file()` e `is_readable()` antes de incluir o arquivo. Em
 caso de falha, registra em `storage/logs/aplicacao.log`.
 
+Em producao, a autenticacao LDAP e seguida por uma segunda barreira: o codigo
+numerico da unidade do empregado deve existir como ativo em
+`BASEDB001.dbo.SIREDTB_Unidade_Caixa_Loterias`. A configuracao
+`auth_require_caixa_loterias_unit` deve permanecer `true` no servidor da CAIXA.
+O usuario tecnico da aplicacao precisa de permissao `SELECT` nessa tabela.
+Consulte o procedimento completo em
+[`docs/autenticacao-unidades-caixa-loterias.md`](docs/autenticacao-unidades-caixa-loterias.md).
+
 ## Diagnosticos
 
 Diagnostico completo do servidor:
@@ -316,6 +325,9 @@ Desabilite apos o teste:
 
 ## IIS e arquivos estaticos
 
+O procedimento completo para configurar e validar o IIS da CAIXA está em
+[`docs/configuracao-iis-web-config-caixa.md`](docs/configuracao-iis-web-config-caixa.md).
+
 Quando o diretório físico da aplicação no IIS aponta para a raiz do projeto, os
 assets publicados são acessados por `/estrategia/public/assets/...`. O
 `public/web.config` remove e adiciona novamente os segmentos ocultos herdados do
@@ -350,6 +362,7 @@ no banco corporativo antes da publicacao da versao correspondente.
 
 ```powershell
 php tests\security-publication.test.php
+php tests\caixa-loterias-access-gate.test.php
 php tests\api-contract.test.php
 node tests\backend-routing.test.js
 ```

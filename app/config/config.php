@@ -58,6 +58,7 @@ function config_apply_server_file($path)
         'db_password' => array('SQLSERVER_PASSWORD', 'DB_PASSWORD'),
         'auth_provider' => array('AUTH_PROVIDER'),
         'ldap_legacy_path' => array('LDAP_LEGACY_PATH'),
+        'auth_require_caixa_loterias_unit' => array('AUTH_REQUIRE_CAIXA_LOTERIAS_UNIT'),
         'diagnostico_php_version' => array('DIAGNOSTICO_PHP_VERSION'),
     );
 
@@ -135,6 +136,13 @@ define('LDAP_STARTTLS', filter_var(getenv('LDAP_STARTTLS') ?: 'true', FILTER_VAL
 define('LDAP_REQUIRE_TLS', filter_var(getenv('LDAP_REQUIRE_TLS') ?: (APP_ENV === 'production' ? 'true' : 'false'), FILTER_VALIDATE_BOOLEAN));
 define('AUTH_PROVIDER', getenv('AUTH_PROVIDER') ?: 'legacy_file');
 define('LDAP_LEGACY_PATH', getenv('LDAP_LEGACY_PATH') ?: dirname(APP_ROOT) . '/acessoldap/LDAP.php');
+define(
+    'AUTH_REQUIRE_CAIXA_LOTERIAS_UNIT',
+    filter_var(
+        getenv('AUTH_REQUIRE_CAIXA_LOTERIAS_UNIT') ?: (strtolower((string) APP_ENV) === 'production' ? 'true' : 'false'),
+        FILTER_VALIDATE_BOOLEAN
+    )
+);
 define('SQLSERVER_HOST', getenv('SQLSERVER_HOST') ?: (getenv('DB_HOST') ?: ''));
 define('SQLSERVER_DATABASE', getenv('SQLSERVER_DATABASE') ?: (getenv('DB_DATABASE') ?: ''));
 define('SQLSERVER_PORT', getenv('SQLSERVER_PORT') ?: '');

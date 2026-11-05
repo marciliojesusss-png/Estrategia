@@ -68,6 +68,14 @@ final class DiagnosticoSqlServer
         $this->add(SQLSERVER_DATABASE !== '' ? 'OK' : 'FALHA', 'CONFIG', 'banco', SQLSERVER_DATABASE !== '' ? $this->mask(SQLSERVER_DATABASE) : 'ausente', true);
         $this->add('OK', 'CONFIG', 'porta', SQLSERVER_PORT !== '' ? SQLSERVER_PORT : 'padrao do driver', false);
         $this->add(in_array(DB_AUTH_MODE, array('sql', 'integrated'), true) ? 'OK' : 'FALHA', 'CONFIG', 'autenticacao', DB_AUTH_MODE, true);
+        $production = strtolower((string) APP_ENV) === 'production';
+        $this->add(
+            AUTH_REQUIRE_CAIXA_LOTERIAS_UNIT ? 'OK' : ($production ? 'FALHA' : 'AVISO'),
+            'CONFIG',
+            'restricao por unidade CAIXA Loterias',
+            AUTH_REQUIRE_CAIXA_LOTERIAS_UNIT ? 'habilitada' : 'desabilitada',
+            $production
+        );
         if (DB_AUTH_MODE === 'sql') {
             $this->add(SQLSERVER_USER !== '' ? 'OK' : 'FALHA', 'CONFIG', 'usuario SQL', SQLSERVER_USER !== '' ? 'configurado' : 'ausente', true);
             $this->add(SQLSERVER_PASSWORD !== '' ? 'OK' : 'FALHA', 'CONFIG', 'senha SQL', SQLSERVER_PASSWORD !== '' ? 'configurada' : 'ausente', true);
@@ -151,6 +159,16 @@ final class DiagnosticoSqlServer
             @sqlsrv_free_stmt($stmt);
         }
 
+        if (AUTH_REQUIRE_CAIXA_LOTERIAS_UNIT) {
+            $this->queryScalar(
+                $connection,
+                'SELECT TOP 1 [NU_Unidade] FROM [BASEDB001].[dbo].[SIREDTB_Unidade_Caixa_Loterias] WHERE [IC_Ativo] = 1',
+                'AUTORIZACAO',
+                'leitura das unidades ativas da CAIXA Loterias',
+                true
+            );
+        }
+
         @sqlsrv_close($connection);
         $this->addRecommendations();
     }
@@ -202,6 +220,7 @@ final class DiagnosticoSqlServer
         $this->items[] = '- DB_DRIVER/DB_CONNECTION diferente de sqlsrv.';
         $this->items[] = '- Servidor, banco, usuario ou senha incorretos em servidor.local.php.';
         $this->items[] = '- Login sem permissao para abrir o banco configurado.';
+        $this->items[] = '- Login sem SELECT em BASEDB001.dbo.SIREDTB_Unidade_Caixa_Loterias.';
         $this->items[] = '- Banco/tabelas ainda nao criados ou schema nao aplicado.';
         $this->items[] = '- Firewall, porta SQL Server ou instancia inacessivel a partir do servidor web.';
         $this->items[] = '';
