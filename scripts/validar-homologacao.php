@@ -10,7 +10,7 @@ function homologacao_status($label, $status, $detail = '')
     return $status === 'ok' || $status === 'pendente';
 }
 
-function http_check($baseUrl, $path, array $accepted)
+function http_check($baseUrl, $path, array $accepted, array $acceptedContentTypes = array())
 {
     if ($baseUrl === '') {
         return homologacao_status($path, 'pendente', 'informe --base-url=http://servidor/estrategia');
@@ -31,8 +31,28 @@ function http_check($baseUrl, $path, array $accepted)
         $status = (int) $match[1];
     }
 
-    $ok = in_array($status, $accepted, true) && $body !== false;
-    return homologacao_status($path, $ok ? 'ok' : 'falha', 'HTTP ' . ($status ?: 'sem resposta'));
+    $contentType = '';
+    foreach ($headers as $header) {
+        if (stripos($header, 'Content-Type:') === 0) {
+            $contentType = trim(substr($header, strlen('Content-Type:')));
+            break;
+        }
+    }
+
+    $contentTypeOk = empty($acceptedContentTypes);
+    foreach ($acceptedContentTypes as $acceptedContentType) {
+        if (stripos($contentType, $acceptedContentType) === 0) {
+            $contentTypeOk = true;
+            break;
+        }
+    }
+
+    $ok = in_array($status, $accepted, true) && $body !== false && $contentTypeOk;
+    $detail = 'HTTP ' . ($status ?: 'sem resposta');
+    if (!empty($acceptedContentTypes)) {
+        $detail .= '; Content-Type ' . ($contentType !== '' ? $contentType : 'ausente');
+    }
+    return homologacao_status($path, $ok ? 'ok' : 'falha', $detail);
 }
 
 $ok = true;
@@ -40,11 +60,17 @@ $ok = true;
 echo 'Homologacao funcional' . PHP_EOL;
 echo 'Base URL: ' . ($baseUrl !== '' ? $baseUrl : 'nao informada') . PHP_EOL;
 
-$ok = http_check($baseUrl, '/saude', array(200)) && $ok;
+$ok = http_check($baseUrl, '/index.php?route=saude', array(200)) && $ok;
 $ok = http_check($baseUrl, '/', array(200, 302, 401)) && $ok;
-$ok = http_check($baseUrl, '/dashboard', array(200, 302, 401, 403)) && $ok;
-$ok = http_check($baseUrl, '/indicadores', array(200, 302, 401, 403)) && $ok;
-$ok = http_check($baseUrl, '/assets/css/styles.css', array(200)) && $ok;
+$ok = http_check($baseUrl, '/index.php?route=dashboard', array(200, 302, 401, 403)) && $ok;
+$ok = http_check($baseUrl, '/index.php?route=indicadores', array(200, 302, 401, 403)) && $ok;
+$ok = http_check($baseUrl, '/public/assets/css/styles.css', array(200), array('text/css')) && $ok;
+$ok = http_check(
+    $baseUrl,
+    '/public/assets/js/app.js',
+    array(200),
+    array('application/javascript', 'text/javascript', 'application/x-javascript')
+) && $ok;
 
 $artifacts = array(
     'script preflight' => __DIR__ . '/preflight-servidor.php',

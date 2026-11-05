@@ -314,6 +314,32 @@ Desabilite apos o teste:
 'diagnostico_web_habilitado' => false,
 ```
 
+## IIS e arquivos estaticos
+
+Quando o diretório físico da aplicação no IIS aponta para a raiz do projeto, os
+assets publicados são acessados por `/estrategia/public/assets/...`. O
+`public/web.config` remove e adiciona novamente os segmentos ocultos herdados do
+`web.config` raiz; não remova as tags `<remove>`. Sem elas, o IIS pode responder
+`500.19` por entradas duplicadas e o navegador passa a informar erro de MIME em
+todos os arquivos CSS e JavaScript.
+
+Depois da publicação, valide diretamente um CSS e um JavaScript:
+
+```powershell
+Invoke-WebRequest `
+  -Uri 'https://SERVIDOR/estrategia/public/assets/css/styles.css' `
+  -UseBasicParsing | Select-Object StatusCode, Headers
+
+Invoke-WebRequest `
+  -Uri 'https://SERVIDOR/estrategia/public/assets/js/app.js' `
+  -UseBasicParsing | Select-Object StatusCode, Headers
+```
+
+Os dois recursos devem retornar `200`. O CSS deve usar `text/css` e o
+JavaScript deve usar um tipo JavaScript válido. Não desative
+`X-Content-Type-Options: nosniff` para contornar respostas `500` ou MIME
+incorreto; corrija primeiro a resposta do IIS.
+
 ## Banco e migrations
 
 O schema versionado fica em `database/sqlserver/schema.sql`. Migrations

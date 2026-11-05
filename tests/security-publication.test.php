@@ -28,12 +28,20 @@ $routerScript = contents($root . '/public/router.php');
 $indexSource = contents($root . '/public/index.php');
 $databaseSource = contents($root . '/app/core/Database.php');
 $authSource = contents($root . '/app/auth/Auth.php');
+$homologationScript = contents($root . '/scripts/validar-homologacao.php');
 
 foreach (array('X-Content-Type-Options', 'X-Frame-Options', 'Referrer-Policy', 'Permissions-Policy') as $header) {
     check(strpos($webConfig, $header) !== false, 'Cabecalho ausente: ' . $header);
 }
 foreach (array('storage', 'uploads', 'database', 'app') as $segment) {
     check(strpos($webConfig, 'segment="' . $segment . '"') !== false, 'Segmento nao oculto: ' . $segment);
+    $remove = '<remove segment="' . $segment . '"';
+    $add = '<add segment="' . $segment . '"';
+    check(strpos($webConfig, $remove) !== false, 'Remocao preventiva ausente para segmento herdado: ' . $segment);
+    check(
+        strpos($webConfig, $remove) < strpos($webConfig, $add),
+        'Segmento herdado deve ser removido antes de ser adicionado: ' . $segment
+    );
 }
 check(file_exists($root . '/index.php'), 'Index alternativo da raiz ausente.');
 check(strpos(contents($root . '/index.php'), "require __DIR__ . '/public/index.php';") !== false, 'Index alternativo nao encaminha para public/index.php.');
@@ -73,6 +81,9 @@ check(strpos($indexSource, "\$_GET['rota']") === false, 'Parametro legado rota n
 check(strpos($indexSource, "\$route = 'dashboard';") !== false, 'Rota padrao dashboard ausente.');
 check(strpos($indexSource, "\$router->get('/login'") !== false, 'Rota login por parametro ausente.');
 check(strpos($indexSource, "\$router->post('/login'") !== false, 'POST login por parametro ausente.');
+check(strpos($homologationScript, '/public/assets/css/styles.css') !== false, 'Homologacao nao testa o CSS publicado pelo index raiz.');
+check(strpos($homologationScript, '/public/assets/js/app.js') !== false, 'Homologacao nao testa o JavaScript publicado pelo index raiz.');
+check(strpos($homologationScript, 'Content-Type:') !== false, 'Homologacao nao valida o MIME dos assets.');
 
 foreach (array('database', 'storage', 'uploads', 'app', '.env', 'composer.json') as $privatePath) {
     check(!file_exists($root . '/public/' . $privatePath), 'Recurso interno exposto no public/: ' . $privatePath);
