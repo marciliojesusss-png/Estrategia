@@ -7,9 +7,11 @@ require_once __DIR__.'/../repositories/IndicadoresRepository.php';
 require_once __DIR__.'/../repositories/EvidenciasRepository.php';
 require_once __DIR__.'/../repositories/ConfiguracoesRepository.php';
 require_once __DIR__.'/../repositories/AuditoriaRepository.php';
+require_once __DIR__.'/../repositories/LancamentosResultadosHomologadosRepository.php';
 require_once __DIR__.'/LancamentoStateMachine.php';
 require_once __DIR__.'/CompetenciaPeriodicidade.php';
 require_once __DIR__.'/GovernancaHomologacao.php';
+require_once __DIR__.'/CalculoIndicadoresService.php';
 
 final class HomologacaoService
 {
@@ -20,6 +22,8 @@ final class HomologacaoService
     private $evidence;
     private $config;
     private $audit;
+    private $resultSnapshots;
+    private $calculator;
 
     public function __construct($db)
     {
@@ -30,6 +34,8 @@ final class HomologacaoService
         $this->evidence=new EvidenciasRepository($db);
         $this->config=new ConfiguracoesRepository($db);
         $this->audit=new AuditoriaRepository($db);
+        $this->resultSnapshots=new LancamentosResultadosHomologadosRepository($db);
+        $this->calculator=new CalculoIndicadoresService();
     }
 
     public function queue(array $filters,$page,$perPage)
@@ -66,11 +72,17 @@ final class HomologacaoService
         };
         $evidences=array_map($mapEvidence,$this->evidence->byLaunch($id));
         $historicalEvidences=array_map($mapEvidence,$this->evidence->historicalByLaunch($id));
+        $indicator=$this->indicators->find(isset($launch['indicadorId'])?$launch['indicadorId']:'');
+        $validation=$indicator
+            ? $this->calculator->validar($indicator,$this->indicatorRule($indicator['id']),$launch,
+                $this->launches->all(array('indicadorId'=>$indicator['id'],'ano'=>$launch['ano'])))
+            : null;
         return array(
             'lancamento'=>$launch,
             'evidencias'=>$evidences,
             'evidenciasHistoricas'=>$historicalEvidences,
             'historico'=>$this->repo->history(array('indicadorId'=>$launch['indicadorId']),1,100)['items'],
+            'validacaoConsistencia'=>$validation,
         );
     }
 
@@ -109,12 +121,29 @@ final class HomologacaoService
                 $user,
                 $this->repo->productionParticipantUsers($id, GovernancaHomologacao::productionActions())
             );
+            $validation=null;
+            if($action==='homologacao_lancamento') {
+                $validation=$this->calculator->validar(
+                    $indicator,
+                    $this->indicatorRule($indicator['id']),
+                    $before,
+                    $this->launches->all(array('indicadorId'=>$indicator['id'],'ano'=>$before['ano']))
+                );
+                if(empty($validation['valido'])) {
+                    $fields=array_map(function($item){return isset($item['rotulo'])?$item['rotulo']:$item['campo'];},$validation['divergencias']);
+                    $suffix=$fields?' Campos: '.implode(', ',$fields).'.':'';
+                    throw new DomainException('Homologacao bloqueada pela conferencia de consistencia: '.$validation['mensagem'].$suffix);
+                }
+            }
             // A condição otimista usa o texto exatamente lido do banco. O valor
             // normalizado serve apenas para validar a transição de estado.
             if(!$this->launches->updateStatus($id,$before['status'],$after)) throw new LogicException('Homologacao processada por outra requisicao.');
             $decisionUser=$user;
             $decisionUser['perfil']=GovernancaHomologacao::profileLabel($user['perfil']);
             $this->repo->recordDecision($id,$action,$expected,$after,$reason,$decisionUser);
+            if($action==='homologacao_lancamento'&&!empty($validation['cobertura'])) {
+                $this->resultSnapshots->save($this->calculator->snapshot($validation,$before,$user));
+            }
             $updated=$this->launches->find($id);
             $updated['observacaoDiretoria']=$reason;
             $this->audit->append(array(
@@ -143,5 +172,13 @@ final class HomologacaoService
             }
         }
         return false;
+    }
+
+    private function indicatorRule($indicatorId): array
+    {
+        foreach($this->config->get('regrasIndicadores',array()) as $rule) {
+            if((string)($rule['indicadorId'] ?? '')===(string)$indicatorId) return $rule;
+        }
+        return array();
     }
 }

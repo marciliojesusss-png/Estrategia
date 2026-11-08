@@ -20,13 +20,13 @@ assert(launchView.includes('id="launchEvidenceList"'), "lista de anexos deve est
 assert(launchView.includes('id="launchEvidencePendingStatus"'), "estado de arquivo selecionado deve estar visivel");
 assert(!/id="evidenceWrapper"[^>]*hidden/.test(launchView), "secao de evidencias nao pode ser escondida");
 
-assert(launches.includes('action === "send" && launchRequiresEvidence'), "arquivo deve ser exigido apenas no envio e conforme a competência");
-assert(launches.includes("Opcional nesta competência de acompanhamento mensal"), "interface deve explicar a evidência opcional no acompanhamento");
-assert(launches.includes("Arquivo obrigatório para o fechamento trimestral"), "interface deve explicar a exigência no fechamento");
+assert(launches.includes('action === "send" && launchRequiresEvidence'), "guarda de envio deve permanecer centralizada na política de evidências");
+assert(launches.includes('return "Opcional"'), "interface deve informar que o anexo é opcional");
+assert(launches.includes('Não - anexo opcional'), "resumo da regra deve informar que o anexo é opcional");
 assert(launches.includes("async function uploadPendingEvidence(lancamento)"), "upload pendente deve usar fluxo centralizado");
 assert(launches.includes('validateLaunch(indicador, action, { allowPendingEvidence: true })'), "envio deve aceitar o arquivo pendente apenas antes do upload");
 assert(launches.includes("await uploadPendingEvidence(lancamento)"), "salvar e adicionar devem processar o arquivo pendente");
-assert(launches.includes("if (!validateLaunch(indicador, action)) return;"), "validacao final deve exigir evidencia confirmada pelo backend");
+assert(launches.includes("if (!validateLaunch(indicador, action)) return;"), "validação final do lançamento deve permanecer ativa");
 assert(launches.includes("O lançamento não foi enviado para homologação"), "falha no upload deve impedir o envio");
 assert(launches.includes("O arquivo continua selecionado para nova tentativa"), "falha no rascunho deve preservar e explicar o arquivo pendente");
 assert(launches.includes('addEventListener("change", () => renderPendingEvidenceStatus())'), "selecao deve exibir feedback antes do upload");

@@ -114,6 +114,28 @@ $legacyRow = detalhe_mes($legacyPayload, 3);
 detalhe_ok($legacyRow['governanca'] === 'Homologado legado - sem evento transacional', 'homologacao legada deve ser identificada');
 detalhe_ok($legacyRow['homologadoEm'] === null && $legacyRow['homologadoPor'] === null, 'legado nao pode receber homologacao inventada');
 
+$indicator07 = $indicator03;
+$indicator07['id'] = 7; $indicator07['numero'] = 7; $indicator07['indicador'] = 'Lucro Liquido Recorrente';
+$launches07 = array(
+    detalhe_lancamento(73, 7, 1, 'Homologado', 1, 89555555.56, 119377680.03, 1.333001389847, 'Atingido'),
+    detalhe_lancamento(74, 7, 2, 'Homologado', 1, 89555555.55, 102633750.55, 1.146034435493, 'Atingido'),
+    detalhe_lancamento(75, 7, 3, 'Homologado', 1, 89555555.56, 114310457.11, 1.276419496202, 'Atingido'),
+);
+$rule07 = array('indicadorId' => 7, 'tipoCalculo' => 'lucro_recorrente_mensal', 'parametrosCalculo' => array(
+    'mesesFechamentoTrimestral' => array(3, 6, 9, 12),
+));
+$payload07 = RelatorioIndicadorService::montarPayload(
+    $indicator07, $launches07, $rule07, array(), array(), array(), array(), array(), 2026, $administrator
+);
+$monthlyMarch07 = detalhe_mes($payload07, 3);
+$quarter07 = $payload07['fechamentosTrimestrais'][0];
+detalhe_ok(abs($monthlyMarch07['resultado'] - 114310457.11) < 0.005, 'trajetoria mensal de MAR do Indicador 07 deve permanecer mensal');
+detalhe_ok(abs($quarter07['meta'] - 268666666.67) < 0.005, 'meta acumulada do 1TRI do Indicador 07 divergente');
+detalhe_ok(abs($quarter07['resultado'] - 336321887.69) < 0.005, 'resultado acumulado do 1TRI do Indicador 07 divergente');
+detalhe_ok(abs($quarter07['atingimento'] - (336321887.69 / 268666666.67)) < 0.000000000001, 'atingimento acumulado do 1TRI do Indicador 07 divergente');
+detalhe_ok($quarter07['situacao'] === 'Atingido', 'situacao acumulada do 1TRI do Indicador 07 deve ser Atingido');
+detalhe_ok($payload07['fechamentosTrimestrais'][1]['resultado'] === null, '2TRI incompleto do Indicador 07 nao pode exibir posicao acumulada parcial');
+
 $indicator22 = $indicator03;
 $indicator22['id'] = 22; $indicator22['numero'] = 22; $indicator22['indicador'] = 'Arrecadacao Gerada com o Ecossistema Lotex';
 $launches22 = array(); $governance22 = array();

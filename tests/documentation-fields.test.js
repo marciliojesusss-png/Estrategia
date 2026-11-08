@@ -208,7 +208,7 @@ test("campos operacionais somente leitura de 15, 22 e 23 permanecem visíveis", 
   assert.deepEqual(DocumentationFields.visibleInputFields(rules[2]).map((field) => field.nome), ["metaTrimestral"]);
 });
 
-test("integração usa o fallback central sem alterar regra de evidência", () => {
+test("integração usa o fallback central e apresenta evidência opcional", () => {
   const launches = fs.readFileSync(path.join(root, "assets", "js", "launches.js"), "utf8");
   const indicators = fs.readFileSync(path.join(root, "assets", "js", "indicators.js"), "utf8");
   const approvals = fs.readFileSync(path.join(root, "assets", "js", "approvals.js"), "utf8");
@@ -216,7 +216,7 @@ test("integração usa o fallback central sem alterar regra de evidência", () =
 
   assert.match(launches, /DocumentationFields\.visibleInputFields\(regra\)/);
   assert.match(launches, /DocumentationFields\.preserveLegacyFields\(regra, lancamento, collectedFields\)/);
-  assert.match(launches, /regra\.exigeEvidencia/);
+  assert.match(launches, /Não - anexo opcional/);
   assert.match(indicators, /DocumentationFields\.resolve\(regra, lancamento\)/);
   assert.match(approvals, /DocumentationFields\.resolve\(regra, lancamento\)/);
   assert.match(launches, /hasDocumentaryObservation[\s\S]*lancamento\.observacaoArea \?\? ""/);

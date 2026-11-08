@@ -5,18 +5,21 @@ require_once __DIR__ . '/ResumoExecutivoDadosService.php';
 require_once __DIR__ . '/../auth/Auth.php';
 require_once __DIR__ . '/../repositories/HomologacoesRepository.php';
 require_once __DIR__ . '/../repositories/LancamentosObservacoesDocumentaisRepository.php';
+require_once __DIR__ . '/../repositories/LancamentosResultadosHomologadosRepository.php';
 
 final class RelatorioConsolidadoService
 {
     private $dadosService;
     private $homologacoes;
     private $observacoesDocumentais;
+    private $resultSnapshots;
 
     public function __construct($db)
     {
         $this->dadosService = new ResumoExecutivoDadosService($db);
         $this->homologacoes = new HomologacoesRepository($db);
         $this->observacoesDocumentais = new LancamentosObservacoesDocumentaisRepository($db);
+        $this->resultSnapshots = new LancamentosResultadosHomologadosRepository($db);
     }
 
     public function gerar(array $requestedFilters, array $user)
@@ -24,7 +27,9 @@ final class RelatorioConsolidadoService
         $filters = self::normalizarFiltros($requestedFilters);
         $scopeFilters = self::filtrosEscopo($user, $filters);
         $data = $this->dadosService->dados(array_merge(array('ativo' => true), $scopeFilters));
-        $data['lancamentos'] = $this->observacoesDocumentais->decorate($data['lancamentos']);
+        $data['lancamentos'] = $this->resultSnapshots->applyCurrentSnapshots(
+            $this->observacoesDocumentais->decorate($data['lancamentos'])
+        );
 
         $governedIds = array();
         foreach ($data['governancaHomologacaoAtual'] as $item) {

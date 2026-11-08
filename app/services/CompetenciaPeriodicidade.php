@@ -88,14 +88,9 @@ final class CompetenciaPeriodicidade
 
     public static function requiresEvidence(array $indicator, array $rule, $competenceOrLaunch): bool
     {
-        if (empty($rule['exigeEvidencia'])) return false;
-        $params = isset($rule['parametrosCalculo']) && is_array($rule['parametrosCalculo'])
-            ? $rule['parametrosCalculo']
-            : array();
-        $legacyIndicator03Rule = (int)($indicator['id'] ?? $indicator['indicadorId'] ?? 0) === 3
-            && !empty($params['mesesFechamentoTrimestral']);
-        if (empty($rule['exigeEvidenciaNosFechamentos']) && !$legacyIndicator03Rule) return true;
-        return self::isClosingCompetence($indicator, $rule, $competenceOrLaunch);
+        // Politica vigente: anexos sustentam o registro, mas nao condicionam
+        // envio, reenvio apos retificacao/reabertura ou homologacao.
+        return false;
     }
 
     public static function assertTrackingAllowed(array $indicator, $competenceOrLaunch): void

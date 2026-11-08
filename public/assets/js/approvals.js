@@ -13,6 +13,7 @@
     evidenciasPorLancamento: {},
     evidenciasHistoricasPorLancamento: {},
     reopenPolicies: {},
+    consistencyByLaunch: {},
     selectedId: null
   };
 
@@ -589,6 +590,7 @@
 
   function setActionState(lancamento) {
     const actionable = canAct(lancamento);
+    const consistency = state.consistencyByLaunch?.[String(lancamento.id)];
     const reopenable = canReopen(lancamento);
     const policy = state.reopenPolicies?.[String(lancamento.id)];
     const decisionProfile = isAdmin() || isDirectoryReviewer();
@@ -599,7 +601,10 @@
     document.getElementById("approvalDecisionField").hidden = !decisionProfile;
     approveButton.hidden = !decisionProfile;
     returnButton.hidden = !decisionProfile;
-    approveButton.disabled = !actionable;
+    approveButton.disabled = !actionable || !consistency || consistency.valido === false;
+    approveButton.title = consistency?.valido === false
+      ? "Homologação bloqueada: os valores persistidos divergem do cálculo oficial."
+      : (!consistency && actionable ? "Aguardando conferência de consistência." : "");
     returnButton.disabled = !actionable;
     reopenButton.hidden = !decisionProfile;
     reopenButton.textContent = policy?.carregando ? "Verificando reabertura..." : "Reabrir para edição";
@@ -636,6 +641,23 @@
     const badge = document.getElementById("approvalStatusBadge");
     badge.textContent = approvalStatusLabel(lancamento.status);
     badge.className = `badge ${badgeClass(lancamento.status)}`;
+    const consistencyNotice = document.getElementById("approvalConsistency");
+    const consistency = state.consistencyByLaunch?.[String(lancamento.id)];
+    consistencyNotice.hidden = false;
+    if (!consistency) {
+      consistencyNotice.className = "notice info full-span";
+      consistencyNotice.textContent = "Conferindo os valores persistidos com o cálculo oficial do backend...";
+    } else if (consistency.valido && consistency.cobertura) {
+      consistencyNotice.className = "notice success full-span";
+      consistencyNotice.textContent = `Consistência validada pelo backend (${consistency.versaoFormula}).`;
+    } else if (consistency.valido) {
+      consistencyNotice.className = "notice warning full-span";
+      consistencyNotice.textContent = consistency.mensagem;
+    } else {
+      const fields = (consistency.divergencias || []).map((item) => item.rotulo || item.campo).join(", ");
+      consistencyNotice.className = "notice danger full-span";
+      consistencyNotice.textContent = `${consistency.mensagem}${fields ? ` Campos: ${fields}.` : ""}`;
+    }
     document.getElementById("approvalLaunchId").value = lancamento.id;
     const documentation = launchDocumentation(regra, lancamento);
     document.getElementById("approvalObservacaoArea").value = documentation.observation;
@@ -818,6 +840,21 @@
     }
   }
 
+  async function loadConsistency(lancamento) {
+    if (!lancamento) return;
+    try {
+      const detail = await apiJson(`api/homologacoes/${encodeURIComponent(lancamento.id)}`, { method: "GET" });
+      state.consistencyByLaunch[String(lancamento.id)] = detail.validacaoConsistencia || {
+        valido: false, cobertura: false, mensagem: "Conferência de consistência indisponível.", divergencias: []
+      };
+    } catch (error) {
+      state.consistencyByLaunch[String(lancamento.id)] = {
+        valido: false, cobertura: false, mensagem: error.message || "Falha na conferência de consistência.", divergencias: []
+      };
+    }
+    if (String(state.selectedId) === String(lancamento.id)) renderPanel({ suppressGeneralNotice: true });
+  }
+
   async function persistDecision(action) {
     const lancamento = getSelectedLaunch();
     if (!lancamento || !canAct(lancamento)) return;
@@ -970,6 +1007,7 @@
       state.selectedId = button.dataset.id;
       clearActionFeedback();
       renderPanel();
+      loadConsistency(getSelectedLaunch());
       if (!isUnitReader()) loadReopenPolicy(getSelectedLaunch());
       document.getElementById("approvalPanel").scrollIntoView({ behavior: "smooth", block: "start" });
     });
@@ -1000,6 +1038,7 @@
       evidenciasPorLancamento: {},
       evidenciasHistoricasPorLancamento: {},
       reopenPolicies: {},
+      consistencyByLaunch: {},
       selectedId: null
     };
 
@@ -1011,6 +1050,7 @@
     if (requestedId && state.lancamentos.some((item) => String(item.id) === String(requestedId))) {
       state.selectedId = requestedId;
       renderPanel();
+      loadConsistency(getSelectedLaunch());
       if (!isUnitReader()) loadReopenPolicy(getSelectedLaunch());
       document.getElementById("approvalPanel").scrollIntoView({ block: "start" });
     }

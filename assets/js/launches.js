@@ -290,11 +290,7 @@
   }
 
   function evidenceRequirementLabel(regra, lancamento, indicador = null) {
-    if (!launchRequiresEvidence(regra, lancamento, indicador)) {
-      return regra?.exigeEvidenciaNosFechamentos === true
-        ? "Opcional nesta competência de acompanhamento mensal"
-        : "Opcional";
-    }
+    if (!launchRequiresEvidence(regra, lancamento, indicador)) return "Opcional";
     return regra?.exigeEvidenciaNosFechamentos === true
       ? "Arquivo obrigatório para o fechamento trimestral"
       : "Arquivo obrigatório para envio";
@@ -1539,7 +1535,7 @@
       ["Diretoria responsável", indicador.diretoriaResponsavel || "Não informado"],
       ["Tipo de cálculo", regra.tipoCalculo],
       ["Consolidação anual", regra.tipoConsolidacao],
-      ["Exige evidência", regra.exigeEvidenciaNosFechamentos ? "Somente nos fechamentos trimestrais" : regra.exigeEvidencia ? "Sim" : "Não"],
+      ["Exige evidência", "Não - anexo opcional"],
       ["Meta anual", Number(indicador.id) === 22 ? indicator22AnnualGoalText(lancamento) : indicador.metaAnualDescricao, true],
       ...(metodologiaIeo ? [
         ["Metodologia vigente", metodologiaIeo.descricao, true],

@@ -31,7 +31,15 @@ Extensão e MIME são validados. Arquivos como `.msg`, `.eml`, `.zip` e executá
 - Administrador: segue as permissões administrativas existentes.
 - Após envio ou homologação, anexos não podem ser alterados.
 
-Quando `exigeEvidencia` estiver ativo, salvar rascunho sem arquivo é permitido, mas o envio para homologação exige ao menos um arquivo. A referência/link é complementar.
+Nos lançamentos de indicadores, o arquivo de evidência é opcional em todo o fluxo. A ausência de anexo não bloqueia:
+
+- o envio inicial para homologação;
+- o reenvio depois de devolução, reabertura ou retificação;
+- a homologação da versão atual.
+
+Os recursos de inclusão, download, histórico por versão e auditoria permanecem disponíveis. Quando houver arquivo, ele continua sujeito às permissões e às regras de imutabilidade do lançamento. A referência/link também é opcional e complementar.
+
+Essa política se aplica aos indicadores. As iniciativas estratégicas possuem configuração e fluxo próprios.
 
 ## Implantação corporativa
 

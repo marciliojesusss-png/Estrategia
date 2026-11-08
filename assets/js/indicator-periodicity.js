@@ -86,11 +86,8 @@
   }
 
   function requiresEvidence(indicatorOrFrequency, rule, competenceOrLaunch) {
-    if (rule?.exigeEvidencia !== true) return false;
-    const legacyIndicator03Rule = Number(indicatorOrFrequency?.id ?? indicatorOrFrequency?.indicadorId) === 3 &&
-      Array.isArray(rule?.parametrosCalculo?.mesesFechamentoTrimestral);
-    if (rule?.exigeEvidenciaNosFechamentos !== true && !legacyIndicator03Rule) return true;
-    return isClosingCompetence(indicatorOrFrequency, rule, competenceOrLaunch);
+    // Evidencias permanecem disponiveis, mas sao opcionais em todo o fluxo.
+    return false;
   }
 
   function officialLaunches(indicator, launches) {

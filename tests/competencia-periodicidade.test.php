@@ -37,9 +37,9 @@ foreach (array(1, 2, 4, 5, 7, 8, 10, 11) as $month) {
     periodicidade_ok(!CompetenciaPeriodicidade::requiresEvidence($indicador03, $regra03, array('ano' => 2026, 'mes' => $month)), 'Mês intermediário não deve exigir evidência.');
 }
 foreach (array(3, 6, 9, 12) as $month) {
-    periodicidade_ok(CompetenciaPeriodicidade::requiresEvidence($indicador03, $regra03, array('ano' => 2026, 'mes' => $month)), 'Fechamento trimestral deve exigir evidência.');
+    periodicidade_ok(!CompetenciaPeriodicidade::requiresEvidence($indicador03, $regra03, array('ano' => 2026, 'mes' => $month)), 'Fechamento trimestral não deve exigir evidência.');
 }
-periodicidade_ok(CompetenciaPeriodicidade::requiresEvidence($trimestral, array('exigeEvidencia' => true), array('mes' => 4)), 'Regra antiga sem escopo deve manter a exigência integral.');
+periodicidade_ok(!CompetenciaPeriodicidade::requiresEvidence($trimestral, array('exigeEvidencia' => true), array('mes' => 4)), 'Regra antiga não pode reativar a obrigatoriedade.');
 $regra03Persistida = $regra03;
 unset($regra03Persistida['exigeEvidenciaNosFechamentos']);
 periodicidade_ok(!CompetenciaPeriodicidade::requiresEvidence($indicador03, $regra03Persistida, array('mes' => 1)), 'Regra persistida anterior do Indicador 03 deve receber o escopo trimestral sem DML.');

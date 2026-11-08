@@ -117,6 +117,8 @@
             <textarea id="approvalObservacaoDiretoria" rows="4"></textarea>
           </label>
 
+          <aside id="approvalConsistency" class="notice info full-span" role="status" aria-live="polite" hidden></aside>
+
           <div class="form-actions action-feedback-bar full-span">
             <div id="approvalActionFeedback" class="action-feedback" role="status" aria-live="polite" hidden></div>
             <button id="approveButton" class="primary-action" type="button">Homologar</button>

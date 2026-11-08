@@ -60,16 +60,16 @@ for (const month of [1, 2, 4, 5, 7, 8, 10, 11]) {
   assert.match(launchInternals.evidenceRequirementLabel(rule, byMonth[month], indicator), /Opcional/);
 }
 for (const month of [3, 6, 9, 12]) {
-  assert.equal(periodicity.requiresEvidence(indicator, rule, byMonth[month]), true, `mês ${month} é fechamento`);
-  assert.equal(canSubmit(month, false), false, `mês ${month} sem evidência atual deve ser bloqueado`);
+  assert.equal(periodicity.requiresEvidence(indicator, rule, byMonth[month]), false, `mês ${month} deve aceitar anexo opcional`);
+  assert.equal(canSubmit(month, false), true, `mês ${month} sem evidência atual deve estar apto`);
   assert.equal(canSubmit(month, true), true, `mês ${month} com evidência atual deve estar apto`);
-  assert.match(launchInternals.evidenceRequirementLabel(rule, byMonth[month], indicator), /obrigatório.*fechamento trimestral/);
+  assert.match(launchInternals.evidenceRequirementLabel(rule, byMonth[month], indicator), /Opcional/);
 }
 for (const indicatorId of [1, 2, 8, 23]) {
   const regressionIndicator = data.indicadores.find((item) => Number(item.id) === indicatorId);
   const regressionRule = data.regrasIndicadores.find((item) => Number(item.indicadorId) === indicatorId);
   assert.equal(regressionRule.exigeEvidenciaNosFechamentos, undefined, `Indicador ${indicatorId} não deve receber a nova regra do Indicador 03`);
-  assert.equal(periodicity.requiresEvidence(regressionIndicator, regressionRule, { ano: 2026, mes: 1 }), regressionRule.exigeEvidencia === true);
+  assert.equal(periodicity.requiresEvidence(regressionIndicator, regressionRule, { ano: 2026, mes: 1 }), false);
 }
 
 assert.equal(targets.length, 12);

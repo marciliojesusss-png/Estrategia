@@ -9,6 +9,7 @@ require_once __DIR__ . '/../repositories/HomologacoesRepository.php';
 require_once __DIR__ . '/../repositories/EvidenciasRepository.php';
 require_once __DIR__ . '/../repositories/RetificacoesRepository.php';
 require_once __DIR__ . '/../repositories/LancamentosObservacoesDocumentaisRepository.php';
+require_once __DIR__ . '/../repositories/LancamentosResultadosHomologadosRepository.php';
 
 final class RelatorioIndicadorService
 {
@@ -18,6 +19,7 @@ final class RelatorioIndicadorService
     private $evidencias;
     private $retificacoes;
     private $observacoes;
+    private $resultSnapshots;
 
     public function __construct($db)
     {
@@ -27,6 +29,7 @@ final class RelatorioIndicadorService
         $this->evidencias = new EvidenciasRepository($db);
         $this->retificacoes = new RetificacoesRepository($db);
         $this->observacoes = new LancamentosObservacoesDocumentaisRepository($db);
+        $this->resultSnapshots = new LancamentosResultadosHomologadosRepository($db);
     }
 
     public function gerar($indicatorId, array $filters, array $user)
@@ -47,7 +50,9 @@ final class RelatorioIndicadorService
 
         $data = $this->dadosService->dados(array('indicadorId' => $indicatorId, 'ano' => $year, 'ativo' => true));
         if (count($data['indicadores']) !== 1) throw new OutOfBoundsException('Indicador nao encontrado.');
-        $launches = $this->observacoes->decorate($data['lancamentos']);
+        $launches = $this->resultSnapshots->applyCurrentSnapshots(
+            $this->observacoes->decorate($data['lancamentos'])
+        );
         $launchIds = array_map(function ($launch) { return (string) $launch['id']; }, $launches);
         $governedIds = array();
         foreach ($data['governancaHomologacaoAtual'] as $item) {
@@ -106,7 +111,7 @@ final class RelatorioIndicadorService
         $observations = array();
         for ($quarter = 1; $quarter <= 4; $quarter++) {
             $closingMonth = self::closingMonthForQuarter($closingMonths, $quarter);
-            $row = $trajectoryByMonth[$closingMonth];
+            $row = self::quarterlyPosition($trajectoryByMonth, $closingMonth, $rule);
             $launch = isset($byMonth[$closingMonth]) ? $byMonth[$closingMonth] : null;
             $source = $row['fonteDocumental'];
             if ($source === null && $launch) $source = self::sourceForLaunch($launch, $rule);
@@ -186,7 +191,7 @@ final class RelatorioIndicadorService
             ? $launch['resultadoOficialAnual'] : (isset($launch['resultadoMensal']) ? $launch['resultadoMensal'] : null));
         $base['atingimento'] = self::value(isset($launch['percentualAtingido']) ? $launch['percentualAtingido'] : null);
         $base['situacao'] = trim((string) (isset($launch['situacaoCalculada']) ? $launch['situacaoCalculada'] : '')) ?: 'Nao apurado';
-        if ($presentation) {
+        if ($presentation && empty($launch['snapshotHomologado'])) {
             if (array_key_exists('metaOficialReportada', $presentation) && $presentation['metaOficialReportada'] !== null) $base['meta'] = self::value($presentation['metaOficialReportada']);
             if (array_key_exists('resultadoOficialReportado', $presentation) && $presentation['resultadoOficialReportado'] !== null) $base['resultado'] = self::value($presentation['resultadoOficialReportado']);
             if (array_key_exists('percentualAtingidoOficialReportado', $presentation) && $presentation['percentualAtingidoOficialReportado'] !== null) $base['atingimento'] = self::value($presentation['percentualAtingidoOficialReportado']);
@@ -203,6 +208,46 @@ final class RelatorioIndicadorService
         $base['homologadoEm'] = !empty($approval['data']) ? (string) $approval['data'] : null;
         $base['homologadoPor'] = !empty($approval['usuario']) ? (string) $approval['usuario'] : null;
         return $base;
+    }
+
+    private static function quarterlyPosition(array $trajectoryByMonth, $closingMonth, array $rule): array
+    {
+        $closingRow = $trajectoryByMonth[(int) $closingMonth];
+        if ((string) (isset($rule['tipoCalculo']) ? $rule['tipoCalculo'] : '') !== 'lucro_recorrente_mensal') {
+            return $closingRow;
+        }
+
+        $meta = 0.0;
+        $result = 0.0;
+        $allCurrent = true;
+        for ($month = 1; $month <= (int) $closingMonth; $month++) {
+            $row = isset($trajectoryByMonth[$month]) ? $trajectoryByMonth[$month] : null;
+            if (!$row || $row['meta'] === null || $row['resultado'] === null
+                || $row['governanca'] === 'Sem posicao oficial') {
+                $closingRow['meta'] = null;
+                $closingRow['resultado'] = null;
+                $closingRow['atingimento'] = null;
+                $closingRow['situacao'] = 'Nao apurado';
+                $closingRow['governanca'] = 'Sem posicao oficial';
+                $closingRow['versao'] = null;
+                return $closingRow;
+            }
+            $meta += (float) $row['meta'];
+            $result += (float) $row['resultado'];
+            if ($row['governanca'] !== 'Homologado - versao atual') $allCurrent = false;
+        }
+
+        $meta = round($meta, 2);
+        $result = round($result, 2);
+        $attainment = $meta > 0 ? $result / $meta : null;
+        $closingRow['meta'] = $meta;
+        $closingRow['resultado'] = $result;
+        $closingRow['atingimento'] = $attainment;
+        $closingRow['situacao'] = $attainment === null
+            ? 'Nao apurado' : ($attainment >= 1 ? 'Atingido' : 'Abaixo da meta');
+        $closingRow['governanca'] = $allCurrent
+            ? 'Homologado - versao atual' : 'Homologado legado - sem evento transacional';
+        return $closingRow;
     }
 
     private static function indicatorIdentification(array $indicator, array $rule)

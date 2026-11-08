@@ -40,9 +40,9 @@ for (const month of [1, 2, 4, 5, 7, 8, 10, 11]) {
 }
 for (const month of [3, 6, 9, 12]) {
   assert.equal(Periodicity.isClosingCompetence(indicador03, regra03, { ano: 2026, mes: month }), true);
-  assert.equal(Periodicity.requiresEvidence(indicador03, regra03, { ano: 2026, mes: month }), true);
+  assert.equal(Periodicity.requiresEvidence(indicador03, regra03, { ano: 2026, mes: month }), false);
 }
-assert.equal(Periodicity.requiresEvidence(indicador18, { exigeEvidencia: true }, { mes: 4 }), true, "regras antigas continuam exigindo evidência em todas as competências");
+assert.equal(Periodicity.requiresEvidence(indicador18, { exigeEvidencia: true }, { mes: 4 }), false, "regras antigas não podem reativar a obrigatoriedade");
 assert.equal(Periodicity.requiresEvidence(indicador03, {
   exigeEvidencia: true,
   parametrosCalculo: { mesesFechamentoTrimestral: [3, 6, 9, 12] }
