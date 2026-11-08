@@ -94,6 +94,20 @@
     return isRouteDetailMode() && params.get("origem") === "resumo-executivo" && requestedDetailScope() === "geral";
   }
 
+  function validateInstitutionalDetailSource(detail) {
+    const institutionalReadOnly = detail?.consulta?.institucional === true &&
+      detail?.consulta?.somenteLeitura === true;
+    if (institutionalReadOnly) {
+      if (normalizeText(detail?.fonte?.tipo) !== "institucional") {
+        throw new Error("O backend não confirmou a fonte institucional protegida.");
+      }
+      return;
+    }
+    if (normalizeText(detail?.fonte?.driver) !== "sqlsrv") {
+      throw new Error("O detalhe institucional exige a fonte central SQL Server.");
+    }
+  }
+
   function detailBackTarget() {
     const params = new URLSearchParams(window.location.search);
     const origin = params.get("origem");
@@ -126,9 +140,7 @@
     if (!response.ok || payload?.sucesso === false || !detail?.indicador) {
       throw new Error(payload?.mensagem || "Não foi possível consultar o detalhe institucional.");
     }
-    if (normalizeText(detail.fonte?.driver) !== "sqlsrv") {
-      throw new Error("O detalhe institucional exige a fonte central SQL Server.");
-    }
+    validateInstitutionalDetailSource(detail);
     if (detail.consulta?.escopo !== "geral") {
       throw new Error("O backend não confirmou o escopo institucional solicitado.");
     }
@@ -2179,6 +2191,7 @@
       performanceBadge,
       requestedDetailScope,
       isGeneralDetailRequest,
+      validateInstitutionalDetailSource,
       isInstitutionalReadOnly,
       resolveGrowthTrackingModes,
       usesAccumulatedGoalCurve,
