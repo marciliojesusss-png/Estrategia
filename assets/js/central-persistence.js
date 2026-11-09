@@ -132,7 +132,8 @@
       const reason = String(options.correctionReason || "").trim();
       if (options.requiresRetification && !reason) throw new Error("A justificativa da retificacao e obrigatoria.");
       const updateResponse = await requestJson(`api/lancamentos/${encodeURIComponent(launchId)}`, {
-        method: "PATCH",
+        // O IIS 8.5 corporativo bloqueia PATCH; o id na rota diferencia a atualizacao da criacao.
+        method: "POST",
         body: JSON.stringify({
           ...prepareLaunchForCentral(target),
           ...(reason ? { justificativaRetificacao: reason } : {})

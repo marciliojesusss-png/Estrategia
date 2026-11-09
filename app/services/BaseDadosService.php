@@ -335,7 +335,7 @@ final class BaseDadosService
             && $this->homologacoes->reopenCycleActive($launch['id']);
         if (in_array($status, $transactionalStatuses, true) || $pendingReopenCycle) {
             throw new InvalidArgumentException(
-                'Lancamento em ciclo transacional deve ser alterado exclusivamente por PATCH /api/lancamentos/{id}.'
+                'Lancamento em ciclo transacional deve ser alterado exclusivamente pela API transacional /api/lancamentos/{id}.'
             );
         }
     }

@@ -46,7 +46,7 @@ require(path.join(root, "assets/js/central-persistence.js"));
   assert.equal(retified.usuarioResponsavel, "C123456");
   assert.equal(calls.length, 3);
   assert.match(calls[2].url, /api\/lancamentos\/L1$/);
-  assert.equal(calls[2].options.method, "PATCH");
+  assert.equal(calls[2].options.method, "POST", "IIS corporativo deve receber atualizacao transacional por POST");
   assert.equal(JSON.parse(calls[2].options.body).justificativaRetificacao, "Correcao dos componentes oficiais");
 
   await assert.rejects(
@@ -70,6 +70,13 @@ require(path.join(root, "assets/js/central-persistence.js"));
   assert.match(action, /\$this->homologacoes->recordSubmission\(/);
   assert.match(action, /\$this->db->commit\(\)/);
   assert.match(action, /assertLegacyLaunchAllowed\(\$before\)/);
+
+  const controller = read("app/controllers/LancamentoApiController.php");
+  assert.match(
+    controller,
+    /in_array\(\$method,\s*array\('POST',\s*'PUT',\s*'PATCH'\),\s*true\)\s*&&\s*\$id\s*!==\s*null\s*&&\s*\$action\s*===\s*null/,
+    "controlador deve aceitar POST apenas para atualizar o recurso identificado, preservando as acoes dedicadas"
+  );
 
   console.log("Auditoria de preenchimento e envio: requisicao e transacao verificadas.");
 })().catch((error) => { console.error(error); process.exitCode = 1; });

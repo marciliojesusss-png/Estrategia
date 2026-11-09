@@ -23,7 +23,7 @@ const context = {
     if (String(url).includes("ping=1")) {
       return { ok: true, status: 200, json: async () => ({ ok: true, database: "sqlsrv", mode: "php_sqlserver" }) };
     }
-    if (options.method === "PATCH") {
+    if (options.method === "POST") {
       const payload = JSON.parse(options.body);
       persisted = {
         ...payload,
@@ -97,8 +97,8 @@ vm.runInContext(fs.readFileSync(path.join(root, "assets/js/central-persistence.j
     85,
     { transactional: true, requiresRetification: true, correctionReason: "Correcao dos componentes oficiais" }
   );
-  assert.equal(requests.filter((item) => item.options.method === "PATCH").length, 1);
-  assert.equal(requests.some((item) => item.options.method === "POST" && !item.url.includes("ping=1")), false);
+  assert.equal(requests.filter((item) => item.options.method === "POST" && !item.url.includes("ping=1")).length, 1);
+  assert.equal(requests.some((item) => item.options.method === "PATCH"), false);
 
   const reloaded = context.window.DataStore.normalizeData("lancamentos", [persisted])[0];
   const rebuilt = formulas.calcularIndicador(indicator, rule, reloaded, [reloaded]);
@@ -110,5 +110,5 @@ vm.runInContext(fs.readFileSync(path.join(root, "assets/js/central-persistence.j
   assert.equal(rebuilt.situacao, "Atingido");
   assert.equal((rebuilt.percentualAtingidoAnual * 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }), "111,02");
 
-  console.log("Indicador 08: salvar via PATCH e recarregar preserva meta, resultado e situacao.");
+  console.log("Indicador 08: salvar via POST e recarregar preserva meta, resultado e situacao.");
 })().catch((error) => { console.error(error); process.exitCode = 1; });

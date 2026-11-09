@@ -247,7 +247,7 @@ assert.match(launchesSource, /unresolvedReopenCycle\(lancamento\)/);
 assert.match(launchesSource, /prompt\("Informe a justificativa da retifica\\u00e7\\u00e3o:/);
 assert.match(persistenceSource, /justificativaRetificacao:\s*reason/);
 assert.match(persistenceSource, /api\/lancamentos\/\$\{encodeURIComponent\(launchId\)\}/);
-assert.match(persistenceSource, /method:\s*"PATCH"/);
+assert.match(persistenceSource, /method:\s*"POST"/);
 assert.match(persistenceSource, /api\/lancamentos\/\$\{encodeURIComponent\(launchId\)\}\/submeter/);
 
 const reopenEvents = [{
@@ -265,7 +265,7 @@ const baseService = fs.readFileSync(path.join(root, "app", "services", "BaseDado
 assert.match(baseService, /LancamentoStateMachine::REOPENED/);
 assert.match(baseService, /LancamentoStateMachine::RECTIFIED/);
 assert.match(baseService, /LancamentoStateMachine::HOMOLOGATED/);
-assert.match(baseService, /PATCH \/api\/lancamentos\/\{id\}/);
+assert.match(baseService, /API transacional \/api\/lancamentos\/\{id\}/);
 
 const launchService = fs.readFileSync(path.join(root, "app", "services", "LancamentoService.php"), "utf8");
 assert.match(launchService, /pendingRetificationCycle/);

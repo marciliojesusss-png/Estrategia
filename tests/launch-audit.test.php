@@ -48,7 +48,7 @@ foreach (array('Reaberto', 'Retificado', 'Homologado') as $protectedStatus) {
         fwrite(STDERR, "Endpoint legado aceitou estado protegido {$protectedStatus}.\n");
         exit(1);
     } catch (InvalidArgumentException $expected) {
-        if (strpos($expected->getMessage(), 'PATCH /api/lancamentos/{id}') === false) {
+        if (strpos($expected->getMessage(), 'API transacional /api/lancamentos/{id}') === false) {
             fwrite(STDERR, "Erro estrutural inesperado para {$protectedStatus}.\n");
             exit(1);
         }

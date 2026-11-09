@@ -210,7 +210,7 @@ governance_ok(strpos($legacyRequests, "updateStatus(") === false, 'solicitacao a
 governance_ok(strpos($legacyRequests, 'Novas solicitacoes administrativas de reabertura nao sao aceitas') !== false, 'novas solicitacoes legadas devem permanecer desativadas');
 governance_ok(strpos($legacyDatabaseJs, 'status: "Reaberto"') === false, 'helper JavaScript legado deve usar endpoint central de reabertura');
 governance_ok(
-    strpos($baseService, 'Lancamento em ciclo transacional deve ser alterado exclusivamente por PATCH /api/lancamentos/{id}.') !== false
+    strpos($baseService, 'Lancamento em ciclo transacional deve ser alterado exclusivamente pela API transacional /api/lancamentos/{id}.') !== false
     && strpos($baseService, 'LancamentoStateMachine::REOPENED') !== false
     && strpos($baseService, 'LancamentoStateMachine::RECTIFIED') !== false
     && strpos($baseService, 'LancamentoStateMachine::HOMOLOGATED') !== false,

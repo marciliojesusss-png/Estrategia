@@ -44,7 +44,7 @@ final class LancamentoApiController
             if ($method === 'POST' && $id === null) {
                 return Response::success($this->service->create(Request::json(), $user), 'Rascunho criado.', 201);
             }
-            if (in_array($method, array('PUT', 'PATCH'), true) && $id !== null) {
+            if (in_array($method, array('POST', 'PUT', 'PATCH'), true) && $id !== null && $action === null) {
                 $payload = Request::json();
                 return Response::success(
                     $this->service->update($id, $payload, $user, isset($payload['justificativaRetificacao']) ? $payload['justificativaRetificacao'] : ''),
