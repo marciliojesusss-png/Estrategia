@@ -93,6 +93,12 @@
       .replaceAll("'", "&#039;");
   }
 
+  function resizeAreaObservation(field) {
+    if (!field) return;
+    field.style.height = "auto";
+    field.style.height = `${Math.max(field.scrollHeight, 180)}px`;
+  }
+
   function launchDocumentation(regra, lancamento) {
     if (window.DocumentationFields) return DocumentationFields.resolve(regra, lancamento);
     return {
@@ -660,7 +666,9 @@
     }
     document.getElementById("approvalLaunchId").value = lancamento.id;
     const documentation = launchDocumentation(regra, lancamento);
-    document.getElementById("approvalObservacaoArea").value = documentation.observation;
+    const observationField = document.getElementById("approvalObservacaoArea");
+    observationField.value = documentation.observation;
+    resizeAreaObservation(observationField);
     document.getElementById("approvalEvidenceReference").textContent = documentation.reference || "Não informada.";
     const legacyJustification = document.getElementById("legacyApprovalJustification");
     const legacyText = String(lancamento.justificativa || "").trim();

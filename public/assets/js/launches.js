@@ -305,6 +305,12 @@
       .replaceAll("'", "&#039;");
   }
 
+  function resizeAreaObservation(field) {
+    if (!field) return;
+    field.style.height = "auto";
+    field.style.height = `${Math.max(field.scrollHeight, 180)}px`;
+  }
+
   function toNumberOrNull(value) {
     if (value === "" || value === null || value === undefined) return null;
     const number = Number(value);
@@ -2626,6 +2632,7 @@
     const observationField = document.getElementById("launchObservacaoArea");
     observationField.value = documentation.observation;
     observationField.readOnly = Boolean(documentation.readOnly);
+    resizeAreaObservation(observationField);
     const documentaryInformation = document.getElementById("launchDocumentaryObservation");
     documentaryInformation.hidden = !documentation.isDocumentaryOfficial;
     document.getElementById("launchDocumentaryObservationNotice").textContent = documentation.documentaryNotice || "";
@@ -3340,6 +3347,9 @@
   }
 
   function bindEvents() {
+    document.getElementById("launchObservacaoArea").addEventListener("input", (event) => {
+      resizeAreaObservation(event.currentTarget);
+    });
     document.querySelectorAll("[data-filter]").forEach((select) => {
       select.addEventListener("change", () => {
         if (select.dataset.filter === "indicador") fillFilters(state.lancamentos);

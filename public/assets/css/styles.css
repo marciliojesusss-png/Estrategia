@@ -2931,6 +2931,12 @@ textarea[readonly] {
   background: #f5f8fb;
 }
 
+.area-observation-field {
+  min-height: 180px;
+  overflow-y: hidden;
+  resize: vertical;
+}
+
 button:disabled,
 input:disabled,
 textarea:disabled,
@@ -3778,6 +3784,13 @@ input:disabled,
 textarea:disabled,
 select:disabled {
   opacity: 0.58;
+}
+
+.area-observation-field[readonly],
+.area-observation-field:disabled {
+  color: #ffffff;
+  opacity: 1;
+  -webkit-text-fill-color: #ffffff;
 }
 
 @media (max-width: 1180px) {

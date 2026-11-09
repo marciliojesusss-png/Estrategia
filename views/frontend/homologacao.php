@@ -82,7 +82,7 @@
           <input type="hidden" id="approvalLaunchId">
 
           <label class="full-span">Observação da área
-            <textarea id="approvalObservacaoArea" rows="3" readonly></textarea>
+            <textarea id="approvalObservacaoArea" class="area-observation-field" rows="8" readonly></textarea>
           </label>
 
           <aside id="legacyApprovalJustification" class="legacy-information full-span" hidden>

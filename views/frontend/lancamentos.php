@@ -151,7 +151,7 @@
           </div>
 
           <label class="full-span">Observação da área
-            <textarea id="launchObservacaoArea" rows="3" placeholder="Informe contexto, explicação do resultado ou informação complementar sobre esta competência."></textarea>
+            <textarea id="launchObservacaoArea" class="area-observation-field" rows="8" placeholder="Informe contexto, explicação do resultado ou informação complementar sobre esta competência."></textarea>
           </label>
 
           <aside id="launchDocumentaryObservation" class="legacy-information full-span" hidden>
