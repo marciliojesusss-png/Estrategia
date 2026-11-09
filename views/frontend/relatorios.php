@@ -89,8 +89,8 @@
         </section>
         <section class="detailed-report-section" aria-labelledby="detailedEvidenceTitle">
           <h3 id="detailedEvidenceTitle">Evidências</h3><h4>Evidência da versão atual</h4>
-          <div class="table-wrap"><table class="detailed-report-table"><thead><tr><th>Competência</th><th>Versão</th><th>Arquivo</th><th>Data do upload</th><th>Usuário</th><th class="no-print">Ação</th></tr></thead><tbody id="detailedCurrentEvidenceTable"></tbody></table></div>
-          <details id="detailedHistoricalEvidence" class="detailed-collapsible no-print-closed"><summary>Evidências de versões anteriores</summary><div class="table-wrap"><table class="detailed-report-table"><thead><tr><th>Competência</th><th>Versão</th><th>Arquivo</th><th>Data do upload</th><th>Usuário</th><th class="no-print">Ação</th></tr></thead><tbody id="detailedHistoricalEvidenceTable"></tbody></table></div></details>
+          <div class="table-wrap"><table class="detailed-report-table"><thead><tr><th>Competência</th><th>Versão</th><th>Arquivo</th><th>Usuário</th><th class="no-print">Ação</th></tr></thead><tbody id="detailedCurrentEvidenceTable"></tbody></table></div>
+          <details id="detailedHistoricalEvidence" class="detailed-collapsible no-print-closed"><summary>Evidências de versões anteriores</summary><div class="table-wrap"><table class="detailed-report-table"><thead><tr><th>Competência</th><th>Versão</th><th>Arquivo</th><th>Usuário</th><th class="no-print">Ação</th></tr></thead><tbody id="detailedHistoricalEvidenceTable"></tbody></table></div></details>
         </section>
         <section class="detailed-report-section" aria-labelledby="detailedVersionTitle">
           <h3 id="detailedVersionTitle">Histórico de versões</h3><details id="detailedVersionHistory" class="detailed-collapsible no-print-closed"><summary>Ver histórico de versões</summary><div class="table-wrap"><table class="detailed-report-table"><thead><tr><th>Competência</th><th>Versão</th><th>Status</th><th>Meta</th><th>Resultado</th><th>Atingimento</th><th>Situação</th><th>Retificado em</th><th>Retificado por</th></tr></thead><tbody id="detailedVersionHistoryTable"></tbody></table></div></details>
@@ -147,7 +147,7 @@
 
         <section class="detailed-report-section" aria-labelledby="governanceEvidenceTitle">
           <h3 id="governanceEvidenceTitle">Evidências</h3>
-          <div class="table-wrap"><table class="detailed-report-table"><thead><tr><th>Competência</th><th>Lançamento</th><th>Versão</th><th>Arquivo</th><th>Upload</th><th>Usuário</th><th>Status</th><th class="no-print">Ação</th></tr></thead><tbody id="governanceEvidenceTable"><tr><td colspan="8">Nenhuma consulta executada.</td></tr></tbody></table></div>
+          <div class="table-wrap"><table class="detailed-report-table"><thead><tr><th>Competência</th><th>Lançamento</th><th>Versão</th><th>Arquivo</th><th>Usuário</th><th>Status</th><th class="no-print">Ação</th></tr></thead><tbody id="governanceEvidenceTable"><tr><td colspan="7">Nenhuma consulta executada.</td></tr></tbody></table></div>
         </section>
 
         <section class="detailed-report-section" aria-labelledby="governanceDocumentsTitle">

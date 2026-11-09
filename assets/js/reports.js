@@ -696,6 +696,11 @@
     return value || "N\u00e3o identificado";
   }
 
+  function visibleEvidenceUser(value) {
+    const user = String(value || "").trim();
+    return /^MIGRACAO\s*-\s*\d{8}$/i.test(user) ? "\u2014" : (user || "\u2014");
+  }
+
   function governanceMeasure(value, unit) {
     return value === null || value === undefined || value === "" ? "\u2014" : formatMeasure(value, unit);
   }
@@ -772,12 +777,12 @@
     const target = document.getElementById("governanceEvidenceTable");
     const evidence = payload.evidencias || [];
     if (!evidence.length) {
-      target.innerHTML = '<tr><td colspan="8">Nenhuma evid\u00eancia encontrada para os filtros.</td></tr>';
+      target.innerHTML = '<tr><td colspan="7">Nenhuma evid\u00eancia encontrada para os filtros.</td></tr>';
       return;
     }
     target.innerHTML = evidence.map((item) => `<tr><td>${escapeHtml(referenceCompetence(item.competencia))}</td><td>${escapeHtml(item.lancamentoId)}</td>
       <td>${escapeHtml(item.versao)}</td><td>${escapeHtml(item.nomeArquivo || "\u2014")}${item.descricao ? `<small class="report-document-note">${escapeHtml(item.descricao)}</small>` : ""}</td>
-      <td>${escapeHtml(formatApprovalDate(item.dataUpload))}</td><td>${escapeHtml(governanceUser(item.usuario))}</td><td>${escapeHtml(item.status || "\u2014")}</td>
+      <td>${escapeHtml(visibleEvidenceUser(item.usuario))}</td><td>${escapeHtml(item.status || "\u2014")}</td>
       <td class="no-print">${item.podeBaixar ? `<a class="secondary-action table-action" href="${escapeHtml(evidenceDownloadUrl(item.id))}">Baixar</a>` : "\u2014"}</td></tr>`).join("");
   }
 
@@ -976,12 +981,12 @@
   function renderEvidenceRows(targetId, items) {
     const target = document.getElementById(targetId);
     if (!items.length) {
-      target.innerHTML = '<tr><td colspan="6">Nenhuma evidência disponível.</td></tr>';
+      target.innerHTML = '<tr><td colspan="5">Nenhuma evidência disponível.</td></tr>';
       return;
     }
     target.innerHTML = items.map((item) => `<tr><td>${escapeHtml(referenceCompetence(item.competencia))}</td><td>${item.versao}</td>
       <td>${escapeHtml(item.nomeArquivo || "—")}${item.descricao ? `<small class="report-document-note">${escapeHtml(item.descricao)}</small>` : ""}</td>
-      <td>${escapeHtml(formatApprovalDate(item.dataUpload))}</td><td>${escapeHtml(item.usuario || "—")}</td>
+      <td>${escapeHtml(visibleEvidenceUser(item.usuario))}</td>
       <td class="no-print">${item.podeBaixar ? `<a class="secondary-action table-action" href="${escapeHtml(evidenceDownloadUrl(item.id))}">Baixar</a>` : "—"}</td></tr>`).join("");
   }
 

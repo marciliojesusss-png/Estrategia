@@ -645,10 +645,9 @@
     return state.evidenciasHistoricasPorLancamento[String(launchId)] || [];
   }
 
-  function formatUploadDate(value) {
-    if (!value) return "";
-    const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString("pt-BR");
+  function visibleEvidenceUser(value) {
+    const user = String(value || "").trim();
+    return /^MIGRACAO\s*-\s*\d{8}$/i.test(user) ? "" : user;
   }
 
   function renderEvidenceList(lancamento) {
@@ -665,7 +664,7 @@
         <div class="evidence-item-content">
           <strong>${escapeHtml(item.nomeArquivo)}</strong>
           ${item.descricao ? `<p>${escapeHtml(item.descricao)}</p>` : ""}
-          <small>${escapeHtml([formatUploadDate(item.dataUpload), item.usuario].filter(Boolean).join(" • "))}</small>
+          ${visibleEvidenceUser(item.usuario) ? `<small>${escapeHtml(visibleEvidenceUser(item.usuario))}</small>` : ""}
         </div>
         <div class="evidence-item-actions">
           <a class="secondary-action" href="${escapeHtml(appUrl(`evidencias/${encodeURIComponent(item.id)}/download`))}">Baixar</a>
@@ -689,7 +688,7 @@
         <div class="evidence-item-content">
           <strong>Versão ${escapeHtml(item.versaoLancamento)} — ${escapeHtml(item.nomeArquivo)}</strong>
           ${item.descricao ? `<p>${escapeHtml(item.descricao)}</p>` : ""}
-          <small>${escapeHtml([formatUploadDate(item.dataUpload), item.usuario].filter(Boolean).join(" â€¢ "))}</small>
+          ${visibleEvidenceUser(item.usuario) ? `<small>${escapeHtml(visibleEvidenceUser(item.usuario))}</small>` : ""}
         </div>
         <div class="evidence-item-actions">
           <a class="secondary-action" href="${escapeHtml(appUrl(`evidencias/${encodeURIComponent(item.id)}/download`))}">Baixar</a>
