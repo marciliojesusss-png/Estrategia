@@ -894,7 +894,7 @@
 
   function getEcossistemaFatorMeta(ano, mes) {
     if (Number(ano) !== 2026) return null;
-    return Number(mes) <= 7 ? 1.10 : 1.01;
+    return Number(mes) <= 6 ? 1.10 : 1.01;
   }
 
   function getEcossistemaReferenciaLotex2025(ano, mes) {
@@ -918,7 +918,7 @@
   }
 
   function getEcossistemaMetaAnualDescricao(ano, mes) {
-    if (Number(ano) === 2026 && Number(mes) >= 8) return "Ano 2026: ≥ 1% em relação ao exercício de 2025";
+    if (Number(ano) === 2026 && Number(mes) >= 7) return "Ano 2026: ≥ 1% em relação ao exercício de 2025";
     return "Ano 2026: ≥ 10% em relação ao exercício de 2025";
   }
 
@@ -1781,10 +1781,10 @@
             tipoCalculo: legacyTypes.includes(normalized.tipoCalculo) ? "participacao_ecossistema_lotex" : normalized.tipoCalculo,
             tipoConsolidacao: normalized.tipoConsolidacao || "ultima_posicao_acumulada",
             unidadeMedida: "percentual",
-            metaAnualDescricao: "Meta por vigência: JAN–JUL ≥ 10%; AGO–DEZ ≥ 1% em relação ao exercício de 2025",
+            metaAnualDescricao: "Meta por vigência: JAN–JUN ≥ 10%; JUL–DEZ ≥ 1% em relação ao exercício de 2025",
             metrica: "(ARR ECO LOTEX / ARR TOTAL) × 100",
             conceito: "Este indicador mede a proporção da arrecadação total obtida por meio de soluções ou produtos desenvolvidos e/ou distribuídos através de plataformas contratadas, parcerias estratégicas, parcerias do mercado, parcerias com empresas do Conglomerado, startups, CPSI, novos canais de distribuição e demais iniciativas aderentes ao pilar Atuação em Ecossistema.",
-            observacaoMetodologica: "O resultado oficial utiliza exclusivamente Lotex. Marketplace e cenários combinados são memória auxiliar, com aplicaAoCalculo=false. A meta é prospectiva por competência: fator 1,10 até JUL/2026 e 1,01 a partir de AGO/2026.",
+            observacaoMetodologica: "O resultado oficial utiliza exclusivamente Lotex. Marketplace e cenários combinados são memória auxiliar, com aplicaAoCalculo=false. A meta é prospectiva por competência: fator 1,10 até JUN/2026 e 1,01 a partir de JUL/2026.",
             cenarioOficialResumoExecutivo: "lotex"
           };
         }
@@ -2437,8 +2437,8 @@
               acompanhamentoMensal: true,
               mesesFechamentoTrimestral: [3, 6, 9, 12],
               vigenciasMeta: [
-                { inicio: "2026-01", fim: "2026-07", fator: 1.10, descricao: "≥ 10% em relação ao exercício de 2025" },
-                { inicio: "2026-08", fim: "2026-12", fator: 1.01, descricao: "≥ 1% em relação ao exercício de 2025" }
+                { inicio: "2026-01", fim: "2026-06", fator: 1.10, descricao: "≥ 10% em relação ao exercício de 2025" },
+                { inicio: "2026-07", fim: "2026-12", fator: 1.01, descricao: "≥ 1% em relação ao exercício de 2025" }
               ],
               componentes2025PorCompetencia: { ...ECOSSISTEMA_COMPONENTES_2025 },
               componentes2026PorCompetencia: { ...ECOSSISTEMA_COMPONENTES_2026 },
@@ -2446,7 +2446,7 @@
               metasTecnicasPorCompetencia: Object.fromEntries(Object.keys(ECOSSISTEMA_COMPONENTES_2025).map((key) => {
                 const month = Number(key.slice(5, 7));
                 const reference = ECOSSISTEMA_COMPONENTES_2025[key].arrEcoLotex2025 / ECOSSISTEMA_COMPONENTES_2025[key].arrTotal2025;
-                return [key, reference * (month <= 7 ? 1.10 : 1.01)];
+                return [key, reference * (month <= 6 ? 1.10 : 1.01)];
               })),
               apresentacoesOficiaisTrimestrais: { ...ECOSSISTEMA_APRESENTACOES_2026 },
               historicoRevisao: { ...ECOSSISTEMA_HISTORICO_REVISAO_2026 },

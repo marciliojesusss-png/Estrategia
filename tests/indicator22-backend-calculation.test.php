@@ -31,9 +31,10 @@ $july = EcossistemaLotexCalculator::calculate(array(
     ),
 ));
 indicator22_close_to($july['referencia_2025'], 105266400 / 13555540052);
-indicator22_close_to($july['meta_tecnica'], (105266400 / 13555540052) * 1.10);
+indicator22_close_to($july['meta_tecnica'], (105266400 / 13555540052) * 1.01);
 indicator22_close_to($july['resultado_calculado'], 87677530.50 / 14157139768.80);
-indicator22_ok($july['fator_meta'] === 1.10, 'JUL deve manter o fator 1,10.');
+indicator22_close_to($july['atingimento_tecnico'], 0.7896205989995374);
+indicator22_ok($july['fator_meta'] === 1.01, 'JUL deve iniciar a vigencia do fator 1,01.');
 
 $august = EcossistemaLotexCalculator::calculate(array(
     'mes' => 8,

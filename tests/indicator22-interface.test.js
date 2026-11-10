@@ -61,6 +61,7 @@ assert.equal(jan.annualGoal, "Meta 2026: crescimento mínimo de 10% sobre o resu
 assert.equal(jan.source, "Tabela mensal de acompanhamento");
 assert.ok(jan.memoryDetails.some(([label, value]) => label === "Marketplace participa do cálculo oficial" && value === "Não"));
 assert.ok(jan.memoryDetails.some(([label, value]) => label === "Cenário oficial" && value === "Lotex"));
+assert.equal(ui.indicator22AnnualGoalText({ mes: 7 }), "Meta 2026: crescimento mínimo de 1% sobre o resultado de 2025.");
 
 for (const [month, quarter, expected] of [
   [3, "1TRI", ["0,99%", "0,67%", "67,12%", "Informe DILOT/GERIN nº 0029/2026"]],

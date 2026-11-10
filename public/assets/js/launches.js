@@ -74,7 +74,7 @@
   }
 
   function indicator22AnnualGoalText(lancamento) {
-    return Number(lancamento?.mes) <= 7
+    return Number(lancamento?.mes) <= 6
       ? "Meta 2026: crescimento mínimo de 10% sobre o resultado de 2025."
       : "Meta 2026: crescimento mínimo de 1% sobre o resultado de 2025.";
   }
@@ -2052,7 +2052,7 @@
       const total2025 = CurrencyBR.parseMoedaBR(document.querySelector('[data-entry-field="arrTotal2025"]')?.value || "");
       const lotex2025 = CurrencyBR.parseMoedaBR(document.querySelector('[data-entry-field="arrEcoLotex2025"]')?.value || "");
       const reference = total2025 > 0 && lotex2025 !== null ? lotex2025 / total2025 : null;
-      const factor = Number(lancamento?.mes) <= 7 ? 1.10 : 1.01;
+      const factor = Number(lancamento?.mes) <= 6 ? 1.10 : 1.01;
       const target = reference === null ? null : reference * factor;
       const values = {
         referenciaLotex2025: reference,

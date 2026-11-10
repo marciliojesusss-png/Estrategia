@@ -2593,7 +2593,7 @@
   }
 
   function fatorMetaEcossistema(mes) {
-    return Number(mes) <= 7 ? 1.10 : 1.01;
+    return Number(mes) <= 6 ? 1.10 : 1.01;
   }
 
   function calcularParticipacaoEcossistemaLotex(indicador, regra, lancamentoAtual) {

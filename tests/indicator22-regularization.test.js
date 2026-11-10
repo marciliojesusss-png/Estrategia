@@ -60,8 +60,8 @@ launches.forEach((launch, index) => {
   const result = formulas.calcularIndicador(indicator, rule, launch, launches.slice(0, index + 1));
   assert.equal(result.erro, undefined, `Competência ${launch.competencia} não deveria falhar: ${result.mensagem}`);
   closeTo(result.referenciaLotex2025, expected2025[index][1] / expected2025[index][0]);
-  closeTo(result.fatorMetaVigente, launch.mes <= 7 ? 1.10 : 1.01);
-  closeTo(result.metaTecnica2026, (expected2025[index][1] / expected2025[index][0]) * (launch.mes <= 7 ? 1.10 : 1.01));
+  closeTo(result.fatorMetaVigente, launch.mes <= 6 ? 1.10 : 1.01);
+  closeTo(result.metaTecnica2026, (expected2025[index][1] / expected2025[index][0]) * (launch.mes <= 6 ? 1.10 : 1.01));
   closeTo(metas[index].metaMensal, result.metaTecnica2026);
   assert.equal(result.cenarioApuracaoEcossistema, "lotex");
   assert.equal(result.marketplaceAplicaAoCalculo, false);
@@ -76,7 +76,7 @@ assert.deepEqual(launches.map((item) => item.status), [
 ]);
 
 assert.equal(launches[6].camposEntrada.fatorMetaVigente, undefined, "O fator é derivado, não persistido artificialmente no bootstrap");
-assert.equal(formulas.calcularIndicador(indicator, rule, launches[6], []).fatorMetaVigente, 1.10);
+assert.equal(formulas.calcularIndicador(indicator, rule, launches[6], []).fatorMetaVigente, 1.01);
 assert.equal(formulas.calcularIndicador(indicator, rule, launches[7], []).fatorMetaVigente, 1.01);
 
 const january = formulas.calcularIndicador(indicator, rule, launches[0], []);

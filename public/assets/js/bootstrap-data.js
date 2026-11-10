@@ -548,7 +548,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "plano": "PEI",
       "unidadeApuradora": "SUCOL",
       "diretoriaResponsavel": "DICOT",
-      "metaAnualDescricao": "Meta por vigência: JAN–JUL ≥ 10%; AGO–DEZ ≥ 1% em relação ao exercício de 2025",
+      "metaAnualDescricao": "Meta por vigência: JAN–JUN ≥ 10%; JUL–DEZ ≥ 1% em relação ao exercício de 2025",
       "metrica": "(ARR ECO LOTEX / ARR TOTAL) × 100",
       "tipoCalculo": "participacao_ecossistema_lotex",
       "tipoConsolidacao": "ultima_posicao_acumulada",
@@ -2496,7 +2496,7 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "ano": 2026,
       "mes": 7,
       "nomeMes": "Julho",
-      "metaMensal": 0.00854211927786055,
+      "metaMensal": 0.00784321860967196,
       "fonte": "curva_tecnica_lotex_2025_vigencia_2026"
     },
     {
@@ -4735,8 +4735,8 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
         "permiteAcompanhamentoMensal": true,
         "mesesFechamentoTrimestral": [3, 6, 9, 12],
         "vigenciasMeta": [
-          { "inicio": "2026-01", "fim": "2026-07", "fator": 1.1, "descricao": "≥ 10% em relação ao exercício de 2025" },
-          { "inicio": "2026-08", "fim": "2026-12", "fator": 1.01, "descricao": "≥ 1% em relação ao exercício de 2025" }
+          { "inicio": "2026-01", "fim": "2026-06", "fator": 1.1, "descricao": "≥ 10% em relação ao exercício de 2025" },
+          { "inicio": "2026-07", "fim": "2026-12", "fator": 1.01, "descricao": "≥ 1% em relação ao exercício de 2025" }
         ],
         "apresentacoesOficiaisTrimestrais": {
           "1TRI": { "metaOficialReportada": 0.0099, "resultadoOficialReportado": 0.0067, "percentualAtingidoOficialReportado": 0.6712, "situacaoOficial": "Abaixo da meta", "fonte": "Informe DILOT/GERIN nº 0029/2026" },
@@ -17751,8 +17751,8 @@ window.CAIXA_LOTERIAS_BOOTSTRAP_DATA = {
       "pilar": "Atuação em Ecossistema",
       "unidadeApuradora": "SUCOL",
       "diretoriaResponsavel": "DICOT",
-      "metaMensal": 0.00854211927786055,
-      "metaAnualDescricao": "Ano 2026: ≥ 10% em relação ao exercício de 2025",
+      "metaMensal": 0.00784321860967196,
+      "metaAnualDescricao": "Ano 2026: ≥ 1% em relação ao exercício de 2025",
       "status": "Em preenchimento",
       "camposEntrada": {
         "cenarioApuracaoEcossistema": "lotex",

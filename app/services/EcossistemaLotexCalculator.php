@@ -73,7 +73,7 @@ final class EcossistemaLotexCalculator
 
     public static function factorForMonth($month): float
     {
-        return (int)$month <= 7 ? 1.10 : 1.01;
+        return (int)$month <= 6 ? 1.10 : 1.01;
     }
 
     private static function inputs(array $launch): array
