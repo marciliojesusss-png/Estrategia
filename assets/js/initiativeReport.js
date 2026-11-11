@@ -116,42 +116,164 @@
     document.getElementById("initiativeReportFilterSummary").textContent = parts.join(" · ");
   }
 
-  function cell(value, className = "") {
-    const td = document.createElement("td");
-    td.textContent = text(value);
-    if (className) td.className = className;
-    return td;
+  function element(tag, className, value) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (value !== undefined) node.textContent = text(value);
+    return node;
   }
 
-  function renderTable(rows) {
-    const body = document.getElementById("initiativeReportTable");
+  function statusTone(value) {
+    if (["HOMOLOGADO", "CONCLUIDA"].includes(value)) return "success";
+    if (["DEVOLVIDO_AJUSTE", "CANCELADA", "SUSPENSA"].includes(value)) return "danger";
+    if (["ENVIADO_HOMOLOGACAO", "REABERTO"].includes(value)) return "warning";
+    return "info";
+  }
+
+  function statusBadge(value) {
+    return element(
+      "span",
+      `initiative-report-status initiative-report-status--${statusTone(value)}`,
+      statusLabel(value)
+    );
+  }
+
+  function periodLabel(row) {
+    return [row.trimestre, row.ano].filter(Boolean).join("/") || "—";
+  }
+
+  function narrativeText(value) {
+    if (value === null || value === undefined || value === "") return "—";
+    const blocks = [];
+    let current = [];
+    const flush = () => {
+      if (!current.length) return;
+      blocks.push(current.join(" ").replace(/\s+/g, " ").trim());
+      current = [];
+    };
+    String(value).replace(/\r/g, "").split("\n").forEach((rawLine) => {
+      const line = rawLine.trim();
+      if (!line) {
+        flush();
+        return;
+      }
+      if (/^(?:[-•▪]\s+|[ivxlcdm]+\)|\d+[.)])\s*/i.test(line)) flush();
+      current.push(line);
+    });
+    flush();
+    return blocks.join("\n");
+  }
+
+  function trackingOrder(row) {
+    const quarter = Number.parseInt(String(row.trimestre || "0"), 10) || 0;
+    return (Number(row.ano) || 0) * 10 + quarter;
+  }
+
+  function groupRows(rows) {
+    const groups = new Map();
+    rows.forEach((row) => {
+      const key = String(row.iniciativaId || row.codigo || row.tituloSnapshot || "");
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(row);
+    });
+    return Array.from(groups.values())
+      .map((items) => items.sort((left, right) => trackingOrder(right) - trackingOrder(left)))
+      .sort((left, right) => String(left[0]?.codigo || left[0]?.tituloSnapshot || "")
+        .localeCompare(String(right[0]?.codigo || right[0]?.tituloSnapshot || ""), "pt-BR", { numeric: true }));
+  }
+
+  function appendDefinition(list, label, value) {
+    const item = element("div", "initiative-report-definition");
+    item.append(element("dt", "", label), element("dd", "", value));
+    list.append(item);
+  }
+
+  function trackingMetadata(row, compact = false) {
+    const list = element("dl", compact
+      ? "initiative-report-metadata initiative-report-metadata--compact"
+      : "initiative-report-metadata");
+    appendDefinition(list, "Período", periodLabel(row));
+    appendDefinition(list, "Unidade", row.unidadeSnapshot);
+    appendDefinition(list, "Diretoria", row.diretoriaSnapshot);
+    appendDefinition(list, "Pilar", row.pilarSnapshot);
+    return list;
+  }
+
+  function governanceMetadata(row) {
+    const list = element("dl", "initiative-report-governance");
+    appendDefinition(list, "Referência documental", row.referenciaEvidencia);
+    appendDefinition(list, "Arquivos", row.quantidadeEvidencias || 0);
+    appendDefinition(list, "Homologado por", row.homologadoPor);
+    appendDefinition(list, "Homologado em", formatDate(row.homologadoEm));
+    return list;
+  }
+
+  function progressBlock(row, heading = "Andamento da iniciativa") {
+    const section = element("section", "initiative-report-progress");
+    section.append(
+      element("h4", "initiative-report-progress__title", heading),
+      element("p", "initiative-report-progress__text", narrativeText(row.andamentoUnidade))
+    );
+    return section;
+  }
+
+  function historyItem(row) {
+    const item = element("article", "initiative-report-history-item");
+    const header = element("header", "initiative-report-history-item__header");
+    header.append(element("h5", "", periodLabel(row)));
+    const statuses = element("div", "initiative-report-statuses");
+    statuses.append(statusBadge(row.statusIniciativa), statusBadge(row.statusFluxo));
+    header.append(statuses);
+    item.append(header, trackingMetadata(row, true), progressBlock(row, "Andamento no período"), governanceMetadata(row));
+    return item;
+  }
+
+  function initiativeCard(rows) {
+    const current = rows[0];
+    const history = rows.slice(1);
+    const card = element("article", "initiative-report-card");
+    const header = element("header", "initiative-report-card__header");
+    const identity = element("div", "initiative-report-card__identity");
+    identity.append(
+      element("p", "initiative-report-card__code", current.codigo),
+      element("h3", "initiative-report-card__title", current.tituloSnapshot)
+    );
+    const statuses = element("div", "initiative-report-statuses");
+    statuses.append(statusBadge(current.statusIniciativa), statusBadge(current.statusFluxo));
+    header.append(identity, statuses);
+    card.append(header, trackingMetadata(current), progressBlock(current));
+
+    const details = element("details", "initiative-report-details");
+    const summary = element(
+      "summary",
+      "initiative-report-details__summary",
+      history.length ? `Ver detalhes e histórico (${rows.length} acompanhamentos)` : "Ver detalhes"
+    );
+    const content = element("div", "initiative-report-details__content");
+    content.append(element("h4", "initiative-report-details__title", "Governança do acompanhamento atual"));
+    content.append(governanceMetadata(current));
+    if (history.length) {
+      content.append(element("h4", "initiative-report-details__title", "Histórico trimestral"));
+      const historyList = element("div", "initiative-report-history");
+      historyList.append(...history.map(historyItem));
+      content.append(historyList);
+    }
+    details.append(summary, content);
+    card.append(details);
+    return card;
+  }
+
+  function renderList(rows) {
+    const list = document.getElementById("initiativeReportList");
     if (!rows.length) {
-      const tr = document.createElement("tr");
-      const td = cell("Nenhum acompanhamento encontrado para os filtros selecionados.");
-      td.colSpan = 13;
-      tr.append(td);
-      body.replaceChildren(tr);
+      list.replaceChildren(element(
+        "p",
+        "initiative-report-empty",
+        "Nenhum acompanhamento encontrado para os filtros selecionados."
+      ));
       return;
     }
-    body.replaceChildren(...rows.map((row) => {
-      const tr = document.createElement("tr");
-      tr.append(
-        cell(row.codigo),
-        cell(row.pilarSnapshot),
-        cell(row.tituloSnapshot, "initiative-report-title-cell"),
-        cell(row.unidadeSnapshot),
-        cell(row.diretoriaSnapshot),
-        cell(`${row.trimestre}/${row.ano}`),
-        cell(statusLabel(row.statusIniciativa)),
-        cell(statusLabel(row.statusFluxo)),
-        cell(row.andamentoUnidade, "initiative-report-long-cell"),
-        cell(row.referenciaEvidencia, "initiative-report-reference-cell"),
-        cell(row.quantidadeEvidencias || 0),
-        cell(row.homologadoPor),
-        cell(formatDate(row.homologadoEm))
-      );
-      return tr;
-    }));
+    list.replaceChildren(...groupRows(rows).map(initiativeCard));
   }
 
   function populateOptions(payload) {
@@ -173,12 +295,12 @@
       renderContext(payload, filters);
       renderSummary(payload);
       renderFilterSummary(filters);
-      renderTable(state.rows);
+      renderList(state.rows);
     } catch (error) {
       state.payload = null;
       state.rows = [];
       showMessage(error.message || String(error), "danger");
-      renderTable([]);
+      renderList([]);
     }
   }
 

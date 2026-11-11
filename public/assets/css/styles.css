@@ -5683,7 +5683,6 @@ select:disabled {
     width: 100%;
   }
 }
-+
 /* Relatório de Iniciativas Estratégicas. */
 .initiative-report-filter-actions {
   display: flex;
@@ -5721,29 +5720,230 @@ select:disabled {
   font-size: 1.45rem;
 }
 
-.initiative-report-table {
-  min-width: 2200px;
+.initiative-report-list {
+  display: grid;
+  gap: 1rem;
 }
 
-.initiative-report-table th,
-.initiative-report-table td {
-  vertical-align: top;
+.initiative-report-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgba(59, 151, 255, 0.34);
+  border-radius: 12px;
+  background: linear-gradient(145deg, rgba(10, 55, 98, 0.96), rgba(7, 38, 72, 0.96));
+  box-shadow: 0 8px 24px rgba(0, 17, 37, 0.2);
 }
 
-.initiative-report-title-cell {
-  min-width: 220px;
+.initiative-report-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.1rem 0.75rem;
 }
 
-.initiative-report-long-cell {
-  min-width: 380px;
-  max-width: 520px;
+.initiative-report-card__identity {
+  min-width: 0;
+}
+
+.initiative-report-card__code {
+  margin: 0 0 0.25rem;
+  color: #72c7ff;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.initiative-report-card__title {
+  margin: 0;
+  color: #fff;
+  font-size: 1.12rem;
+  line-height: 1.35;
+}
+
+.initiative-report-statuses {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.45rem;
+}
+
+.initiative-report-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0.28rem 0.62rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.initiative-report-status--success {
+  border-color: rgba(54, 211, 153, 0.45);
+  background: rgba(20, 151, 104, 0.2);
+  color: #7ff0c5;
+}
+
+.initiative-report-status--warning {
+  border-color: rgba(255, 193, 7, 0.48);
+  background: rgba(255, 193, 7, 0.15);
+  color: #ffe082;
+}
+
+.initiative-report-status--danger {
+  border-color: rgba(255, 100, 117, 0.46);
+  background: rgba(195, 48, 65, 0.2);
+  color: #ffadb6;
+}
+
+.initiative-report-status--info {
+  border-color: rgba(75, 167, 255, 0.42);
+  background: rgba(45, 132, 219, 0.18);
+  color: #a9d7ff;
+}
+
+.initiative-report-metadata,
+.initiative-report-governance {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.55rem;
+  margin: 0 1.1rem 0.85rem;
+}
+
+.initiative-report-definition {
+  min-width: 0;
+  padding: 0.62rem 0.72rem;
+  border: 1px solid rgba(127, 177, 226, 0.16);
+  border-radius: 8px;
+  background: rgba(4, 30, 58, 0.44);
+}
+
+.initiative-report-definition dt,
+.initiative-report-definition dd {
+  margin: 0;
+}
+
+.initiative-report-definition dt {
+  margin-bottom: 0.22rem;
+  color: #9fb9d5;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.initiative-report-definition dd {
+  overflow-wrap: anywhere;
+  color: #f4f8fc;
+  font-size: 0.86rem;
+  line-height: 1.4;
   white-space: pre-line;
 }
 
-.initiative-report-reference-cell {
-  min-width: 240px;
-  max-width: 360px;
+.initiative-report-progress {
+  margin: 0 1.1rem 1rem;
+  padding: 0.9rem 1rem;
+  border-left: 4px solid #28aeef;
+  border-radius: 0 9px 9px 0;
+  background: rgba(3, 26, 50, 0.68);
+}
+
+.initiative-report-progress__title {
+  margin: 0 0 0.5rem;
+  color: #71cbff;
+  font-size: 0.78rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.initiative-report-progress__text {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: #fff;
+  font-size: 0.95rem;
+  line-height: 1.58;
   white-space: pre-line;
+}
+
+.initiative-report-details {
+  border-top: 1px solid rgba(111, 171, 229, 0.2);
+}
+
+.initiative-report-details__summary {
+  padding: 0.78rem 1.1rem;
+  color: #a9d8ff;
+  cursor: pointer;
+  font-size: 0.84rem;
+  font-weight: 800;
+  list-style-position: inside;
+}
+
+.initiative-report-details__summary:hover,
+.initiative-report-details__summary:focus-visible {
+  background: rgba(37, 130, 211, 0.12);
+  color: #fff;
+}
+
+.initiative-report-details__content {
+  padding: 0.1rem 0 1rem;
+}
+
+.initiative-report-details__title {
+  margin: 0.8rem 1.1rem 0.6rem;
+  color: #fff;
+  font-size: 0.9rem;
+}
+
+.initiative-report-history {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0 1.1rem;
+}
+
+.initiative-report-history-item {
+  min-width: 0;
+  padding: 0.9rem;
+  border: 1px solid rgba(112, 168, 220, 0.22);
+  border-radius: 9px;
+  background: rgba(3, 24, 47, 0.58);
+}
+
+.initiative-report-history-item__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.65rem;
+}
+
+.initiative-report-history-item__header h5 {
+  margin: 0;
+  color: #fff;
+  font-size: 0.95rem;
+}
+
+.initiative-report-history-item .initiative-report-metadata,
+.initiative-report-history-item .initiative-report-governance,
+.initiative-report-history-item .initiative-report-progress {
+  margin-right: 0;
+  margin-left: 0;
+}
+
+.initiative-report-history-item .initiative-report-governance,
+.initiative-report-history-item .initiative-report-progress {
+  margin-bottom: 0;
+}
+
+.initiative-report-empty {
+  margin: 0;
+  padding: 1.2rem;
+  border: 1px dashed rgba(105, 167, 226, 0.38);
+  border-radius: 10px;
+  color: #b8cee5;
+  text-align: center;
 }
 
 @media (max-width: 900px) {
@@ -5753,6 +5953,27 @@ select:disabled {
 
   .initiative-report-filter-actions {
     align-items: stretch;
+  }
+
+  .initiative-report-card__header,
+  .initiative-report-history-item__header {
+    flex-direction: column;
+  }
+
+  .initiative-report-statuses {
+    justify-content: flex-start;
+  }
+
+  .initiative-report-metadata,
+  .initiative-report-governance {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .initiative-report-metadata,
+  .initiative-report-governance {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -5780,27 +6001,46 @@ select:disabled {
     color: #000;
   }
 
-  .initiative-report-table-wrap {
-    overflow: visible;
+  .initiative-report-list {
+    gap: 4mm;
   }
 
-  .initiative-report-table {
-    width: 100%;
-    min-width: 0;
-    table-layout: fixed;
-    font-size: 6.8pt;
+  .initiative-report-card,
+  .initiative-report-history-item {
+    break-inside: avoid;
+    border: 1px solid #777;
+    background: transparent;
+    box-shadow: none;
   }
 
-  .initiative-report-table th,
-  .initiative-report-table td {
-    padding: 1.4mm;
-    overflow-wrap: anywhere;
+  .initiative-report-card__code,
+  .initiative-report-card__title,
+  .initiative-report-progress__title,
+  .initiative-report-progress__text,
+  .initiative-report-history-item__header h5,
+  .initiative-report-details__title,
+  .initiative-report-definition dt,
+  .initiative-report-definition dd {
+    color: #000;
   }
 
-  .initiative-report-long-cell,
-  .initiative-report-reference-cell,
-  .initiative-report-title-cell {
-    min-width: 0;
-    max-width: none;
+  .initiative-report-status {
+    border: 1px solid #777;
+    background: transparent;
+    color: #000;
+  }
+
+  .initiative-report-definition,
+  .initiative-report-progress {
+    border-color: #999;
+    background: transparent;
+  }
+
+  .initiative-report-details > :not(summary) {
+    display: block !important;
+  }
+
+  .initiative-report-details__summary {
+    display: none;
   }
 }

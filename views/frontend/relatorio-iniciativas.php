@@ -72,19 +72,14 @@
           <div><span>Demais situações</span><strong id="initiativeReportPendingCount">0</strong></div>
         </section>
 
-        <div class="table-wrap initiative-report-table-wrap">
-          <table class="official-report-table initiative-report-table">
-            <thead>
-              <tr>
-                <th>Código</th><th>Pilar</th><th>Iniciativa</th><th>Unidade</th><th>Diretoria</th>
-                <th>Período</th><th>Status da iniciativa</th><th>Status do acompanhamento</th>
-                <th>Andamento</th><th>Referência documental</th><th>Arquivos</th>
-                <th>Homologado por</th><th>Homologado em</th>
-              </tr>
-            </thead>
-            <tbody id="initiativeReportTable"><tr><td colspan="13">Carregando relatório...</td></tr></tbody>
-          </table>
-        </div>
+        <section
+          id="initiativeReportList"
+          class="initiative-report-list"
+          aria-label="Iniciativas e acompanhamentos"
+          aria-live="polite"
+        >
+          <p class="initiative-report-empty">Carregando relatório...</p>
+        </section>
 
         <footer class="official-report-footer">
           <span>Sistema Estratégia — CAIXA Loterias</span>

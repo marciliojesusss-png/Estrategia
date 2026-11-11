@@ -1,9 +1,10 @@
 /*
   Substitui somente a estrutura funcional e os dados da aplicacao no banco
-  DB5319_IndicadoresEstrategicos usando um backup do banco Estrategia.
+  DB5319_IndicadoresEstrategicos_TESTE_20261104 usando o backup
+  Estrategia_Pós_HOMOLOGACAO_INICIATIVAS_20261111_110041.bak.
 
   REQUISITOS:
-  - executar com sqlcmd -b a partir da pasta database\sqlserver;
+  - executar com sqlcmd -b -f 65001 a partir da pasta database\sqlserver;
   - manter schema.sql na mesma pasta deste arquivo;
   - interromper a aplicacao e encerrar as demais conexoes com o banco de destino;
   - usar caminhos novos para SafetyBackupFile, StagingDataFile e StagingLogFile;
@@ -12,22 +13,23 @@
   GARANTIAS:
   - nao restaura sobre o banco de destino;
   - nao cria, remove ou altera logins, usuarios, roles, permissoes ou proprietario;
-  - valida owner_sid, SID de dbo e SID de s531902 antes e depois;
+  - captura owner_sid, SID de dbo e SID de s531902 do destino e valida que
+    permanecam exatamente iguais depois da carga;
   - toda substituicao de dados ocorre em uma unica transacao;
   - em caso de erro, a transacao e revertida e o staging permanece para diagnostico.
+
+  COMANDO LOCAL:
+  sqlcmd -S "LUKIN\SQLEXPRESS01" -E -b -f 65001 -i ".\sobrescrever-dados-db5319.sql"
 */
 
 :on error exit
-:setvar TargetDatabase "DB5319_IndicadoresEstrategicos"
-:setvar StagingDatabase "Estrategia_CARGA_20261110"
-:setvar BackupFile "D:\SQLBackups\Estrategia_COPY_ONLY_20261110_091500.bak"
-:setvar SafetyBackupFile "D:\SQLBackups\DB5319_IndicadoresEstrategicos_PRE_CARGA_20261110.bak"
-:setvar StagingDataFile "D:\SQLData\Estrategia_CARGA_20261110.mdf"
-:setvar StagingLogFile "D:\SQLData\Estrategia_CARGA_20261110_log.ldf"
+:setvar TargetDatabase "DB5319_IndicadoresEstrategicos_TESTE_20261104"
+:setvar StagingDatabase "Estrategia_CARGA_POS_HOMOLOG_20261111"
+:setvar BackupFile "C:\Users\jonat\OneDrive\Documentos\GitHub\Estrategia\backup\Estrategia_Pós_HOMOLOGACAO_INICIATIVAS_20261111_110041.bak"
+:setvar SafetyBackupFile "C:\Program Files\Microsoft SQL Server\MSSQL13.SQLEXPRESS01\MSSQL\Backup\DB5319_IndicadoresEstrategicos_TESTE_20261104_PRE_CARGA_20261111_110041.bak"
+:setvar StagingDataFile "C:\Program Files\Microsoft SQL Server\MSSQL13.SQLEXPRESS01\MSSQL\DATA\Estrategia_CARGA_POS_HOMOLOG_20261111.mdf"
+:setvar StagingLogFile "C:\Program Files\Microsoft SQL Server\MSSQL13.SQLEXPRESS01\MSSQL\DATA\Estrategia_CARGA_POS_HOMOLOG_20261111_log.ldf"
 :setvar DropStagingAfterSuccess "1"
-:setvar ExpectedOwnerSid "0x010500000000000515000000C78A7EB26AEE162F1968276B896C0000"
-:setvar ExpectedDboSid "0x010500000000000515000000C78A7EB26AEE162F1968276B896C0000"
-:setvar ExpectedAppUserSid "0x401E46BC08211343899A19AC0768B6B8"
 
 SET NOCOUNT ON;
 SET XACT_ABORT ON;
@@ -42,17 +44,29 @@ SET NUMERIC_ROUNDABORT OFF;
 USE [master];
 GO
 
-DECLARE @ExpectedOwnerSid VARBINARY(85) =
-    CONVERT(VARBINARY(85), N'$(ExpectedOwnerSid)', 1);
-
 IF DB_ID(N'$(TargetDatabase)') IS NULL
     THROW 55000, N'Banco de destino nao encontrado.', 1;
 
 IF DB_ID(N'$(StagingDatabase)') IS NOT NULL
     THROW 55001, N'O banco de staging ja existe. Remova-o ou altere StagingDatabase.', 1;
 
-IF (SELECT owner_sid FROM sys.databases WHERE name = N'$(TargetDatabase)') <> @ExpectedOwnerSid
-    THROW 55002, N'owner_sid do banco destino diverge do SID corporativo esperado.', 1;
+CREATE TABLE #IdentidadeDestino (
+    principal SYSNAME NOT NULL PRIMARY KEY,
+    sid VARBINARY(85) NOT NULL
+);
+
+INSERT INTO #IdentidadeDestino (principal, sid)
+SELECT N'owner', owner_sid
+FROM sys.databases
+WHERE name = N'$(TargetDatabase)';
+
+INSERT INTO #IdentidadeDestino (principal, sid)
+SELECT name, sid
+FROM [$(TargetDatabase)].sys.database_principals
+WHERE name IN (N'dbo', N's531902');
+
+IF (SELECT COUNT(*) FROM #IdentidadeDestino) <> 3
+    THROW 55002, N'Nao foi possivel registrar owner_sid, dbo e s531902 no banco destino.', 1;
 
 IF EXISTS (
     SELECT 1
@@ -62,24 +76,6 @@ IF EXISTS (
       AND is_user_process = 1
 )
     THROW 55003, N'Ha outras conexoes no banco destino. Interrompa a aplicacao antes da carga.', 1;
-GO
-
-USE [$(TargetDatabase)];
-GO
-
-IF NOT EXISTS (
-    SELECT 1 FROM sys.database_principals
-    WHERE name = N'dbo'
-      AND sid = CONVERT(VARBINARY(85), N'$(ExpectedDboSid)', 1)
-)
-    THROW 55004, N'SID interno de dbo diverge do valor corporativo esperado.', 1;
-
-IF NOT EXISTS (
-    SELECT 1 FROM sys.database_principals
-    WHERE name = N's531902'
-      AND sid = CONVERT(VARBINARY(85), N'$(ExpectedAppUserSid)', 1)
-)
-    THROW 55005, N'SID do usuario s531902 diverge do valor esperado.', 1;
 GO
 
 USE [master];
@@ -592,21 +588,21 @@ BEGIN TRY
     IF NOT EXISTS (
         SELECT 1 FROM sys.database_principals
         WHERE name = N'dbo'
-          AND sid = CONVERT(VARBINARY(85), N'$(ExpectedDboSid)', 1)
+          AND sid = (SELECT sid FROM #IdentidadeDestino WHERE principal = N'dbo')
     )
         THROW 55011, N'SID de dbo mudou durante a carga.', 1;
 
     IF NOT EXISTS (
         SELECT 1 FROM sys.database_principals
         WHERE name = N's531902'
-          AND sid = CONVERT(VARBINARY(85), N'$(ExpectedAppUserSid)', 1)
+          AND sid = (SELECT sid FROM #IdentidadeDestino WHERE principal = N's531902')
     )
         THROW 55012, N'SID de s531902 mudou durante a carga.', 1;
 
     IF (
         SELECT owner_sid FROM master.sys.databases
         WHERE name = N'$(TargetDatabase)'
-    ) <> CONVERT(VARBINARY(85), N'$(ExpectedOwnerSid)', 1)
+    ) <> (SELECT sid FROM #IdentidadeDestino WHERE principal = N'owner')
         THROW 55013, N'owner_sid mudou durante a carga.', 1;
 
     COMMIT TRANSACTION;
