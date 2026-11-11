@@ -441,7 +441,8 @@
     if (!target) return;
     const items = [
       { key: "consolidado", label: "Consolidado", href: window.appUrl ? window.appUrl("relatorios") : "/relatorios" },
-      { key: "detalhado", label: "Detalhado", href: `${window.appUrl ? window.appUrl("relatorios") : "/relatorios"}#officialReportTable`, title: "Selecione um indicador no Consolidado" }
+      { key: "detalhado", label: "Detalhado", href: `${window.appUrl ? window.appUrl("relatorios") : "/relatorios"}#officialReportTable`, title: "Selecione um indicador no Consolidado" },
+      { key: "iniciativas", label: "Iniciativas", href: window.appUrl ? window.appUrl("relatorios/iniciativas") : "/relatorios/iniciativas" }
     ];
     if (isActiveAdministrator(user)) {
       items.push({ key: "governanca", label: "Governan\u00e7a/Auditoria", href: governanceReportUrl() });

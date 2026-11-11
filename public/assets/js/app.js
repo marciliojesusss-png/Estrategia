@@ -66,8 +66,12 @@
     return activeProfile === "administrador";
   }
 
+  function isIndependentInitiativePage(page) {
+    return ["iniciativas", "iniciativasHomologacao", "iniciativasConsolidacao"].includes(page);
+  }
+
   function shouldLoadStorageInfo(page, user) {
-    return page !== "iniciativasHomologacao" && isActiveAdministrator(user);
+    return !isIndependentInitiativePage(page) && isActiveAdministrator(user);
   }
 
   function configureChartTheme() {
@@ -214,7 +218,7 @@
   async function initPage() {
     const page = document.body.dataset.page;
     const centralExecutive = page === "resumoExecutivo";
-    const independentInitiativeApproval = page === "iniciativasHomologacao";
+    const independentInitiatives = isIndependentInitiativePage(page);
     const independentAudit = page === "auditoria";
     const independentReports = page === "relatorios";
 
@@ -254,14 +258,14 @@
             unidades: [], diretorias: []
           }
         });
-      } else if (centralExecutive || independentInitiativeApproval || independentAudit || independentReports) {
+      } else if (centralExecutive || independentInitiatives || independentAudit || independentReports) {
         await module.init({ user });
       } else {
         const data = await DataStore.loadAll();
         await module.init({ data, user });
       }
     }
-    if (!centralExecutive && !independentInitiativeApproval && !independentReports && window.DataService?.initBaseValidacaoLocal) {
+    if (!centralExecutive && !independentInitiatives && !independentReports && window.DataService?.initBaseValidacaoLocal) {
       window.DataService.initBaseValidacaoLocal();
     }
   }

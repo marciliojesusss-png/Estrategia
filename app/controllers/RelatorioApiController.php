@@ -4,18 +4,21 @@ declare(strict_types=1);
 require_once __DIR__ . '/../services/RelatorioConsolidadoService.php';
 require_once __DIR__ . '/../services/RelatorioIndicadorService.php';
 require_once __DIR__ . '/../services/RelatorioGovernancaService.php';
+require_once __DIR__ . '/../services/IniciativaRelatorioService.php';
 
 final class RelatorioApiController
 {
     private $service;
     private $indicatorService;
     private $governanceService;
+    private $initiativeService;
 
     public function __construct()
     {
         $this->service = new RelatorioConsolidadoService(Database::getConnection());
         $this->indicatorService = new RelatorioIndicadorService(Database::getConnection());
         $this->governanceService = new RelatorioGovernancaService(Database::getConnection());
+        $this->initiativeService = new IniciativaRelatorioService(Database::getConnection());
     }
 
     public function consolidado()
@@ -59,6 +62,23 @@ final class RelatorioApiController
             return Response::success($this->governanceService->gerar($filters, $user), 'Relatorio de governanca consultado.');
         } catch (UnexpectedValueException $error) {
             return Response::error($error->getMessage(), 403);
+        } catch (InvalidArgumentException $error) {
+            return Response::error($error->getMessage(), 400);
+        }
+    }
+
+    public function iniciativas()
+    {
+        $user = Auth::requirePermission('relatorios', 'visualizar', true);
+        header('Cache-Control: private, no-store, max-age=0');
+        header('Pragma: no-cache');
+        try {
+            $filters = $_GET;
+            unset($filters['route']);
+            return Response::success(
+                $this->initiativeService->gerar($filters, $user),
+                'Relatorio de iniciativas consultado.'
+            );
         } catch (InvalidArgumentException $error) {
             return Response::error($error->getMessage(), 400);
         }

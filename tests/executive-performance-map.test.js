@@ -172,6 +172,11 @@ assert.equal(climateTotals.achieved, 1);
 assert.equal(climateTotals.attention, 0);
 assert.equal(climateTotals.tracking, 1);
 assert.equal(climateTotals.noData, 0);
+assert.equal(
+  climateTotals.achieved + climateTotals.attention + climateTotals.tracking + climateTotals.noData,
+  climateTotals.total,
+  "as categorias de desempenho devem sempre fechar o total de indicadores"
+);
 
 assertVariation(internals.performanceVariation(1.05, 1), 5, "up");
 assertVariation(internals.performanceVariation(0.92, 0.96), -4, "down");
@@ -191,8 +196,25 @@ assert.equal(internals.performancePercentLabel(1.04), "104% da meta");
 assert.equal(internals.performancePercentLabel(null), "Sem percentual");
 assert.equal(internals.performancePercentValue(1.04), "104%");
 assert.equal(internals.performancePercentValue(null), "Sem percentual");
-assert.equal(internals.performanceMapSize({ indicador: { numero: 23 } }, 22), "wide");
-assert.equal(internals.performanceMapSize({ indicador: { numero: 22 } }, 21), "normal");
+assert.equal(internals.performanceMapSize(
+  { indicador: { numero: 7, indicador: "Lucro LÃ­quido Recorrente" } },
+  3,
+  { officialResult: "R$ 140.000.000,00", shortName: "Lucro Recorrente" }
+), "wide");
+assert.equal(internals.performanceMapSize(
+  { indicador: { numero: 13, indicador: "Mulheres Chefes de Unidade" } },
+  12,
+  { officialResult: "43,48%", shortName: "Mulheres Gestoras" }
+), "normal");
+assert.equal(internals.performanceMapSize(
+  { indicador: { numero: 1, indicador: "Ãndice de Ofertas Personalizadas" } },
+  0,
+  { officialResult: "83,79%", shortName: "Ãnd. Ofertas Personalizadas", hasDeadlineAlert: true }
+), "wide");
+assert.equal(internals.performanceMapSize({ indicador: { numero: 22, indicador: "ArrecadaÃ§Ã£o" } }, 21), "normal");
+assert.deepEqual(internals.performanceMapBalancedSpans([2, 2, 2, 2]), [3, 3, 3, 3]);
+assert.deepEqual(internals.performanceMapBalancedSpans([4, 2, 2]), [4, 4, 4]);
+assert.deepEqual(internals.performanceMapBalancedSpans([4, 4, 2]), [4, 4, 4]);
 for (const id of [2, 5, 6, 7]) assert.equal(internals.isRvdIndicator({ id }), true);
 for (const id of [1, 17]) assert.equal(internals.isRvdIndicator({ id }), false);
 assert.match(internals.planBadgesMarkup({ id: 2, plano: "PEI" }), />PEI<.*>RVD</);
@@ -377,12 +399,17 @@ assert.equal(
   "Princípios de Jogo Responsável"
 );
 
+assert.equal(
+  internals.nomeIndicadorMapa({ indicador: "Ampliar a Capacidade de Desenvolvimento de Solucoes" }),
+  "Capacidade TIC"
+);
+
 const executiveSource = fs.readFileSync(path.join(root, "assets", "js", "executiveSummary.js"), "utf8");
 const executiveView = fs.readFileSync(path.join(root, "views", "frontend", "resumo-executivo.php"), "utf8");
 assert.match(executiveSource, /Pesquisa: \$\{measurement\}/);
 assert.match(executiveSource, /function executiveOfficialDetail\(result\)/);
 assert.match(executiveSource, /isPendingOfficialResearch2026\(result\) \|\| projectOfficialQualitativeResult\(result\)/);
-assert.match(executiveSource, /<strong>\$\{escapeHtml\(officialResult\)\}<\/strong>/);
+assert.match(executiveSource, /<strong class="executive-performance-value executive-performance-value-\$\{valueDensity\}">\$\{escapeHtml\(officialResult\)\}<\/strong>/);
 assert.match(executiveSource, /performanceToneForResult/);
 assert.match(executiveSource, /executive-performance-\$\{tone\}/);
 assert.match(executiveView, /Azul neutro <strong>Em acompanhamento<\/strong>/);

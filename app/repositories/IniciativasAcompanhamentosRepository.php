@@ -42,6 +42,53 @@ final class IniciativasAcompanhamentosRepository
         return $this->listAll(array('statusFluxo' => 'ENVIADO_HOMOLOGACAO'), $user);
     }
 
+    public function reportAll(array $filters, array $user)
+    {
+        $rows = $this->listAll($filters, $user);
+        if (!$rows) return array();
+
+        $params = array();
+        $holders = array();
+        foreach ($rows as $index => $row) {
+            $key = ':report_id_' . $index;
+            $holders[] = $key;
+            $params[$key] = (string) $row['id'];
+        }
+
+        $decisions = array();
+        $decisionStatement = $this->db->prepare(
+            "SELECT acompanhamento_id,usuario,perfil_usuario,data_acao FROM dbo.iniciativas_homologacoes "
+            . "WHERE acao='homologacao_iniciativa' AND status_novo='HOMOLOGADO' "
+            . 'AND acompanhamento_id IN (' . implode(',', $holders) . ') '
+            . 'ORDER BY data_acao DESC,created_at DESC,id DESC'
+        );
+        $decisionStatement->execute($params);
+        foreach ($decisionStatement->fetchAll() as $decision) {
+            $id = (string) $decision['acompanhamento_id'];
+            if (!isset($decisions[$id])) $decisions[$id] = $decision;
+        }
+
+        $evidenceCounts = array();
+        $evidenceStatement = $this->db->prepare(
+            'SELECT acompanhamento_id,COUNT(*) AS quantidade FROM dbo.iniciativas_evidencias '
+            . 'WHERE acompanhamento_id IN (' . implode(',', $holders) . ') GROUP BY acompanhamento_id'
+        );
+        $evidenceStatement->execute($params);
+        foreach ($evidenceStatement->fetchAll() as $evidence) {
+            $evidenceCounts[(string) $evidence['acompanhamento_id']] = (int) $evidence['quantidade'];
+        }
+
+        return array_map(static function (array $row) use ($decisions, $evidenceCounts): array {
+            $id = (string) $row['id'];
+            $decision = $decisions[$id] ?? null;
+            $row['homologadoPor'] = $decision ? (string) $decision['usuario'] : null;
+            $row['perfilHomologador'] = $decision ? (string) $decision['perfil_usuario'] : null;
+            $row['homologadoEm'] = $decision ? $decision['data_acao'] : null;
+            $row['quantidadeEvidencias'] = $evidenceCounts[$id] ?? 0;
+            return $row;
+        }, $rows);
+    }
+
     public function find($id)
     {
         return $this->findInternal($id, false);

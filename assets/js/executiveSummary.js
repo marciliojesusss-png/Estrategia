@@ -20,6 +20,7 @@
   const SUMMARY_CARD_FILTERS = {
     atingido: { label: "Indicadores atingidos", situation: "Atingido" },
     abaixo_da_meta: { label: "Indicadores abaixo da meta", situation: "Abaixo da meta" },
+    acompanhamento: { label: "Indicadores em acompanhamento", situation: "Em acompanhamento" },
     sem_dados: { label: "Indicadores sem dados", situation: "Sem dados" }
   };
   const CHART_DEVICE_PIXEL_RATIO = Math.min(Math.max(window.devicePixelRatio || 1, 2), 3);
@@ -100,7 +101,7 @@
       { match: "indice de clientes ativos em canais digitais", label: "Canais Digitais" },
       { match: "aprimoramento da experiencia do cliente", label: "Experiência do Cliente" },
       { match: "share da plataforma de jogos", label: "Share Plataforma Jogos" },
-      { match: "ampliar capacidade de desenvolvimento", label: "Capacidade TIC" },
+      { match: "capacidade de desenvolvimento", label: "Capacidade TIC" },
       { match: "disponibilidade", label: "Disponibilidade Sistemas" },
       { match: "backlog", label: "Backlog de TI" },
       { match: "clima organizacional", label: "Clima Organizacional" },
@@ -545,10 +546,19 @@
     return percent === null ? "Sem percentual" : Calculations.formatarPercentual(percent);
   }
 
-  function performanceMapSize(result, index) {
+  function performanceMapSize(result, index, content = {}) {
     const number = Number(result?.indicador?.numero);
+    const officialResult = String(content.officialResult ?? "").trim();
+    const shortName = String(content.shortName ?? nomeIndicadorMapa(result?.indicador)).trim();
+    const valueLength = Array.from(officialResult).length;
+    const nameLength = Array.from(shortName).length;
+    const needsMoreWidth = Boolean(content.hasDeadlineAlert) ||
+      /^R\$\s*/i.test(officialResult) ||
+      valueLength > 13 ||
+      nameLength > 24;
+
     if ([3].includes(number)) return "tall";
-    if ([13, 15, 17, 18, 21, 23].includes(number)) return "wide";
+    if (needsMoreWidth) return "wide";
     if (index < 6) return "featured";
     return "normal";
   }
@@ -1064,6 +1074,7 @@
       { label: "Total de indicadores", value: totals.total, tone: "total", filter: "todos" },
       { label: "Indicadores atingidos", value: totals.achieved, tone: "ok", filter: "atingido" },
       { label: "Indicadores abaixo da meta", value: totals.attention, tone: "warn", filter: "abaixo_da_meta" },
+      { label: "Indicadores em acompanhamento", value: totals.tracking, tone: "tracking", filter: "acompanhamento" },
       { label: "Indicadores sem dados", value: totals.noData, tone: "neutral", filter: "sem_dados" },
       { label: "Indicadores homologados", value: totals.homologated, tone: "info" },
       { label: "Pendentes de homologação", value: totals.pending, tone: "pending" }
@@ -1398,9 +1409,15 @@
     const tone = performanceToneForResult(result);
     const toneLabel = performanceToneLabel(tone);
     const active = Number(result.indicador.id) === Number(state.indicatorFilterId);
-    const size = performanceMapSize(result, index);
     const showOperationalStatus = shouldShowOperationalStatusInPerformanceMap();
     const deadlineStatus = deadlineStatusForResult(result);
+    const size = performanceMapSize(result, index, {
+      officialResult,
+      shortName,
+      hasDeadlineAlert: deadlineStatus?.atrasado
+    });
+    const valueLength = Array.from(String(officialResult)).length;
+    const valueDensity = valueLength > 20 ? "very-long" : valueLength > 13 ? "long" : "standard";
     const tooltipLines = [
       `Indicador: ${name}`,
       `${isPlataformaJogos ? "Evolução oficial do projeto" : "Resultado oficial"}: ${officialResult}`,
@@ -1436,7 +1453,7 @@
       >
         <span class="executive-performance-name">${escapeHtml(`${indicatorNumberLabel(result.indicador)}. ${shortName}`)}</span>
         <span class="executive-performance-main">
-          <strong>${escapeHtml(officialResult)}</strong>
+          <strong class="executive-performance-value executive-performance-value-${valueDensity}">${escapeHtml(officialResult)}</strong>
           <span class="executive-performance-percent">
             <b>${escapeHtml(percentValue)}</b>
             ${toFiniteNumber(displayAttainment) === null ? "" : "<small>da meta</small>"}
@@ -1462,6 +1479,33 @@
     `;
   }
 
+  function performanceMapBalancedSpans(baseSpans, totalColumns = 12) {
+    const spans = baseSpans.map((span) => Math.max(1, Number(span) || 1));
+    let available = Math.max(0, totalColumns - spans.reduce((total, span) => total + span, 0));
+    while (available > 0 && spans.length) {
+      const smallest = Math.min(...spans);
+      const index = spans.indexOf(smallest);
+      spans[index] += 1;
+      available -= 1;
+    }
+    return spans;
+  }
+
+  function balancePerformanceMapLastRow(target = document.getElementById("executivePerformanceMapGroups")) {
+    if (!target) return;
+    const cards = [...target.querySelectorAll(".executive-performance-card")];
+    cards.forEach((card) => card.style.removeProperty("--performance-map-span"));
+    if (!cards.length || window.innerWidth <= 1120) return;
+
+    const lastRowTop = Math.max(...cards.map((card) => card.offsetTop));
+    const lastRow = cards.filter((card) => card.offsetTop === lastRowTop);
+    const baseSpans = lastRow.map((card) => card.dataset.mapSize === "wide" ? 4 : 2);
+    const balancedSpans = performanceMapBalancedSpans(baseSpans);
+    lastRow.forEach((card, index) => {
+      card.style.setProperty("--performance-map-span", String(balancedSpans[index]));
+    });
+  }
+
   function renderPerformanceMap(results) {
     const target = document.getElementById("executivePerformanceMapGroups");
     const empty = document.getElementById("executivePerformanceMapEmpty");
@@ -1475,6 +1519,7 @@
     ));
     empty.hidden = Boolean(ordered.length);
     target.innerHTML = ordered.map((result, index) => performanceMapCard(result, index)).join("");
+    balancePerformanceMapLastRow(target);
   }
 
   function renderChartFilterBanner() {
@@ -1649,6 +1694,7 @@
       if (!item) return;
       applyPillarGaugeFilter(item.dataset.gaugePilar);
     });
+    window.addEventListener("resize", () => balancePerformanceMapLastRow());
     updatePeriodFilters();
     refresh();
   }
@@ -1665,6 +1711,7 @@
       performancePercentLabel,
       performancePercentValue,
       performanceMapSize,
+      performanceMapBalancedSpans,
       isRvdIndicator,
       planBadgesMarkup,
       viewScopeProfileCode,

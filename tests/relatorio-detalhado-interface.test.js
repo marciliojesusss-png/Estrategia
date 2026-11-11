@@ -44,7 +44,7 @@ assert.match(view, /Governan.a resumida/);
 assert.match(view, /RELATORIO-DETALHADO-002/);
 
 assert.match(controller, /Cache-Control: private, no-store/);
-assert.equal((controller.match(/Auth::requirePermission\('relatorios', 'visualizar', true\)/g) || []).length, 3,
+assert.equal((controller.match(/Auth::requirePermission\('relatorios', 'visualizar', true\)/g) || []).length, 4,
   'consolidado, detalhado e governança devem compartilhar a autorização backend de Relatórios');
 assert.match(service, /AccessPolicy::scopeAllows/);
 assert.match(service, /Sem posicao oficial/);

@@ -112,6 +112,18 @@ function initiativeContext(payload, ok = true) {
   await approvalApp.start();
   assert.deepStrictEqual(approvalApp.calls(), { storageCalls: 0, loadAllCalls: 0, moduleCalls: 1 }, "homologação deve inicializar sem DataStore");
 
+  for (const page of ["iniciativas", "iniciativasConsolidacao"]) {
+    const initiativesApp = appContext(page);
+    initiativesApp.context.DataStore.getStorageInfo = async () => { throw new Error("unexpected getStorageInfo"); };
+    initiativesApp.context.DataStore.loadAll = async () => { throw new Error("unexpected loadAll"); };
+    await initiativesApp.start();
+    assert.deepStrictEqual(
+      initiativesApp.calls(),
+      { storageCalls: 0, loadAllCalls: 0, moduleCalls: 1 },
+      `${page} deve inicializar sem DataStore`
+    );
+  }
+
   const legacyApp = appContext("indicadores");
   await legacyApp.start();
   assert.deepStrictEqual(legacyApp.calls(), { storageCalls: 1, loadAllCalls: 1, moduleCalls: 1 }, "módulo legado deve manter DataStore.loadAll");
