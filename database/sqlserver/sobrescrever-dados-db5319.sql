@@ -1,7 +1,7 @@
 /*
   Substitui somente a estrutura funcional e os dados da aplicacao no banco
-  DB5319_IndicadoresEstrategicos_ANTES_RESTAURACAO_20261104 usando o backup
-  Estrategia_PRE_HOMOLOGACAO_INICIATIVAS_20261111_110041.bak.
+  DB5319_IndicadoresEstrategicos usando o backup
+  Estrategia_HOMOLOGACAO_INICIATIVAS_20261111_110041.bak.
 
   REQUISITOS:
   - executar com sqlcmd -b -f 65001 a partir da pasta database\sqlserver;
@@ -18,17 +18,17 @@
   - toda substituicao de dados ocorre em uma unica transacao;
   - em caso de erro, a transacao e revertida e o staging permanece para diagnostico.
 
-  COMANDO LOCAL:
-  sqlcmd -S "LUKIN\SQLEXPRESS01" -E -b -f 65001 -i ".\sobrescrever-dados-db5319.sql"
+  COMANDO:
+  sqlcmd -S "<INSTANCIA_SQLSERVER>" -E -b -f 65001 -i ".\sobrescrever-dados-db5319.sql"
 */
 
 :on error exit
-:setvar TargetDatabase "DB5319_IndicadoresEstrategicos_ANTES_RESTAURACAO_20261104"
-:setvar StagingDatabase "Estrategia_CARGA_PRE_HOMOLOG_20261111"
-:setvar BackupFile "C:\Users\jonat\OneDrive\Documentos\GitHub\Estrategia\backup\Estrategia_PRE_HOMOLOGACAO_INICIATIVAS_20261111_110041.bak"
-:setvar SafetyBackupFile "C:\Program Files\Microsoft SQL Server\MSSQL13.SQLEXPRESS01\MSSQL\Backup\DB5319_IndicadoresEstrategicos_ANTES_RESTAURACAO_20261104_PRE_CARGA_PRE_HOMOLOG_20261111_110041.bak"
-:setvar StagingDataFile "C:\Program Files\Microsoft SQL Server\MSSQL13.SQLEXPRESS01\MSSQL\DATA\Estrategia_CARGA_PRE_HOMOLOG_20261111.mdf"
-:setvar StagingLogFile "C:\Program Files\Microsoft SQL Server\MSSQL13.SQLEXPRESS01\MSSQL\DATA\Estrategia_CARGA_PRE_HOMOLOG_20261111_log.ldf"
+:setvar TargetDatabase "DB5319_IndicadoresEstrategicos"
+:setvar StagingDatabase "Estrategia_CARGA_HOMOLOG_INICIATIVAS_20261111"
+:setvar BackupFile "D:\SQLBackups\Estrategia_HOMOLOGACAO_INICIATIVAS_20261111_110041.bak"
+:setvar SafetyBackupFile "D:\SQLBackups\DB5319_IndicadoresEstrategicos_PRE_CARGA_HOMOLOGACAO_INICIATIVAS_20261111_110041.bak"
+:setvar StagingDataFile "D:\SQLData\Estrategia_CARGA_HOMOLOG_INICIATIVAS_20261111.mdf"
+:setvar StagingLogFile "D:\SQLData\Estrategia_CARGA_HOMOLOG_INICIATIVAS_20261111_log.ldf"
 :setvar DropStagingAfterSuccess "1"
 
 SET NOCOUNT ON;

@@ -1,128 +1,98 @@
 # Sobrescrever os dados do DB5319
 
-## O que este procedimento faz
+## O que será feito
 
-O script `sobrescrever-dados-db5319.sql` copia os dados do backup:
-
-```text
-Estrategia_PRE_HOMOLOGACAO_INICIATIVAS_20261111_110041.bak
-```
-
-para o banco:
+O script usa o backup:
 
 ```text
-DB5319_IndicadoresEstrategicos_ANTES_RESTAURACAO_20261104
+Estrategia_HOMOLOGACAO_INICIATIVAS_20261111_110041.bak
 ```
 
-O nome do banco no SQL Server é sem acento em `RESTAURACAO`.
+para substituir os dados funcionais do banco:
 
-> **Atenção:** os dados funcionais atuais do banco de destino serão apagados e
-> substituídos pelos dados do backup.
+```text
+DB5319_IndicadoresEstrategicos
+```
 
-O script preserva e valida:
+O script preserva e confere:
 
-- proprietário do banco (`owner_sid`);
-- SID interno de `dbo`;
+- proprietário do banco;
+- SID de `dbo`;
 - SID do usuário `s531902`;
 - logins, usuários SQL, roles e permissões do destino.
 
-Antes da substituição, é criado automaticamente um backup de segurança do
-banco de destino.
+> **Atenção:** os dados funcionais atuais do banco serão substituídos. Antes da
+> carga, o próprio script cria um backup de segurança do destino.
 
-## Importante sobre o backup
+## Ambiente Caixa
 
-O backup é anterior à homologação das iniciativas. Portanto, depois da carga:
+- Servidor SQL Server: `DF7436SR439`
+- Versão identificada: SQL Server 2016 (`13.0.5026.0`)
+- Autenticação: integrada do Windows
+- Usuário: `CORPCAIXA\c118119`
+- Banco de destino: `DB5319_IndicadoresEstrategicos`
 
-- os acompanhamentos poderão aparecer como `ENVIADO_HOMOLOGACAO`;
-- o relatório filtrado por `Homologado` poderá não apresentar iniciativas;
-- os usuários de aplicação também serão substituídos pelos existentes no backup.
+## Antes de executar
 
-## 1. Preparar a execução
+1. Coloque o backup neste caminho do servidor SQL:
 
-Confirme que o backup existe:
+   ```text
+   D:\SQLBackups\Estrategia_HOMOLOGACAO_INICIATIVAS_20261111_110041.bak
+   ```
 
-```powershell
-Test-Path -LiteralPath '.\backup\Estrategia_PRE_HOMOLOGACAO_INICIATIVAS_20261111_110041.bak'
-```
+2. Confirme com a equipe responsável se `D:\SQLBackups` e `D:\SQLData` existem
+   no servidor `DF7436SR439` e são acessíveis pelo serviço SQL Server. Caso não
+   existam, ajuste as variáveis no início de `sobrescrever-dados-db5319.sql`.
 
-O resultado deve ser `True`.
+3. Pare a aplicação e feche as conexões do SSMS com
+   `DB5319_IndicadoresEstrategicos`.
 
-Confirme que o banco está online:
+4. Confirme que `CORPCAIXA\c118119` possui permissão para criar o backup de
+   segurança, restaurar o banco temporário e alterar o banco de destino.
 
-```powershell
-sqlcmd -S "LUKIN\SQLEXPRESS01" -E -Q "SELECT name,state_desc FROM sys.databases WHERE name=N'DB5319_IndicadoresEstrategicos_ANTES_RESTAURACAO_20261104';"
-```
+   A consulta mostrada anteriormente retornou permissões iguais a zero para o
+   banco de teste `DB5319_Estrategia_TESTE_OWNER`. Isso não confirma as
+   permissões no banco definitivo. Solicite a validação no
+   `DB5319_IndicadoresEstrategicos` antes da execução.
 
-Antes de continuar:
+## Executar
 
-1. Pare a aplicação.
-2. Feche as conexões do SSMS com o banco de destino.
-3. Confirme que ninguém está utilizando o banco.
-
-O script será interrompido se encontrar outra conexão ativa.
-
-## 2. Executar o script
-
-Na raiz do projeto, entre na pasta SQL Server:
+Abra o PowerShell na raiz do projeto e entre na pasta do script:
 
 ```powershell
 Set-Location '.\database\sqlserver'
 ```
 
-Execute:
+Depois, execute:
 
 ```powershell
-sqlcmd -S "LUKIN\SQLEXPRESS01" -E -b -f 65001 -i ".\sobrescrever-dados-db5319.sql"
+sqlcmd -S "DF7436SR439" -E -b -f 65001 -i ".\sobrescrever-dados-db5319.sql"
 ```
 
-O parâmetro `-b` encerra a execução caso ocorra qualquer erro.
+O parâmetro `-E` utiliza a autenticação integrada do usuário Windows conectado.
 
-## 3. Confirmar o sucesso
+## Confirmar o resultado
 
-Ao final, devem aparecer as mensagens:
+Quando tudo der certo, aparecerá:
 
 ```text
 CARGA CONCLUIDA. O banco destino manteve owner_sid, dbo e s531902.
 Valide a aplicacao antes de reabrir o acesso dos usuarios.
 ```
 
-O script também:
+Depois:
 
-- valida o backup de origem;
-- restaura a origem em um banco temporário;
-- confere tabelas e colunas;
-- copia os dados dentro de uma transação;
-- valida constraints e integridade;
-- remove o banco temporário após o sucesso.
-
-## 4. Validar o banco
-
-Execute:
-
-```powershell
-sqlcmd -S "LUKIN\SQLEXPRESS01" -E -b -d "DB5319_IndicadoresEstrategicos_ANTES_RESTAURACAO_20261104" -Q "SET NOCOUNT ON; DBCC CHECKDB WITH NO_INFOMSGS; SELECT COUNT(*) AS tabelas FROM sys.tables WHERE is_ms_shipped=0; SELECT name,sys.fn_varbintohexstr(sid) AS sid FROM sys.database_principals WHERE name IN (N'dbo',N's531902'); SELECT status_fluxo,COUNT(*) AS quantidade FROM dbo.iniciativas_acompanhamentos GROUP BY status_fluxo;"
-```
-
-Depois, reinicie a aplicação e valide:
-
-1. Login.
-2. Dashboard.
-3. Indicadores.
-4. Iniciativas com o filtro `Enviado para homologação`.
-5. Usuários de acesso e relatórios.
+1. Inicie a aplicação.
+2. Teste o login.
+3. Confira o dashboard e os indicadores.
+4. Confira as iniciativas com o filtro `Homologado`.
+5. Confira os relatórios e os usuários de acesso.
 
 ## Se ocorrer erro
 
-- Não execute o script novamente imediatamente.
-- Leia a mensagem apresentada pelo `sqlcmd`.
-- Os dados são revertidos se a falha ocorrer durante a transação de carga.
-- O banco temporário permanece disponível para diagnóstico.
-- Preserve o backup de segurança criado antes da carga.
-- Verifique conexões ativas, espaço em disco, caminhos e permissões.
-
-O backup de segurança é criado em:
-
-```text
-C:\Program Files\Microsoft SQL Server\MSSQL13.SQLEXPRESS01\MSSQL\Backup\DB5319_IndicadoresEstrategicos_ANTES_RESTAURACAO_20261104_PRE_CARGA_PRE_HOMOLOG_20261111_110041.bak
-```
+- Não execute novamente antes de identificar a causa.
+- Leia a última mensagem apresentada pelo `sqlcmd`.
+- Confira conexões abertas, caminhos, permissões e espaço em disco.
+- Preserve o backup de segurança criado pelo script.
+- O banco temporário será mantido para diagnóstico.
 
