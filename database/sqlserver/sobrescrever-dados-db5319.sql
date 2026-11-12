@@ -1,7 +1,7 @@
 /*
   Substitui somente a estrutura funcional e os dados da aplicacao no banco
-  DB5319_IndicadoresEstrategicos_TESTE_20261104 usando o backup
-  Estrategia_Pós_HOMOLOGACAO_INICIATIVAS_20261111_110041.bak.
+  DB5319_IndicadoresEstrategicos_ANTES_RESTAURACAO_20261104 usando o backup
+  Estrategia_PRE_HOMOLOGACAO_INICIATIVAS_20261111_110041.bak.
 
   REQUISITOS:
   - executar com sqlcmd -b -f 65001 a partir da pasta database\sqlserver;
@@ -23,12 +23,12 @@
 */
 
 :on error exit
-:setvar TargetDatabase "DB5319_IndicadoresEstrategicos_TESTE_20261104"
-:setvar StagingDatabase "Estrategia_CARGA_POS_HOMOLOG_20261111"
-:setvar BackupFile "C:\Users\jonat\OneDrive\Documentos\GitHub\Estrategia\backup\Estrategia_Pós_HOMOLOGACAO_INICIATIVAS_20261111_110041.bak"
-:setvar SafetyBackupFile "C:\Program Files\Microsoft SQL Server\MSSQL13.SQLEXPRESS01\MSSQL\Backup\DB5319_IndicadoresEstrategicos_TESTE_20261104_PRE_CARGA_20261111_110041.bak"
-:setvar StagingDataFile "C:\Program Files\Microsoft SQL Server\MSSQL13.SQLEXPRESS01\MSSQL\DATA\Estrategia_CARGA_POS_HOMOLOG_20261111.mdf"
-:setvar StagingLogFile "C:\Program Files\Microsoft SQL Server\MSSQL13.SQLEXPRESS01\MSSQL\DATA\Estrategia_CARGA_POS_HOMOLOG_20261111_log.ldf"
+:setvar TargetDatabase "DB5319_IndicadoresEstrategicos_ANTES_RESTAURACAO_20261104"
+:setvar StagingDatabase "Estrategia_CARGA_PRE_HOMOLOG_20261111"
+:setvar BackupFile "C:\Users\jonat\OneDrive\Documentos\GitHub\Estrategia\backup\Estrategia_PRE_HOMOLOGACAO_INICIATIVAS_20261111_110041.bak"
+:setvar SafetyBackupFile "C:\Program Files\Microsoft SQL Server\MSSQL13.SQLEXPRESS01\MSSQL\Backup\DB5319_IndicadoresEstrategicos_ANTES_RESTAURACAO_20261104_PRE_CARGA_PRE_HOMOLOG_20261111_110041.bak"
+:setvar StagingDataFile "C:\Program Files\Microsoft SQL Server\MSSQL13.SQLEXPRESS01\MSSQL\DATA\Estrategia_CARGA_PRE_HOMOLOG_20261111.mdf"
+:setvar StagingLogFile "C:\Program Files\Microsoft SQL Server\MSSQL13.SQLEXPRESS01\MSSQL\DATA\Estrategia_CARGA_PRE_HOMOLOG_20261111_log.ldf"
 :setvar DropStagingAfterSuccess "1"
 
 SET NOCOUNT ON;
@@ -89,8 +89,7 @@ GO
 
 PRINT N'Validando e restaurando a origem como staging independente...';
 RESTORE VERIFYONLY
-FROM DISK = N'$(BackupFile)'
-WITH CHECKSUM;
+FROM DISK = N'$(BackupFile)';
 GO
 
 RESTORE DATABASE [$(StagingDatabase)]

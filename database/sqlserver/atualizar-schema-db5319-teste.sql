@@ -1,4 +1,4 @@
-:setvar TargetDatabase "DB5319_IndicadoresEstrategicos_TESTE_20261104"
+:setvar TargetDatabase "DB5319_IndicadoresEstrategicos_ANTES_RESTAURACAO_20261104"
 
 SET ANSI_NULLS ON;
 SET QUOTED_IDENTIFIER ON;
