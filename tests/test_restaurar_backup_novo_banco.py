@@ -16,9 +16,7 @@ class RestoreScriptTest(unittest.TestCase):
     def test_defaults_target_a_new_database(self):
         args = MODULE.parse_args([])
         self.assertEqual("DF7436SR439", args.servidor)
-        self.assertEqual(
-            "Estrategia_HOMOLOGACAO_INICIATIVAS_20261111_110041", args.banco
-        )
+        self.assertEqual("Monitoramento_Estrategia", args.banco)
         self.assertFalse(args.executar)
 
     def test_system_database_is_rejected(self):

@@ -7,7 +7,7 @@ novo no SQL Server `DF7436SR439`.
 O nome padrao do banco novo e:
 
 ```text
-Estrategia_HOMOLOGACAO_INICIATIVAS_20261111_110041
+Monitoramento_Estrategia
 ```
 
 ## Protecoes
