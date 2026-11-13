@@ -24,6 +24,14 @@ DEFAULT_AUTH_SQL = ROOT / "database" / "sqlserver" / "sincronizar-usuarios-acess
 MIGRATION_VERSION = "2026.11-sqlserver-sqlite-roundtrip"
 DEFAULT_SOURCE_DATABASE = "Estrategia"
 DEFAULT_TARGET_DATABASE = "Monitoramento_Estrategia"
+DEFAULT_SOURCE_SERVER = r"localhost\SQLEXPRESS01"
+DEFAULT_TARGET_SERVER = "DF7436SR439"
+CORPORATE_OWNER_LOGIN = r"CORPCAIXA\c118119"
+CORPORATE_APPLICATION_LOGIN = "s531902"
+EXPECTED_OWNER_SID = bytes.fromhex(
+    "010500000000000515000000C78A7EB26AEE162F1968276B896C0000"
+)
+EXPECTED_APPLICATION_SID = bytes.fromhex("401E46BC08211343899A19AC0768B6B8")
 
 TABLES = [
     "indicadores",
@@ -181,7 +189,13 @@ def parse_args(argv=None):
     parser.add_argument(
         "--servidor",
         "-Servidor",
-        default=os.getenv("SQLSERVER_HOST", r"localhost\SQLEXPRESS01"),
+        default=os.getenv("SQLSERVER_HOST", DEFAULT_TARGET_SERVER),
+        help="Servidor SQL Server de destino. Padrao: DF7436SR439.",
+    )
+    parser.add_argument(
+        "--servidor-origem",
+        default=os.getenv("SQLSERVER_SOURCE_HOST", DEFAULT_SOURCE_SERVER),
+        help="Servidor usado somente na exportacao opcional SQL Server -> SQLite.",
     )
     parser.add_argument(
         "--banco",
@@ -281,8 +295,8 @@ def choose_odbc_driver(explicit=None):
     raise SystemExit("Nenhum driver ODBC para SQL Server foi encontrado.")
 
 
-def configure_environment(args, database):
-    servidor = env_default(args.servidor, r"localhost\SQLEXPRESS01")
+def configure_environment(args, database, server):
+    servidor = env_default(server, DEFAULT_TARGET_SERVER)
     banco = env_default(database, DEFAULT_TARGET_DATABASE)
     driver = choose_odbc_driver(args.driver)
     encrypt = env_default(args.encrypt, "no")
@@ -342,6 +356,29 @@ def print_header(args, config):
 
 
 def validate_options(args, config):
+    corporate_target = config["servidor"].casefold() == DEFAULT_TARGET_SERVER.casefold()
+    if corporate_target:
+        if config["banco"].casefold() != DEFAULT_TARGET_DATABASE.casefold():
+            raise SystemExit(
+                "No servidor da CAIXA, este fluxo permite somente o banco novo "
+                f"{DEFAULT_TARGET_DATABASE}."
+            )
+        unsafe_options = {
+            "--truncate": args.truncate,
+            "--seed-auth-users": args.seed_auth_users,
+            "--skip-schema": args.skip_schema,
+            "--skip-verify": args.skip_verify,
+        }
+        selected_unsafe = [name for name, enabled in unsafe_options.items() if enabled]
+        if selected_unsafe:
+            raise SystemExit(
+                "Opcoes proibidas no servidor da CAIXA: " + ", ".join(selected_unsafe)
+            )
+        confirm_step(
+            "Voce esta prestes a criar Monitoramento_Estrategia no SQL Server da CAIXA.",
+            args.yes,
+        )
+
     if args.ambiente == "producao":
         if args.truncate:
             raise SystemExit("Por seguranca, este migrador nao permite -Truncate em producao.")
@@ -436,7 +473,12 @@ def ensure_sqlserver_database():
         exists = cursor.execute("SELECT DB_ID(?)", database).fetchone()[0]
         if exists is None:
             cursor.execute(f"CREATE DATABASE {bracket(database)}")
+            cursor.execute(
+                f"ALTER DATABASE {bracket(database)} "
+                "SET RESTRICTED_USER WITH ROLLBACK IMMEDIATE"
+            )
             print(f"Banco SQL Server criado: {database}")
+            print("Acesso mantido em RESTRICTED_USER durante a migracao")
     except pyodbc.Error as exc:
         raise SystemExit(
             "Nao foi possivel abrir ou criar o banco SQL Server "
@@ -471,6 +513,179 @@ def ensure_target_database_absent():
                 f"O banco de destino '{database}' ja existe. "
                 "A migracao exige um banco novo e nunca sobrescreve um existente."
             )
+    finally:
+        connection.close()
+
+
+def validate_corporate_login(cursor, login, expected_sid, label):
+    row = cursor.execute(
+        "SELECT sid, is_disabled FROM sys.server_principals WHERE name = ?",
+        login,
+    ).fetchone()
+    if row is None:
+        raise SystemExit(f"O login corporativo {label} '{login}' nao existe na instancia.")
+    if bytes(row[0]) != expected_sid:
+        raise SystemExit(f"O SID do login corporativo {label} '{login}' esta divergente.")
+    if bool(row[1]):
+        raise SystemExit(f"O login corporativo {label} '{login}' esta desabilitado.")
+
+
+def validate_corporate_instance():
+    connection = pyodbc.connect(
+        sqlserver_connection_string("master"),
+        autocommit=True,
+        timeout=15,
+    )
+    try:
+        cursor = connection.cursor()
+        validate_corporate_login(
+            cursor, CORPORATE_OWNER_LOGIN, EXPECTED_OWNER_SID, "proprietario"
+        )
+        validate_corporate_login(
+            cursor,
+            CORPORATE_APPLICATION_LOGIN,
+            EXPECTED_APPLICATION_SID,
+            "da aplicacao",
+        )
+        permission = cursor.execute(
+            """
+            SELECT IS_SRVROLEMEMBER('sysadmin'),
+                   HAS_PERMS_BY_NAME(NULL, NULL, 'CREATE ANY DATABASE'),
+                   ORIGINAL_LOGIN()
+            """
+        ).fetchone()
+        current_login = str(permission[2] or "")
+        can_create = bool(permission[0]) or bool(permission[1])
+        can_assign_owner = (
+            bool(permission[0])
+            or current_login.casefold() == CORPORATE_OWNER_LOGIN.casefold()
+        )
+        if not can_create:
+            raise SystemExit(
+                "A conta Windows nao possui permissao CREATE ANY DATABASE na instancia."
+            )
+        if not can_assign_owner:
+            raise SystemExit(
+                "A migracao deve ser executada por sysadmin ou pela propria conta "
+                f"{CORPORATE_OWNER_LOGIN}."
+            )
+        return {
+            "server": cursor.execute("SELECT @@SERVERNAME").fetchone()[0],
+            "login": current_login,
+        }
+    finally:
+        connection.close()
+
+
+def configure_corporate_access(connection):
+    database = sqlserver_database_name()
+    cursor = connection.cursor()
+    cursor.execute(
+        f"ALTER AUTHORIZATION ON DATABASE::{bracket(database)} "
+        f"TO {bracket(CORPORATE_OWNER_LOGIN)}"
+    )
+    deny_connect = cursor.execute(
+        """
+        SELECT COUNT(*)
+        FROM sys.database_permissions AS permission
+        INNER JOIN sys.database_principals AS principal
+            ON principal.principal_id = permission.grantee_principal_id
+        WHERE principal.name = ?
+          AND permission.permission_name = N'CONNECT'
+          AND permission.state = N'D'
+        """,
+        CORPORATE_APPLICATION_LOGIN,
+    ).fetchone()[0]
+    if deny_connect:
+        raise RuntimeError(
+            f"Foi encontrado DENY CONNECT para {CORPORATE_APPLICATION_LOGIN}."
+        )
+    if cursor.execute(
+        "SELECT USER_ID(?)", CORPORATE_APPLICATION_LOGIN
+    ).fetchone()[0] is None:
+        cursor.execute(
+            f"CREATE USER {bracket(CORPORATE_APPLICATION_LOGIN)} "
+            f"FOR LOGIN {bracket(CORPORATE_APPLICATION_LOGIN)} "
+            "WITH DEFAULT_SCHEMA = [dbo]"
+        )
+    else:
+        cursor.execute(
+            f"ALTER USER {bracket(CORPORATE_APPLICATION_LOGIN)} "
+            f"WITH LOGIN = {bracket(CORPORATE_APPLICATION_LOGIN)}, "
+            "DEFAULT_SCHEMA = [dbo]"
+        )
+    for role in ("db_datareader", "db_datawriter"):
+        member = cursor.execute(
+            """
+            SELECT COUNT(*)
+            FROM sys.database_role_members AS drm
+            INNER JOIN sys.database_principals AS role_principal
+                ON role_principal.principal_id = drm.role_principal_id
+            INNER JOIN sys.database_principals AS member_principal
+                ON member_principal.principal_id = drm.member_principal_id
+            WHERE role_principal.name = ? AND member_principal.name = ?
+            """,
+            role,
+            CORPORATE_APPLICATION_LOGIN,
+        ).fetchone()[0]
+        if not member:
+            cursor.execute(
+                f"ALTER ROLE {bracket(role)} "
+                f"ADD MEMBER {bracket(CORPORATE_APPLICATION_LOGIN)}"
+            )
+    connection.commit()
+
+
+def validate_corporate_database(connection):
+    database = sqlserver_database_name()
+    owner = connection.cursor().execute(
+        "SELECT owner_sid FROM master.sys.databases WHERE name = ?",
+        database,
+    ).fetchone()
+    if owner is None or bytes(owner[0]) != EXPECTED_OWNER_SID:
+        raise RuntimeError("O owner_sid do banco novo nao pertence ao proprietario corporativo.")
+    cursor = connection.cursor()
+    dbo_sid = cursor.execute(
+        "SELECT sid FROM sys.database_principals WHERE name = N'dbo'"
+    ).fetchone()
+    app_sid = cursor.execute(
+        "SELECT sid FROM sys.database_principals WHERE name = ?",
+        CORPORATE_APPLICATION_LOGIN,
+    ).fetchone()
+    if dbo_sid is None or bytes(dbo_sid[0]) != EXPECTED_OWNER_SID:
+        raise RuntimeError("O SID interno de dbo esta divergente.")
+    if app_sid is None or bytes(app_sid[0]) != EXPECTED_APPLICATION_SID:
+        raise RuntimeError(f"O SID de {CORPORATE_APPLICATION_LOGIN} esta divergente.")
+    roles = cursor.execute(
+        """
+        SELECT role_principal.name
+        FROM sys.database_role_members AS drm
+        INNER JOIN sys.database_principals AS role_principal
+            ON role_principal.principal_id = drm.role_principal_id
+        INNER JOIN sys.database_principals AS member_principal
+            ON member_principal.principal_id = drm.member_principal_id
+        WHERE member_principal.name = ?
+          AND role_principal.name IN (N'db_datareader', N'db_datawriter')
+        """,
+        CORPORATE_APPLICATION_LOGIN,
+    ).fetchall()
+    if {row[0] for row in roles} != {"db_datareader", "db_datawriter"}:
+        raise RuntimeError(
+            f"Os papeis obrigatorios de {CORPORATE_APPLICATION_LOGIN} estao incompletos."
+        )
+
+
+def release_target_database():
+    database = sqlserver_database_name()
+    connection = pyodbc.connect(
+        sqlserver_connection_string("master"),
+        autocommit=True,
+        timeout=15,
+    )
+    try:
+        connection.cursor().execute(
+            f"ALTER DATABASE {bracket(database)} SET MULTI_USER"
+        )
     finally:
         connection.close()
 
@@ -1470,10 +1685,10 @@ def print_tls_guidance(args, config):
 
 def print_next_steps():
     write_step("Proximos passos")
-    print("1. Configure a aplicacao no servidor com DB_CONNECTION=sqlsrv e APP_ENV=production.")
-    print("2. Configure LDAP_URI, LDAP_BASE_DN e as credenciais de bind no ambiente corporativo.")
-    print("3. Cadastre ou revise os usuarios em dbo.usuarios_acesso.")
-    print("4. Teste login, lancamentos, homologacao, relatorios e administracao.")
+    print("1. Aponte a aplicacao para o banco Monitoramento_Estrategia.")
+    print("2. Execute o diagnostico SQL Server a partir do servidor IIS.")
+    print("3. Teste login, lancamentos, homologacao, relatorios e administracao.")
+    print("4. Confirme com o DBA o backup inicial do banco novo.")
     print("")
     write_ok("Processo finalizado.")
 
@@ -1483,7 +1698,10 @@ def main():
     selected_database = (
         args.banco_origem if args.exportar_sqlserver_para_sqlite else args.banco
     )
-    config = configure_environment(args, selected_database)
+    selected_server = (
+        args.servidor_origem if args.exportar_sqlserver_para_sqlite else args.servidor
+    )
+    config = configure_environment(args, selected_database, selected_server)
 
     if args.exportar_sqlserver_para_sqlite:
         print("Exportacao SQL Server -> SQLite")
@@ -1520,6 +1738,11 @@ def main():
             raise SystemExit("A origem SQLite falhou no preflight da migracao.")
         write_ok("Preflight da origem SQLite aprovado")
         if not args.verify_only:
+            corporate = validate_corporate_instance()
+            write_ok(
+                f"Instancia corporativa validada: {corporate['server']} "
+                f"(login: {corporate['login']})"
+            )
             ensure_target_database_absent()
         sqlserver_conn = connect_sqlserver()
 
@@ -1538,6 +1761,13 @@ def main():
         write_step("Executando migracao")
         run_migration(sqlite_conn, sqlserver_conn, args)
         write_ok("Migracao concluida")
+
+        write_step("Configurando identidades corporativas")
+        configure_corporate_access(sqlserver_conn)
+        write_ok(
+            f"Owner/dbo definido como {CORPORATE_OWNER_LOGIN}; "
+            f"{CORPORATE_APPLICATION_LOGIN} remapeado"
+        )
 
         if args.sync_auth_users:
             write_step("Sincronizando usuarios_acesso para SQL Server")
@@ -1567,6 +1797,13 @@ def main():
                     write_warn(alert)
                 raise SystemExit("Verificacao encontrou alertas. Consulte database\\sqlserver\\migration-report.json.")
             write_ok("Verificacao concluida sem alertas")
+
+        validate_corporate_database(sqlserver_conn)
+        write_ok("SIDs e papeis corporativos validados")
+        sqlserver_conn.close()
+        sqlserver_conn = None
+        release_target_database()
+        write_ok("Banco liberado em MULTI_USER")
 
         print_next_steps()
     except pyodbc.Error as exc:

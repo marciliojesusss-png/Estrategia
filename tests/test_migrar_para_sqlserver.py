@@ -17,6 +17,27 @@ class MigrationScriptTest(unittest.TestCase):
         args = MODULE.parse_args([])
         self.assertEqual("Estrategia", args.banco_origem)
         self.assertEqual("Monitoramento_Estrategia", args.banco)
+        self.assertEqual("DF7436SR439", args.servidor)
+        self.assertEqual(r"localhost\SQLEXPRESS01", args.servidor_origem)
+
+    def test_corporate_identities_are_fixed(self):
+        self.assertEqual(r"CORPCAIXA\c118119", MODULE.CORPORATE_OWNER_LOGIN)
+        self.assertEqual("s531902", MODULE.CORPORATE_APPLICATION_LOGIN)
+
+    def test_corporate_flow_rejects_different_database(self):
+        args = MODULE.parse_args(["--banco", "OutroBanco", "--yes"])
+        config = {"servidor": "DF7436SR439", "banco": "OutroBanco"}
+        with self.assertRaises(SystemExit):
+            MODULE.validate_options(args, config)
+
+    def test_corporate_flow_rejects_skip_verify(self):
+        args = MODULE.parse_args(["--skip-verify", "--yes"])
+        config = {
+            "servidor": "DF7436SR439",
+            "banco": "Monitoramento_Estrategia",
+        }
+        with self.assertRaises(SystemExit):
+            MODULE.validate_options(args, config)
 
     def test_decimal_uses_text_affinity_to_preserve_precision(self):
         self.assertEqual("TEXT", MODULE.sqlite_affinity("decimal"))
