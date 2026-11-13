@@ -1,9 +1,11 @@
 import argparse
+import decimal
 import shutil
 import json
 import os
 import re
 import sqlite3
+import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -19,19 +21,31 @@ DEFAULT_SCHEMA = ROOT / "database" / "sqlserver" / "schema.sql"
 DEFAULT_REPORT = ROOT / "database" / "sqlserver" / "migration-report.json"
 DEFAULT_AUTH_REPORT = ROOT / "database" / "sqlserver" / "usuarios-acesso-sync-report.json"
 DEFAULT_AUTH_SQL = ROOT / "database" / "sqlserver" / "sincronizar-usuarios-acesso.sql"
-MIGRATION_VERSION = "2026.07-php-views"
+MIGRATION_VERSION = "2026.11-sqlserver-sqlite-roundtrip"
+DEFAULT_SOURCE_DATABASE = "Estrategia"
+DEFAULT_TARGET_DATABASE = "Monitoramento_Estrategia"
 
 TABLES = [
     "indicadores",
+    "prazos_apuracao",
     "lancamentos",
     "homologacoes",
     "solicitacoes_reabertura",
     "retificacoes",
     "evidencias",
+    "lancamentos_observacoes_documentais",
+    "lancamentos_resultados_homologados",
     "auditoria",
     "configuracoes",
     "usuarios_validacao",
     "backups_importacao",
+    "usuarios_acesso",
+    "acessos_log",
+    "iniciativas_estrategicas",
+    "iniciativas_acompanhamentos",
+    "iniciativas_acompanhamento_itens",
+    "iniciativas_homologacoes",
+    "iniciativas_evidencias",
 ]
 
 AUTH_TABLE_COLUMNS = {
@@ -118,7 +132,11 @@ AUTH_SEED_USERS = [
 
 BOOLEAN_COLUMNS = {
     "indicadores": {"ativo"},
+    "prazos_apuracao": {"ativo"},
     "usuarios_validacao": {"ativo"},
+    "usuarios_acesso": {"ativo"},
+    "iniciativas_estrategicas": {"ativo", "exige_evidencia"},
+    "iniciativas_acompanhamento_itens": {"destaque_ca"},
 }
 
 JSON_COLUMNS = {
@@ -127,10 +145,12 @@ JSON_COLUMNS = {
     "auditoria": {"dados_anteriores_json", "dados_novos_json"},
     "configuracoes": {"valor_json"},
     "usuarios_validacao": {"permissoes_json"},
+    "lancamentos_resultados_homologados": {"detalhes_json"},
 }
 
 PRIMARY_KEYS = {
-    "configuracoes": "chave",
+    "configuracoes": ("chave",),
+    "lancamentos_resultados_homologados": ("lancamento_id", "versao_lancamento"),
 }
 
 FOREIGN_KEY_CHECKS = [
@@ -139,18 +159,41 @@ FOREIGN_KEY_CHECKS = [
     ("solicitacoes_reabertura", "lancamento_id", "lancamentos", "id"),
     ("retificacoes", "lancamento_id", "lancamentos", "id"),
     ("evidencias", "lancamento_id", "lancamentos", "id"),
+    ("lancamentos_observacoes_documentais", "lancamento_id", "lancamentos", "id"),
+    ("lancamentos_resultados_homologados", "lancamento_id", "lancamentos", "id"),
+    ("iniciativas_acompanhamentos", "iniciativa_id", "iniciativas_estrategicas", "id"),
+    ("iniciativas_acompanhamento_itens", "acompanhamento_id", "iniciativas_acompanhamentos", "id"),
+    ("iniciativas_homologacoes", "acompanhamento_id", "iniciativas_acompanhamentos", "id"),
+    ("iniciativas_evidencias", "acompanhamento_id", "iniciativas_acompanhamentos", "id"),
 ]
 
 INVALID_JSON_ESCAPE = re.compile(r'\\(?!["\\/u])')
 
 
-def parse_args():
+def parse_args(argv=None):
     parser = argparse.ArgumentParser(
-        description="Migra e valida dados do SQLite local para SQL Server."
+        description=(
+            "Exporta Estrategia do SQL Server para SQLite ou migra o SQLite "
+            "para o banco novo Monitoramento_Estrategia."
+        )
     )
     parser.add_argument("--ambiente", "-Ambiente", choices=["homologacao", "producao"], default="homologacao")
-    parser.add_argument("--servidor", "-Servidor", default=os.getenv("SQLSERVER_HOST"))
-    parser.add_argument("--banco", "-Banco", default=os.getenv("SQLSERVER_DATABASE"))
+    parser.add_argument(
+        "--servidor",
+        "-Servidor",
+        default=os.getenv("SQLSERVER_HOST", r"localhost\SQLEXPRESS01"),
+    )
+    parser.add_argument(
+        "--banco",
+        "-Banco",
+        default=os.getenv("SQLSERVER_TARGET_DATABASE", DEFAULT_TARGET_DATABASE),
+        help="Banco novo de destino. Padrao: Monitoramento_Estrategia.",
+    )
+    parser.add_argument(
+        "--banco-origem",
+        default=os.getenv("SQLSERVER_SOURCE_DATABASE", DEFAULT_SOURCE_DATABASE),
+        help="Banco SQL Server exportado para SQLite. Padrao: Estrategia.",
+    )
     parser.add_argument("--driver", "-Driver", default=os.getenv("SQLSERVER_DRIVER"))
     parser.add_argument("--encrypt", "-Encrypt", default=os.getenv("SQLSERVER_ENCRYPT"))
     parser.add_argument(
@@ -165,6 +208,16 @@ def parse_args():
     parser.add_argument("--auth-report", type=Path, default=DEFAULT_AUTH_REPORT)
     parser.add_argument("--auth-sql-output", type=Path, default=DEFAULT_AUTH_SQL)
     parser.add_argument("--database", default=None)
+    parser.add_argument(
+        "--exportar-sqlserver-para-sqlite",
+        action="store_true",
+        help="Exporta o banco --banco-origem para --sqlite e encerra.",
+    )
+    parser.add_argument(
+        "--sobrescrever-sqlite",
+        action="store_true",
+        help="Substitui o SQLite existente depois de criar uma copia de seguranca.",
+    )
     parser.add_argument(
         "--skip-schema",
         "-SkipSchema",
@@ -195,21 +248,43 @@ def parse_args():
     parser.add_argument("--skip-verify", "-SkipVerify", action="store_true")
     parser.add_argument("--verify-only", "-VerifyOnly", action="store_true")
     parser.add_argument("--yes", "-Yes", action="store_true")
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
 def sqlserver_database_name():
-    return os.getenv("SQLSERVER_DATABASE", "Estrategia")
+    return os.getenv("SQLSERVER_DATABASE", DEFAULT_TARGET_DATABASE)
 
 
 def env_default(value, fallback):
     return value if value not in (None, "") else fallback
 
 
-def configure_environment(args):
-    servidor = env_default(args.servidor, "localhost")
-    banco = env_default(args.banco, "Estrategia")
-    driver = env_default(args.driver, "ODBC Driver 18 for SQL Server")
+def choose_odbc_driver(explicit=None):
+    if pyodbc is None:
+        return explicit or "ODBC Driver 18 for SQL Server"
+    installed = list(pyodbc.drivers())
+    if explicit:
+        if explicit not in installed:
+            raise SystemExit(
+                f"Driver ODBC nao encontrado: {explicit}. "
+                f"Instalados: {', '.join(installed) or 'nenhum'}"
+            )
+        return explicit
+    for candidate in (
+        "ODBC Driver 18 for SQL Server",
+        "ODBC Driver 17 for SQL Server",
+        "SQL Server Native Client 11.0",
+        "SQL Server",
+    ):
+        if candidate in installed:
+            return candidate
+    raise SystemExit("Nenhum driver ODBC para SQL Server foi encontrado.")
+
+
+def configure_environment(args, database):
+    servidor = env_default(args.servidor, r"localhost\SQLEXPRESS01")
+    banco = env_default(database, DEFAULT_TARGET_DATABASE)
+    driver = choose_odbc_driver(args.driver)
     encrypt = env_default(args.encrypt, "no")
     trust_cert = args.trust_server_certificate
     if trust_cert is None:
@@ -383,6 +458,221 @@ def connect_sqlserver():
         return pyodbc.connect(sqlserver_connection_string())
 
 
+def ensure_target_database_absent():
+    database = sqlserver_database_name()
+    connection = pyodbc.connect(
+        sqlserver_connection_string("master"),
+        autocommit=True,
+    )
+    try:
+        exists = connection.cursor().execute("SELECT DB_ID(?)", database).fetchone()[0]
+        if exists is not None:
+            raise SystemExit(
+                f"O banco de destino '{database}' ja existe. "
+                "A migracao exige um banco novo e nunca sobrescreve um existente."
+            )
+    finally:
+        connection.close()
+
+
+def sqlite_identifier(name):
+    return '"' + name.replace('"', '""') + '"'
+
+
+def sqlite_affinity(sqlserver_type):
+    normalized = str(sqlserver_type).lower()
+    if normalized in {"bigint", "int", "smallint", "tinyint", "bit"}:
+        return "INTEGER"
+    if normalized in {"binary", "varbinary", "image", "timestamp", "rowversion"}:
+        return "BLOB"
+    if normalized in {"float", "real"}:
+        return "REAL"
+    # DECIMAL/NUMERIC ficam em texto para evitar perda de precisao no SQLite.
+    return "TEXT"
+
+
+def export_value(value):
+    if value is None:
+        return None
+    if isinstance(value, decimal.Decimal):
+        return format(value, "f")
+    if isinstance(value, (datetime,)):
+        return value.isoformat()
+    if hasattr(value, "isoformat"):
+        return value.isoformat()
+    if isinstance(value, uuid.UUID):
+        return str(value)
+    if isinstance(value, memoryview):
+        return value.tobytes()
+    if isinstance(value, bytearray):
+        return bytes(value)
+    if isinstance(value, bool):
+        return int(value)
+    return value
+
+
+def sqlserver_export_columns(connection, table):
+    rows = connection.cursor().execute(
+        """
+        SELECT column_info.name, type_info.name, column_info.max_length,
+               column_info.precision, column_info.scale, column_info.is_nullable,
+               column_info.is_identity, column_info.is_computed
+        FROM sys.tables AS table_info
+        INNER JOIN sys.schemas AS schema_info
+            ON schema_info.schema_id = table_info.schema_id
+        INNER JOIN sys.columns AS column_info
+            ON column_info.object_id = table_info.object_id
+        INNER JOIN sys.types AS type_info
+            ON type_info.user_type_id = column_info.user_type_id
+        WHERE schema_info.name = N'dbo'
+          AND table_info.name = ?
+        ORDER BY column_info.column_id
+        """,
+        table,
+    ).fetchall()
+    return [
+        {
+            "name": row[0],
+            "type": row[1],
+            "maxLength": row[2],
+            "precision": row[3],
+            "scale": row[4],
+            "nullable": bool(row[5]),
+            "identity": bool(row[6]),
+            "computed": bool(row[7]),
+        }
+        for row in rows
+        if not bool(row[7])
+    ]
+
+
+def sqlserver_export_expression(column):
+    name = bracket(column["name"])
+    sql_type = str(column["type"]).lower()
+    if sql_type == "datetimeoffset":
+        return f"CONVERT(NVARCHAR(50), {name}, 127) AS {name}"
+    if sql_type in {"datetime", "datetime2", "smalldatetime", "date", "time"}:
+        return f"CONVERT(NVARCHAR(50), {name}, 126) AS {name}"
+    if sql_type == "uniqueidentifier":
+        return f"CONVERT(NVARCHAR(36), {name}) AS {name}"
+    return name
+
+
+def export_sqlserver_to_sqlite(args, config):
+    destination = args.sqlite.resolve()
+    if destination.exists() and not args.sobrescrever_sqlite:
+        raise SystemExit(
+            f"SQLite ja existe: {destination}. Use --sobrescrever-sqlite para substitui-lo."
+        )
+    if destination.exists():
+        create_backup(destination)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    temporary = destination.with_name(destination.name + f".tmp-{os.getpid()}")
+    if temporary.exists():
+        temporary.unlink()
+
+    sqlserver_conn = None
+    sqlite_conn = None
+    manifest = {
+        "formatVersion": 1,
+        "migrationVersion": MIGRATION_VERSION,
+        "exportedAt": datetime.now(timezone.utc).isoformat(),
+        "sourceServer": config["servidor"],
+        "sourceDatabase": config["banco"],
+        "tables": {},
+    }
+    try:
+        sqlserver_conn = pyodbc.connect(sqlserver_connection_string(), timeout=15)
+        actual_database = sqlserver_conn.cursor().execute("SELECT DB_NAME()").fetchone()[0]
+        if str(actual_database).casefold() != str(args.banco_origem).casefold():
+            raise SystemExit(
+                f"Conexao abriu o banco '{actual_database}', mas era esperado "
+                f"'{args.banco_origem}'."
+            )
+
+        sqlite_conn = sqlite3.connect(temporary)
+        sqlite_conn.execute("PRAGMA journal_mode = DELETE")
+        sqlite_conn.execute("PRAGMA synchronous = FULL")
+        sqlite_conn.execute(
+            "CREATE TABLE _migration_metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL)"
+        )
+
+        for table in TABLES:
+            if not sqlserver_table_exists(sqlserver_conn, table):
+                raise SystemExit(f"Tabela obrigatoria ausente no SQL Server: dbo.{table}")
+            columns = sqlserver_export_columns(sqlserver_conn, table)
+            if not columns:
+                raise SystemExit(f"Nenhuma coluna exportavel em dbo.{table}")
+            definition = ", ".join(
+                f"{sqlite_identifier(column['name'])} {sqlite_affinity(column['type'])}"
+                for column in columns
+            )
+            sqlite_conn.execute(
+                f"CREATE TABLE {sqlite_identifier(table)} ({definition})"
+            )
+            names = [column["name"] for column in columns]
+            source_cursor = sqlserver_conn.cursor()
+            source_cursor.execute(
+                "SELECT "
+                + ", ".join(sqlserver_export_expression(column) for column in columns)
+                + f" FROM dbo.{bracket(table)}"
+            )
+            placeholders = ", ".join("?" for _ in names)
+            insert_sql = (
+                f"INSERT INTO {sqlite_identifier(table)} ("
+                + ", ".join(sqlite_identifier(name) for name in names)
+                + f") VALUES ({placeholders})"
+            )
+            exported = 0
+            while True:
+                rows = source_cursor.fetchmany(500)
+                if not rows:
+                    break
+                values = [tuple(export_value(value) for value in row) for row in rows]
+                sqlite_conn.executemany(insert_sql, values)
+                exported += len(values)
+            source_count = sqlserver_scalar(
+                sqlserver_conn, f"SELECT COUNT(*) FROM dbo.{bracket(table)}"
+            )
+            if exported != source_count:
+                raise RuntimeError(
+                    f"Contagem divergente em {table}: exportado={exported}, "
+                    f"sqlserver={source_count}"
+                )
+            manifest["tables"][table] = {
+                "rows": exported,
+                "columns": columns,
+                "primaryKey": list(primary_keys(table)),
+            }
+            print(f"Exportado dbo.{table}: {exported} registro(s)")
+
+        sqlite_conn.execute(
+            "INSERT INTO _migration_metadata (key, value) VALUES (?, ?)",
+            ("manifest", json.dumps(manifest, ensure_ascii=False, separators=(",", ":"))),
+        )
+        sqlite_conn.commit()
+        integrity = sqlite_conn.execute("PRAGMA integrity_check").fetchone()[0]
+        if integrity != "ok":
+            raise RuntimeError(f"PRAGMA integrity_check falhou: {integrity}")
+        sqlite_conn.close()
+        sqlite_conn = None
+        os.replace(temporary, destination)
+        total = sum(item["rows"] for item in manifest["tables"].values())
+        print("")
+        write_ok(f"SQLite criado: {destination}")
+        write_ok(f"Tabelas exportadas: {len(TABLES)}; registros: {total}")
+        return manifest
+    except Exception:
+        if sqlite_conn is not None:
+            sqlite_conn.close()
+        if temporary.exists():
+            temporary.unlink()
+        raise
+    finally:
+        if sqlserver_conn is not None:
+            sqlserver_conn.close()
+
+
 def split_sql_batches(sql):
     return [
         batch.strip()
@@ -423,6 +713,25 @@ def sqlserver_columns(connection, table):
         FROM INFORMATION_SCHEMA.COLUMNS
         WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME = ?
         ORDER BY ORDINAL_POSITION
+        """,
+        table,
+    ).fetchall()
+    return [row[0] for row in rows]
+
+
+def sqlserver_identity_columns(connection, table):
+    rows = connection.cursor().execute(
+        """
+        SELECT column_info.name
+        FROM sys.tables AS table_info
+        INNER JOIN sys.schemas AS schema_info
+            ON schema_info.schema_id = table_info.schema_id
+        INNER JOIN sys.columns AS column_info
+            ON column_info.object_id = table_info.object_id
+        WHERE schema_info.name = N'dbo'
+          AND table_info.name = ?
+          AND column_info.is_identity = 1
+        ORDER BY column_info.column_id
         """,
         table,
     ).fetchall()
@@ -556,6 +865,14 @@ def migrate_table(sqlite_conn, sqlserver_conn, table):
 
     source_columns = sqlite_columns(sqlite_conn, table)
     target_columns = sqlserver_columns(sqlserver_conn, table)
+    missing_target_columns = [
+        column for column in source_columns if column not in target_columns
+    ]
+    if missing_target_columns:
+        raise RuntimeError(
+            f"Schema de destino incompleto em dbo.{table}; colunas ausentes: "
+            + ", ".join(missing_target_columns)
+        )
     columns = [column for column in source_columns if column in target_columns]
 
     if not columns:
@@ -580,9 +897,26 @@ def migrate_table(sqlite_conn, sqlserver_conn, table):
     ]
 
     cursor = sqlserver_conn.cursor()
-    cursor.fast_executemany = True
-    cursor.executemany(insert_sql, values)
-    sqlserver_conn.commit()
+    identity_columns = [
+        column for column in sqlserver_identity_columns(sqlserver_conn, table)
+        if column in columns
+    ]
+    identity_insert = bool(identity_columns)
+    try:
+        if identity_insert:
+            cursor.execute(f"SET IDENTITY_INSERT dbo.{bracket(table)} ON")
+        # O fast_executemany pode inferir o tipo pelo primeiro valor e falhar
+        # quando as linhas seguintes alternam entre NULL, texto e numericos.
+        cursor.fast_executemany = False
+        try:
+            cursor.executemany(insert_sql, values)
+        except pyodbc.Error as exc:
+            raise RuntimeError(
+                f"Falha ao importar dbo.{table} ({len(values)} registros): {exc}"
+            ) from exc
+    finally:
+        if identity_insert:
+            cursor.execute(f"SET IDENTITY_INSERT dbo.{bracket(table)} OFF")
     return {"table": table, "status": "ok", "rows": len(rows)}
 
 
@@ -605,8 +939,12 @@ def auth_table_report(connection):
     return report
 
 
+def primary_keys(table):
+    return PRIMARY_KEYS.get(table, ("id",))
+
+
 def primary_key(table):
-    return PRIMARY_KEYS.get(table, "id")
+    return primary_keys(table)[0]
 
 
 def sqlite_scalar(connection, sql, params=()):
@@ -644,20 +982,25 @@ def compare_counts(sqlite_conn, sqlserver_conn):
 
 
 def fetch_ids_sqlite(connection, table):
-    key = primary_key(table)
+    keys = primary_keys(table)
     rows = connection.execute(
-        f'SELECT CAST("{key}" AS TEXT) AS value FROM "{table}" ORDER BY "{key}"'
+        "SELECT "
+        + ", ".join(sqlite_identifier(key) for key in keys)
+        + f" FROM {sqlite_identifier(table)} ORDER BY "
+        + ", ".join(sqlite_identifier(key) for key in keys)
     ).fetchall()
-    return [row["value"] for row in rows]
+    return [json.dumps(list(row), ensure_ascii=False, default=str) for row in rows]
 
 
 def fetch_ids_sqlserver(connection, table):
-    key = primary_key(table)
+    keys = primary_keys(table)
     rows = connection.cursor().execute(
-        f"SELECT CAST({bracket(key)} AS NVARCHAR(4000)) AS value "
-        f"FROM dbo.{bracket(table)} ORDER BY {bracket(key)}"
+        "SELECT "
+        + ", ".join(bracket(key) for key in keys)
+        + f" FROM dbo.{bracket(table)} ORDER BY "
+        + ", ".join(bracket(key) for key in keys)
     ).fetchall()
-    return [row[0] for row in rows]
+    return [json.dumps(list(row), ensure_ascii=False, default=str) for row in rows]
 
 
 def compare_ids(sqlite_conn, sqlserver_conn):
@@ -1030,6 +1373,15 @@ def write_report(path, payload):
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
+def set_target_constraints(connection, enabled):
+    cursor = connection.cursor()
+    for table in TABLES:
+        action = "WITH CHECK CHECK" if enabled else "NOCHECK"
+        cursor.execute(
+            f"ALTER TABLE dbo.{bracket(table)} {action} CONSTRAINT ALL"
+        )
+
+
 def run_migration(sqlite_conn, sqlserver_conn, args):
     report = {
         "migrationVersion": MIGRATION_VERSION,
@@ -1059,14 +1411,21 @@ def run_migration(sqlite_conn, sqlserver_conn, args):
             delete_target_rows(sqlserver_conn)
             report["steps"].append({"name": "truncate", "status": "ok"})
 
-        for table in TABLES:
-            result = migrate_table(sqlite_conn, sqlserver_conn, table)
-            report["steps"].append(result)
-            if result["status"] == "ok":
-                report["tables"][table] = {
-                    "sqlite": table_count(sqlite_conn, table),
-                    "sqlserver": table_count(sqlserver_conn, table, sqlserver=True),
-                }
+        set_target_constraints(sqlserver_conn, False)
+        try:
+            for table in TABLES:
+                result = migrate_table(sqlite_conn, sqlserver_conn, table)
+                report["steps"].append(result)
+                if result["status"] == "ok":
+                    report["tables"][table] = {
+                        "sqlite": table_count(sqlite_conn, table),
+                        "sqlserver": table_count(sqlserver_conn, table, sqlserver=True),
+                    }
+            set_target_constraints(sqlserver_conn, True)
+            sqlserver_conn.commit()
+        except Exception:
+            sqlserver_conn.rollback()
+            raise
 
         report["authTables"] = auth_table_report(sqlserver_conn)
         report["status"] = "ok"
@@ -1121,7 +1480,24 @@ def print_next_steps():
 
 def main():
     args = parse_args()
-    config = configure_environment(args)
+    selected_database = (
+        args.banco_origem if args.exportar_sqlserver_para_sqlite else args.banco
+    )
+    config = configure_environment(args, selected_database)
+
+    if args.exportar_sqlserver_para_sqlite:
+        print("Exportacao SQL Server -> SQLite")
+        print(f"Servidor SQL Server: {config['servidor']}")
+        print(f"Banco SQL Server origem: {config['banco']}")
+        print(f"Driver ODBC: {config['driver']}")
+        print(f"SQLite destino: {args.sqlite.resolve()}")
+        if pyodbc is None:
+            raise SystemExit(
+                "Dependencia ausente: instale com python -m pip install pyodbc"
+            )
+        export_sqlserver_to_sqlite(args, config)
+        return
+
     if args.database is None:
         args.database = config["banco"]
 
@@ -1143,6 +1519,8 @@ def main():
                 write_warn(error)
             raise SystemExit("A origem SQLite falhou no preflight da migracao.")
         write_ok("Preflight da origem SQLite aprovado")
+        if not args.verify_only:
+            ensure_target_database_absent()
         sqlserver_conn = connect_sqlserver()
 
         if args.verify_only:

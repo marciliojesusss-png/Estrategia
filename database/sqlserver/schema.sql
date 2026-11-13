@@ -457,3 +457,74 @@ IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id = OBJECT_ID(N'dbo.inici
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id = OBJECT_ID(N'dbo.iniciativas_evidencias') AND name = N'idx_iniciativas_evidencias_acompanhamento_data')
     CREATE INDEX idx_iniciativas_evidencias_acompanhamento_data ON dbo.iniciativas_evidencias (acompanhamento_id, data_upload);
+
+IF OBJECT_ID(N'dbo.lancamentos_observacoes_documentais', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.lancamentos_observacoes_documentais (
+        id NVARCHAR(100) NOT NULL CONSTRAINT pk_lancamentos_observacoes_documentais PRIMARY KEY,
+        lancamento_id NVARCHAR(100) NOT NULL,
+        indicador_id NVARCHAR(100) NOT NULL,
+        competencia NVARCHAR(40) NOT NULL,
+        ano INT NOT NULL,
+        mes INT NOT NULL,
+        versao_lancamento INT NOT NULL,
+        tipo_observacao NVARCHAR(100) NOT NULL,
+        observacao NVARCHAR(MAX) NOT NULL,
+        fonte_documental NVARCHAR(500) NOT NULL,
+        paginas_documento NVARCHAR(100) NOT NULL,
+        sha256_observacao CHAR(64) NOT NULL,
+        sha256_documento_declarado CHAR(64) NOT NULL,
+        sha256_arquivo_fisico CHAR(64) NOT NULL,
+        documento_referencia NVARCHAR(500) NOT NULL,
+        substitui_observacao_id NVARCHAR(100) NULL,
+        origem_registro NVARCHAR(255) NOT NULL,
+        criado_em DATETIME2(0) NOT NULL CONSTRAINT df_lanc_obs_doc_criado_em DEFAULT SYSUTCDATETIME(),
+        CONSTRAINT fk_lanc_obs_doc_lancamento FOREIGN KEY (lancamento_id) REFERENCES dbo.lancamentos(id),
+        CONSTRAINT fk_lanc_obs_doc_indicador FOREIGN KEY (indicador_id) REFERENCES dbo.indicadores(id),
+        CONSTRAINT fk_lanc_obs_doc_substituida FOREIGN KEY (substitui_observacao_id) REFERENCES dbo.lancamentos_observacoes_documentais(id),
+        CONSTRAINT ck_lanc_obs_doc_mes CHECK (mes BETWEEN 1 AND 12),
+        CONSTRAINT ck_lanc_obs_doc_versao CHECK (versao_lancamento >= 1),
+        CONSTRAINT ck_lanc_obs_doc_nao_autossubstitui CHECK (substitui_observacao_id IS NULL OR substitui_observacao_id <> id)
+    );
+END;
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id = OBJECT_ID(N'dbo.lancamentos_observacoes_documentais') AND name = N'uq_lanc_obs_doc_identidade')
+    CREATE UNIQUE INDEX uq_lanc_obs_doc_identidade
+        ON dbo.lancamentos_observacoes_documentais (lancamento_id, versao_lancamento, competencia, tipo_observacao, sha256_documento_declarado, sha256_observacao);
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id = OBJECT_ID(N'dbo.lancamentos_observacoes_documentais') AND name = N'uq_lanc_obs_doc_substituicao')
+    CREATE UNIQUE INDEX uq_lanc_obs_doc_substituicao
+        ON dbo.lancamentos_observacoes_documentais (substitui_observacao_id)
+        WHERE substitui_observacao_id IS NOT NULL;
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id = OBJECT_ID(N'dbo.lancamentos_observacoes_documentais') AND name = N'ix_lanc_obs_doc_leitura')
+    CREATE INDEX ix_lanc_obs_doc_leitura
+        ON dbo.lancamentos_observacoes_documentais (lancamento_id, versao_lancamento, ano, mes, tipo_observacao, criado_em DESC);
+
+IF OBJECT_ID(N'dbo.lancamentos_resultados_homologados', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.lancamentos_resultados_homologados (
+        lancamento_id NVARCHAR(100) NOT NULL,
+        versao_lancamento INT NOT NULL,
+        indicador_id NVARCHAR(100) NOT NULL,
+        competencia NVARCHAR(40) NOT NULL,
+        meta_oficial DECIMAL(38, 12) NULL,
+        resultado_calculado DECIMAL(38, 12) NULL,
+        resultado_oficial DECIMAL(38, 12) NULL,
+        percentual_atingido DECIMAL(38, 12) NULL,
+        situacao NVARCHAR(100) NULL,
+        origem_resultado NVARCHAR(50) NOT NULL,
+        versao_formula NVARCHAR(50) NOT NULL,
+        detalhes_json NVARCHAR(MAX) NULL,
+        homologado_por NVARCHAR(100) NOT NULL,
+        homologado_em DATETIMEOFFSET(0) NOT NULL,
+        created_at DATETIMEOFFSET(0) NOT NULL,
+        CONSTRAINT PK_lancamentos_resultados_homologados PRIMARY KEY (lancamento_id, versao_lancamento),
+        CONSTRAINT FK_lancamentos_resultados_homologados_lancamentos FOREIGN KEY (lancamento_id) REFERENCES dbo.lancamentos(id),
+        CONSTRAINT CK_lancamentos_resultados_homologados_detalhes_json CHECK (detalhes_json IS NULL OR ISJSON(detalhes_json) = 1)
+    );
+END;
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id = OBJECT_ID(N'dbo.lancamentos_resultados_homologados') AND name = N'IX_resultados_homologados_indicador_competencia')
+    CREATE INDEX IX_resultados_homologados_indicador_competencia
+        ON dbo.lancamentos_resultados_homologados (indicador_id, competencia);

@@ -30,3 +30,9 @@ pnpm-debug.log*
 /storage/temporarios/*.pid
 /logs/
 *.log
+
+# Snapshot local com dados exportados do SQL Server
+/database/indicadores.sqlite
+/database/indicadores.sqlite.tmp-*
+/database/backups/*.sqlite
+/database/sqlserver/migration-report.json
