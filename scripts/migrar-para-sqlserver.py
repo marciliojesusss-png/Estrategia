@@ -23,7 +23,7 @@ DEFAULT_AUTH_REPORT = ROOT / "database" / "sqlserver" / "usuarios-acesso-sync-re
 DEFAULT_AUTH_SQL = ROOT / "database" / "sqlserver" / "sincronizar-usuarios-acesso.sql"
 MIGRATION_VERSION = "2026.11-sqlserver-sqlite-roundtrip"
 DEFAULT_SOURCE_DATABASE = "Estrategia"
-DEFAULT_TARGET_DATABASE = "Monitoramento_Estrategia"
+DEFAULT_TARGET_DATABASE = "DB5319_Monitoramento_Estrategia"
 DEFAULT_SOURCE_SERVER = r"localhost\SQLEXPRESS01"
 DEFAULT_TARGET_SERVER = "DF7436SR439"
 CORPORATE_OWNER_LOGIN = r"CORPCAIXA\c118119"
@@ -175,14 +175,14 @@ FOREIGN_KEY_CHECKS = [
     ("iniciativas_evidencias", "acompanhamento_id", "iniciativas_acompanhamentos", "id"),
 ]
 
-INVALID_JSON_ESCAPE = re.compile(r'\\(?!["\\/u])')
+INVALID_JSON_ESCAPE = re.compile(r'\\(?!["\\/bfnrtu])')
 
 
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(
         description=(
             "Exporta Estrategia do SQL Server para SQLite ou migra o SQLite "
-            "para o banco novo Monitoramento_Estrategia."
+            "para o banco novo DB5319_Monitoramento_Estrategia."
         )
     )
     parser.add_argument("--ambiente", "-Ambiente", choices=["homologacao", "producao"], default="homologacao")
@@ -201,7 +201,7 @@ def parse_args(argv=None):
         "--banco",
         "-Banco",
         default=os.getenv("SQLSERVER_TARGET_DATABASE", DEFAULT_TARGET_DATABASE),
-        help="Banco novo de destino. Padrao: Monitoramento_Estrategia.",
+        help="Banco novo de destino. Padrao: DB5319_Monitoramento_Estrategia.",
     )
     parser.add_argument(
         "--banco-origem",
@@ -375,7 +375,7 @@ def validate_options(args, config):
                 "Opcoes proibidas no servidor da CAIXA: " + ", ".join(selected_unsafe)
             )
         confirm_step(
-            "Voce esta prestes a criar Monitoramento_Estrategia no SQL Server da CAIXA.",
+            "Voce esta prestes a criar DB5319_Monitoramento_Estrategia no SQL Server da CAIXA.",
             args.yes,
         )
 
@@ -482,8 +482,7 @@ def ensure_sqlserver_database():
     except pyodbc.Error as exc:
         raise SystemExit(
             "Nao foi possivel abrir ou criar o banco SQL Server "
-            f"'{database}'. Crie esse banco manualmente no SQL Server, "
-            "ou libere permissao para o usuario Windows atual."
+            f"'{database}'. Erro ODBC original: {exc}"
         ) from exc
     finally:
         if connection is not None:
@@ -538,37 +537,44 @@ def validate_corporate_instance():
     )
     try:
         cursor = connection.cursor()
-        validate_corporate_login(
-            cursor, CORPORATE_OWNER_LOGIN, EXPECTED_OWNER_SID, "proprietario"
-        )
+
+        permission = cursor.execute(
+            """
+            SELECT
+                IS_SRVROLEMEMBER('sysadmin'),
+                HAS_PERMS_BY_NAME(NULL, NULL, 'CREATE ANY DATABASE'),
+                ORIGINAL_LOGIN(),
+                SUSER_SID(?)
+            """,
+            CORPORATE_OWNER_LOGIN,
+        ).fetchone()
+
+        current_login = str(permission[2] or "")
+        owner_sid = bytes(permission[3]) if permission[3] is not None else None
+
+        if current_login.casefold() != CORPORATE_OWNER_LOGIN.casefold():
+            raise SystemExit(
+                f"A migracao deve ser executada pela conta {CORPORATE_OWNER_LOGIN}."
+            )
+
+        if owner_sid != EXPECTED_OWNER_SID:
+            raise SystemExit(
+                f"O SID de {CORPORATE_OWNER_LOGIN} esta divergente."
+            )
+
+        can_create = bool(permission[0]) or bool(permission[1])
+        if not can_create:
+            raise SystemExit(
+                "A conta Windows nao possui CREATE ANY DATABASE na instancia."
+            )
+
         validate_corporate_login(
             cursor,
             CORPORATE_APPLICATION_LOGIN,
             EXPECTED_APPLICATION_SID,
             "da aplicacao",
         )
-        permission = cursor.execute(
-            """
-            SELECT IS_SRVROLEMEMBER('sysadmin'),
-                   HAS_PERMS_BY_NAME(NULL, NULL, 'CREATE ANY DATABASE'),
-                   ORIGINAL_LOGIN()
-            """
-        ).fetchone()
-        current_login = str(permission[2] or "")
-        can_create = bool(permission[0]) or bool(permission[1])
-        can_assign_owner = (
-            bool(permission[0])
-            or current_login.casefold() == CORPORATE_OWNER_LOGIN.casefold()
-        )
-        if not can_create:
-            raise SystemExit(
-                "A conta Windows nao possui permissao CREATE ANY DATABASE na instancia."
-            )
-        if not can_assign_owner:
-            raise SystemExit(
-                "A migracao deve ser executada por sysadmin ou pela propria conta "
-                f"{CORPORATE_OWNER_LOGIN}."
-            )
+
         return {
             "server": cursor.execute("SELECT @@SERVERNAME").fetchone()[0],
             "login": current_login,
@@ -580,10 +586,22 @@ def validate_corporate_instance():
 def configure_corporate_access(connection):
     database = sqlserver_database_name()
     cursor = connection.cursor()
-    cursor.execute(
-        f"ALTER AUTHORIZATION ON DATABASE::{bracket(database)} "
-        f"TO {bracket(CORPORATE_OWNER_LOGIN)}"
-    )
+
+    owner_row = cursor.execute(
+        "SELECT owner_sid FROM master.sys.databases WHERE name = ?",
+        database,
+    ).fetchone()
+
+    if owner_row is None:
+        raise RuntimeError(f"Banco de destino nao encontrado: {database}")
+
+    current_owner_sid = bytes(owner_row[0])
+
+    if current_owner_sid != EXPECTED_OWNER_SID:
+        cursor.execute(
+            f"ALTER AUTHORIZATION ON DATABASE::{bracket(database)} "
+            f"TO {bracket(CORPORATE_OWNER_LOGIN)}"
+        )
     deny_connect = cursor.execute(
         """
         SELECT COUNT(*)
@@ -1596,6 +1614,166 @@ def set_target_constraints(connection, enabled):
             f"ALTER TABLE dbo.{bracket(table)} {action} CONSTRAINT ALL"
         )
 
+def configure_document_triggers(connection):
+    cursor = connection.cursor()
+
+    integrity_trigger = """
+    CREATE TRIGGER dbo.tr_lanc_obs_doc_integridade_insert
+    ON dbo.lancamentos_observacoes_documentais
+    AFTER INSERT
+    AS
+    BEGIN
+        SET NOCOUNT ON;
+
+        IF EXISTS (
+            SELECT 1
+            FROM inserted
+            WHERE substitui_observacao_id = id
+        )
+            THROW 53416,
+                N'Uma observacao documental nao pode substituir a si propria.',
+                1;
+
+        IF EXISTS (
+            SELECT 1
+            FROM inserted AS i
+            INNER JOIN inserted AS alvo
+                ON alvo.id = i.substitui_observacao_id
+        )
+            THROW 53417,
+                N'A observacao substituida deve existir antes da nova entrada documental.',
+                1;
+
+        IF EXISTS (
+            SELECT 1
+            FROM inserted AS i
+            INNER JOIN dbo.lancamentos_observacoes_documentais AS anterior
+                ON anterior.id = i.substitui_observacao_id
+            WHERE i.lancamento_id <> anterior.lancamento_id
+               OR i.indicador_id <> anterior.indicador_id
+               OR i.competencia <> anterior.competencia
+               OR i.ano <> anterior.ano
+               OR i.mes <> anterior.mes
+               OR i.versao_lancamento <> anterior.versao_lancamento
+               OR i.tipo_observacao <> anterior.tipo_observacao
+        )
+            THROW 53418,
+                N'Substituicao documental deve preservar lancamento, indicador, competencia, versao e tipo.',
+                1;
+
+        IF EXISTS (
+            SELECT
+                vigente.lancamento_id,
+                vigente.versao_lancamento,
+                vigente.competencia,
+                vigente.tipo_observacao
+            FROM dbo.lancamentos_observacoes_documentais AS vigente
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM dbo.lancamentos_observacoes_documentais AS sucessora
+                WHERE sucessora.substitui_observacao_id = vigente.id
+            )
+              AND EXISTS (
+                SELECT 1
+                FROM inserted AS afetada
+                WHERE afetada.lancamento_id = vigente.lancamento_id
+                  AND afetada.versao_lancamento = vigente.versao_lancamento
+                  AND afetada.competencia = vigente.competencia
+                  AND afetada.tipo_observacao = vigente.tipo_observacao
+            )
+            GROUP BY
+                vigente.lancamento_id,
+                vigente.versao_lancamento,
+                vigente.competencia,
+                vigente.tipo_observacao
+            HAVING COUNT(*) <> 1
+        )
+            THROW 53419,
+                N'Deve existir exatamente uma observacao documental vigente por lancamento, versao, competencia e tipo.',
+                1;
+    END
+    """
+
+    append_only_trigger = """
+    CREATE TRIGGER dbo.tr_lanc_obs_doc_append_only
+    ON dbo.lancamentos_observacoes_documentais
+    AFTER UPDATE, DELETE
+    AS
+    BEGIN
+        SET NOCOUNT ON;
+
+        THROW 53414,
+            N'Camada documental append-only: UPDATE e DELETE nao sao permitidos.',
+            1;
+    END
+    """
+
+    if cursor.execute(
+        """
+        SELECT OBJECT_ID(
+            N'dbo.tr_lanc_obs_doc_integridade_insert',
+            N'TR'
+        )
+        """
+    ).fetchone()[0] is None:
+        cursor.execute(integrity_trigger)
+
+    if cursor.execute(
+        """
+        SELECT OBJECT_ID(
+            N'dbo.tr_lanc_obs_doc_append_only',
+            N'TR'
+        )
+        """
+    ).fetchone()[0] is None:
+        cursor.execute(append_only_trigger)
+
+    connection.commit()
+
+def validate_document_triggers(connection):
+    cursor = connection.cursor()
+
+    rows = cursor.execute(
+        """
+        SELECT
+            trigger_info.name,
+            trigger_info.is_disabled,
+            event_info.type_desc
+        FROM sys.triggers AS trigger_info
+        INNER JOIN sys.trigger_events AS event_info
+            ON event_info.object_id = trigger_info.object_id
+        WHERE trigger_info.name IN (
+            N'tr_lanc_obs_doc_integridade_insert',
+            N'tr_lanc_obs_doc_append_only'
+        )
+        """
+    ).fetchall()
+
+    events = {}
+
+    for trigger_name, is_disabled, event_name in rows:
+        if bool(is_disabled):
+            raise RuntimeError(
+                f"O trigger {trigger_name} esta desabilitado."
+            )
+
+        events.setdefault(trigger_name, set()).add(event_name)
+
+    if events.get(
+        "tr_lanc_obs_doc_integridade_insert"
+    ) != {"INSERT"}:
+        raise RuntimeError(
+            "O trigger tr_lanc_obs_doc_integridade_insert "
+            "nao possui exclusivamente o evento INSERT."
+        )
+
+    if events.get(
+        "tr_lanc_obs_doc_append_only"
+    ) != {"UPDATE", "DELETE"}:
+        raise RuntimeError(
+            "O trigger tr_lanc_obs_doc_append_only "
+            "nao possui os eventos UPDATE e DELETE esperados."
+        )
 
 def run_migration(sqlite_conn, sqlserver_conn, args):
     report = {
@@ -1685,7 +1863,7 @@ def print_tls_guidance(args, config):
 
 def print_next_steps():
     write_step("Proximos passos")
-    print("1. Aponte a aplicacao para o banco Monitoramento_Estrategia.")
+    print("1. Aponte a aplicacao para o banco DB5319_Monitoramento_Estrategia.")
     print("2. Execute o diagnostico SQL Server a partir do servidor IIS.")
     print("3. Teste login, lancamentos, homologacao, relatorios e administracao.")
     print("4. Confirme com o DBA o backup inicial do banco novo.")
@@ -1762,12 +1940,18 @@ def main():
         run_migration(sqlite_conn, sqlserver_conn, args)
         write_ok("Migracao concluida")
 
+        write_step("Configurando triggers documentais")
+        configure_document_triggers(sqlserver_conn)
+        validate_document_triggers(sqlserver_conn)
+        write_ok("Triggers documentais criados e validados")
+
         write_step("Configurando identidades corporativas")
         configure_corporate_access(sqlserver_conn)
         write_ok(
             f"Owner/dbo definido como {CORPORATE_OWNER_LOGIN}; "
             f"{CORPORATE_APPLICATION_LOGIN} remapeado"
         )
+        
 
         if args.sync_auth_users:
             write_step("Sincronizando usuarios_acesso para SQL Server")

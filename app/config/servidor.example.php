@@ -6,7 +6,7 @@ return array(
 
     'db_driver' => 'sqlsrv',
     'db_host' => 'DF7436SR439',
-    'db_database' => 'DB5319_IndicadoresEstrategicos',
+    'db_database' => 'DB5319_Monitoramento_Estrategia',
     'db_auth_mode' => 'sql',
     'db_username' => 's531902',
     'db_password' => 'Gelot02',
