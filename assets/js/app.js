@@ -152,8 +152,8 @@
       ))
       .join("");
     const logoUrl = window.assetUrl
-      ? window.assetUrl("assets/img/caixa-loterias-logo-negativa.png?v=2")
-      : `${window.APP_BASE_PATH || ""}/assets/img/caixa-loterias-logo-negativa.png?v=2`;
+      ? window.assetUrl("assets/img/caixa-loterias-logo-atual.png?v=2")
+      : `${window.APP_BASE_PATH || ""}/assets/img/caixa-loterias-logo-atual.png?v=2`;
     const administratorOptions = Array.isArray(user.visoesAdministrador)
       ? user.visoesAdministrador.map((view) => `<option value="${escapeHtml(view.valor)}" ${view.valor === user.visaoAdministrador ? "selected" : ""}>${escapeHtml(view.rotulo)}</option>`).join("")
       : "";
