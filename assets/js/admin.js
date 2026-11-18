@@ -1220,7 +1220,8 @@
     const id = state.editingId;
     try {
       const saved = await adminApi(id ? `api/prazos-apuracao/${encodeURIComponent(id)}` : "api/prazos-apuracao", {
-        method: id ? "PUT" : "POST",
+        // O IIS 8.5 corporativo bloqueia PUT; o id na rota diferencia atualizacao de criacao.
+        method: "POST",
         body: JSON.stringify(payload)
       });
       state.prazos = id === null

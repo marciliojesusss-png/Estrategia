@@ -32,7 +32,7 @@ final class PrazosApuracaoApiController
             if ($method === 'POST' && $id === null) {
                 return Response::success($this->service->create($payload, $actor), 'Prazo salvo com sucesso.', 201);
             }
-            if (in_array($method, array('PUT', 'PATCH'), true) && $id !== null) {
+            if (in_array($method, array('POST', 'PUT', 'PATCH'), true) && $id !== null) {
                 return Response::success($this->service->update($id, $payload, $actor), 'Prazo salvo com sucesso.');
             }
             return Response::error('Metodo nao permitido.', 405);

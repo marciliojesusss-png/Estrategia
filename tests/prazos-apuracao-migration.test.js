@@ -7,6 +7,8 @@ const migrationPath = path.join(root, "database", "sqlserver", "migrations", "20
 const migration = fs.readFileSync(migrationPath, "utf8");
 const schema = fs.readFileSync(path.join(root, "database", "sqlserver", "schema.sql"), "utf8");
 const admin = fs.readFileSync(path.join(root, "assets", "js", "admin.js"), "utf8");
+const publicAdmin = fs.readFileSync(path.join(root, "public", "assets", "js", "admin.js"), "utf8");
+const controller = fs.readFileSync(path.join(root, "app", "controllers", "PrazosApuracaoApiController.php"), "utf8");
 const executive = fs.readFileSync(path.join(root, "assets", "js", "executiveSummary.js"), "utf8");
 const view = fs.readFileSync(path.join(root, "views", "frontend", "administracao.php"), "utf8");
 
@@ -17,7 +19,16 @@ assert.doesNotMatch(migration, /INSERT\s+INTO\s+dbo\.prazos_apuracao/i);
 assert.doesNotMatch(migration, /localhost|password|senha|connection string/i);
 assert.match(schema, /CREATE TABLE dbo\.prazos_apuracao/);
 assert.match(view, /data-admin-module="prazosApuracao"/);
+assert.match(view, /admin\.js\?v=[^"']*PRAZOS-IIS-POST-001/);
 assert.match(admin, /api\/prazos-apuracao/);
+assert.doesNotMatch(admin, /method:\s*id\s*\?\s*["']PUT["']/);
+assert.match(admin, /api\/prazos-apuracao[\s\S]{0,250}method:\s*["']POST["']/);
+assert.equal(publicAdmin, admin, "O JavaScript publico deve refletir a fonte da administracao");
+assert.match(
+  controller,
+  /in_array\(\$method,\s*array\('POST',\s*'PUT',\s*'PATCH'\),\s*true\)\s*&&\s*\$id\s*!==\s*null/,
+  "POST com id deve atualizar prazo no IIS corporativo"
+);
 assert.match(executive, /deadline-alert/);
 assert.match(executive, /deadlineStatusForResult/);
 
