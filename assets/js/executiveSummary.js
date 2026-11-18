@@ -166,7 +166,22 @@
     if (normalizeText(data.escopoVisualizacao) !== requestedScope) {
       throw new Error("A fonte central retornou um escopo de visualização diferente do solicitado.");
     }
-    return window.LucroRecorrente?.normalizarDados(data) || data;
+    const calculationData = data.acessoInstitucional === true
+      ? {
+          ...data,
+          lancamentos: data.lancamentos.map((launch) => {
+            const { camposCalculoInstitucional, ...institutionalLaunch } = launch;
+            return {
+              ...institutionalLaunch,
+              camposEntrada: camposCalculoInstitucional && typeof camposCalculoInstitucional === "object"
+                ? camposCalculoInstitucional
+                : {},
+              projecaoInstitucional: true
+            };
+          })
+        }
+      : data;
+    return window.LucroRecorrente?.normalizarDados(calculationData) || calculationData;
   }
 
   function viewScopeProfileCode(user) {

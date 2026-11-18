@@ -8,6 +8,20 @@ require_once __DIR__ . '/../repositories/PrazosApuracaoRepository.php';
 
 final class ResumoExecutivoDadosService
 {
+    private const INSTITUTIONAL_CALCULATION_TYPES = array(
+        'data',
+        'inteiro',
+        'moeda',
+        'numero',
+        'percentual',
+        'selecao',
+    );
+
+    private const INSTITUTIONAL_CONTROL_TEXT_FIELDS = array(
+        'janelaApuracaoClientesAtivos',
+        'tipoPosicaoCanaisDigitais',
+    );
+
     private $db;
     private $configuracoes;
     private $indicadores;
@@ -49,6 +63,11 @@ final class ResumoExecutivoDadosService
 
     public static function projecaoInstitucional(array $data): array
     {
+        $calculationFields = self::institutionalCalculationFields(
+            isset($data['regrasIndicadores']) && is_array($data['regrasIndicadores'])
+                ? $data['regrasIndicadores']
+                : array()
+        );
         $idMap = array();
         $launches = array();
         foreach (isset($data['lancamentos']) && is_array($data['lancamentos']) ? $data['lancamentos'] : array() as $launch) {
@@ -57,6 +76,10 @@ final class ResumoExecutivoDadosService
             $institutionalId = 'institucional-' . (string) ($launch['indicadorId'] ?? '') . '-' . (string) ($launch['competencia'] ?? '');
             if ($originalId !== '') $idMap[$originalId] = $institutionalId;
             $launch['id'] = $institutionalId;
+            $launch['camposCalculoInstitucional'] = self::institutionalCalculationInputs(
+                $launch,
+                $calculationFields
+            );
             $launch['camposEntrada'] = array();
             unset(
                 $launch['observacaoArea'],
@@ -86,6 +109,84 @@ final class ResumoExecutivoDadosService
         }
         $data['acessoInstitucional'] = true;
         return $data;
+    }
+
+    private static function institutionalCalculationFields(array $rules): array
+    {
+        $result = array();
+        foreach ($rules as $rule) {
+            if (!is_array($rule)) continue;
+            $indicatorId = (string) ($rule['indicadorId'] ?? '');
+            if ($indicatorId === '') continue;
+            $fields = isset($rule['camposEntrada']) && is_array($rule['camposEntrada'])
+                ? $rule['camposEntrada']
+                : array();
+            foreach ($fields as $field) {
+                if (!is_array($field)) continue;
+                $name = trim((string) ($field['nome'] ?? ''));
+                $type = strtolower(trim((string) ($field['tipo'] ?? '')));
+                if ($name === '') continue;
+                if (in_array($type, self::INSTITUTIONAL_CALCULATION_TYPES, true)) {
+                    $result[$indicatorId][$name] = 'value';
+                    continue;
+                }
+                if (in_array($name, self::INSTITUTIONAL_CONTROL_TEXT_FIELDS, true)) {
+                    $result[$indicatorId][$name] = 'value';
+                    continue;
+                }
+                if (strpos($name, 'fonte') === 0 || strpos($name, 'referencia') === 0) {
+                    $result[$indicatorId][$name] = 'presence';
+                }
+            }
+        }
+
+        // O indicador 16 precisa identificar e deduplicar iniciativas, mas a
+        // identidade e a descricao originais nao integram a consulta publica.
+        $result['16']['idIniciativaSocioambiental'] = 'token';
+        $result['16']['nomeIniciativaSocioambiental'] = 'token_label';
+        $result['16']['descricaoAndamentoSocioambiental'] = 'presence';
+        return $result;
+    }
+
+    private static function institutionalCalculationInputs(array $launch, array $fieldsByIndicator): array
+    {
+        $indicatorId = (string) ($launch['indicadorId'] ?? '');
+        $allowed = isset($fieldsByIndicator[$indicatorId]) && is_array($fieldsByIndicator[$indicatorId])
+            ? $fieldsByIndicator[$indicatorId]
+            : array();
+        $inputs = isset($launch['camposEntrada']) && is_array($launch['camposEntrada'])
+            ? $launch['camposEntrada']
+            : array();
+        $result = array();
+        $token = null;
+
+        foreach ($allowed as $name => $mode) {
+            if (!array_key_exists($name, $inputs)) continue;
+            $value = $inputs[$name];
+            if ($value === null || $value === '') continue;
+            if ($mode === 'value') {
+                if (is_scalar($value)) $result[$name] = $value;
+                continue;
+            }
+            if ($mode === 'presence') {
+                $result[$name] = 'Informacao institucional validada';
+                continue;
+            }
+            if ($token === null) {
+                $identity = (string) (
+                    $inputs['idIniciativaSocioambiental']
+                    ?? $inputs['nomeIniciativaSocioambiental']
+                    ?? $launch['id']
+                    ?? $launch['competencia']
+                    ?? 'institucional'
+                );
+                $token = substr(hash('sha256', $identity), 0, 16);
+            }
+            $result[$name] = $mode === 'token_label'
+                ? 'Iniciativa institucional ' . $token
+                : 'institucional-' . $token;
+        }
+        return $result;
     }
 
     private function governancaHomologacaoAtual(array $lancamentos): array

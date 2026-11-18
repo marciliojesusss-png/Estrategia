@@ -58,6 +58,43 @@ foreach (array('evidenciaId', 'usuarioResponsavel', 'observacaoArea', 'createdAt
 }
 high_risk_ok($projection['prazos'] === array() && !isset($projection['fonte']['banco']), 'Dashboard institucional expos configuracao operacional');
 
+$calculationProjection = ResumoExecutivoDadosService::projecaoInstitucional(array(
+    'indicadores' => array(array('id' => 2)),
+    'regrasIndicadores' => array(array(
+        'indicadorId' => 2,
+        'camposEntrada' => array(
+            array('nome' => 'tipoPosicaoNPS', 'tipo' => 'selecao'),
+            array('nome' => 'resultadoDocumentalNPS', 'tipo' => 'numero'),
+            array('nome' => 'fontePesquisaNPS', 'tipo' => 'texto'),
+            array('nome' => 'observacaoArea', 'tipo' => 'texto'),
+            array('nome' => 'evidenciaNPS', 'tipo' => 'texto'),
+        ),
+    )),
+    'lancamentos' => array(array(
+        'id' => 27,
+        'indicadorId' => 2,
+        'competencia' => '2026-09',
+        'status' => 'Homologado',
+        'camposEntrada' => array(
+            'tipoPosicaoNPS' => 'ultima_pesquisa_disponivel',
+            'resultadoDocumentalNPS' => 59.2,
+            'fontePesquisaNPS' => 'documento interno restrito',
+            'observacaoArea' => 'observacao restrita',
+            'evidenciaNPS' => 'arquivo-restrito.pdf',
+        ),
+    )),
+    'governancaHomologacaoAtual' => array(),
+    'prazos' => array(),
+));
+$safeCalculation = $calculationProjection['lancamentos'][0]['camposCalculoInstitucional'];
+high_risk_ok($calculationProjection['lancamentos'][0]['camposEntrada'] === array(), 'Payload institucional reabriu campos operacionais');
+high_risk_ok(($safeCalculation['tipoPosicaoNPS'] ?? '') === 'ultima_pesquisa_disponivel', 'Projecao perdeu o tipo seguro da posicao');
+high_risk_ok((float) ($safeCalculation['resultadoDocumentalNPS'] ?? 0) === 59.2, 'Projecao perdeu o resultado numerico seguro');
+high_risk_ok(($safeCalculation['fontePesquisaNPS'] ?? '') === 'Informacao institucional validada', 'Fonte institucional nao foi anonimizada');
+foreach (array('observacaoArea', 'evidenciaNPS') as $restrictedField) {
+    high_risk_ok(!array_key_exists($restrictedField, $safeCalculation), 'Projecao institucional expos ' . $restrictedField);
+}
+
 $reopen = file_get_contents(__DIR__ . '/../api/solicitacoes-reabertura.php');
 high_risk_ok(strpos($reopen, "if (\$method === 'GET')") !== false, 'GET nao possui guard explicito');
 high_risk_ok(strpos($reopen, "if (\$action !== 'listar')") !== false, 'GET ainda pode decidir reabertura');

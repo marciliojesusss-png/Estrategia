@@ -161,6 +161,36 @@ async function loadExecutivePayload(user, data) {
   assert.equal("driver" in institutionalPayload.fonte, false, "Companhia nao deve receber fonte.driver");
   assert.equal("banco" in institutionalPayload.fonte, false, "Companhia nao deve receber fonte.banco");
 
+  const institutionalCalculationPayload = await loadExecutivePayload(
+    { perfilCodigo: "usuario_companhia", perfilOriginalCodigo: "administrador" },
+    {
+      ...basePayload,
+      acessoInstitucional: true,
+      fonte: { tipo: "institucional" },
+      lancamentos: [{
+        id: "institucional-2-2026-09",
+        indicadorId: 2,
+        status: "Homologado",
+        camposEntrada: {},
+        camposCalculoInstitucional: {
+          tipoPosicaoNPS: "ultima_pesquisa_disponivel",
+          resultadoDocumentalNPS: 59.2
+        }
+      }]
+    },
+  );
+  assert.deepEqual(
+    institutionalCalculationPayload.lancamentos[0].camposEntrada,
+    { tipoPosicaoNPS: "ultima_pesquisa_disponivel", resultadoDocumentalNPS: 59.2 },
+    "Resumo institucional deve usar apenas os insumos de calculo sanitizados",
+  );
+  assert.equal(
+    "camposCalculoInstitucional" in institutionalCalculationPayload.lancamentos[0],
+    false,
+    "insumos institucionais devem ser consumidos antes da renderizacao",
+  );
+  assert.equal(institutionalCalculationPayload.lancamentos[0].projecaoInstitucional, true);
+
   const restrictedGeneralPayload = await loadExecutivePayload(
     { perfilCodigo: "unidade_apuradora", perfilOriginalCodigo: "administrador" },
     { ...basePayload, acessoInstitucional: true, fonte: { tipo: "institucional" } },
