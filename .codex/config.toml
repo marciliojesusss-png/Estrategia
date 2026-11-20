@@ -1,0 +1,11 @@
+[mcp_servers.sqlserver_write]
+command = "powershell.exe"
+args = ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "start-mssql-mcp-write.ps1"]
+cwd = "."
+enabled = true
+required = false
+startup_timeout_sec = 30
+tool_timeout_sec = 120
+default_tools_approval_mode = "writes"
+disabled_tools = ["create_table", "create_index", "drop_table"]
+

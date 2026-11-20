@@ -3,6 +3,9 @@
 /.env.*
 !/.env.example
 /app/config/servidor.local.php
+/.codex/mssql-mcp-write.env
+/.codex/*.credential
+/.codex/*.key
 
 # Caches e arquivos temporarios
 __pycache__/
