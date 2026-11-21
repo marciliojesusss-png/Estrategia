@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CAIXA Loterias | Auditoria</title>
-  <link rel="stylesheet" href="/assets/css/styles.css?v=APP-VERSION-001">
+  <link rel="stylesheet" href="/assets/css/styles.css?v=APP-VERSION-001-TEMAS-001">
   <script src="/assets/js/bootstrap-data.js?v=METAS-OFICIAIS-003" defer></script>
   <script src="/assets/js/dataStore.js?v=GOVERNANCA-CA-001-GRUPOS-AUDITOR-001" defer></script>
   <script src="/assets/js/databaseService.js?v=GOVERNANCA-CA-002" defer></script>
   <script src="/assets/js/dataService.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/auth.js?v=GOVERNANCA-CA-001-GRUPOS-AUDITOR-001" defer></script>
   <script src="/assets/js/auditoria.js?v=AUDITORIA-UI-001" defer></script>
-  <script src="/assets/js/app.js?v=APP-VERSION-001-GRUPOS-AUDITOR-001" defer></script>
+  <script src="/assets/js/app.js?v=APP-VERSION-001-GRUPOS-AUDITOR-001-TEMAS-001" defer></script>
 </head>
 <body data-page="auditoria">
   <div class="app-shell">

@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CAIXA Loterias | Iniciativas Estratégicas</title><link rel="stylesheet" href="/assets/css/styles.css">
-<script src="/assets/js/dataStore.js?v=GRUPOS-AUDITOR-001" defer></script><script src="/assets/js/databaseService.js" defer></script><script src="/assets/js/auth.js?v=GRUPOS-AUDITOR-001" defer></script><script src="/assets/js/action-feedback.js" defer></script><script src="/assets/js/iniciativas.js?v=GRUPOS-AUDITOR-001" defer></script><script src="/assets/js/app.js?v=GRUPOS-AUDITOR-001" defer></script></head>
+<title>CAIXA Loterias | Iniciativas Estratégicas</title><link rel="stylesheet" href="/assets/css/styles.css?v=APP-VERSION-001-TEMAS-001">
+<script src="/assets/js/dataStore.js?v=GRUPOS-AUDITOR-001" defer></script><script src="/assets/js/databaseService.js" defer></script><script src="/assets/js/auth.js?v=GRUPOS-AUDITOR-001" defer></script><script src="/assets/js/action-feedback.js" defer></script><script src="/assets/js/iniciativas.js?v=GRUPOS-AUDITOR-001" defer></script><script src="/assets/js/app.js?v=GRUPOS-AUDITOR-001-TEMAS-001" defer></script></head>
 <body data-page="iniciativas"><div class="app-shell"><header id="appHeader" class="topbar"></header><nav id="appNav" class="sidebar"></nav><main class="content">
 <section class="page-heading"><p class="eyebrow">Execução estratégica</p><h1>Iniciativas Estratégicas</h1><p>Cadastro, acompanhamento trimestral e evidências das iniciativas.</p></section>
 <nav class="module-tabs" aria-label="Áreas de iniciativas"><a class="active" href="/iniciativas">Acompanhamentos</a><a href="/iniciativas/homologacao">Homologação</a><a href="/iniciativas/consolidacao-ca">Consolidação CA</a></nav>

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CAIXA Loterias | Configurações</title>
-  <link rel="stylesheet" href="/assets/css/styles.css?v=APP-VERSION-001">
+  <link rel="stylesheet" href="/assets/css/styles.css?v=APP-VERSION-001-TEMAS-001">
   <script src="/assets/js/currency.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/ieo-recorrente.js?v=INDICADOR06-CONFERENCIA-001" defer></script>
   <script src="/assets/js/lucro-recorrente.js?v=METAS-OFICIAIS-003" defer></script>
@@ -18,7 +18,7 @@
   <script src="/assets/js/auth.js?v=GOVERNANCA-CA-001-GRUPOS-AUDITOR-001" defer></script>
   <script src="/assets/js/prazo-apuracao.js?v=PRAZOS-APURACAO-001" defer></script>
   <script src="/assets/js/admin.js?v=MATRIZ-COBERTURA-003-PRAZOS-IIS-POST-001-GRUPOS-AUDITOR-001" defer></script>
-  <script src="/assets/js/app.js?v=APP-VERSION-001-GRUPOS-AUDITOR-001" defer></script>
+  <script src="/assets/js/app.js?v=APP-VERSION-001-GRUPOS-AUDITOR-001-TEMAS-001" defer></script>
 </head>
 <body data-page="administracao">
   <div class="app-shell">

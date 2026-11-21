@@ -55,6 +55,20 @@ const bootstrap = loadBootstrapData(root);
 const evolution = context.window.IndicatorEvolution;
 assert.ok(evolution, "O módulo de evolução deve ser registrado no navegador");
 
+assert.equal(evolution.chartThemeColors().text, "#c9ddf3", "O fallback escuro deve continuar legível");
+context.window.document = { documentElement: { dataset: { theme: "light" } } };
+context.window.getComputedStyle = () => ({
+  getPropertyValue(name) {
+    return {
+      "--chart-text": "#40566d",
+      "--chart-legend": "#24384d",
+      "--chart-grid": "rgba(67, 101, 133, 0.16)"
+    }[name] || "";
+  }
+});
+assert.equal(evolution.chartThemeColors().text, "#40566d", "Eixos e competências devem usar texto escuro no tema claro");
+assert.equal(evolution.chartThemeColors().legend, "#24384d", "A legenda deve usar contraste próprio no tema claro");
+
 const lucro = bootstrap.indicadores.find((item) => Number(item.id) === 7);
 const lucroSeries = evolution.buildSeries({
   indicator: lucro,

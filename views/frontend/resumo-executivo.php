@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CAIXA Loterias | Resumo Executivo</title>
-  <link rel="stylesheet" href="/assets/css/styles.css?v=APP-VERSION-001">
+  <link rel="stylesheet" href="/assets/css/styles.css?v=APP-VERSION-001-TEMAS-001">
   <script src="<?= APP_BASE_PATH ?>/assets/vendor/chart.umd.min.js?v=4.4.7" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/currency.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/ieo-recorrente.js?v=INDICADOR06-CONFERENCIA-001" defer></script>
@@ -18,9 +18,9 @@
   <script src="<?= APP_BASE_PATH ?>/assets/js/prazo-apuracao.js?v=PRAZOS-APURACAO-001" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/dataStore.js?v=GOVERNANCA-CA-001-GRUPOS-AUDITOR-001" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/dashboard.js?v=GOVERNANCA-CA-001" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/indicator-evolution.js?v=EVOLUCAO-INDICADORES-001" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/indicator-evolution.js?v=EVOLUCAO-INDICADORES-002" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/executiveSummary.js?v=EVOLUCAO-INDICADORES-001" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/app.js?v=APP-VERSION-001-GRUPOS-AUDITOR-001" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/app.js?v=APP-VERSION-001-GRUPOS-AUDITOR-001-TEMAS-001" defer></script>
 </head>
 <body data-page="resumoExecutivo">
   <div class="app-shell">

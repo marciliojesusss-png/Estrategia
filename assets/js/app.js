@@ -1,6 +1,51 @@
 ﻿(function () {
   const appVersion = String(document.documentElement?.dataset?.appVersion || "").trim();
   window.APP_VERSION = appVersion;
+  const THEME_STORAGE_KEY = "caixa-loterias-theme";
+  const THEME_PREFERENCES = new Set(["dark", "light", "system"]);
+
+  function normalizeThemePreference(value) {
+    const preference = String(value || "").trim().toLowerCase();
+    return THEME_PREFERENCES.has(preference) ? preference : "dark";
+  }
+
+  function storedThemePreference() {
+    try {
+      return normalizeThemePreference(window.localStorage?.getItem(THEME_STORAGE_KEY));
+    } catch (_) {
+      return "dark";
+    }
+  }
+
+  function resolvedTheme(preference = storedThemePreference()) {
+    const normalized = normalizeThemePreference(preference);
+    if (normalized !== "system") return normalized;
+    return window.matchMedia?.("(prefers-color-scheme: light)")?.matches ? "light" : "dark";
+  }
+
+  function chartPalette(theme = resolvedTheme()) {
+    return theme === "light"
+      ? {
+          text: "#40566d",
+          legend: "#24384d",
+          border: "rgba(67, 101, 133, 0.22)",
+          grid: "rgba(67, 101, 133, 0.16)",
+          tooltipBackground: "rgba(18, 43, 68, 0.97)",
+          tooltipTitle: "#ffffff",
+          tooltipBody: "#e8f1fa",
+          tooltipBorder: "rgba(0, 102, 179, 0.42)"
+        }
+      : {
+          text: "#afc4dd",
+          legend: "#d7ecff",
+          border: "rgba(59, 151, 255, 0.18)",
+          grid: "rgba(140, 177, 214, 0.16)",
+          tooltipBackground: "rgba(3, 17, 38, 0.95)",
+          tooltipTitle: "#f5f9ff",
+          tooltipBody: "#d7ecff",
+          tooltipBorder: "rgba(49, 196, 255, 0.35)"
+        };
+  }
 
   function pageUrl(page, params) {
     const cleanPage = String(page).replace(/\.(html|php)$/i, "");
@@ -79,17 +124,57 @@
     return !isIndependentInitiativePage(page) && isActiveAdministrator(user);
   }
 
-  function configureChartTheme() {
+  function configureChartTheme(theme = resolvedTheme()) {
     if (!window.Chart) return;
-    Chart.defaults.color = "#afc4dd";
-    Chart.defaults.borderColor = "rgba(59, 151, 255, 0.18)";
+    const palette = chartPalette(theme);
+    Chart.defaults.color = palette.text;
+    Chart.defaults.borderColor = palette.border;
     Chart.defaults.font.family = 'Inter, "Segoe UI", Arial, Helvetica, sans-serif';
-    Chart.defaults.plugins.legend.labels.color = "#d7ecff";
-    Chart.defaults.plugins.tooltip.backgroundColor = "rgba(3, 17, 38, 0.95)";
-    Chart.defaults.plugins.tooltip.titleColor = "#f5f9ff";
-    Chart.defaults.plugins.tooltip.bodyColor = "#d7ecff";
-    Chart.defaults.plugins.tooltip.borderColor = "rgba(49, 196, 255, 0.35)";
+    Chart.defaults.plugins.legend.labels.color = palette.legend;
+    Chart.defaults.plugins.tooltip.backgroundColor = palette.tooltipBackground;
+    Chart.defaults.plugins.tooltip.titleColor = palette.tooltipTitle;
+    Chart.defaults.plugins.tooltip.bodyColor = palette.tooltipBody;
+    Chart.defaults.plugins.tooltip.borderColor = palette.tooltipBorder;
     Chart.defaults.plugins.tooltip.borderWidth = 1;
+
+    Object.values(Chart.instances || {}).forEach((chart) => {
+      if (chart.options?.plugins?.legend?.labels) chart.options.plugins.legend.labels.color = palette.legend;
+      if (chart.options?.plugins?.tooltip) {
+        chart.options.plugins.tooltip.backgroundColor = palette.tooltipBackground;
+        chart.options.plugins.tooltip.titleColor = palette.tooltipTitle;
+        chart.options.plugins.tooltip.bodyColor = palette.tooltipBody;
+        chart.options.plugins.tooltip.borderColor = palette.tooltipBorder;
+      }
+      Object.values(chart.options?.scales || {}).forEach((scale) => {
+        if (scale.ticks) scale.ticks.color = palette.text;
+        if (scale.grid) scale.grid.color = palette.grid;
+      });
+      chart.update("none");
+    });
+  }
+
+  function applyTheme(preference, { persist = false, notify = false } = {}) {
+    const normalized = normalizeThemePreference(preference);
+    const theme = resolvedTheme(normalized);
+    const root = document.documentElement;
+    if (root?.dataset) {
+      root.dataset.theme = theme;
+      root.dataset.themePreference = normalized;
+    }
+    document.body?.classList?.toggle?.("theme-dark-blue", theme === "dark");
+    document.body?.classList?.toggle?.("theme-light-institutional", theme === "light");
+    if (persist) {
+      try {
+        window.localStorage?.setItem(THEME_STORAGE_KEY, normalized);
+      } catch (_) {
+        // A preferência visual continua válida durante a página atual.
+      }
+    }
+    configureChartTheme(theme);
+    if (notify && typeof window.dispatchEvent === "function" && typeof window.CustomEvent === "function") {
+      window.dispatchEvent(new CustomEvent("app:themechange", { detail: { preference: normalized, theme } }));
+    }
+    return { preference: normalized, theme };
   }
 
   function escapeHtml(value) {
@@ -170,6 +255,16 @@
           ${administratorOptions}
         </select>
       </form>` : "";
+    const themePreference = storedThemePreference();
+    const themeSelector = `
+      <label class="theme-preference" for="themePreferenceSelect">
+        <span>Tema</span>
+        <select id="themePreferenceSelect" aria-label="Tema visual do sistema">
+          <option value="dark" ${themePreference === "dark" ? "selected" : ""}>Azul Noturno</option>
+          <option value="light" ${themePreference === "light" ? "selected" : ""}>Claro Institucional</option>
+          <option value="system" ${themePreference === "system" ? "selected" : ""}>Automático</option>
+        </select>
+      </label>`;
 
     header.innerHTML = `
       <div class="header-top">
@@ -179,6 +274,7 @@
           <span class="header-chip">${escapeHtml(user.perfil)}</span>
           <span class="header-chip">${escapeHtml(user.unidadeApuradora || user.diretoriaResponsavel || "Escopo geral")}</span>
           ${administratorView}
+          ${themeSelector}
           <button class="secondary-action logout-button btn-sair" type="button">Sair</button>
         </div>
       </div>
@@ -198,6 +294,9 @@
         return;
       }
       window.location.href = window.appUrl ? window.appUrl("logout") : `${window.APP_BASE_PATH || ""}/index.php?route=logout`;
+    });
+    header.querySelector("#themePreferenceSelect")?.addEventListener("change", (event) => {
+      applyTheme(event.target.value, { persist: true, notify: true });
     });
 
     const content = document.querySelector(".content");
@@ -276,14 +375,29 @@
   }
 
   document.addEventListener("DOMContentLoaded", () => {
-    document.body.classList.add("theme-dark-blue");
-    configureChartTheme();
+    applyTheme(storedThemePreference());
+    const systemTheme = window.matchMedia?.("(prefers-color-scheme: light)");
+    systemTheme?.addEventListener?.("change", () => {
+      if (storedThemePreference() === "system") applyTheme("system", { notify: true });
+    });
     initPage().catch((error) => {
       console.error(error);
       document.body.insertAdjacentHTML("afterbegin", `<div class="notice">Erro ao iniciar a página: ${escapeHtml(error.message)}</div>`);
     });
   });
 
-  window.__APP_HEADER_TEST_INTERNALS__ = { renderBrand, appVersion };
+  window.AppTheme = {
+    apply: (preference) => applyTheme(preference, { persist: true, notify: true }),
+    getPreference: storedThemePreference,
+    getResolvedTheme: () => resolvedTheme(storedThemePreference())
+  };
+  window.__APP_HEADER_TEST_INTERNALS__ = {
+    renderBrand,
+    appVersion,
+    normalizeThemePreference,
+    resolvedTheme,
+    chartPalette,
+    applyTheme
+  };
 })();
 

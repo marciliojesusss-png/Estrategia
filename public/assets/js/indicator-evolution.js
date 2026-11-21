@@ -168,6 +168,21 @@
     return new Intl.NumberFormat("pt-BR", { notation: Math.abs(number) >= 10000 ? "compact" : "standard", maximumFractionDigits: 2 }).format(number);
   }
 
+  function chartThemeColors() {
+    const light = root.document?.documentElement?.dataset?.theme === "light";
+    const fallback = light
+      ? { text: "#40566d", legend: "#24384d", grid: "rgba(67, 101, 133, 0.16)" }
+      : { text: "#c9ddf3", legend: "#d9ebff", grid: "rgba(140, 177, 214, 0.16)" };
+    if (typeof root.getComputedStyle !== "function" || !root.document?.documentElement) return fallback;
+    const styles = root.getComputedStyle(root.document.documentElement);
+    const variable = (name, defaultValue) => styles.getPropertyValue(name).trim() || defaultValue;
+    return {
+      text: variable("--chart-text", fallback.text),
+      legend: variable("--chart-legend", fallback.legend),
+      grid: variable("--chart-grid", fallback.grid)
+    };
+  }
+
   function resolveElement(target) {
     return typeof target === "string" ? document.getElementById(target) : target;
   }
@@ -239,6 +254,7 @@
 
     const points = series.numericPoints;
     const accumulated = series.mode === "accumulated";
+    const theme = chartThemeColors();
     const targetData = points.map((point) => point.meta);
     const realizedData = points.map((point) => point.realized);
     const chart = new root.Chart(canvasElement, {
@@ -283,7 +299,7 @@
         plugins: {
           legend: {
             position: "top",
-            labels: { color: "#d9ebff", usePointStyle: true }
+            labels: { color: theme.legend, usePointStyle: true }
           },
           tooltip: {
             callbacks: {
@@ -305,13 +321,13 @@
         scales: {
           x: {
             grid: { display: false },
-            ticks: { color: "#c9ddf3" }
+            ticks: { color: theme.text }
           },
           y: {
             beginAtZero: true,
-            grid: { color: "rgba(140, 177, 214, 0.16)" },
+            grid: { color: theme.grid },
             ticks: {
-              color: "#c9ddf3",
+              color: theme.text,
               callback(value) { return formatAxis(value, series.unit); }
             }
           }
@@ -329,6 +345,7 @@
     colorForSituation,
     formatValue,
     isAccumulatedRule,
+    chartThemeColors,
     render,
     destroy
   };
