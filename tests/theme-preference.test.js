@@ -8,9 +8,13 @@ const appSource = fs.readFileSync(path.join(root, "assets", "js", "app.js"), "ut
 const appPublic = fs.readFileSync(path.join(root, "public", "assets", "js", "app.js"), "utf8");
 const cssSource = fs.readFileSync(path.join(root, "assets", "css", "styles.css"), "utf8");
 const cssPublic = fs.readFileSync(path.join(root, "public", "assets", "css", "styles.css"), "utf8");
+const executiveSource = fs.readFileSync(path.join(root, "assets", "js", "executiveSummary.js"), "utf8");
+const executivePublic = fs.readFileSync(path.join(root, "public", "assets", "js", "executiveSummary.js"), "utf8");
 
 assert.equal(appSource, appPublic, "O gerenciador de tema publicado deve espelhar o código-fonte");
 assert.equal(cssSource, cssPublic, "As paletas publicadas devem espelhar o código-fonte");
+
+assert.equal(executiveSource, executivePublic);
 
 const stored = new Map();
 const bodyClasses = new Map();
@@ -88,5 +92,8 @@ assert.match(appSource, /Azul Noturno/);
 assert.match(appSource, /Automático/);
 assert.match(cssSource, /:root\[data-theme="light"\]/);
 assert.match(cssSource, /\.theme-preference/);
+assert.doesNotMatch(executiveSource, /color:\s*"#d8efff"/);
+assert.doesNotMatch(executiveSource, /color:\s*"#afc4dd"/);
+assert.doesNotMatch(executiveSource, /color:\s*"#f5f9ff"/);
 
 console.log("theme-preference.test.js: OK");

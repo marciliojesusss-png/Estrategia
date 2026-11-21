@@ -18,7 +18,7 @@
   <script src="/assets/js/calculations.js?v=PLATAFORMA-JOGOS-001" defer></script>
   <script src="/assets/js/formulas.js?v=INDICADOR21-ATINGIMENTO-001" defer></script>
   <script src="/assets/js/quarterly.js?v=INDICADOR23-APRESENTACAO-002" defer></script>
-  <script src="/assets/js/dashboard.js?v=EVOLUCAO-INDICADORES-001" defer></script>
+  <script src="/assets/js/dashboard.js?v=IND19-INSTITUCIONAL-002" defer></script>
   <script src="/assets/js/indicator-evolution.js?v=EVOLUCAO-INDICADORES-002" defer></script>
   <script src="/assets/js/documentation-fields.js?v=DOCUMENTACAO-CENTRAL-001" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/indicators.js?v=EVOLUCAO-INDICADORES-001" defer></script>

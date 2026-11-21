@@ -498,6 +498,32 @@
       || lancamentoOficial.situacaoCalculada
       || null;
     const situacaoOficial = apresentacaoOficial?.situacaoOficial || situacaoTecnica;
+    const investimentoSocioambiental = regra?.tipoCalculo === "investimento_socioambiental";
+    const resultadoFinanceiro = investimentoSocioambiental
+      ? toFiniteNumber(resultadoCalculado?.realizadoFinanceiro ?? resultadoTecnico)
+      : null;
+    const metaFinanceira = investimentoSocioambiental
+      ? toFiniteNumber(resultadoCalculado?.metaFinanceira ?? metaTecnica)
+      : null;
+    const lucroLiquidoReferencia = investimentoSocioambiental
+      ? toFiniteNumber(regra?.parametrosCalculo?.lucroLiquidoReferencia)
+      : null;
+    const resultadoPercentualOficial = investimentoSocioambiental
+      ? toFiniteNumber(resultadoCalculado?.resultadoPercentualOficial)
+        ?? (resultadoFinanceiro !== null && lucroLiquidoReferencia > 0
+          ? resultadoFinanceiro / lucroLiquidoReferencia
+          : null)
+      : null;
+    const metaPercentualCurva = investimentoSocioambiental
+      ? toFiniteNumber(regra?.parametrosCalculo?.curvaTrimestralAcumulada?.[trimestreOficial]?.metaPercentualLucro)
+      : null;
+    const metaPercentual = investimentoSocioambiental
+      ? toFiniteNumber(resultadoCalculado?.metaPercentual)
+        ?? metaPercentualCurva
+        ?? (metaFinanceira !== null && lucroLiquidoReferencia > 0
+          ? metaFinanceira / lucroLiquidoReferencia
+          : null)
+      : null;
 
     return {
       indicador,
@@ -526,18 +552,10 @@
       contextoResultadoOficial: resultadoOficialReportado ? reportedResultContext(lancamentoOficial) : null,
       statusAtual: positionBased ? lancamentoAcao.status : null,
       meta,
-      resultadoFinanceiro: regra?.tipoCalculo === "investimento_socioambiental"
-        ? toFiniteNumber(resultadoCalculado?.realizadoFinanceiro ?? resultadoTecnico)
-        : null,
-      metaFinanceira: regra?.tipoCalculo === "investimento_socioambiental"
-        ? toFiniteNumber(resultadoCalculado?.metaFinanceira ?? metaTecnica)
-        : null,
-      resultadoPercentualOficial: regra?.tipoCalculo === "investimento_socioambiental"
-        ? toFiniteNumber(resultadoCalculado?.resultadoPercentualOficial)
-        : null,
-      metaPercentual: regra?.tipoCalculo === "investimento_socioambiental"
-        ? toFiniteNumber(resultadoCalculado?.metaPercentual)
-        : null,
+      resultadoFinanceiro,
+      metaFinanceira,
+      resultadoPercentualOficial,
+      metaPercentual,
       dadosCalculados: resultadoCalculado,
       situacaoAtual,
       situacaoOficial,

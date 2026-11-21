@@ -241,6 +241,40 @@ assert.equal(context.window.StrategicResults.formatOfficialResult(incentivoAposH
 assert.equal(context.window.StrategicResults.formatOfficialMeta(incentivoAposHomologacaoAutenticaSetembro), "0,10%");
 assert.equal(context.window.StrategicResults.officialSituation(incentivoAposHomologacaoAutenticaSetembro), "Abaixo da meta");
 
+const incentivoInstitucionalSetembro = context.window.StrategicResults.calcularDashboard({
+  indicadores: [indicadorIncentivo],
+  regras: [regraIncentivo],
+  lancamentos: [{
+    id: "institucional-19-2026-09",
+    indicadorId: 19,
+    ano: 2026,
+    mes: 9,
+    nomeMes: "Setembro",
+    competencia: "2026-09",
+    trimestre: "3TRI/2026",
+    status: "Homologado",
+    metaReferencia: 1305410.59,
+    resultadoMensal: 190000,
+    resultadoOficialAnual: 190000,
+    percentualAtingido: 190000 / 1305410.59,
+    situacaoCalculada: "Abaixo da meta",
+    projecaoInstitucional: true,
+    camposEntrada: {
+      statusProjetoIncentivoSocioambiental: "Investimento realizado",
+      valorInvestidoMes: 0,
+      valorInvestidoAcumuladoCompetencia: 190000
+    }
+  }]
+}).resultadosOficiais[0];
+assert.equal(incentivoInstitucionalSetembro.dadosCalculados, null, "A projecao sanitizada nao deve depender do nome restrito do projeto");
+assert.equal(incentivoInstitucionalSetembro.resultadoFinanceiro, 190000);
+assert.equal(incentivoInstitucionalSetembro.metaFinanceira, 1305410.59);
+assert.ok(Math.abs(incentivoInstitucionalSetembro.resultadoPercentualOficial - (190000 / 1305410587.78)) < 0.000000000001);
+assert.ok(Math.abs(incentivoInstitucionalSetembro.metaPercentual - 0.001) < 0.000000000001);
+assert.equal(context.window.StrategicResults.formatOfficialResult(incentivoInstitucionalSetembro), "0,0146%");
+assert.equal(context.window.StrategicResults.formatOfficialMeta(incentivoInstitucionalSetembro), "0,10%");
+assert.equal(context.window.StrategicResults.officialSituation(incentivoInstitucionalSetembro), "Abaixo da meta");
+
 const visibilidadeDashboardOficial = results.find((item) => item.indicador.id === 20);
 assert.equal(context.window.StrategicResults.officialSituation(visibilidadeDashboardOficial), "Em elaboração/homologação");
 assert.equal(visibilidadeDashboardOficial.competencia, "Março/2026");

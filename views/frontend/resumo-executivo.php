@@ -17,9 +17,9 @@
   <script src="<?= APP_BASE_PATH ?>/assets/js/quarterly.js?v=METAS-OFICIAIS-002" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/prazo-apuracao.js?v=PRAZOS-APURACAO-001" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/dataStore.js?v=GOVERNANCA-CA-001-GRUPOS-AUDITOR-001" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/dashboard.js?v=GOVERNANCA-CA-001" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/dashboard.js?v=IND19-INSTITUCIONAL-002" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/indicator-evolution.js?v=EVOLUCAO-INDICADORES-002" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/executiveSummary.js?v=EVOLUCAO-INDICADORES-001" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/executiveSummary.js?v=EVOLUCAO-INDICADORES-002" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/app.js?v=APP-VERSION-001-GRUPOS-AUDITOR-001-TEMAS-001" defer></script>
 </head>
 <body data-page="resumoExecutivo">

@@ -1360,7 +1360,6 @@
           legend: {
             position: "bottom",
             labels: {
-              color: "#d8efff",
               boxWidth: 12,
               boxHeight: 8,
               padding: 14,
@@ -1386,13 +1385,12 @@
           x: {
             stacked: true,
             beginAtZero: true,
-            grid: { color: "rgba(175, 196, 221, 0.12)" },
-            ticks: { color: "#afc4dd", precision: 0, font: { size: 11, weight: "600", family: "Arial, Helvetica, sans-serif" } }
+            ticks: { precision: 0, font: { size: 11, weight: "600", family: "Arial, Helvetica, sans-serif" } }
           },
           y: {
             stacked: true,
             grid: { display: false },
-            ticks: { color: "#f5f9ff", font: { size: 11, weight: "700", family: "Arial, Helvetica, sans-serif" } }
+            ticks: { font: { size: 11, weight: "700", family: "Arial, Helvetica, sans-serif" } }
           }
         }
       }
