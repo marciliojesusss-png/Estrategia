@@ -134,6 +134,11 @@ final class EvidenciaService
             throw new OutOfBoundsException('Evidência não encontrada.');
         }
         $this->authorizedLaunch($evidence['lancamento_id'], $user);
+        $this->audit->append(array(
+            'entidade'=>'evidencias','registroId'=>$evidence['id'],'acao'=>'evidencia_download',
+            'descricao'=>'Download de evidencia autorizado.','valorNovo'=>array('lancamentoId'=>$evidence['lancamento_id'],'nomeArquivo'=>$evidence['nome_arquivo']),
+            'usuario'=>$user['matricula'],'perfilUsuario'=>$user['perfil'],
+        ));
         return $evidence;
     }
 

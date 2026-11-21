@@ -5,17 +5,17 @@
   const FLASH_KEY = "caixaLoterias:mensagemSistema";
 
   const PAGE_ACCESS = {
-    resumoExecutivo: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consultor da Diretoria", "Consulta/Gestao", "Consulta/Gest\u00e3o", "Usuario Companhia", "Usu\u00e1rio Companhia"],
-    visaoTrimestral: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consultor da Diretoria", "Consulta/Gestao", "Consulta/Gest\u00e3o"],
-    indicadores: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consultor da Diretoria", "Consulta/Gestao", "Consulta/Gest\u00e3o"],
-    lancamentos: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consultor da Diretoria"],
-    iniciativas: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consultor da Diretoria"],
+    resumoExecutivo: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consultor da Diretoria", "Consulta/Gestao", "Consulta/Gest\u00e3o", "Usuario Companhia", "Usu\u00e1rio Companhia", "Auditor CAIXA"],
+    visaoTrimestral: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consultor da Diretoria", "Consulta/Gestao", "Consulta/Gest\u00e3o", "Auditor CAIXA"],
+    indicadores: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consultor da Diretoria", "Consulta/Gestao", "Consulta/Gest\u00e3o", "Auditor CAIXA"],
+    lancamentos: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consultor da Diretoria", "Auditor CAIXA"],
+    iniciativas: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consultor da Diretoria", "Auditor CAIXA"],
     homologacao: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consultor da Diretoria"],
     iniciativasHomologacao: ["Administrador", "Diretoria Homologadora", "Consultor da Diretoria"],
     iniciativasConsolidacao: ["Administrador"],
-    relatorios: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consultor da Diretoria"],
+    relatorios: ["Administrador", "Unidade Apuradora", "Diretoria Homologadora", "Consultor da Diretoria", "Auditor CAIXA"],
     administracao: ["Administrador"],
-    auditoria: ["Administrador"]
+    auditoria: ["Administrador", "Auditor CAIXA"]
   };
   const USER_COMPANY_ALLOWED_PAGES = ["resumoExecutivo"];
 
@@ -40,6 +40,12 @@
     return value === "administrador" ||
       value === "admin" ||
       value === "administrador_sistema";
+  }
+
+  function isAuditor(user) {
+    const code = normalizeText(user?.perfilCodigo || "").replace(/\s+/g, " ");
+    const label = normalizeText(user?.perfil || "").replace(/\s+/g, " ");
+    return code === "auditor_caixa" || label === "auditor caixa";
   }
 
   function getCurrentUser() {
@@ -138,11 +144,15 @@
   }
 
   function filterIndicatorsByUser(indicadores, user) {
-    if (!user || isBroadProfile(user.perfil)) {
+    if (!user || isBroadProfile(user.perfil) || isAuditor(user)) {
       return indicadores;
     }
 
     if (user.perfil === "Unidade Apuradora" || user.perfilCodigo === "unidade_apuradora") {
+      if (String(user.grupoTipoEscopo || "").toUpperCase() === "DIRETORIA") {
+        const diretoriaGrupo = normalizeScopeValue(user.grupoEscopoReferencia || userDirectory(user));
+        return indicadores.filter((item) => normalizeScopeValue(indicatorDirectory(item)) === diretoriaGrupo);
+      }
       const unidade = normalizeScopeValue(userUnit(user));
       return indicadores.filter((item) => normalizeScopeValue(indicatorUnit(item)) === unidade);
     }
@@ -172,7 +182,9 @@
     if (isUsuarioCompanhia(user.perfil)) {
       return "Perfil usu\u00e1rio da companhia: consulta institucional, sem preenchimento, homologa\u00e7\u00e3o ou administra\u00e7\u00e3o.";
     }
+    if (isAuditor(user)) return `Perfil auditor CAIXA: consulta corporativa somente leitura at\u00e9 ${user.concessaoAuditoriaFim || "o fim da concess\u00e3o"}.`;
     if (user.perfil === "Unidade Apuradora") {
+      if (user.grupoPreenchimento) return `Perfil preenchedor compartilhado: grupo ${user.grupoPreenchimento}.`;
       return `Perfil unidade apuradora: dados restritos \u00e0 unidade ${normalizeScopeValue(userUnit(user)) || "n\u00e3o informada"}.`;
     }
     if (user.perfil === "Diretoria Homologadora") {
@@ -208,6 +220,7 @@
     canAccess,
     isUsuarioCompanhia,
     isAdministrador,
+    isAuditor,
     getAllowedPages,
     setFlashMessage,
     consumeFlashMessage,

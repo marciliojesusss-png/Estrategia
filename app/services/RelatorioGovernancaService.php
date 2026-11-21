@@ -19,7 +19,7 @@ final class RelatorioGovernancaService
     {
         $active = Auth::normalizeProfile(isset($user['perfil']) ? $user['perfil'] : '');
         $original = Auth::normalizeProfile(isset($user['perfil_original']) ? $user['perfil_original'] : $active);
-        return $active === 'administrador' && $original === 'administrador';
+        return ($active === 'administrador' && $original === 'administrador') || ($active === 'auditor_caixa' && $original === 'auditor_caixa');
     }
 
     public static function normalizarFiltros(array $input)
@@ -55,7 +55,7 @@ final class RelatorioGovernancaService
 
     public function gerar(array $input, array $user)
     {
-        if (!self::usuarioAutorizado($user)) throw new UnexpectedValueException('Relatorio de Governanca/Auditoria restrito ao Administrador em visao Administrador.');
+        if (!self::usuarioAutorizado($user)) throw new UnexpectedValueException('Relatorio de Governanca/Auditoria restrito ao Administrador ou Auditor CAIXA autorizado.');
         $filters = self::normalizarFiltros($input);
         $options = $this->optionsPayload($this->repository->options());
         if ($filters['inicial']) return $this->emptyPayload($filters, $user, $options, false);
@@ -108,7 +108,7 @@ final class RelatorioGovernancaService
             'relatorio' => 'Relatorio de Governanca e Auditoria', 'somenteLeitura' => true,
             'consultaExecutada' => true, 'geradoEm' => date('c'),
             'geradoPor' => array('nome' => isset($user['nome']) ? $user['nome'] : '', 'matricula' => isset($user['matricula']) ? $user['matricula'] : ''),
-            'escopo' => 'Administrador - visao corporativa', 'filtros' => $filters, 'opcoes' => $options,
+            'escopo' => Auth::normalizeProfile($user['perfil']) === 'auditor_caixa' ? 'Auditor CAIXA - leitura corporativa' : 'Administrador - visao corporativa', 'filtros' => $filters, 'opcoes' => $options,
             'posicoesAtuais' => $positions, 'eventos' => $pageEvents,
             'paginacao' => array('pagina' => $filters['pagina'], 'porPagina' => self::PAGE_SIZE, 'total' => $total, 'paginas' => $pages),
             'evidencias' => $evidence, 'observacoesDocumentais' => $documents,
@@ -375,7 +375,7 @@ final class RelatorioGovernancaService
             'relatorio' => 'Relatorio de Governanca e Auditoria', 'somenteLeitura' => true,
             'consultaExecutada' => $executed, 'geradoEm' => date('c'),
             'geradoPor' => array('nome' => isset($user['nome']) ? $user['nome'] : '', 'matricula' => isset($user['matricula']) ? $user['matricula'] : ''),
-            'escopo' => 'Administrador - visao corporativa', 'filtros' => $filters, 'opcoes' => $options,
+            'escopo' => Auth::normalizeProfile($user['perfil']) === 'auditor_caixa' ? 'Auditor CAIXA - leitura corporativa' : 'Administrador - visao corporativa', 'filtros' => $filters, 'opcoes' => $options,
             'posicoesAtuais' => array(), 'eventos' => array(),
             'paginacao' => array('pagina' => 1, 'porPagina' => self::PAGE_SIZE, 'total' => 0, 'paginas' => 0),
             'evidencias' => array(), 'observacoesDocumentais' => array(), 'limiteFonteAtingido' => false,

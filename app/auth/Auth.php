@@ -21,6 +21,7 @@ final class Auth
         'unidade_apuradora' => 'Unidade Apuradora',
         'homologador' => 'Diretoria Homologadora',
         'consultor_diretoria' => 'Consultor da Diretoria',
+        'auditor_caixa' => 'Auditor CAIXA',
         'administrador' => 'Administrador',
     );
     private static $administratorViews = null;
@@ -45,10 +46,14 @@ final class Auth
         if ($matricula === '') {
             self::deny('Usuario corporativo nao identificado.');
         }
-        if (!CaixaLoteriasAccessGate::allows($corporate)) {
-            self::deny('Acesso restrito aos empregados lotados em unidades ativas da CAIXA Loterias.');
-        }
         $access = self::findAccess($matricula);
+        $isAuditor = $access !== null && self::normalizeProfile(isset($access['perfil']) ? $access['perfil'] : '') === 'auditor_caixa';
+        if (!CaixaLoteriasAccessGate::allows($corporate) && !($isAuditor && self::validAuditorGrant($access))) {
+            self::deny('Acesso restrito a empregados da CAIXA Loterias ou auditores CAIXA com concessao valida.');
+        }
+        if ($isAuditor && !self::validAuditorGrant($access)) {
+            self::deny('A concessao temporaria de auditoria esta ausente, inativa ou fora da validade.');
+        }
         if ($access === null) {
             if (self::isLocalEnvironment()) {
                 self::deny('Usuario local sem acesso ativo no SQL Server.');
@@ -81,8 +86,14 @@ final class Auth
         $_SESSION['no_unidade'] = isset($corporate['no_unidade']) ? (string) $corporate['no_unidade'] : '';
         if ($identityChanged) unset($_SESSION['_admin_view_mode']);
         $_SESSION['perfil'] = $profile;
-        $_SESSION['unidade_apuradora'] = $profile === 'unidade_apuradora' ? self::accessScope($access, 'unidade_apuradora') : '';
-        $_SESSION['diretoria_responsavel'] = in_array($profile, array('homologador', 'consultor_diretoria'), true) ? self::accessScope($access, 'diretoria_responsavel') : '';
+        $_SESSION['grupo_preenchimento'] = $profile === 'unidade_apuradora' && !empty($access['grupo_preenchimento_codigo']) ? (string) $access['grupo_preenchimento_codigo'] : '';
+        $_SESSION['grupo_tipo_escopo'] = $_SESSION['grupo_preenchimento'] !== '' ? (string) $access['grupo_tipo_escopo'] : '';
+        $_SESSION['grupo_escopo_referencia'] = $_SESSION['grupo_preenchimento'] !== '' ? (string) $access['grupo_escopo_referencia'] : '';
+        $_SESSION['unidade_apuradora'] = $profile === 'unidade_apuradora' ? self::operationalScope($access, 'UNIDADE', 'unidade_apuradora') : '';
+        $_SESSION['diretoria_responsavel'] = $profile === 'unidade_apuradora'
+            ? self::operationalScope($access, 'DIRETORIA', '')
+            : (in_array($profile, array('homologador', 'consultor_diretoria'), true) ? self::accessScope($access, 'diretoria_responsavel') : '');
+        $_SESSION['concessao_auditoria_fim'] = $profile === 'auditor_caixa' && !empty($access['concessao_data_fim']) ? (string) $access['concessao_data_fim'] : '';
         if (empty($_SESSION['_access_logged'])) {
             self::logAccess();
             $_SESSION['_access_logged'] = true;
@@ -125,8 +136,9 @@ final class Auth
         }
 
         $stmt = Database::getConnection()->query(
-            'SELECT matricula, nome, perfil, sg_unidade, no_unidade, unidade_apuradora, diretoria_responsavel '
-            . 'FROM usuarios_acesso WHERE ativo = 1 ORDER BY nome, matricula'
+            'SELECT u.matricula,u.nome,u.perfil,u.sg_unidade,u.no_unidade,u.unidade_apuradora,u.diretoria_responsavel,'
+            . 'u.grupo_preenchimento_codigo,g.tipo_escopo AS grupo_tipo_escopo,g.escopo_referencia AS grupo_escopo_referencia '
+            . 'FROM usuarios_acesso u LEFT JOIN grupos_preenchimento g ON g.codigo=u.grupo_preenchimento_codigo WHERE u.ativo = 1 ORDER BY u.nome,u.matricula'
         );
         $users = array();
         foreach ($stmt->fetchAll() as $row) {
@@ -135,8 +147,8 @@ final class Auth
                 'matricula' => (string) $row['matricula'],
                 'nome' => !empty($row['nome']) ? (string) $row['nome'] : (string) $row['matricula'],
                 'perfil' => self::profileLabel($profile),
-                'unidade' => $profile === 'unidade_apuradora' ? self::accessScope($row, 'unidade_apuradora') : 'Todas',
-                'diretoria' => in_array($profile, array('homologador', 'consultor_diretoria'), true) ? self::accessScope($row, 'diretoria_responsavel') : 'Todas',
+                'unidade' => $profile === 'unidade_apuradora' ? self::operationalScope($row, 'UNIDADE', 'unidade_apuradora') : 'Todas',
+                'diretoria' => $profile === 'unidade_apuradora' ? self::operationalScope($row, 'DIRETORIA', '') : (in_array($profile, array('homologador', 'consultor_diretoria'), true) ? self::accessScope($row, 'diretoria_responsavel') : 'Todas'),
             );
         }
         return $users;
@@ -229,6 +241,8 @@ final class Auth
             'perfilCodigo' => $user['perfil'], 'funcao' => $user['funcao'], 'unidade' => $user['unidade'],
             'sgUnidade' => $user['sg_unidade'], 'noUnidade' => $user['no_unidade'],
             'unidadeApuradora' => $user['unidade_apuradora'], 'diretoriaResponsavel' => $user['diretoria_responsavel'],
+            'grupoPreenchimento' => $user['grupo_preenchimento'], 'grupoTipoEscopo' => $user['grupo_tipo_escopo'],
+            'grupoEscopoReferencia' => $user['grupo_escopo_referencia'], 'concessaoAuditoriaFim' => $user['concessao_auditoria_fim'],
             'perfilOriginalCodigo' => $user['perfil_original'],
             'podeAlternarVisao' => $user['perfil_original'] === 'administrador',
             'visaoAdministrador' => self::administratorView(),
@@ -301,6 +315,17 @@ final class Auth
 
     public static function scopeFiltersForUser(array $user, array $filters = array())
     {
+        if ($user['perfil'] === 'unidade_apuradora' && !empty($user['grupo_preenchimento'])) {
+            if (strtoupper((string) $user['grupo_tipo_escopo']) === 'DIRETORIA') {
+                $filters['diretoria_responsavel'] = $user['grupo_escopo_referencia'];
+                $filters['diretoriaResponsavel'] = $user['grupo_escopo_referencia'];
+                unset($filters['unidade_apuradora'], $filters['unidadeApuradora']);
+                return $filters;
+            }
+            $filters['unidade_apuradora'] = $user['grupo_escopo_referencia'];
+            $filters['unidadeApuradora'] = $user['grupo_escopo_referencia'];
+            return $filters;
+        }
         if ($user['perfil'] === 'unidade_apuradora' && $user['unidade_apuradora'] !== '') {
             $filters['unidade_apuradora'] = $user['unidade_apuradora'];
             $filters['unidadeApuradora'] = $user['unidade_apuradora'];
@@ -319,6 +344,7 @@ final class Auth
         if ($value === 'unidade_apuradora') return 'unidade_apuradora';
         if (in_array($value, array('homologador', 'diretoria_homologadora'), true)) return 'homologador';
         if (in_array($value, array('consultor_diretoria', 'consultor_da_diretoria'), true)) return 'consultor_diretoria';
+        if (in_array($value, array('auditor_caixa', 'auditor'), true)) return 'auditor_caixa';
         return self::DEFAULT_PROFILE;
     }
 
@@ -336,6 +362,10 @@ final class Auth
             'perfil_original' => $originalProfile,
             'unidade_apuradora' => isset($_SESSION['unidade_apuradora']) ? (string) $_SESSION['unidade_apuradora'] : '',
             'diretoria_responsavel' => isset($_SESSION['diretoria_responsavel']) ? (string) $_SESSION['diretoria_responsavel'] : '',
+            'grupo_preenchimento' => isset($_SESSION['grupo_preenchimento']) ? (string) $_SESSION['grupo_preenchimento'] : '',
+            'grupo_tipo_escopo' => isset($_SESSION['grupo_tipo_escopo']) ? (string) $_SESSION['grupo_tipo_escopo'] : '',
+            'grupo_escopo_referencia' => isset($_SESSION['grupo_escopo_referencia']) ? (string) $_SESSION['grupo_escopo_referencia'] : '',
+            'concessao_auditoria_fim' => isset($_SESSION['concessao_auditoria_fim']) ? (string) $_SESSION['concessao_auditoria_fim'] : '',
         );
         $mode = self::administratorView();
         if ($originalProfile === 'administrador' && $mode !== 'administrador') {
@@ -344,6 +374,9 @@ final class Auth
             $user['perfil'] = $view['perfil'];
             $user['unidade_apuradora'] = $view['unidade_apuradora'];
             $user['diretoria_responsavel'] = $view['diretoria_responsavel'];
+            $user['grupo_preenchimento'] = isset($view['grupo_preenchimento']) ? $view['grupo_preenchimento'] : '';
+            $user['grupo_tipo_escopo'] = isset($view['grupo_tipo_escopo']) ? $view['grupo_tipo_escopo'] : '';
+            $user['grupo_escopo_referencia'] = isset($view['grupo_escopo_referencia']) ? $view['grupo_escopo_referencia'] : '';
         }
         return $user;
     }
@@ -355,6 +388,15 @@ final class Auth
         if ($mode === 'sucol') $mode = 'unidade:SUCOL';
         if ($mode === 'dicot') $mode = 'diretoria:DICOT';
         $views = self::administratorViews();
+        if (strpos($mode, 'unidade:') === 0) {
+            $legacyUnit = strtoupper(trim(substr($mode, strlen('unidade:'))));
+            foreach ($views as $viewMode => $view) {
+                if (!empty($view['unidades']) && in_array($legacyUnit, $view['unidades'], true)) {
+                    $mode = $viewMode;
+                    break;
+                }
+            }
+        }
         return array_key_exists($mode, $views) ? $mode : 'administrador';
     }
 
@@ -362,38 +404,70 @@ final class Auth
     {
         if (self::$administratorViews !== null) return self::$administratorViews;
         $views = array(
-            'administrador' => array('perfil' => 'administrador', 'unidade_apuradora' => '', 'diretoria_responsavel' => '', 'rotulo' => 'Administrador', 'grupo' => 'geral'),
+            'administrador' => array(
+                'perfil' => 'administrador', 'unidade_apuradora' => '', 'diretoria_responsavel' => '',
+                'grupo_preenchimento' => '', 'grupo_tipo_escopo' => '', 'grupo_escopo_referencia' => '',
+                'rotulo' => 'Administrador', 'grupo' => 'geral', 'unidades' => array(),
+            ),
         );
-        $stmt = Database::getConnection()->query(
-            "SELECT tipo, escopo FROM ("
-            . "SELECT 'unidade' AS tipo, LTRIM(RTRIM(unidade_apuradora)) AS escopo FROM dbo.indicadores "
-            . "WHERE NULLIF(LTRIM(RTRIM(unidade_apuradora)), '') IS NOT NULL "
-            . "UNION SELECT 'diretoria', LTRIM(RTRIM(diretoria_responsavel)) FROM dbo.indicadores "
-            . "WHERE NULLIF(LTRIM(RTRIM(diretoria_responsavel)), '') IS NOT NULL"
-            . " UNION SELECT 'unidade', LTRIM(RTRIM(unidade_responsavel)) FROM dbo.iniciativas_estrategicas "
-            . "WHERE NULLIF(LTRIM(RTRIM(unidade_responsavel)), '') IS NOT NULL"
-            . " UNION SELECT 'diretoria', LTRIM(RTRIM(diretoria_responsavel)) FROM dbo.iniciativas_estrategicas "
-            . "WHERE NULLIF(LTRIM(RTRIM(diretoria_responsavel)), '') IS NOT NULL"
-            . ") AS escopos ORDER BY CASE WHEN tipo = 'unidade' THEN 0 ELSE 1 END, escopo"
-        );
-        foreach ($stmt->fetchAll() as $row) {
-            $scope = trim((string) $row['escopo']);
-            if ($scope === '') continue;
-            if ($row['tipo'] === 'unidade') {
-                $views['unidade:' . $scope] = array(
-                    'perfil' => 'unidade_apuradora', 'unidade_apuradora' => $scope, 'diretoria_responsavel' => '',
-                    'rotulo' => 'Preenchimento - ' . $scope, 'grupo' => 'unidade',
-                );
-            } elseif ($row['tipo'] === 'diretoria') {
-                $views['diretoria:' . $scope] = array(
-                    'perfil' => 'homologador', 'unidade_apuradora' => '', 'diretoria_responsavel' => $scope,
-                    'rotulo' => 'Homologacao - ' . $scope, 'grupo' => 'diretoria',
+        $groupRows = Database::getConnection()->query(
+            'SELECT g.codigo,g.tipo_escopo,g.escopo_referencia,u.unidade_codigo '
+            . 'FROM dbo.grupos_preenchimento g '
+            . 'LEFT JOIN dbo.grupos_preenchimento_unidades u ON u.grupo_codigo=g.codigo '
+            . 'WHERE g.ativo=1 ORDER BY g.codigo,u.unidade_codigo'
+        )->fetchAll();
+        $groups = array();
+        foreach ($groupRows as $row) {
+            $code = strtoupper(trim((string) $row['codigo']));
+            if ($code === '') continue;
+            if (!isset($groups[$code])) {
+                $groups[$code] = array(
+                    'tipo' => strtoupper(trim((string) $row['tipo_escopo'])),
+                    'escopo' => strtoupper(trim((string) $row['escopo_referencia'])),
+                    'unidades' => array(),
                 );
             }
+            $unit = strtoupper(trim((string) $row['unidade_codigo']));
+            if ($unit !== '') $groups[$code]['unidades'][] = $unit;
+        }
+        foreach ($groups as $code => $group) {
+            $scopeType = $group['tipo'];
+            $scopeReference = $group['escopo'];
+            $displayCode = $code === 'SUCTF' && in_array('GELOF', $group['unidades'], true) ? 'SUCTF/GELOF' : $code;
+            $views['grupo:' . $code] = array(
+                'perfil' => 'unidade_apuradora',
+                'unidade_apuradora' => $scopeType === 'UNIDADE' ? $scopeReference : '',
+                'diretoria_responsavel' => $scopeType === 'DIRETORIA' ? $scopeReference : '',
+                'grupo_preenchimento' => $code,
+                'grupo_tipo_escopo' => $scopeType,
+                'grupo_escopo_referencia' => $scopeReference,
+                'rotulo' => 'Preenchimento - ' . $displayCode,
+                'grupo' => 'preenchimento',
+                'unidades' => array_values(array_unique($group['unidades'])),
+            );
+        }
+
+        $directoryRows = Database::getConnection()->query(
+            "SELECT escopo FROM ("
+            . "SELECT LTRIM(RTRIM(diretoria_responsavel)) AS escopo FROM dbo.indicadores "
+            . "WHERE NULLIF(LTRIM(RTRIM(diretoria_responsavel)), '') IS NOT NULL "
+            . "UNION SELECT LTRIM(RTRIM(diretoria_responsavel)) FROM dbo.iniciativas_estrategicas "
+            . "WHERE NULLIF(LTRIM(RTRIM(diretoria_responsavel)), '') IS NOT NULL"
+            . ") AS diretorias ORDER BY escopo"
+        )->fetchAll();
+        foreach ($directoryRows as $row) {
+            $scope = strtoupper(trim((string) $row['escopo']));
+            if ($scope === '') continue;
+            $views['diretoria:' . $scope] = array(
+                'perfil' => 'homologador', 'unidade_apuradora' => '', 'diretoria_responsavel' => $scope,
+                'grupo_preenchimento' => '', 'grupo_tipo_escopo' => '', 'grupo_escopo_referencia' => '',
+                'rotulo' => 'Homologacao - ' . $scope, 'grupo' => 'diretoria', 'unidades' => array(),
+            );
         }
         $views['usuario_companhia'] = array(
             'perfil' => 'usuario_companhia', 'unidade_apuradora' => '', 'diretoria_responsavel' => '',
-            'rotulo' => 'Usuario da Companhia', 'grupo' => 'geral',
+            'grupo_preenchimento' => '', 'grupo_tipo_escopo' => '', 'grupo_escopo_referencia' => '',
+            'rotulo' => 'Usuario da Companhia', 'grupo' => 'geral', 'unidades' => array(),
         );
         self::$administratorViews = $views;
         return $views;
@@ -443,7 +517,7 @@ final class Auth
     private static function findAccess($matricula)
     {
         try {
-            $stmt = Database::getConnection()->prepare('SELECT matricula, nome, perfil, sg_unidade, no_unidade, unidade_apuradora, diretoria_responsavel, ativo FROM usuarios_acesso WHERE matricula = :matricula AND ativo = 1');
+            $stmt = Database::getConnection()->prepare("SELECT u.matricula,u.nome,u.perfil,u.sg_unidade,u.no_unidade,u.unidade_apuradora,u.diretoria_responsavel,u.grupo_preenchimento_codigo,g.tipo_escopo AS grupo_tipo_escopo,g.escopo_referencia AS grupo_escopo_referencia,u.ativo,ca.data_inicio AS concessao_data_inicio,ca.data_fim AS concessao_data_fim,ca.ativo AS concessao_ativa FROM usuarios_acesso u LEFT JOIN grupos_preenchimento g ON g.codigo=u.grupo_preenchimento_codigo OUTER APPLY (SELECT TOP (1) c.data_inicio,c.data_fim,c.ativo FROM concessoes_acesso_auditoria c WHERE c.usuario_acesso_id=u.id AND c.ativo=1 ORDER BY c.id DESC) ca WHERE u.matricula = :matricula AND u.ativo = 1");
             $stmt->execute(array(':matricula' => $matricula));
             $row = $stmt->fetch();
             return is_array($row) ? $row : null;
@@ -476,6 +550,21 @@ final class Auth
     {
         if (!empty($access[$field])) return (string) $access[$field];
         return isset($access['sg_unidade']) ? (string) $access['sg_unidade'] : '';
+    }
+
+    private static function operationalScope(array $access, $expectedType, $legacyField)
+    {
+        if (!empty($access['grupo_preenchimento_codigo']) && strtoupper((string) $access['grupo_tipo_escopo']) === $expectedType) {
+            return (string) $access['grupo_escopo_referencia'];
+        }
+        return $legacyField !== '' ? self::accessScope($access, $legacyField) : '';
+    }
+
+    private static function validAuditorGrant(array $access)
+    {
+        if (empty($access['concessao_ativa']) || empty($access['concessao_data_inicio']) || empty($access['concessao_data_fim'])) return false;
+        $now = time();
+        return strtotime((string) $access['concessao_data_inicio']) <= $now && strtotime((string) $access['concessao_data_fim']) > $now;
     }
 
     private static function profileLabel($profile)

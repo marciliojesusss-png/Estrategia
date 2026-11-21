@@ -1,6 +1,6 @@
 [mcp_servers.sqlserver_write]
-command = "powershell.exe"
-args = ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "start-mssql-mcp-write.ps1"]
+command = "node.exe"
+args = [".codex/start-mssql-mcp-write.mjs"]
 cwd = "."
 enabled = true
 required = false

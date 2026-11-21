@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CAIXA Loterias | Relatório de Iniciativas</title>
   <link rel="stylesheet" href="/assets/css/styles.css">
-  <script src="/assets/js/dataStore.js" defer></script>
+  <script src="/assets/js/dataStore.js?v=GRUPOS-AUDITOR-001" defer></script>
   <script src="/assets/js/databaseService.js" defer></script>
-  <script src="/assets/js/auth.js" defer></script>
+  <script src="/assets/js/auth.js?v=GRUPOS-AUDITOR-001" defer></script>
   <script src="/assets/js/action-feedback.js" defer></script>
   <script src="/assets/js/initiativeReport.js" defer></script>
-  <script src="/assets/js/app.js" defer></script>
+  <script src="/assets/js/app.js?v=GRUPOS-AUDITOR-001" defer></script>
 </head>
 <body data-page="relatorios">
   <div class="app-shell report-app-shell">

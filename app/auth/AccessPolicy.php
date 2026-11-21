@@ -4,23 +4,23 @@ declare(strict_types=1);
 final class AccessPolicy
 {
     private static $matrix = array(
-        'dashboard' => array('visualizar' => array('administrador', 'homologador', 'consultor_diretoria', 'unidade_apuradora', 'usuario_companhia')),
-        'visao_trimestral' => array('visualizar' => array('administrador', 'homologador', 'consultor_diretoria', 'unidade_apuradora')),
+        'dashboard' => array('visualizar' => array('administrador', 'homologador', 'consultor_diretoria', 'unidade_apuradora', 'usuario_companhia', 'auditor_caixa')),
+        'visao_trimestral' => array('visualizar' => array('administrador', 'homologador', 'consultor_diretoria', 'unidade_apuradora', 'auditor_caixa')),
         'indicadores' => array(
-            'visualizar' => array('administrador', 'homologador', 'consultor_diretoria', 'unidade_apuradora', 'usuario_companhia'),
+            'visualizar' => array('administrador', 'homologador', 'consultor_diretoria', 'unidade_apuradora', 'usuario_companhia', 'auditor_caixa'),
             'gerenciar' => array('administrador'),
         ),
         'lancamentos' => array(
-            'visualizar' => array('administrador', 'homologador', 'consultor_diretoria', 'unidade_apuradora'),
+            'visualizar' => array('administrador', 'homologador', 'consultor_diretoria', 'unidade_apuradora', 'auditor_caixa'),
             'gerenciar' => array('administrador', 'unidade_apuradora'),
         ),
         'homologacoes' => array(
-            'visualizar' => array('administrador', 'homologador', 'consultor_diretoria', 'unidade_apuradora'),
+            'visualizar' => array('administrador', 'homologador', 'consultor_diretoria', 'unidade_apuradora', 'auditor_caixa'),
             'decidir' => array('administrador', 'homologador', 'consultor_diretoria'),
         ),
-        'relatorios' => array('visualizar' => array('administrador', 'homologador', 'consultor_diretoria', 'unidade_apuradora')),
+        'relatorios' => array('visualizar' => array('administrador', 'homologador', 'consultor_diretoria', 'unidade_apuradora', 'auditor_caixa')),
         'administracao' => array('gerenciar' => array('administrador')),
-        'auditoria' => array('visualizar' => array('administrador')),
+        'auditoria' => array('visualizar' => array('administrador', 'auditor_caixa')),
         'configuracoes' => array('gerenciar' => array('administrador')),
         'reaberturas' => array(
             'solicitar' => array('administrador', 'homologador', 'consultor_diretoria', 'unidade_apuradora'),
@@ -28,7 +28,7 @@ final class AccessPolicy
             'reabrir' => array('administrador', 'homologador', 'consultor_diretoria'),
         ),
         'iniciativas' => array(
-            'visualizar' => array('administrador', 'homologador', 'consultor_diretoria', 'unidade_apuradora'),
+            'visualizar' => array('administrador', 'homologador', 'consultor_diretoria', 'unidade_apuradora', 'auditor_caixa'),
             'gerenciar' => array('administrador', 'unidade_apuradora'),
             'administrar' => array('administrador'),
             'decidir' => array('administrador', 'homologador', 'consultor_diretoria'),
@@ -55,11 +55,16 @@ final class AccessPolicy
     public static function scopeAllows(array $user, array $record)
     {
         $profile = isset($user['perfil']) ? Auth::normalizeProfile($user['perfil']) : Auth::DEFAULT_PROFILE;
-        if ($profile === 'administrador') return true;
+        if (in_array($profile, array('administrador', 'auditor_caixa'), true)) return true;
         if ($profile === 'usuario_companhia') return false;
         if ($profile === 'unidade_apuradora') {
+            if (!empty($user['grupo_preenchimento']) && strtoupper((string) $user['grupo_tipo_escopo']) === 'DIRETORIA') {
+                $board = self::firstScope($record, array('diretoria_responsavel', 'diretoriaResponsavel', 'diretoria_snapshot', 'diretoriaSnapshot'));
+                return $board !== '' && self::sameScope($board, $user['grupo_escopo_referencia']);
+            }
             $unit = isset($record['unidade_apuradora']) ? $record['unidade_apuradora'] : (isset($record['unidadeApuradora']) ? $record['unidadeApuradora'] : '');
-            return $unit !== '' && self::sameScope($unit, isset($user['unidade_apuradora']) ? $user['unidade_apuradora'] : '');
+            $scope = !empty($user['grupo_preenchimento']) ? $user['grupo_escopo_referencia'] : (isset($user['unidade_apuradora']) ? $user['unidade_apuradora'] : '');
+            return $unit !== '' && self::sameScope($unit, $scope);
         }
         if (in_array($profile, array('homologador', 'consultor_diretoria'), true)) {
             $board = isset($record['diretoria_responsavel']) ? $record['diretoria_responsavel'] : (isset($record['diretoriaResponsavel']) ? $record['diretoriaResponsavel'] : '');
@@ -71,17 +76,22 @@ final class AccessPolicy
     public static function allowsGeneralDashboard(array $user)
     {
         $profile = isset($user['perfil']) ? Auth::normalizeProfile($user['perfil']) : Auth::DEFAULT_PROFILE;
-        return in_array($profile, array('administrador', 'homologador', 'consultor_diretoria', 'unidade_apuradora'), true);
+        return in_array($profile, array('administrador', 'homologador', 'consultor_diretoria', 'unidade_apuradora', 'auditor_caixa'), true);
     }
 
     public static function initiativeScopeAllows(array $user, array $record)
     {
         $profile = isset($user['perfil']) ? Auth::normalizeProfile($user['perfil']) : Auth::DEFAULT_PROFILE;
-        if ($profile === 'administrador') return true;
+        if (in_array($profile, array('administrador', 'auditor_caixa'), true)) return true;
         if ($profile === 'usuario_companhia') return false;
         if ($profile === 'unidade_apuradora') {
+            if (!empty($user['grupo_preenchimento']) && strtoupper((string) $user['grupo_tipo_escopo']) === 'DIRETORIA') {
+                $board = self::firstScope($record, array('diretoria_snapshot', 'diretoria_responsavel', 'diretoriaSnapshot', 'diretoriaResponsavel'));
+                return $board !== '' && self::sameScope($board, $user['grupo_escopo_referencia']);
+            }
             $unit = self::firstScope($record, array('unidade_snapshot', 'unidade_responsavel', 'unidadeSnapshot', 'unidadeResponsavel'));
-            return $unit !== '' && self::sameScope($unit, isset($user['unidade_apuradora']) ? $user['unidade_apuradora'] : '');
+            $scope = !empty($user['grupo_preenchimento']) ? $user['grupo_escopo_referencia'] : (isset($user['unidade_apuradora']) ? $user['unidade_apuradora'] : '');
+            return $unit !== '' && self::sameScope($unit, $scope);
         }
         if (in_array($profile, array('homologador', 'consultor_diretoria'), true)) {
             $board = self::firstScope($record, array('diretoria_snapshot', 'diretoria_responsavel', 'diretoriaSnapshot', 'diretoriaResponsavel'));

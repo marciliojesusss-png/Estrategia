@@ -619,6 +619,7 @@
   function isReadRestrictedCollectionForProfile(key) {
     const profile = currentProfileCode();
     if (profile === "administrador") return false;
+    if (profile === "auditor_caixa") return key === "usuarios" || key === "historico" || key === "solicitacoesReabertura";
     return key === "usuarios" || key === "historico";
   }
 

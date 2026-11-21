@@ -139,7 +139,7 @@ check_admin_access(strpos($admin, 'method: payload.id ? "PUT" : "POST"') === fal
 check_admin_access(strpos($admin, 'function normalizeAccessUser') !== false, 'resposta da API deve ser normalizada');
 
 $controller = file_get_contents(__DIR__ . '/../app/controllers/AdministracaoApiController.php');
-check_admin_access(strpos($controller, "array('POST','PUT','PATCH')") !== false, 'controlador deve aceitar POST para atualizacao por id');
+check_admin_access((bool) preg_match("/array\\(\\s*'POST'\\s*,\\s*'PUT'\\s*,\\s*'PATCH'\\s*\\)/", $controller), 'controlador deve aceitar POST para atualizacao por id');
 
 $serviceSource = file_get_contents(__DIR__ . '/../app/services/AdministracaoService.php');
 check_admin_access(strpos($serviceSource, '$this->repo->activeAdmins()<=1') !== false, 'ultimo Administrador ativo deve permanecer protegido');
@@ -152,7 +152,7 @@ check_admin_access(strpos($schema, 'UNIQUE (perfil)') === false, 'banco nao deve
 $authSource = file_get_contents(__DIR__ . '/../app/auth/Auth.php');
 check_admin_access(strpos($authSource, "'perfil_original' => \$originalProfile") !== false, 'perfil original deve permanecer no contexto autenticado');
 check_admin_access(strpos($authSource, "\$user['perfil'] = \$view['perfil']") !== false, 'Visualizar como deve alterar apenas o contexto operacional');
-check_admin_access(strpos($authSource, "WHERE matricula = :matricula AND ativo = 1") !== false, 'somente perfil operacional ativo deve ser carregado');
+check_admin_access(strpos($authSource, "WHERE u.matricula = :matricula AND u.ativo = 1") !== false, 'somente perfil operacional ativo deve ser carregado');
 check_admin_access(strpos($authSource, "'perfil' => self::DEFAULT_PROFILE") !== false, 'empregado LDAP sem perfil especial ativo deve assumir Usuario Companhia');
 
 $governanceDocumentation = file_get_contents(__DIR__ . '/../docs/governanca-acessos.md');

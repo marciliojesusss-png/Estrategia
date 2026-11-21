@@ -388,7 +388,7 @@ final class RelatorioIndicadorService
     private static function scopeDescription(array $user)
     {
         $profile = Auth::normalizeProfile(isset($user['perfil']) ? $user['perfil'] : '');
-        if ($profile === 'unidade_apuradora') return 'Unidade ' . (isset($user['unidade_apuradora']) ? $user['unidade_apuradora'] : '');
+        if ($profile === 'unidade_apuradora') return !empty($user['grupo_preenchimento']) ? 'Grupo de preenchimento ' . $user['grupo_preenchimento'] : 'Unidade ' . (isset($user['unidade_apuradora']) ? $user['unidade_apuradora'] : '');
         if (in_array($profile, array('homologador', 'consultor_diretoria'), true)) return 'Diretoria ' . (isset($user['diretoria_responsavel']) ? $user['diretoria_responsavel'] : '');
         return 'Corporativo - todos os indicadores';
     }

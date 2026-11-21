@@ -63,6 +63,7 @@
     loadingAccessUsers: false,
     accessCoverage: null,
     loadingAccessCoverage: false,
+    accessGroups: [],
     prazos: []
   };
 
@@ -71,6 +72,7 @@
     ["unidade_apuradora", "Unidade Apuradora"],
     ["homologador", "Diretoria Homologadora"],
     ["consultor_diretoria", "Consultor da Diretoria"],
+    ["auditor_caixa", "Auditor CAIXA (somente leitura)"],
     ["usuario_companhia", "Usuário Companhia"]
   ];
 
@@ -119,6 +121,7 @@
       const payload = await adminApi("api/administracao/usuarios");
       state.accessStorage = null;
       state.accessUsers = (payload.items || payload.usuarios || []).map(normalizeAccessUser);
+      state.accessGroups = payload.gruposPreenchimento || [];
     } catch (error) {
       state.accessUsers = [];
       showMessage(error.message || "Nao foi possivel carregar os acessos.", "warning");
@@ -291,7 +294,7 @@
   function accessUnitLabel(item = {}) {
     if (isAdministratorAccess(item)) return "GERAL";
     const profile = String(item.perfil || "").trim().toLowerCase();
-    return profile === "unidade_apuradora" ? (item.unidadeApuradora || "-") : "-";
+    return profile === "unidade_apuradora" ? (item.grupoPreenchimentoCodigo || item.unidadeApuradora || "-") : "-";
   }
 
   function accessDirectoryLabel(item = {}) {
@@ -306,6 +309,13 @@
       noUnidade: item.noUnidade ?? item.no_unidade ?? "",
       unidadeApuradora: item.unidadeApuradora ?? item.unidade_apuradora ?? "",
       diretoriaResponsavel: item.diretoriaResponsavel ?? item.diretoria_responsavel ?? ""
+      ,grupoPreenchimentoCodigo: item.grupoPreenchimentoCodigo ?? item.grupo_preenchimento_codigo ?? ""
+      ,concessaoDataInicio: item.concessaoDataInicio ?? item.concessao_data_inicio ?? ""
+      ,concessaoDataFim: item.concessaoDataFim ?? item.concessao_data_fim ?? ""
+      ,concessaoJustificativa: item.concessaoJustificativa ?? item.concessao_justificativa ?? ""
+      ,concessaoProtocolo: item.concessaoProtocolo ?? item.concessao_protocolo ?? ""
+      ,concessaoAprovadoPor: item.concessaoAprovadoPor ?? item.concessao_aprovado_por ?? ""
+      ,concessaoAtiva: Boolean(item.concessaoAtiva ?? item.concessao_ativa ?? false)
     };
   }
 
@@ -452,6 +462,13 @@
       perfil: "usuario_companhia",
       unidadeApuradora: "",
       diretoriaResponsavel: "",
+      grupoPreenchimentoCodigo: "",
+      concessaoDataInicio: "",
+      concessaoDataFim: "",
+      concessaoJustificativa: "",
+      concessaoProtocolo: "",
+      concessaoAprovadoPor: "",
+      concessaoAtiva: true,
       ativo: true
     };
 
@@ -480,6 +497,12 @@
       <label>Unidade apuradora
         <input id="accessUnitScope" name="unidadeApuradora" value="${escapeHtml(source.unidadeApuradora || "")}">
       </label>
+      <label id="accessGroupField">Grupo de preenchimento
+        <select id="accessGroupScope" name="grupoPreenchimentoCodigo">
+          <option value="">Acesso legado por unidade</option>
+          ${(state.accessGroups || []).filter((group) => group.ativo !== false).map((group) => `<option value="${escapeHtml(group.codigo)}" ${group.codigo === source.grupoPreenchimentoCodigo ? "selected" : ""}>${escapeHtml(group.codigo)} — ${escapeHtml(group.nome)} (${escapeHtml(group.limiteVagas)} vagas)</option>`).join("")}
+        </select>
+      </label>
       <label>Diretoria responsável
         <input id="accessDirectoryScope" name="diretoriaResponsavel" value="${escapeHtml(source.diretoriaResponsavel || "")}">
       </label>
@@ -488,6 +511,17 @@
           ${options([["true", "Ativo"], ["false", "Inativo"]], String(source.ativo !== false))}
         </select>
       </label>
+      <fieldset id="auditorGrantFields" class="full-span">
+        <legend>Concessão temporária do auditor</legend>
+        <div class="form-grid">
+          <label>Início <input name="concessaoDataInicio" type="datetime-local" value="${escapeHtml(String(source.concessaoDataInicio || "").slice(0, 16))}"></label>
+          <label>Fim <input name="concessaoDataFim" type="datetime-local" value="${escapeHtml(String(source.concessaoDataFim || "").slice(0, 16))}"></label>
+          <label>Protocolo <input name="concessaoProtocolo" value="${escapeHtml(source.concessaoProtocolo || "")}"></label>
+          <label>Aprovado por (matrícula) <input name="concessaoAprovadoPor" value="${escapeHtml(source.concessaoAprovadoPor || "")}"></label>
+          <label class="full-span">Justificativa <textarea name="concessaoJustificativa">${escapeHtml(source.concessaoJustificativa || "")}</textarea></label>
+          <label>Concessão <select name="concessaoAtiva">${options([["true", "Ativa"], ["false", "Inativa"]], String(source.concessaoAtiva !== false))}</select></label>
+        </div>
+      </fieldset>
       <div class="form-actions full-span">
         <button class="primary-action" type="submit">Salvar acesso</button>
         <button id="adminCancelForm" class="secondary-action" type="button">Cancelar</button>
@@ -497,16 +531,26 @@
       const profile = form.querySelector("#accessProfile").value;
       const unit = form.querySelector("#accessUnitScope");
       const directory = form.querySelector("#accessDirectoryScope");
+      const group = form.querySelector("#accessGroupScope");
+      const groupField = form.querySelector("#accessGroupField");
+      const grantFields = form.querySelector("#auditorGrantFields");
       const needsUnit = profile === "unidade_apuradora";
       const needsDirectory = ["homologador", "consultor_diretoria"].includes(profile);
-      unit.required = needsUnit;
+      const auditor = profile === "auditor_caixa";
+      unit.required = needsUnit && !group.value;
       unit.disabled = !needsUnit;
+      group.disabled = !needsUnit;
+      groupField.hidden = !needsUnit;
       directory.required = needsDirectory;
       directory.disabled = !needsDirectory;
+      grantFields.hidden = !auditor;
+      grantFields.querySelectorAll("input,textarea,select").forEach((field) => { field.disabled = !auditor; });
       if (!needsUnit) unit.value = "";
+      if (!needsUnit) group.value = "";
       if (!needsDirectory) directory.value = "";
     };
     form.querySelector("#accessProfile").addEventListener("change", applyScopeRules);
+    form.querySelector("#accessGroupScope").addEventListener("change", applyScopeRules);
     applyScopeRules();
     form.hidden = false;
     state.editingId = item ? item.id : null;
@@ -519,6 +563,7 @@
       ...values,
       id: values.id ? Number(values.id) : 0,
       ativo: values.ativo === "true"
+      ,concessaoAtiva: values.concessaoAtiva === "true"
     };
 
     try {

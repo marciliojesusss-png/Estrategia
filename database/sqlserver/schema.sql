@@ -269,6 +269,33 @@ BEGIN
     );
 END;
 
+IF OBJECT_ID(N'dbo.grupos_preenchimento', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.grupos_preenchimento (
+        codigo NVARCHAR(50) NOT NULL CONSTRAINT pk_grupos_preenchimento PRIMARY KEY,
+        nome NVARCHAR(255) NOT NULL,
+        tipo_escopo NVARCHAR(20) NOT NULL,
+        escopo_referencia NVARCHAR(255) NOT NULL,
+        limite_vagas INT NOT NULL,
+        ativo BIT NOT NULL CONSTRAINT df_grupos_preenchimento_ativo DEFAULT 1,
+        created_at DATETIME2 NOT NULL CONSTRAINT df_grupos_preenchimento_created_at DEFAULT SYSUTCDATETIME(),
+        updated_at DATETIME2 NULL,
+        CONSTRAINT ck_grupos_preenchimento_tipo CHECK (tipo_escopo IN (N'UNIDADE', N'DIRETORIA')),
+        CONSTRAINT ck_grupos_preenchimento_limite CHECK (limite_vagas > 0)
+    );
+END;
+
+IF OBJECT_ID(N'dbo.grupos_preenchimento_unidades', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.grupos_preenchimento_unidades (
+        grupo_codigo NVARCHAR(50) NOT NULL,
+        unidade_codigo NVARCHAR(50) NOT NULL,
+        created_at DATETIME2 NOT NULL CONSTRAINT df_grupos_preenchimento_unidades_created_at DEFAULT SYSUTCDATETIME(),
+        CONSTRAINT pk_grupos_preenchimento_unidades PRIMARY KEY (grupo_codigo, unidade_codigo),
+        CONSTRAINT fk_grupos_preenchimento_unidades_grupo FOREIGN KEY (grupo_codigo) REFERENCES dbo.grupos_preenchimento(codigo)
+    );
+END;
+
 IF OBJECT_ID(N'dbo.usuarios_acesso', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.usuarios_acesso (
@@ -281,11 +308,39 @@ BEGIN
         perfil NVARCHAR(50) NOT NULL,
         unidade_apuradora NVARCHAR(255) NULL,
         diretoria_responsavel NVARCHAR(255) NULL,
+        grupo_preenchimento_codigo NVARCHAR(50) NULL,
         ativo BIT NOT NULL CONSTRAINT df_usuarios_acesso_ativo DEFAULT 1,
         created_at DATETIME2 NULL,
         updated_at DATETIME2 NULL,
-        CONSTRAINT uq_usuarios_acesso_matricula UNIQUE (matricula)
+        CONSTRAINT uq_usuarios_acesso_matricula UNIQUE (matricula),
+        CONSTRAINT fk_usuarios_acesso_grupo_preenchimento FOREIGN KEY (grupo_preenchimento_codigo) REFERENCES dbo.grupos_preenchimento(codigo)
     );
+END;
+
+IF COL_LENGTH(N'dbo.usuarios_acesso', N'grupo_preenchimento_codigo') IS NULL
+    ALTER TABLE dbo.usuarios_acesso ADD grupo_preenchimento_codigo NVARCHAR(50) NULL;
+
+IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = N'fk_usuarios_acesso_grupo_preenchimento')
+    ALTER TABLE dbo.usuarios_acesso WITH CHECK ADD CONSTRAINT fk_usuarios_acesso_grupo_preenchimento
+        FOREIGN KEY (grupo_preenchimento_codigo) REFERENCES dbo.grupos_preenchimento(codigo);
+
+IF OBJECT_ID(N'dbo.concessoes_acesso_auditoria', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.concessoes_acesso_auditoria (
+        id INT IDENTITY(1,1) NOT NULL CONSTRAINT pk_concessoes_acesso_auditoria PRIMARY KEY,
+        usuario_acesso_id INT NOT NULL,
+        data_inicio DATETIME2 NOT NULL,
+        data_fim DATETIME2 NOT NULL,
+        justificativa NVARCHAR(1000) NOT NULL,
+        protocolo NVARCHAR(100) NOT NULL,
+        aprovado_por NVARCHAR(100) NOT NULL,
+        ativo BIT NOT NULL CONSTRAINT df_concessoes_acesso_auditoria_ativo DEFAULT 1,
+        created_at DATETIME2 NOT NULL CONSTRAINT df_concessoes_acesso_auditoria_created_at DEFAULT SYSUTCDATETIME(),
+        updated_at DATETIME2 NULL,
+        CONSTRAINT fk_concessoes_acesso_auditoria_usuario FOREIGN KEY (usuario_acesso_id) REFERENCES dbo.usuarios_acesso(id),
+        CONSTRAINT ck_concessoes_acesso_auditoria_periodo CHECK (data_fim > data_inicio)
+    );
+    CREATE INDEX ix_concessoes_auditoria_usuario_periodo ON dbo.concessoes_acesso_auditoria(usuario_acesso_id, ativo, data_inicio, data_fim);
 END;
 
 IF OBJECT_ID(N'dbo.acessos_log', N'U') IS NULL

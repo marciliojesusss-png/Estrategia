@@ -70,8 +70,9 @@ final class RelatorioConsolidadoService
     public static function filtrosEscopo(array $user, array $requestedFilters = array())
     {
         $profile = Auth::normalizeProfile(isset($user['perfil']) ? $user['perfil'] : '');
-        if ($profile === 'administrador') return array();
+        if (in_array($profile, array('administrador', 'auditor_caixa'), true)) return array();
         if ($profile === 'unidade_apuradora') {
+            if (!empty($user['grupo_preenchimento'])) return Auth::scopeFiltersForUser($user, array());
             $unit = trim((string) (isset($user['unidade_apuradora']) ? $user['unidade_apuradora'] : ''));
             if ($unit === '') throw new DomainException('Unidade apuradora sem escopo configurado.');
             return array('unidade_apuradora' => $unit);

@@ -23,12 +23,17 @@ final class IniciativasAcompanhamentosRepository
         }
         $profile = isset($user['perfil']) ? $user['perfil'] : 'usuario_companhia';
         if ($profile === 'unidade_apuradora') {
-            $sql .= ' AND UPPER(LTRIM(RTRIM(a.unidade_snapshot)))=UPPER(LTRIM(RTRIM(:scope_unit)))';
-            $params[':scope_unit'] = isset($user['unidade_apuradora']) ? $user['unidade_apuradora'] : '';
+            if (!empty($user['grupo_preenchimento']) && strtoupper((string) $user['grupo_tipo_escopo']) === 'DIRETORIA') {
+                $sql .= ' AND UPPER(LTRIM(RTRIM(a.diretoria_snapshot)))=UPPER(LTRIM(RTRIM(:scope_group_board)))';
+                $params[':scope_group_board'] = $user['grupo_escopo_referencia'];
+            } else {
+                $sql .= ' AND UPPER(LTRIM(RTRIM(a.unidade_snapshot)))=UPPER(LTRIM(RTRIM(:scope_unit)))';
+                $params[':scope_unit'] = !empty($user['grupo_preenchimento']) ? $user['grupo_escopo_referencia'] : (isset($user['unidade_apuradora']) ? $user['unidade_apuradora'] : '');
+            }
         } elseif (in_array($profile, array('homologador','consultor_diretoria'), true)) {
             $sql .= ' AND UPPER(LTRIM(RTRIM(a.diretoria_snapshot)))=UPPER(LTRIM(RTRIM(:scope_board)))';
             $params[':scope_board'] = isset($user['diretoria_responsavel']) ? $user['diretoria_responsavel'] : '';
-        } elseif ($profile !== 'administrador') {
+        } elseif (!in_array($profile, array('administrador','auditor_caixa'), true)) {
             $sql .= ' AND 1=0';
         }
         $sql .= ' ORDER BY a.ano DESC,CASE a.trimestre WHEN N\'4TRI\' THEN 4 WHEN N\'3TRI\' THEN 3 WHEN N\'2TRI\' THEN 2 ELSE 1 END DESC,i.codigo';

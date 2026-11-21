@@ -51,11 +51,11 @@ assert.match(service, /Sem posicao oficial/);
 assert.match(service, /Homologado legado - sem evento transacional/);
 assert.match(service, /observacaoDocumental/);
 assert.doesNotMatch(service, /INSERT\s+INTO|UPDATE\s+\w+\s+SET|DELETE\s+FROM/i);
-assert.match(accessPolicy, /'relatorios'\s*=>\s*array\('visualizar'\s*=>\s*array\('administrador',\s*'homologador',\s*'consultor_diretoria',\s*'unidade_apuradora'\)\)/);
+assert.match(accessPolicy, /'relatorios'\s*=>\s*array\('visualizar'\s*=>\s*array\('administrador',\s*'homologador',\s*'consultor_diretoria',\s*'unidade_apuradora',\s*'auditor_caixa'\)\)/);
 assert.doesNotMatch(accessPolicy, /'relatorios'\s*=>[^\r\n]*usuario_companhia/);
 assert.match(publicReports, /Auth::requirePagePermission\('relatorios', 'visualizar'\)/);
 assert.match(app, /\.filter\(\(\[, , key\]\)\s*=>\s*Auth\.canAccess\(key, user\)\)/);
-assert.match(auth, /relatorios:\s*\["Administrador",\s*"Unidade Apuradora",\s*"Diretoria Homologadora",\s*"Consultor da Diretoria"\]/);
+assert.match(auth, /relatorios:\s*\["Administrador",\s*"Unidade Apuradora",\s*"Diretoria Homologadora",\s*"Consultor da Diretoria",\s*"Auditor CAIXA"\]/);
 assert.doesNotMatch(auth, /relatorios:\s*\[[^\]]*(?:Usuario|Usuário) Companhia/);
 
 assert.match(css, /\.detailed-identification-grid/);

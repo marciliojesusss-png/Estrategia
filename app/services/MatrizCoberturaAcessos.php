@@ -14,7 +14,7 @@ final class MatrizCoberturaAcessos
     private const HOMOLOGADORES_POR_DIRETORIA = 1;
     private const CONSULTORES_POR_DIRETORIA = 1;
 
-    public static function build(array $users, array $units, array $directories, array $indicators): array
+    public static function build(array $users, array $units, array $directories, array $indicators, array $groups = array()): array
     {
         $activeUsers = array_values(array_filter($users, static function ($user) {
             return is_array($user) && (int)($user['ativo'] ?? 0) === 1;
@@ -35,7 +35,14 @@ final class MatrizCoberturaAcessos
         );
 
         $unitRows = array();
-        foreach ($activeUnits as $unit) {
+        foreach ($groups as $group) {
+            if (empty($group['ativo'])) continue;
+            $code = self::scope($group['codigo'] ?? '');
+            $reference = self::scope($group['escopoReferencia'] ?? $group['escopo_referencia'] ?? '');
+            $type = self::scope($group['tipoEscopo'] ?? $group['tipo_escopo'] ?? '');
+            $unitRows[$code] = self::row('grupo-' . strtolower($code) . '-preenchedor', $type === 'DIRETORIA' ? $reference : ($unitDirectory[$reference] ?? 'Nao identificada'), $code, 'Preenchedor compartilhado', 'unidade_apuradora', (int)($group['limiteVagas'] ?? $group['limite_vagas'] ?? 2), self::usersForGroup($activeUsers, $code));
+        }
+        if (!$groups) foreach ($activeUnits as $unit) {
             $unitCode = self::catalogCode($unit);
             $directoryCode = $unitDirectory[$unitCode] ?? '';
             $unitRows[$unitCode] = self::row(
@@ -52,7 +59,7 @@ final class MatrizCoberturaAcessos
         $directoryRows = array();
         foreach ($activeDirectories as $directory) {
             $directoryCode = self::catalogCode($directory);
-            foreach ($activeUnits as $unit) {
+            if (!$groups) foreach ($activeUnits as $unit) {
                 $unitCode = self::catalogCode($unit);
                 if (($unitDirectory[$unitCode] ?? '') === $directoryCode) {
                     $rows[] = $unitRows[$unitCode];
@@ -114,7 +121,7 @@ final class MatrizCoberturaAcessos
                     'esperado' => $administratorRow['esperado'],
                     'cobertura' => $administratorRow['cobertura'],
                 ),
-                'unidadesCompletas' => array('atuais' => $unitComplete, 'total' => count($activeUnits)),
+                'unidadesCompletas' => array('atuais' => $unitComplete, 'total' => $groups ? count($unitRows) : count($activeUnits)),
                 'diretoriasCompletas' => array('atuais' => $directoryComplete, 'total' => count($activeDirectories)),
                 'posicoesPendentes' => $pending,
             ),
@@ -122,7 +129,7 @@ final class MatrizCoberturaAcessos
             'filtros' => array(
                 'diretorias' => array_values(array_map(array(self::class, 'catalogCode'), $activeDirectories)),
                 'unidades' => array_values(array_map(array(self::class, 'catalogCode'), $activeUnits)),
-                'funcoes' => array('Administrador', 'Preenchedor', 'Diretor/Homologador', 'Consultor'),
+                'funcoes' => array('Administrador', 'Preenchedor', 'Preenchedor compartilhado', 'Diretor/Homologador', 'Consultor'),
                 'coberturas' => array('Completa', 'Reduzida', 'Sem cobertura'),
             ),
             'fontes' => array(
@@ -202,6 +209,18 @@ final class MatrizCoberturaAcessos
             $byName = strcasecmp($left['nome'], $right['nome']);
             return $byName !== 0 ? $byName : strcasecmp($left['matricula'], $right['matricula']);
         });
+        return $matches;
+    }
+
+    private static function usersForGroup(array $users, string $group): array
+    {
+        $matches = array();
+        foreach ($users as $user) {
+            if (strtolower(trim((string)($user['perfil'] ?? ''))) !== 'unidade_apuradora') continue;
+            if (self::scope($user['grupo_preenchimento_codigo'] ?? $user['grupoPreenchimentoCodigo'] ?? '') !== $group) continue;
+            $matches[] = array('matricula' => trim((string)($user['matricula'] ?? '')), 'nome' => trim((string)($user['nome'] ?? '')));
+        }
+        usort($matches, static function ($left, $right) { $byName = strcasecmp($left['nome'], $right['nome']); return $byName !== 0 ? $byName : strcasecmp($left['matricula'], $right['matricula']); });
         return $matches;
     }
 

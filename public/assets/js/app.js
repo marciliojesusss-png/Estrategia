@@ -33,6 +33,11 @@
   function navigationLabel(label, key, user) {
     const profile = String(user?.perfilCodigo || "").trim().toLowerCase();
     const profileName = String(user?.perfil || "").trim();
+    if (profile === "auditor_caixa") {
+      if (key === "relatorios") return "Dossiê de Auditoria";
+      if (key === "auditoria") return "Trilha de Auditoria";
+      if (key === "lancamentos") return "Lançamentos (consulta)";
+    }
     if (key === "lancamentos" && (["homologador", "consultor_diretoria"].includes(profile) || ["Diretoria Homologadora", "Consultor da Diretoria"].includes(profileName))) {
       return "Lançamentos (consulta)";
     }

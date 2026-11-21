@@ -76,7 +76,6 @@ Execute:
 
 ```powershell
 node tests/prazo-apuracao.test.js
-php tests/prazos-apuracao-backend.test.php
 node tests/prazos-apuracao-migration.test.js
 ```
 

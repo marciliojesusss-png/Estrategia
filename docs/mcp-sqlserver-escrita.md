@@ -53,7 +53,9 @@ O MCP também mantém:
 ## Arquivos da configuração
 
 - `.codex/config.toml`: registra o servidor `sqlserver_write` no Codex;
-- `.codex/start-mssql-mcp-write.ps1`: carrega a credencial e inicia o MCP;
+- `.codex/start-mssql-mcp-write.mjs`: inicia o MCP diretamente pelo Node e preserva o canal `stdio`;
+- `.codex/start-mssql-mcp-write.ps1`: carrega e decifra a credencial para o iniciador Node;
+- `.codex/test-mssql-mcp-write.mjs`: testa a conexão e confirma o estado planejado do banco;
 - `.codex/mssql-mcp-write.env`: configuração local da conexão, ignorada pelo Git;
 - `.codex/provision-mssql-mcp-write.ps1`: cria ou atualiza o login e rotaciona a senha;
 - `storage/logs/mssql-mcp-write-audit.jsonl`: auditoria gerada durante o uso.
@@ -77,6 +79,14 @@ Após o provisionamento, o SQL Server retornou:
 ## Ativação no Codex
 
 Reinicie o Codex ou a extensão da IDE para carregar o servidor `sqlserver_write` definido no projeto.
+
+Para validar a conexão após o provisionamento ou uma alteração de configuração, execute na raiz do projeto:
+
+```powershell
+node .\.codex\test-mssql-mcp-write.mjs
+```
+
+O teste deve informar `connected: true`, `database: "Estrategia"` e `readonly: false`. Ele também confirma a presença da tabela de prazos e da configuração de frequência operacional sem alterar dados.
 
 O script abaixo deve ser executado novamente somente para recriar o acesso ou rotacionar a senha:
 

@@ -199,13 +199,13 @@ final class BaseDadosService
     private function filtersForUser(array $user): array
     {
         $profile = (string) ($user['perfil'] ?? '');
-        if ($profile === 'unidade_apuradora' && (string) ($user['unidade_apuradora'] ?? '') !== '') {
-            return ['unidade_apuradora' => (string) $user['unidade_apuradora']];
+        if ($profile === 'unidade_apuradora') {
+            return Auth::scopeFiltersForUser($user, array());
         }
         if (in_array($profile, array('homologador', 'consultor_diretoria'), true) && (string) ($user['diretoria_responsavel'] ?? '') !== '') {
             return ['diretoria_responsavel' => (string) $user['diretoria_responsavel']];
         }
-        if ($profile === 'administrador') {
+        if (in_array($profile, array('administrador', 'auditor_caixa'), true)) {
             return [];
         }
         throw new InvalidArgumentException('Perfil nao autorizado para gravacao.');

@@ -24,19 +24,20 @@ final class DashboardApiController
         $generalView = $requestedGeneralView && AccessPolicy::allowsGeneralDashboard($user);
         $profile = Auth::normalizeProfile($user['perfil']);
         $institutionalView = $profile === 'usuario_companhia';
+        $auditorView = $profile === 'auditor_caixa';
         $readOnlyGeneralView = $generalView && $profile !== 'administrador';
-        $filters = $generalView || $institutionalView
+        $filters = $generalView || $institutionalView || $auditorView
             ? $requestedFilters
             : Auth::scopeFiltersForUser($user, $requestedFilters);
         if ($action === 'dados') {
             $filters['ativo'] = true;
-            $data = $institutionalView || $readOnlyGeneralView
+            $data = $institutionalView || $auditorView || $readOnlyGeneralView
                 ? $this->dadosService->dadosInstitucionais($filters)
                 : $this->dadosService->dados($filters);
-            $data['escopoVisualizacao'] = $generalView || $institutionalView ? 'geral' : 'proprio';
+            $data['escopoVisualizacao'] = $generalView || $institutionalView || $auditorView ? 'geral' : 'proprio';
             return Response::success($data, 'Dados centrais do Resumo Executivo consultados.');
         }
-        if ($institutionalView) $filters['status'] = 'Homologado';
+        if ($institutionalView || $auditorView) $filters['status'] = 'Homologado';
         if ($action === 'resumo') {
             $summary = $this->service->resumo($filters);
             if ($institutionalView) {

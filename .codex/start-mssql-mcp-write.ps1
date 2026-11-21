@@ -1,3 +1,7 @@
+param(
+    [switch] $EmitConnectionJson
+)
+
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
@@ -193,28 +197,23 @@ if ([string] $connection['DATABASE_NAME'] -cne 'Estrategia') {
     throw 'O MCP de escrita foi bloqueado porque o banco configurado nao e Estrategia.'
 }
 
-$projectRoot = Split-Path -Parent $PSScriptRoot
-$auditLogPath = Join-Path $projectRoot 'storage\logs\mssql-mcp-write-audit.jsonl'
+if ($EmitConnectionJson) {
+    if ($env:MSSQL_MCP_RESOLVE_CONNECTION -cne '1') {
+        throw 'A exportacao da conexao protegida so pode ser solicitada pelo iniciador Node do MCP.'
+    }
 
-$env:SERVER_NAME = [string] $connection['SERVER_NAME']
-$env:DATABASE_NAME = [string] $connection['DATABASE_NAME']
-$env:SQL_AUTH_MODE = 'sql'
-$env:SQL_USERNAME = [string] $connection['SQL_USERNAME']
-$env:SQL_PASSWORD = $sqlPassword
-$env:SQL_PORT = if ($connection.ContainsKey('SQL_PORT') -and $connection['SQL_PORT']) { [string] $connection['SQL_PORT'] } else { '1433' }
-$env:TRUST_SERVER_CERTIFICATE = if ($connection.ContainsKey('TRUST_SERVER_CERTIFICATE') -and $connection['TRUST_SERVER_CERTIFICATE']) { [string] $connection['TRUST_SERVER_CERTIFICATE'] } else { 'true' }
-$env:READONLY = 'false'
-$env:REQUIRE_MUTATION_CONFIRMATION = 'true'
-$env:MAX_ROWS_DEFAULT = '1000'
-$env:AUDIT_LOGGING = 'true'
-$env:AUDIT_REDACT_SENSITIVE = 'true'
-$env:AUDIT_LOG_PATH = $auditLogPath
+    @{
+        SERVER_NAME = [string] $connection['SERVER_NAME']
+        DATABASE_NAME = [string] $connection['DATABASE_NAME']
+        SQL_USERNAME = [string] $connection['SQL_USERNAME']
+        SQL_PASSWORD = $sqlPassword
+        SQL_PORT = if ($connection.ContainsKey('SQL_PORT') -and $connection['SQL_PORT']) { [string] $connection['SQL_PORT'] } else { '1433' }
+        TRUST_SERVER_CERTIFICATE = if ($connection.ContainsKey('TRUST_SERVER_CERTIFICATE') -and $connection['TRUST_SERVER_CERTIFICATE']) { [string] $connection['TRUST_SERVER_CERTIFICATE'] } else { 'true' }
+    } | ConvertTo-Json -Compress
 
-$launcher = Join-Path $env:APPDATA 'npm\mssql-mcp-server.cmd'
-if (-not (Test-Path -LiteralPath $launcher -PathType Leaf)) {
-    throw "Executavel do MCP nao encontrado em: $launcher"
+    $sqlPassword = $null
+    exit 0
 }
 
-& $launcher
-exit $LASTEXITCODE
+throw 'Inicie o MCP com node .codex\start-mssql-mcp-write.mjs.'
 

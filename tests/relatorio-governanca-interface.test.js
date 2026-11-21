@@ -46,6 +46,7 @@ vm.runInContext(reports, context);
 const internals = context.window.__REPORTS_TEST_INTERNALS__;
 
 assert.equal(internals.isActiveAdministrator({ perfilCodigo: 'administrador', perfilOriginalCodigo: 'administrador' }), true);
+assert.equal(internals.isAuditReader({ perfilCodigo: 'auditor_caixa', perfilOriginalCodigo: 'auditor_caixa' }), true);
 for (const user of [
   { perfilCodigo: 'unidade_apuradora', perfilOriginalCodigo: 'administrador' },
   { perfilCodigo: 'homologador', perfilOriginalCodigo: 'administrador' },
@@ -72,7 +73,7 @@ assert.match(details, /&lt;svg/);
 assert.match(reports, /escapeHtml\(event\.descricao\)/);
 assert.match(reports, /escapeHtml\(event\.justificativa\)/);
 assert.match(reports, /escapeHtml\(item\.nomeArquivo/);
-assert.match(reports, /escapeHtml\(governanceUser\(item\.usuario\)\)/);
+assert.match(reports, /escapeHtml\(visibleEvidenceUser\(item\.usuario\)\)/);
 assert.match(reports, /escapeHtml\(item\.fonte/);
 assert.match(reports, /escapeHtml\(item\.observacao/);
 

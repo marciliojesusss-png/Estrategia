@@ -161,6 +161,13 @@ async function loadExecutivePayload(user, data) {
   assert.equal("driver" in institutionalPayload.fonte, false, "Companhia nao deve receber fonte.driver");
   assert.equal("banco" in institutionalPayload.fonte, false, "Companhia nao deve receber fonte.banco");
 
+  const auditorPayload = await loadExecutivePayload(
+    { perfilCodigo: "auditor_caixa", perfilOriginalCodigo: "auditor_caixa" },
+    { ...basePayload, acessoInstitucional: true, fonte: { tipo: "institucional" } },
+  );
+  assert.equal(auditorPayload.indicadores.length, 23, "Auditor CAIXA deve receber os 23 indicadores institucionais");
+  assert.deepEqual(auditorPayload.fonte, { tipo: "institucional" }, "Auditor CAIXA deve aceitar a fonte institucional sanitizada");
+
   const institutionalCalculationPayload = await loadExecutivePayload(
     { perfilCodigo: "usuario_companhia", perfilOriginalCodigo: "administrador" },
     {

@@ -798,7 +798,8 @@
     return state.user?.perfilCodigo === "administrador" ||
       state.user?.perfil === "Administrador" ||
       state.user?.sgUnidade === "GERIN" ||
-      state.user?.unidadeApuradora === "GERIN";
+      ["GERIN", "DILOT"].includes(state.user?.unidadeApuradora) ||
+      state.user?.grupoPreenchimento === "DILOT";
   }
 
   function getMetaLabel(regra) {

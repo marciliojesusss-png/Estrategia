@@ -436,6 +436,10 @@
     return user?.perfilCodigo === "administrador" && user?.perfilOriginalCodigo === "administrador";
   }
 
+  function isAuditReader(user) {
+    return isActiveAdministrator(user) || user?.perfilCodigo === "auditor_caixa";
+  }
+
   function reportsNavigation(user, activeMode) {
     const target = document.getElementById("reportsModuleNavigation");
     if (!target) return;
@@ -444,8 +448,10 @@
       { key: "detalhado", label: "Detalhado", href: `${window.appUrl ? window.appUrl("relatorios") : "/relatorios"}#officialReportTable`, title: "Selecione um indicador no Consolidado" },
       { key: "iniciativas", label: "Iniciativas", href: window.appUrl ? window.appUrl("relatorios/iniciativas") : "/relatorios/iniciativas" }
     ];
+    if (isAuditReader(user)) {
+      items.push({ key: "governanca", label: user?.perfilCodigo === "auditor_caixa" ? "Dossi\u00ea de Auditoria" : "Governan\u00e7a/Auditoria", href: governanceReportUrl() });
+    }
     if (isActiveAdministrator(user)) {
-      items.push({ key: "governanca", label: "Governan\u00e7a/Auditoria", href: governanceReportUrl() });
       items.push({ key: "operacional", label: "Consulta/Exporta\u00e7\u00e3o Operacional", href: `${window.appUrl ? window.appUrl("relatorios") : "/relatorios"}#operationalReportsSection` });
     }
     target.innerHTML = items.map((item) => `<a class="${item.key === activeMode ? "active" : ""}" href="${escapeHtml(item.href)}"${item.title ? ` title="${escapeHtml(item.title)}"` : ""}>${escapeHtml(item.label)}</a>`).join("");
@@ -1086,7 +1092,7 @@
   window.PageModules = window.PageModules || {};
   window.PageModules.relatorios = { init };
   window.__REPORTS_TEST_INTERNALS__ = {
-    governanceLabel, situationLabel, formatMeasure, formatApprovalDate, isActiveAdministrator,
+    governanceLabel, situationLabel, formatMeasure, formatApprovalDate, isActiveAdministrator, isAuditReader,
     detailedMode, governanceMode, referenceCompetence, polaridadeLabel, detailedApiUrl, detailedReportUrl,
     governanceApiUrl, governanceReportUrl, evidenceDownloadUrl, governanceEventDetails, governanceFilterSummary
   };

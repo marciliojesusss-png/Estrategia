@@ -18,7 +18,7 @@ assert.match(app, /aria-label="Navegação principal"/);
 assert.match(app, /nav\.hidden = true/);
 assert.match(app, /SQL Server/);
 assert.match(app, /\[pageUrl\("auditoria"\), "Auditoria", "auditoria"\]/);
-assert.match(auth, /auditoria: \["Administrador"\]/);
+assert.match(auth, /auditoria: \["Administrador", "Auditor CAIXA"\]/);
 assert.match(menu, /array\('auditoria', 'Auditoria', 'auditoria', 'visualizar'\)/);
 assert.match(app, /fonte alternativa de dados/);
 assert.doesNotMatch(app, /Exportar base/);

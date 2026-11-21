@@ -35,10 +35,11 @@ final class IndicadorConsultaInstitucionalService
         }
 
         $scopeAllows = AccessPolicy::scopeAllows($user, $indicador);
-        $operationalScope = $profile === 'administrador' || (
+        $operationalScope = in_array($profile, array('administrador', 'auditor_caixa'), true) || (
             in_array($profile, array('homologador', 'consultor_diretoria', 'unidade_apuradora'), true) && $scopeAllows
         );
         $institutionalReadOnly = $profile === 'usuario_companhia';
+        $auditorReadOnly = $profile === 'auditor_caixa';
 
         $launches = $this->lancamentos->all(array('indicadorId' => $id));
         if ($institutionalReadOnly) {
@@ -64,7 +65,7 @@ final class IndicadorConsultaInstitucionalService
             'consulta' => array(
                 'escopo' => 'geral',
                 'institucional' => $institutionalReadOnly,
-                'somenteLeitura' => $institutionalReadOnly,
+                'somenteLeitura' => $institutionalReadOnly || $auditorReadOnly,
                 'dentroEscopoOperacional' => $operationalScope,
                 'somenteHomologados' => $institutionalReadOnly,
             ),
@@ -79,7 +80,7 @@ final class IndicadorConsultaInstitucionalService
     public static function permiteDetalheGeral(array $user, array $indicador): bool
     {
         $profile = Auth::normalizeProfile(isset($user['perfil']) ? $user['perfil'] : '');
-        if ($profile === 'administrador' || $profile === 'usuario_companhia') return true;
+        if (in_array($profile, array('administrador', 'usuario_companhia', 'auditor_caixa'), true)) return true;
 
         // Regra funcional deliberada: Consultor da Diretoria possui as mesmas
         // prerrogativas operacionais do Homologador nesta fase.

@@ -16,6 +16,7 @@ final class GovernancaHomologacao
         if (in_array($value, array('homologador', 'diretoria_homologadora'), true)) return 'homologador';
         if (in_array($value, array('consultor_diretoria', 'consultor_da_diretoria'), true)) return 'consultor_diretoria';
         if ($value === 'unidade_apuradora') return 'unidade_apuradora';
+        if ($value === 'auditor_caixa') return 'auditor_caixa';
         return 'usuario_companhia';
     }
 
@@ -26,6 +27,7 @@ final class GovernancaHomologacao
             'homologador' => 'Diretoria Homologadora',
             'consultor_diretoria' => 'Consultor da Diretoria',
             'unidade_apuradora' => 'Unidade Apuradora',
+            'auditor_caixa' => 'Auditor CAIXA',
             'usuario_companhia' => 'Usuario Companhia',
         );
         $profile = self::normalizeProfile($profile);

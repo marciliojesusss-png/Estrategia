@@ -156,7 +156,7 @@
       throw new Error("A fonte central retornou dados incompletos para o Resumo Executivo.");
     }
     const readOnlyGeneralView = viewScope === VIEW_SCOPE.GENERAL && canChooseViewScope(user);
-    if (viewScopeProfileCode(user) === "usuario_companhia" || readOnlyGeneralView) {
+    if (["usuario_companhia", "auditor_caixa"].includes(viewScopeProfileCode(user)) || readOnlyGeneralView) {
       if (data.acessoInstitucional !== true || normalizeText(data.fonte?.tipo) !== "institucional") {
         throw new Error("A fonte central retornou um payload institucional inválido.");
       }

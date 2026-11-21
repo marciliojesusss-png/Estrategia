@@ -30,7 +30,7 @@ assert.match(admin, /status === "Reduzida"/);
 assert.match(admin, /Nenhum usuário ativo nesta cobertura/);
 assert.match(admin, /function accessUnitLabel\(item = \{\}\)/);
 assert.match(admin, /if \(isAdministratorAccess\(item\)\) return "GERAL"/);
-assert.match(admin, /profile === "unidade_apuradora" \? \(item\.unidadeApuradora \|\| "-"\) : "-"/);
+assert.match(admin, /profile === "unidade_apuradora" \? \(item\.grupoPreenchimentoCodigo \|\| item\.unidadeApuradora \|\| "-"\) : "-"/);
 assert.match(admin, /function accessDirectoryLabel\(item = \{\}\)/);
 assert.match(admin, /\["homologador", "consultor_diretoria"\]\.includes\(profile\) \? \(item\.diretoriaResponsavel \|\| "-"\) : "-"/);
 assert.match(admin, /escapeHtml\(accessUnitLabel\(item\)\)/);
@@ -39,8 +39,9 @@ assert.doesNotMatch(admin, /item\.unidadeApuradora \|\| item\.sgUnidade/);
 assert.doesNotMatch(admin, /Vacâncias/);
 assert.doesNotMatch(admin, /Substituição temporária/);
 
-assert.match(controller, /\$resource==='cobertura-acessos'/);
-assert.match(controller, /requirePermission\(\$resource==='auditoria'\?'auditoria':'administracao'/);
-assert.match(repository, /WHERE ativo=1 ORDER BY nome,matricula/);
+assert.match(controller, /\$resource\s*===\s*'cobertura-acessos'/);
+assert.match(controller, /\$auditReadResource\s*=\s*in_array\(\$resource,\s*array\('auditoria',\s*'acessos'\),\s*true\)/);
+assert.match(controller, /\$auditReadResource\s*\?\s*'auditoria'\s*:\s*'administracao'/);
+assert.match(repository, /WHERE u\.ativo=1 ORDER BY u\.nome,u\.matricula/);
 
 console.log("Interface da Matriz de Cobertura somente leitura OK");

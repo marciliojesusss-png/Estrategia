@@ -111,7 +111,9 @@ final class IniciativaRelatorioService
     {
         $profile = (string) ($user['perfil'] ?? '');
         if ($profile === 'administrador') return 'Escopo geral';
+        if ($profile === 'auditor_caixa') return 'Escopo geral de auditoria';
         if ($profile === 'unidade_apuradora') {
+            if (!empty($user['grupo_preenchimento'])) return 'Grupo de preenchimento: ' . (string) $user['grupo_preenchimento'];
             return 'Unidade: ' . (string) ($user['unidade_apuradora'] ?? '');
         }
         return 'Diretoria: ' . (string) ($user['diretoria_responsavel'] ?? '');

@@ -14,7 +14,8 @@ $menuItems = array(
 <nav class="header-nav" aria-label="Navegacao principal">
   <?php foreach ($menuItems as $menuItem): ?>
     <?php if (AccessPolicy::allowsPage($menuUser['perfilCodigo'], $menuItem[2], $menuItem[3])): ?>
-      <a class="nav-link" href="<?= e(app_url($menuItem[0])) ?>"><?= e($menuItem[1]) ?></a>
+      <?php $menuLabel = $menuUser['perfilCodigo'] === 'auditor_caixa' && $menuItem[0] === 'relatorios' ? 'Dossie de Auditoria' : ($menuUser['perfilCodigo'] === 'auditor_caixa' && $menuItem[0] === 'auditoria' ? 'Trilha de Auditoria' : $menuItem[1]); ?>
+      <a class="nav-link" href="<?= e(app_url($menuItem[0])) ?>"><?= e($menuLabel) ?></a>
     <?php endif; ?>
   <?php endforeach; ?>
 </nav>
