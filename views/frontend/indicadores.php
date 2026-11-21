@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CAIXA Loterias | Indicadores</title>
   <link rel="stylesheet" href="/assets/css/styles.css?v=APP-VERSION-001">
+  <script src="<?= APP_BASE_PATH ?>/assets/vendor/chart.umd.min.js?v=4.4.7" defer></script>
   <script src="/assets/js/currency.js?v=PERSISTENCIA-CENTRAL-008" defer></script>
   <script src="/assets/js/ieo-recorrente.js?v=INDICADOR06-CONFERENCIA-001" defer></script>
   <script src="/assets/js/lucro-recorrente.js?v=METAS-OFICIAIS-003" defer></script>
@@ -17,8 +18,10 @@
   <script src="/assets/js/calculations.js?v=PLATAFORMA-JOGOS-001" defer></script>
   <script src="/assets/js/formulas.js?v=INDICADOR21-ATINGIMENTO-001" defer></script>
   <script src="/assets/js/quarterly.js?v=INDICADOR23-APRESENTACAO-002" defer></script>
+  <script src="/assets/js/dashboard.js?v=EVOLUCAO-INDICADORES-001" defer></script>
+  <script src="/assets/js/indicator-evolution.js?v=EVOLUCAO-INDICADORES-001" defer></script>
   <script src="/assets/js/documentation-fields.js?v=DOCUMENTACAO-CENTRAL-001" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/indicators.js?v=INDICADOR23-APRESENTACAO-002" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/indicators.js?v=EVOLUCAO-INDICADORES-001" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/app.js?v=APP-VERSION-001-GRUPOS-AUDITOR-001" defer></script>
 </head>
 <body data-page="indicadores">
@@ -85,6 +88,24 @@
         <div id="indicatorReadOnly" class="detail-grid"></div>
 
         <div id="indicatorTracking" class="indicator-tracking">
+          <section id="indicatorEvolutionPanel" class="indicator-tracking-section indicator-evolution-panel" aria-labelledby="indicatorEvolutionTitle">
+            <div class="section-heading indicator-evolution-heading">
+              <div>
+                <p class="eyebrow">Evolução no tempo</p>
+                <h3 id="indicatorEvolutionTitle">Meta x Realizado</h3>
+                <p class="section-subtitle">Posições oficiais homologadas por competência.</p>
+              </div>
+              <label class="indicator-evolution-control">Ano
+                <select id="indicatorEvolutionYear" aria-label="Ano da evolução do indicador"></select>
+              </label>
+            </div>
+            <div class="indicator-evolution-chart-wrap">
+              <canvas id="indicatorEvolutionChart" height="320"></canvas>
+              <p id="indicatorEvolutionEmpty" class="empty-state" hidden></p>
+              <div id="indicatorEvolutionTimeline" class="indicator-evolution-timeline" hidden></div>
+            </div>
+          </section>
+
           <section class="indicator-tracking-section">
             <div class="section-heading">
               <div>

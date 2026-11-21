@@ -14,6 +14,145 @@
   --focus: #f6c344;
   --shadow: 0 12px 30px rgba(15, 40, 70, 0.08);
 }
+
+/* Evolução temporal Meta x Realizado */
+.indicator-evolution-panel {
+  min-width: 0;
+}
+
+.indicator-evolution-heading {
+  align-items: end;
+  gap: 20px;
+}
+
+.indicator-evolution-heading .section-subtitle {
+  margin: 4px 0 0;
+}
+
+.indicator-evolution-controls {
+  display: grid;
+  grid-template-columns: minmax(240px, 2fr) minmax(100px, 0.6fr);
+  gap: 12px;
+  width: min(100%, 520px);
+}
+
+.indicator-evolution-control {
+  min-width: 120px;
+}
+
+.indicator-evolution-controls label,
+.indicator-evolution-control {
+  color: #a9c5e3;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.indicator-evolution-controls select,
+.indicator-evolution-control select {
+  margin-top: 5px;
+  width: 100%;
+}
+
+.indicator-evolution-chart-wrap {
+  position: relative;
+  min-height: 340px;
+  margin-top: 12px;
+}
+
+.indicator-evolution-chart-wrap canvas {
+  width: 100% !important;
+  height: 320px !important;
+}
+
+.indicator-evolution-chart-wrap .empty-state {
+  display: grid;
+  min-height: 280px;
+  place-items: center;
+  margin: 0;
+}
+
+.indicator-evolution-timeline {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  align-items: stretch;
+  min-height: 220px;
+}
+
+.indicator-evolution-timeline[hidden] {
+  display: none;
+}
+
+.indicator-evolution-milestone {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-height: 130px;
+  padding: 16px 16px 16px 20px;
+  border: 1px solid rgba(49, 196, 255, 0.28);
+  border-radius: 10px;
+  background: rgba(8, 42, 78, 0.72);
+}
+
+.indicator-evolution-milestone::before {
+  content: "";
+  position: absolute;
+  inset: 12px auto 12px 0;
+  width: 4px;
+  border-radius: 4px;
+  background: #31c4ff;
+}
+
+.indicator-evolution-milestone span,
+.indicator-evolution-milestone small {
+  color: #a9c5e3;
+}
+
+.indicator-evolution-milestone strong {
+  color: #f4f8ff;
+  line-height: 1.35;
+}
+
+@media (max-width: 760px) {
+  .indicator-evolution-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .indicator-evolution-controls {
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .indicator-evolution-control {
+    width: 100%;
+  }
+
+  .indicator-evolution-chart-wrap {
+    min-height: 300px;
+  }
+
+  .indicator-evolution-chart-wrap canvas {
+    height: 280px !important;
+  }
+}
+
+@media print {
+  .indicator-evolution-panel {
+    break-inside: avoid;
+  }
+
+  .indicator-evolution-controls,
+  .indicator-evolution-control {
+    display: none;
+  }
+
+  .indicator-evolution-chart-wrap {
+    min-height: 90mm;
+  }
+}
+
 /* Relatorio consolidado de indicadores - posicao oficial */
 .official-report {
   border: 1px solid rgba(49, 196, 255, 0.35);

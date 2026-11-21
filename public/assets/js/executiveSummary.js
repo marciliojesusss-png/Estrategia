@@ -42,7 +42,9 @@
       situacao: null
     },
     summaryCardFilter: null,
-    indicatorFilterId: null
+    indicatorFilterId: null,
+    evolutionIndicatorId: null,
+    evolutionYear: null
   };
 
   function unique(values) {
@@ -861,6 +863,8 @@
     }
     clearInteractiveFilters("indicator");
     state.indicatorFilterId = id;
+    state.evolutionIndicatorId = id;
+    state.evolutionYear = null;
     refresh();
     scrollToExecutiveTable();
   }
@@ -1537,6 +1541,61 @@
     balancePerformanceMapLastRow(target);
   }
 
+  function renderExecutiveEvolution(results) {
+    if (!window.IndicatorEvolution) return;
+    const indicatorSelect = document.getElementById("executiveEvolutionIndicator");
+    const yearSelect = document.getElementById("executiveEvolutionYear");
+    const title = document.getElementById("executiveEvolutionTitle");
+    if (!indicatorSelect || !yearSelect) return;
+
+    const indicators = results
+      .map((result) => result.indicador)
+      .filter((indicator, index, items) => items.findIndex((item) => Number(item.id) === Number(indicator.id)) === index)
+      .sort((left, right) => Number(left.numero) - Number(right.numero));
+    const preferredId = state.evolutionIndicatorId || state.indicatorFilterId;
+    const selected = indicators.find((indicator) => Number(indicator.id) === Number(preferredId)) || indicators[0] || null;
+
+    indicatorSelect.innerHTML = indicators.map((indicator) => (
+      `<option value="${indicator.id}">${escapeHtml(`${String(indicator.numero).padStart(2, "0")}. ${limparNomeIndicador(indicator.indicador)}`)}</option>`
+    )).join("");
+
+    if (!selected) {
+      state.evolutionIndicatorId = null;
+      if (title) title.textContent = "Meta x Realizado";
+      IndicatorEvolution.render({
+        canvas: "executiveEvolutionChart",
+        empty: "executiveEvolutionEmpty",
+        timeline: "executiveEvolutionTimeline",
+        series: { points: [], numericPoints: [], qualitative: false }
+      });
+      return;
+    }
+
+    state.evolutionIndicatorId = Number(selected.id);
+    indicatorSelect.value = String(selected.id);
+    const years = IndicatorEvolution.availableYears(state.launches, selected.id);
+    const selectedYear = years.includes(Number(state.evolutionYear)) ? Number(state.evolutionYear) : years[0];
+    state.evolutionYear = selectedYear;
+    yearSelect.innerHTML = years.map((year) => `<option value="${year}">${year}</option>`).join("");
+    yearSelect.value = String(selectedYear);
+    if (title) title.textContent = `Meta x Realizado — ${limparNomeIndicador(selected.indicador)}`;
+
+    const series = IndicatorEvolution.buildSeries({
+      indicator: selected,
+      launches: state.launches,
+      rules: state.rules,
+      governance: state.governancaHomologacaoAtual,
+      year: selectedYear
+    });
+    IndicatorEvolution.render({
+      canvas: "executiveEvolutionChart",
+      empty: "executiveEvolutionEmpty",
+      timeline: "executiveEvolutionTimeline",
+      series,
+      indicatorName: selected.indicador
+    });
+  }
+
   function renderChartFilterBanner() {
     const banner = document.getElementById("executiveChartFilterBanner");
     const text = document.getElementById("executiveChartFilterText");
@@ -1621,6 +1680,7 @@
     const groups = groupByPillar(results);
     renderCards(results);
     renderPerformanceMap(results);
+    renderExecutiveEvolution(results);
     renderPillarGauges(groups);
     renderChart(groups);
     renderChartFilterBanner();
@@ -1648,7 +1708,9 @@
         situacao: null
       },
       summaryCardFilter: null,
-      indicatorFilterId: null
+      indicatorFilterId: null,
+      evolutionIndicatorId: null,
+      evolutionYear: null
     };
     state.viewScopeDatasets[initialScope] = data;
     applyCentralData(data, initialScope);
@@ -1666,6 +1728,15 @@
         if (select.dataset.executiveFilter === "periodo") updatePeriodFilters();
         refresh();
       });
+    });
+    document.getElementById("executiveEvolutionIndicator")?.addEventListener("change", (event) => {
+      state.evolutionIndicatorId = Number(event.target.value);
+      state.evolutionYear = null;
+      renderExecutiveEvolution(getFilteredResults());
+    });
+    document.getElementById("executiveEvolutionYear")?.addEventListener("change", (event) => {
+      state.evolutionYear = Number(event.target.value);
+      renderExecutiveEvolution(getFilteredResults());
     });
     document.getElementById("clearExecutiveChartFilter")?.addEventListener("click", clearChartFilter);
     document.getElementById("clearExecutiveSummaryCardFilter")?.addEventListener("click", clearSummaryCardFilter);

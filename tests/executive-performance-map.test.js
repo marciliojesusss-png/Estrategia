@@ -239,7 +239,7 @@ context.window.location.search = "";
 const scopeSelectorView = fs.readFileSync(path.join(root, "views", "frontend", "resumo-executivo.php"), "utf8");
 assert.match(scopeSelectorView, /data-own-scope-label>Meu escopo<\/span>/);
 assert.match(scopeSelectorView, /data-executive-view-scope="general"[^>]*>Escopo geral/);
-assert.match(scopeSelectorView, /executiveSummary\.js\?v=RESUMO-RESULTADO-10-12-002/);
+assert.match(scopeSelectorView, /executiveSummary\.js\?v=EVOLUCAO-INDICADORES-001/);
 const scopeData = {
   indicadores: [
     { id: 1, ativo: true, unidadeApuradora: "SUCOL", diretoriaResponsavel: "DIFIR" },
@@ -413,7 +413,7 @@ assert.match(executiveSource, /<strong class="executive-performance-value execut
 assert.match(executiveSource, /performanceToneForResult/);
 assert.match(executiveSource, /executive-performance-\$\{tone\}/);
 assert.match(executiveView, /Azul neutro <strong>Em acompanhamento<\/strong>/);
-assert.match(executiveView, /executiveSummary\.js\?v=RESUMO-RESULTADO-10-12-002/);
+assert.match(executiveView, /executiveSummary\.js\?v=EVOLUCAO-INDICADORES-001/);
 assert.match(executiveView, /dashboard\.js\?v=GOVERNANCA-CA-001/);
 assert.match(executiveView, /styles\.css\?v=APP-VERSION-001/);
 assert.equal(executiveSource, fs.readFileSync(path.join(root, "public", "assets", "js", "executiveSummary.js"), "utf8"));

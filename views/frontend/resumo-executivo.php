@@ -18,7 +18,8 @@
   <script src="<?= APP_BASE_PATH ?>/assets/js/prazo-apuracao.js?v=PRAZOS-APURACAO-001" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/dataStore.js?v=GOVERNANCA-CA-001-GRUPOS-AUDITOR-001" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/dashboard.js?v=GOVERNANCA-CA-001" defer></script>
-  <script src="<?= APP_BASE_PATH ?>/assets/js/executiveSummary.js?v=RESUMO-RESULTADO-10-12-002" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/indicator-evolution.js?v=EVOLUCAO-INDICADORES-001" defer></script>
+  <script src="<?= APP_BASE_PATH ?>/assets/js/executiveSummary.js?v=EVOLUCAO-INDICADORES-001" defer></script>
   <script src="<?= APP_BASE_PATH ?>/assets/js/app.js?v=APP-VERSION-001-GRUPOS-AUDITOR-001" defer></script>
 </head>
 <body data-page="resumoExecutivo">
@@ -76,6 +77,29 @@
         </div>
         <div id="executivePerformanceMapEmpty" class="empty-state" hidden>Nenhum indicador encontrado para os filtros selecionados.</div>
         <div id="executivePerformanceMapGroups" class="executive-performance-map-groups" aria-label="Mapa visual dos indicadores"></div>
+      </section>
+
+      <section id="executiveEvolutionPanel" class="panel indicator-evolution-panel executive-evolution-panel" aria-labelledby="executiveEvolutionTitle">
+        <div class="section-heading executive-section-heading indicator-evolution-heading">
+          <div>
+            <p class="eyebrow">Evolução do indicador</p>
+            <h2 id="executiveEvolutionTitle">Meta x Realizado</h2>
+            <p class="section-subtitle">Selecione um indicador para acompanhar sua evolução oficial.</p>
+          </div>
+          <div class="indicator-evolution-controls">
+            <label>Indicador
+              <select id="executiveEvolutionIndicator" aria-label="Indicador do gráfico de evolução"></select>
+            </label>
+            <label>Ano
+              <select id="executiveEvolutionYear" aria-label="Ano do gráfico de evolução"></select>
+            </label>
+          </div>
+        </div>
+        <div class="indicator-evolution-chart-wrap">
+          <canvas id="executiveEvolutionChart" height="320"></canvas>
+          <p id="executiveEvolutionEmpty" class="empty-state" hidden></p>
+          <div id="executiveEvolutionTimeline" class="indicator-evolution-timeline" hidden></div>
+        </div>
       </section>
 
       <section class="painel-pilares" aria-label="Análise por pilar">

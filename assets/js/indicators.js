@@ -1144,6 +1144,7 @@
     const launches = state.data.lancamentos
       .filter((item) => String(item.indicadorId) === String(indicador.id) && Number(item.ano) === 2026)
       .sort((a, b) => Number(a.mes) - Number(b.mes));
+    renderIndicatorEvolution(indicador);
     const byMonth = Object.fromEntries(launches.map((item) => [Number(item.mes), item]));
     const compositionMonths = QuarterlyConsolidation.MONTHS.filter(([month]) => (
       window.IndicatorPeriodicity?.isExpectedMonth(indicador, month) !== false
@@ -2030,6 +2031,30 @@
     return state.indicadores.find((item) => Number(item.id) === Number(state.selectedId));
   }
 
+  function renderIndicatorEvolution(indicador) {
+    if (!indicador || !window.IndicatorEvolution) return;
+    const yearSelect = document.getElementById("indicatorEvolutionYear");
+    if (!yearSelect) return;
+    const years = IndicatorEvolution.availableYears(state.data?.lancamentos || [], indicador.id);
+    const currentYear = years.includes(Number(yearSelect.value)) ? Number(yearSelect.value) : years[0];
+    yearSelect.innerHTML = years.map((year) => `<option value="${year}">${year}</option>`).join("");
+    yearSelect.value = String(currentYear);
+    const series = IndicatorEvolution.buildSeries({
+      indicator: indicador,
+      launches: state.data?.lancamentos || [],
+      rules: state.data?.regrasIndicadores || [],
+      governance: state.data?.governancaHomologacaoAtual || [],
+      year: currentYear
+    });
+    IndicatorEvolution.render({
+      canvas: "indicatorEvolutionChart",
+      empty: "indicatorEvolutionEmpty",
+      timeline: "indicatorEvolutionTimeline",
+      series,
+      indicatorName: indicador.indicador
+    });
+  }
+
   function refresh() {
     const visible = scopedIndicators();
     fillFilters(visible);
@@ -2111,6 +2136,10 @@
     });
 
     document.getElementById("indicatorForm").addEventListener("submit", saveIndicator);
+
+    document.getElementById("indicatorEvolutionYear")?.addEventListener("change", () => {
+      renderIndicatorEvolution(getSelectedIndicator());
+    });
 
     document.getElementById("cancelIndicatorEdit").addEventListener("click", () => {
       state.editMode = false;
