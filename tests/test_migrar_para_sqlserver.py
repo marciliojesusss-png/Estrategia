@@ -16,7 +16,7 @@ class MigrationScriptTest(unittest.TestCase):
     def test_defaults_use_expected_source_and_new_target(self):
         args = MODULE.parse_args([])
         self.assertEqual("Estrategia", args.banco_origem)
-        self.assertEqual("Monitoramento_Estrategia", args.banco)
+        self.assertEqual("DB5319_Monitoramento_Estrategia", args.banco)
         self.assertEqual("DF7436SR439", args.servidor)
         self.assertEqual(r"localhost\SQLEXPRESS01", args.servidor_origem)
 
@@ -59,6 +59,50 @@ class MigrationScriptTest(unittest.TestCase):
             ("lancamento_id", "versao_lancamento"),
             MODULE.primary_keys("lancamentos_resultados_homologados"),
         )
+
+    def test_group_and_auditor_tables_are_included(self):
+        self.assertTrue(
+            {
+                "grupos_preenchimento",
+                "grupos_preenchimento_unidades",
+                "concessoes_acesso_auditoria",
+            }.issubset(MODULE.TABLES)
+        )
+        self.assertIn("grupo_preenchimento_codigo", MODULE.AUTH_USER_COLUMNS)
+        self.assertIn(
+            "grupo_preenchimento_codigo",
+            MODULE.AUTH_TABLE_COLUMNS["usuarios_acesso"],
+        )
+
+    def test_group_primary_keys_are_preserved(self):
+        self.assertEqual(("codigo",), MODULE.primary_keys("grupos_preenchimento"))
+        self.assertEqual(
+            ("grupo_codigo", "unidade_codigo"),
+            MODULE.primary_keys("grupos_preenchimento_unidades"),
+        )
+
+    def test_sqlite_definition_contains_constraints(self):
+        definition = MODULE.sqlite_table_definition(
+            [
+                {"name": "grupo_codigo", "type": "nvarchar", "nullable": False},
+                {"name": "unidade_codigo", "type": "nvarchar", "nullable": False},
+            ],
+            ("grupo_codigo", "unidade_codigo"),
+            [
+                {
+                    "columns": ["grupo_codigo"],
+                    "referencedTable": "grupos_preenchimento",
+                    "referencedColumns": ["codigo"],
+                }
+            ],
+        )
+        self.assertIn('"grupo_codigo" TEXT NOT NULL', definition)
+        self.assertIn('PRIMARY KEY ("grupo_codigo", "unidade_codigo")', definition)
+        self.assertIn(
+            'FOREIGN KEY ("grupo_codigo") REFERENCES "grupos_preenchimento" ("codigo")',
+            definition,
+        )
+        self.assertIn("DEFERRABLE INITIALLY DEFERRED", definition)
 
 
 if __name__ == "__main__":

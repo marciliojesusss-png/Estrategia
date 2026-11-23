@@ -47,7 +47,10 @@ TABLES = [
     "configuracoes",
     "usuarios_validacao",
     "backups_importacao",
+    "grupos_preenchimento",
+    "grupos_preenchimento_unidades",
     "usuarios_acesso",
+    "concessoes_acesso_auditoria",
     "acessos_log",
     "iniciativas_estrategicas",
     "iniciativas_acompanhamentos",
@@ -67,6 +70,7 @@ AUTH_TABLE_COLUMNS = {
         "perfil",
         "unidade_apuradora",
         "diretoria_responsavel",
+        "grupo_preenchimento_codigo",
         "ativo",
         "created_at",
         "updated_at",
@@ -92,6 +96,7 @@ AUTH_USER_COLUMNS = [
     "perfil",
     "unidade_apuradora",
     "diretoria_responsavel",
+    "grupo_preenchimento_codigo",
     "ativo",
 ]
 
@@ -143,6 +148,8 @@ BOOLEAN_COLUMNS = {
     "prazos_apuracao": {"ativo"},
     "usuarios_validacao": {"ativo"},
     "usuarios_acesso": {"ativo"},
+    "grupos_preenchimento": {"ativo"},
+    "concessoes_acesso_auditoria": {"ativo"},
     "iniciativas_estrategicas": {"ativo", "exige_evidencia"},
     "iniciativas_acompanhamento_itens": {"destaque_ca"},
 }
@@ -158,6 +165,8 @@ JSON_COLUMNS = {
 
 PRIMARY_KEYS = {
     "configuracoes": ("chave",),
+    "grupos_preenchimento": ("codigo",),
+    "grupos_preenchimento_unidades": ("grupo_codigo", "unidade_codigo"),
     "lancamentos_resultados_homologados": ("lancamento_id", "versao_lancamento"),
 }
 
@@ -168,7 +177,12 @@ FOREIGN_KEY_CHECKS = [
     ("retificacoes", "lancamento_id", "lancamentos", "id"),
     ("evidencias", "lancamento_id", "lancamentos", "id"),
     ("lancamentos_observacoes_documentais", "lancamento_id", "lancamentos", "id"),
+    ("lancamentos_observacoes_documentais", "indicador_id", "indicadores", "id"),
+    ("lancamentos_observacoes_documentais", "substitui_observacao_id", "lancamentos_observacoes_documentais", "id"),
     ("lancamentos_resultados_homologados", "lancamento_id", "lancamentos", "id"),
+    ("grupos_preenchimento_unidades", "grupo_codigo", "grupos_preenchimento", "codigo"),
+    ("usuarios_acesso", "grupo_preenchimento_codigo", "grupos_preenchimento", "codigo"),
+    ("concessoes_acesso_auditoria", "usuario_acesso_id", "usuarios_acesso", "id"),
     ("iniciativas_acompanhamentos", "iniciativa_id", "iniciativas_estrategicas", "id"),
     ("iniciativas_acompanhamento_itens", "acompanhamento_id", "iniciativas_acompanhamentos", "id"),
     ("iniciativas_homologacoes", "acompanhamento_id", "iniciativas_acompanhamentos", "id"),
@@ -724,6 +738,37 @@ def sqlite_affinity(sqlserver_type):
     return "TEXT"
 
 
+def sqlite_table_definition(columns, primary_key_columns, foreign_keys):
+    definitions = []
+    for column in columns:
+        definition = (
+            f"{sqlite_identifier(column['name'])} "
+            f"{sqlite_affinity(column['type'])}"
+        )
+        if not column.get("nullable", True):
+            definition += " NOT NULL"
+        definitions.append(definition)
+
+    if primary_key_columns:
+        definitions.append(
+            "PRIMARY KEY ("
+            + ", ".join(sqlite_identifier(name) for name in primary_key_columns)
+            + ")"
+        )
+
+    for foreign_key in foreign_keys:
+        definitions.append(
+            "FOREIGN KEY ("
+            + ", ".join(sqlite_identifier(name) for name in foreign_key["columns"])
+            + ") REFERENCES "
+            + sqlite_identifier(foreign_key["referencedTable"])
+            + " ("
+            + ", ".join(sqlite_identifier(name) for name in foreign_key["referencedColumns"])
+            + ") DEFERRABLE INITIALLY DEFERRED"
+        )
+    return ", ".join(definitions)
+
+
 def export_value(value):
     if value is None:
         return None
@@ -779,6 +824,75 @@ def sqlserver_export_columns(connection, table):
     ]
 
 
+def sqlserver_export_primary_key(connection, table):
+    rows = connection.cursor().execute(
+        """
+        SELECT column_info.name
+        FROM sys.key_constraints AS key_info
+        INNER JOIN sys.tables AS table_info
+            ON table_info.object_id = key_info.parent_object_id
+        INNER JOIN sys.schemas AS schema_info
+            ON schema_info.schema_id = table_info.schema_id
+        INNER JOIN sys.index_columns AS index_info
+            ON index_info.object_id = table_info.object_id
+           AND index_info.index_id = key_info.unique_index_id
+        INNER JOIN sys.columns AS column_info
+            ON column_info.object_id = table_info.object_id
+           AND column_info.column_id = index_info.column_id
+        WHERE schema_info.name = N'dbo'
+          AND table_info.name = ?
+          AND key_info.type = N'PK'
+        ORDER BY index_info.key_ordinal
+        """,
+        table,
+    ).fetchall()
+    return tuple(row[0] for row in rows)
+
+
+def sqlserver_export_foreign_keys(connection, table):
+    rows = connection.cursor().execute(
+        """
+        SELECT foreign_key.name,
+               foreign_column.constraint_column_id,
+               parent_column.name,
+               referenced_table.name,
+               referenced_column.name
+        FROM sys.foreign_keys AS foreign_key
+        INNER JOIN sys.tables AS parent_table
+            ON parent_table.object_id = foreign_key.parent_object_id
+        INNER JOIN sys.schemas AS parent_schema
+            ON parent_schema.schema_id = parent_table.schema_id
+        INNER JOIN sys.foreign_key_columns AS foreign_column
+            ON foreign_column.constraint_object_id = foreign_key.object_id
+        INNER JOIN sys.columns AS parent_column
+            ON parent_column.object_id = foreign_column.parent_object_id
+           AND parent_column.column_id = foreign_column.parent_column_id
+        INNER JOIN sys.tables AS referenced_table
+            ON referenced_table.object_id = foreign_column.referenced_object_id
+        INNER JOIN sys.columns AS referenced_column
+            ON referenced_column.object_id = foreign_column.referenced_object_id
+           AND referenced_column.column_id = foreign_column.referenced_column_id
+        WHERE parent_schema.name = N'dbo'
+          AND parent_table.name = ?
+        ORDER BY foreign_key.name, foreign_column.constraint_column_id
+        """,
+        table,
+    ).fetchall()
+    grouped = {}
+    for row in rows:
+        name = row[0]
+        if name not in grouped:
+            grouped[name] = {
+                "name": name,
+                "columns": [],
+                "referencedTable": row[3],
+                "referencedColumns": [],
+            }
+        grouped[name]["columns"].append(row[2])
+        grouped[name]["referencedColumns"].append(row[4])
+    return list(grouped.values())
+
+
 def sqlserver_export_expression(column):
     name = bracket(column["name"])
     sql_type = str(column["type"]).lower()
@@ -826,6 +940,8 @@ def export_sqlserver_to_sqlite(args, config):
         sqlite_conn = sqlite3.connect(temporary)
         sqlite_conn.execute("PRAGMA journal_mode = DELETE")
         sqlite_conn.execute("PRAGMA synchronous = FULL")
+        sqlite_conn.execute("PRAGMA foreign_keys = ON")
+        sqlite_conn.execute("BEGIN IMMEDIATE")
         sqlite_conn.execute(
             "CREATE TABLE _migration_metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL)"
         )
@@ -836,9 +952,14 @@ def export_sqlserver_to_sqlite(args, config):
             columns = sqlserver_export_columns(sqlserver_conn, table)
             if not columns:
                 raise SystemExit(f"Nenhuma coluna exportavel em dbo.{table}")
-            definition = ", ".join(
-                f"{sqlite_identifier(column['name'])} {sqlite_affinity(column['type'])}"
-                for column in columns
+            primary_key_columns = sqlserver_export_primary_key(sqlserver_conn, table)
+            if not primary_key_columns:
+                raise SystemExit(f"Chave primaria ausente em dbo.{table}")
+            foreign_keys = sqlserver_export_foreign_keys(sqlserver_conn, table)
+            definition = sqlite_table_definition(
+                columns,
+                primary_key_columns,
+                foreign_keys,
             )
             sqlite_conn.execute(
                 f"CREATE TABLE {sqlite_identifier(table)} ({definition})"
@@ -875,7 +996,8 @@ def export_sqlserver_to_sqlite(args, config):
             manifest["tables"][table] = {
                 "rows": exported,
                 "columns": columns,
-                "primaryKey": list(primary_keys(table)),
+                "primaryKey": list(primary_key_columns),
+                "foreignKeys": foreign_keys,
             }
             print(f"Exportado dbo.{table}: {exported} registro(s)")
 
@@ -936,6 +1058,42 @@ def sqlite_table_exists(connection, table):
 
 def sqlite_columns(connection, table):
     return [row["name"] for row in connection.execute(f'PRAGMA table_info("{table}")')]
+
+
+def sqlite_primary_keys(connection, table):
+    rows = connection.execute(f'PRAGMA table_info("{table}")').fetchall()
+    return tuple(
+        row["name"]
+        for row in sorted(rows, key=lambda item: int(item["pk"]))
+        if int(row["pk"]) > 0
+    )
+
+
+def sqlite_foreign_keys(connection, table):
+    rows = connection.execute(f'PRAGMA foreign_key_list("{table}")').fetchall()
+    grouped = {}
+    for row in rows:
+        key = int(row["id"])
+        if key not in grouped:
+            grouped[key] = {
+                "columns": [],
+                "referencedTable": row["table"],
+                "referencedColumns": [],
+            }
+        grouped[key]["columns"].append((int(row["seq"]), row["from"]))
+        grouped[key]["referencedColumns"].append((int(row["seq"]), row["to"]))
+    result = []
+    for item in grouped.values():
+        result.append(
+            {
+                "columns": tuple(value for _, value in sorted(item["columns"])),
+                "referencedTable": item["referencedTable"],
+                "referencedColumns": tuple(
+                    value for _, value in sorted(item["referencedColumns"])
+                ),
+            }
+        )
+    return result
 
 
 def sqlserver_columns(connection, table):
@@ -1017,6 +1175,37 @@ def validate_sqlite_source(connection):
     for table in TABLES:
         if not sqlite_table_exists(connection, table):
             errors.append(f"Tabela obrigatoria ausente no SQLite: {table}")
+            continue
+        expected_primary_key = primary_keys(table)
+        actual_primary_key = sqlite_primary_keys(connection, table)
+        if actual_primary_key != expected_primary_key:
+            errors.append(
+                f"Chave primaria divergente no SQLite: {table}; "
+                f"esperado={expected_primary_key}, encontrado={actual_primary_key}"
+            )
+
+    expected_foreign_keys = {}
+    for table, column, referenced_table, referenced_column in FOREIGN_KEY_CHECKS:
+        expected_foreign_keys.setdefault(table, set()).add(
+            ((column,), referenced_table, (referenced_column,))
+        )
+    for table in TABLES:
+        if not sqlite_table_exists(connection, table):
+            continue
+        actual_foreign_keys = {
+            (
+                tuple(item["columns"]),
+                item["referencedTable"],
+                tuple(item["referencedColumns"]),
+            )
+            for item in sqlite_foreign_keys(connection, table)
+        }
+        expected = expected_foreign_keys.get(table, set())
+        if actual_foreign_keys != expected:
+            errors.append(
+                f"Chaves estrangeiras divergentes no SQLite: {table}; "
+                f"esperado={sorted(expected)}, encontrado={sorted(actual_foreign_keys)}"
+            )
     for table, columns in JSON_COLUMNS.items():
         if not sqlite_table_exists(connection, table):
             continue
