@@ -3,6 +3,14 @@
 Aplicacao PHP para gestao de indicadores estrategicos, lancamentos,
 evidencias, homologacoes, relatorios, administracao de acessos e auditoria.
 
+## Manual de uso
+
+O passo a passo para Administradores, Unidades Apuradoras, Diretorias,
+Usuários da Companhia e Auditores está disponível em
+[`docs/manual-do-sistema.md`](docs/manual-do-sistema.md). Para consulta diária,
+utilize também o
+[`docs/guia-rapido-do-sistema.md`](docs/guia-rapido-do-sistema.md).
+
 ## Visao Geral
 
 - PHP 7.1.19 no ambiente corporativo.
